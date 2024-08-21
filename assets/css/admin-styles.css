@@ -1,0 +1,17 @@
+.toplevel_page_rechat-setting div.wp-menu-image img {
+    width: 20px; /* Set your desired width */
+    height: auto; /* Optional: auto or specify a height */
+}
+.rch-preview-in-admin {
+    height: 100px;
+}
+#agents_meta_box input {
+    display: block;
+    margin-bottom: 15px; /* Space between label and input */
+}
+
+#agents_meta_box label {
+    margin-bottom: 5px; /* Space between fields */
+    width: 100%;
+    font-weight: bold;
+}

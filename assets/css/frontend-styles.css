@@ -1,0 +1,381 @@
+.rch-primary-content a {
+  text-decoration: none;
+}
+.rch-agents-rechat ul.rch-archive-agents {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  padding: 0;
+  list-style: none;
+  margin: 0;
+}
+.rch-agents-rechat ul.rch-archive-agents li {
+  background-color: #edf1f5;
+  padding: 16px;
+  border-radius: 5px;
+}
+.rch-agents-rechat ul.rch-archive-agents li picture {
+  display: block;
+  max-height: 270px;
+  min-height: 270px;
+  overflow: hidden;
+  border-radius: 5px;
+}
+
+.rch-archive-agents .rch-agents-rechat ul.rch-archive-agents li picture {
+  height: 230px;
+}
+.rch-agents-rechat ul.rch-archive-agents li .rch-archive-name a {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #000;
+  font-size: 18px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
+  margin-block-start: 12px;
+}
+.rch-agents-rechat ul.rch-archive-agents li .rch-archive-name span {
+  color: #000;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  display: block;
+  margin-block-start: 6px;
+}
+.rch-agents-rechat ul.rch-archive-agents li .rch-archive-end-line {
+  display: flex;
+  justify-content: space-between;
+}
+.rch-agents-rechat ul.rch-archive-agents li .rch-archive-end-line a {
+  background-color: inherit;
+  width: 48%;
+  display: block;
+  text-align: center;
+  margin-block-start: 23px;
+  background: #2271b1;
+  color: white;
+  border-radius: 5px;
+  padding-block: 7px;
+  font-size: 13px;
+}
+.rch-agents-rechat
+  ul.rch-archive-agents
+  li
+  .rch-archive-end-line
+  a:first-child {
+  background-color: white;
+  border: solid 1px #2271b1;
+  color: #2271b1;
+}
+.rch-top-filter {
+  margin-block-end: 30px;
+}
+.rch-top-filter form#rch-agent-search-form {
+  width: 40%;
+  position: relative;
+}
+.rch-top-filter form#rch-agent-search-form input {
+  width: 100%;
+  background-color: #edf1f5;
+  padding-inline-start: 10%;
+}
+.rch-top-filter form#rch-agent-search-form > img {
+  position: absolute;
+  top: 32%;
+  left: 2%;
+}
+.rch-top-filter form#rch-agent-search-form div#rch-agent-search-results {
+  position: absolute;
+  z-index: 10;
+  background: #edf1f5;
+  width: 100%;
+  padding: 5px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+.rch-top-filter
+  form#rch-agent-search-form
+  div#rch-agent-search-results::-webkit-scrollbar {
+  width: 5px;
+}
+.rch-top-filter
+  form#rch-agent-search-form
+  div#rch-agent-search-results::-webkit-scrollbar-thumb {
+  background: #2271b1;
+  border-radius: 10px;
+}
+.rch-top-filter form#rch-agent-search-form div#rch-agent-search-results ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.rch-top-filter
+  form#rch-agent-search-form
+  div#rch-agent-search-results
+  ul
+  li:not(:last-child) {
+  margin-block-end: 10px;
+}
+.rch-top-filter
+  form#rch-agent-search-form
+  div#rch-agent-search-results
+  ul
+  li
+  a {
+  color: #000;
+}
+.rch-top-filter
+  form#rch-agent-search-form
+  div#rch-agent-search-results
+  ul
+  li
+  a
+  img {
+  width: 50px;
+  height: 50px;
+  margin-inline-end: 10px;
+  border-radius: 5px;
+}
+.rch-top-filter
+  form#rch-agent-search-form
+  div#rch-agent-search-results
+  ul
+  li
+  > a {
+  display: flex;
+  align-items: center;
+}
+.rch-top-filter
+  form#rch-agent-search-form
+  div#rch-agent-search-results
+  ul
+  li
+  > a
+  span:last-of-type {
+  font-size: 12px;
+  color: #666;
+  margin-inline-start: 5px;
+}
+/* CSS for the loader */
+.rch-image-container {
+  position: relative;
+}
+.rch-loader {
+  position: absolute;
+  display: inline-block;
+  width: 50px;
+  height: 50px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+  -webkit-animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+@-webkit-keyframes spin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+.rch-profile-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* Hide the loader when the image is fully loaded */
+.rch-image-container img.loaded {
+  opacity: 1;
+}
+
+.rch-loader {
+  display: block;
+}
+
+.rch-image-container img.loaded + .rch-loader {
+  display: none;
+}
+/* single page style */
+.rch-top-single-agent {
+  display: flex;
+  justify-content: space-between;
+}
+.rch-top-single-agent .rch-left-top-single-agent {
+  width: 65%;
+  display: flex;
+}
+.rch-top-single-agent .rch-left-top-single-agent picture {
+  /* position: relative; */
+  width: 340px;
+  height: 360px;
+  display: block;
+  overflow: hidden;
+  border-radius: 5px;
+}
+.rch-top-single-agent .rch-left-top-single-agent h1 {
+  color: #000;
+  font-size: 30px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  margin-block-end: 14px;
+}
+.rch-top-single-agent .rch-left-top-single-agent span {
+  color: #000;
+  display: block;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  margin-block-end: 10px;
+}
+.rch-top-single-agent .rch-left-top-single-agent span:first-of-type {
+  margin-block-end: 20px;
+}
+.rch-top-single-agent .rch-left-top-single-agent .rch-data-agent {
+  margin-inline-start: 40px;
+}
+.rch-right-top-single-agent {
+  width: 30%;
+}
+.rch-right-top-single-agent ul {
+  display: flex;
+  list-style: none;
+  margin: 0;
+}
+.rch-right-top-single-agent ul li {
+  width: 40px;
+  height: 40px;
+  border-radius: 5px;
+  background: #dfe5eb;
+
+  margin-inline-end: 6px;
+}
+.rch-right-top-single-agent ul li a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+.rch-right-top-single-agent ul li a img {
+  aspect-ratio: 1 / 1;
+  width: 23px;
+}
+.rch-main-content {
+  margin-block-start: 40px;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 150%;
+}
+.rch-single-call {
+  display: flex;
+  flex-direction: row-reverse;
+  margin-block-start: 40px;
+}
+.rch-single-call a {
+  color: white;
+  background-color: #2271b1;
+  border-radius: 5px;
+  padding: 10px 20px;
+}
+.rch-pagination {
+  display: flex;
+  flex-direction: row-reverse;
+  margin-block-start: 40px;
+}
+.rch-pagination .rch-pagination-container {
+  display: flex;
+}
+.rch-pagination .rch-pagination-container > *:not(:last-child) {
+  margin-inline-end: 5px;
+}
+.rch-pagination .rch-pagination-container > * {
+  border-radius: 2px;
+  border: solid 1px #b1b1b1;
+  background: #fff;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #b1b1b1;
+}
+.rch-pagination .rch-pagination-container .current {
+  color: #2271b1;
+}
+/* Medium screens */
+@media (max-width: 1200px) {
+}
+
+/* Small screens */
+@media (max-width: 768px) {
+  .rch-top-filter form#rch-agent-search-form {
+    width: 70%;
+  }
+  .rch-top-single-agent {
+    flex-wrap: wrap;
+  }
+  .rch-top-single-agent .rch-left-top-single-agent,
+  .rch-right-top-single-agent {
+    width: 100%;
+  }
+  .rch-top-single-agent .rch-left-top-single-agent picture {
+    width: 230px;
+    height: 280px;
+  }
+  .rch-right-top-single-agent {
+    margin-block-start: 40px;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 530px) {
+  .rch-agents-rechat ul.rch-archive-agents li picture {
+    max-height: none;
+  }
+  .rch-top-filter form#rch-agent-search-form {
+    width: 100%;
+  }
+  .rch-top-single-agent {
+    flex-wrap: wrap;
+  }
+  .rch-top-single-agent .rch-left-top-single-agent,
+  .rch-right-top-single-agent,
+  .rch-top-single-agent .rch-left-top-single-agent .rch-data-agent,
+  .rch-top-single-agent .rch-left-top-single-agent .rch-image-container {
+    width: 100%;
+  }
+  .rch-top-single-agent .rch-left-top-single-agent {
+    flex-wrap: wrap;
+  }
+  .rch-top-single-agent .rch-left-top-single-agent picture {
+    width: 100%;
+  }
+  .rch-top-single-agent .rch-left-top-single-agent .rch-data-agent {
+    margin-block-start: 30px;
+    margin-inline-start: 0;
+  }
+  .rch-right-top-single-agent {
+    margin-block-start: 30px;
+  }
+  .rch-single-call {
+    flex-direction: row;
+  }
+}
