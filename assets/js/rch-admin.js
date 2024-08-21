@@ -1,14 +1,5 @@
 jQuery(document).ready(function ($) {
     // Handle tab navigation
-    $('.nav-tab').on('click', function (e) {
-        e.preventDefault();
-        $('.nav-tab').removeClass('nav-tab-active');
-        $(this).addClass('nav-tab-active');
-
-        $('.tab-content').hide();
-        var selected_tab = $(this).attr('href');
-        $(selected_tab).show();
-    });
     $('#update_agents_data').on('click', function () {
         var statusDiv = $('#agents_update_status');
         var button = $(this);
