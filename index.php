@@ -1,8 +1,8 @@
 <?php
 /*
-Plugin Name: Rechat Agents Plugin
-Description: Fetches and manages agent data from Rechat.
-Version: 1.0.0
+Plugin Name: Rechat Plugin
+Description: Fetches and manages agent, offices, and regions data from Rechat.
+Version: 2.0.0
 Author URI: https://rechat.com/
 */
 
@@ -32,9 +32,11 @@ add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'rch_plugin_actio
 include RCH_PLUGIN_INCLUDES . 'front/enqueue-front.php';
 include RCH_PLUGIN_INCLUDES . 'admin/custom-post.php';
 include RCH_PLUGIN_INCLUDES . 'admin/template-load.php';
+include RCH_PLUGIN_INCLUDES . 'admin/all-functions.php';
 include RCH_PLUGIN_DIR . 'templates/archive/search-result.php';
-include RCH_PLUGIN_INCLUDES . 'api-load.php';
+include RCH_PLUGIN_INCLUDES . 'admin/api-load/api-load-all-data.php';
 include RCH_PLUGIN_INCLUDES . 'admin/schedule.php';
+include RCH_PLUGIN_INCLUDES . 'admin/oauth-handler.php';
 include RCH_PLUGIN_INCLUDES . 'admin/menu-setting.php';
 include RCH_PLUGIN_INCLUDES . 'front/add-css-in-setting.php';
 if (is_admin()) {

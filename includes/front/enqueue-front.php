@@ -7,10 +7,16 @@ function rch_enqueue_frontend_styles() {
         'nonce'    => wp_create_nonce('rch_ajax_front_nonce')
     ));
     
-    if (is_post_type_archive('agents') || is_singular('agents')) {
-        wp_enqueue_style('rch-front-css-agents');
-        wp_enqueue_script('rch-ajax-front');
-    }
+    if (is_post_type_archive('agents') || 
+    is_singular('agents') || 
+    is_post_type_archive('offices') || 
+    is_singular('offices') || 
+    is_post_type_archive('regions') || 
+    is_singular('regions')) {
+    wp_enqueue_style('rch-front-css-agents');
+    wp_enqueue_script('rch-ajax-front');
+}
+
 }
 add_action('wp_enqueue_scripts', 'rch_enqueue_frontend_styles');
 ?>

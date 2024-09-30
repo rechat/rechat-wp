@@ -1,7 +1,7 @@
 .rch-primary-content a {
   text-decoration: none;
 }
-.rch-agents-rechat ul.rch-archive-agents {
+.rch-agents-rechat ul.rch-archive-agents ,.rch-archive-regions-offices {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1rem;
@@ -9,7 +9,11 @@
   list-style: none;
   margin: 0;
 }
-.rch-agents-rechat ul.rch-archive-agents li {
+.rch-archive-regions-offices {
+  margin-block-start: 15px;
+}
+
+.rch-agents-rechat ul.rch-archive-agents li ,.rch-archive-regions-offices li {
   background-color: #edf1f5;
   padding: 16px;
   border-radius: 5px;
