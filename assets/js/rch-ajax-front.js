@@ -1,11 +1,13 @@
-// assets/js/rch-ajax-front.js
-jQuery(document).ready(function($) {
-       // Select all images within .rch-image-container
-       $('.rch-image-container img').each(function() {
+jQuery(document).ready(function ($) {
+    // Select all images within .rch-image-container
+    /*******************************
+     * show loading to images when they are not loaded
+     ******************************/
+    $('.rch-image-container img').each(function () {
         var img = $(this);
         var loader = img.siblings('.rch-loader');
 
-        img.on('load', function() {
+        img.on('load', function () {
             img.addClass('loaded');
             loader.hide(); // Hide loader once image is loaded
         });
@@ -15,7 +17,10 @@ jQuery(document).ready(function($) {
             img.trigger('load');
         }
     });
-    $('#rch-agent-search').on('input', function() {
+/*******************************
+ * ajax search in agents archive
+ ******************************/
+    $('#rch-agent-search').on('input', function () {
         var searchQuery = $(this).val();
         if (searchQuery.length > 0) {
             $.ajax({
@@ -26,10 +31,10 @@ jQuery(document).ready(function($) {
                     query: searchQuery,
                     nonce: rch_ajax_front_params.nonce // Include the nonce for security
                 },
-                success: function(response) {
+                success: function (response) {
                     $('#rch-agent-search-results').html(response).slideDown();
                 }
-                
+
             });
         } else {
             $('#rch-agent-search-results').slideUp();
@@ -37,10 +42,10 @@ jQuery(document).ready(function($) {
     });
 
     // Hide the dropdown when clicking outside
-    $(document).on('click', function(e) {
+    $(document).on('click', function (e) {
         if (!$(e.target).closest('#rch-agent-search-form').length) {
             $('#rch-agent-search-results').slideUp();
         }
     });
-    
+
 });

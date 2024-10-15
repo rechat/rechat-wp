@@ -1,8 +1,10 @@
 <?php
-
-/**
+if ( ! defined( 'ABSPATH' ) ) {
+	exit();
+}
+/*******************************
  * Register a custom menu settings page.
- */
+ ******************************/
 function rch_register_my_setting_menu_page()
 {
     add_menu_page(
@@ -16,6 +18,9 @@ function rch_register_my_setting_menu_page()
 }
 add_action('admin_menu', 'rch_register_my_setting_menu_page');
 
+/*******************************
+ * Define the setting fields
+ ******************************/
 function rch_appearance_setting()
 {
     // Existing primary color setting
@@ -60,28 +65,27 @@ function rch_appearance_setting()
 }
 add_action('admin_init', 'rch_appearance_setting');
 
-/**
+/*******************************
  * Render the Posts Per Page input field.
- */
+ ******************************/
 function rch_render_posts_per_page_field()
 {
     $posts_per_page = get_option('_rch_posts_per_page', 12); // Default to 10
     echo '<input type="number" id="rch_posts_per_page" name="_rch_posts_per_page" value="' . esc_attr($posts_per_page) . '" min="1" />';
 }
 
-/**
+/*******************************
  * function for Color Picker
- */
+ ******************************/
 function rch_render_color_picker()
 {
     $color = get_option('_rch_primary_color', '#2271b1'); // Default to white
     echo '<input type="text" id="rch_primary_color" name="_rch_primary_color" value="' . esc_attr($color) . '" class="my-color-field" data-default-color="#2271b1" />';
 }
 
-/**
- *  AJAX handler that will be called when the button is clicked
- */
-// AJAX handler for updating all data
+/*******************************
+ * AJAX handler for updating all data
+ ******************************/
 function rch_update_all_data()
 {
     // Verify nonce for security
@@ -98,9 +102,9 @@ function rch_update_all_data()
 }
 add_action('wp_ajax_rch_update_all_data', 'rch_update_all_data');
 
-/**
+/*******************************
  * Display the custom menu page with settings form.
- */
+ ******************************/
 function rch_rechat_menu_page()
 {
     $auth_url = rch_get_oauth_authorization_url();

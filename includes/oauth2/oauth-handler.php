@@ -1,4 +1,8 @@
 <?php
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit();
+}
 /*******************************
  *Sent to oauth and get access token brand id and refreshtoken
  ******************************/

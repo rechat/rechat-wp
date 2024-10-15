@@ -1,5 +1,11 @@
 <?php
-// Define custom intervals
+if (! defined('ABSPATH')) {
+    exit();
+}
+
+/*******************************
+ * Define custom intervals with 12 hours load agents regions and offices
+ ******************************/
 function add_custom_cron_intervals($schedules)
 {
     $schedules['every_12_hours'] = array(

@@ -1,5 +1,10 @@
 <?php
-// Register Custom Post Type for Agents
+if (! defined('ABSPATH')) {
+    exit();
+}
+/*******************************
+ * Register Custom Post Type for Agents
+ ******************************/
 function rch_agents()
 {
     $labels = array(
@@ -54,7 +59,9 @@ function rch_agents()
     register_post_type('agents', $args);
 }
 
-// Register Custom Post Type for Offices
+/*******************************
+ * Register Custom Post Type for offices
+ ******************************/
 function rch_offices()
 {
     $labels = array(
@@ -109,7 +116,9 @@ function rch_offices()
     register_post_type('offices', $args);
 }
 
-// Register Custom Post Type for Regions
+/*******************************
+ * Register Custom Post Type for Regions
+ ******************************/
 function rch_regions()
 {
     $labels = array(
@@ -168,4 +177,3 @@ function rch_regions()
 add_action('init', 'rch_agents', 0);
 add_action('init', 'rch_offices', 0);
 add_action('init', 'rch_regions', 0);
-?>

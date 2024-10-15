@@ -1,5 +1,7 @@
 jQuery(document).ready(function ($) {
-
+    /*******************************
+     * show loading when click on update data in setting
+     ******************************/
 
     $('#update_agents_data').on('click', function () {
         var statusDiv = $('#agents_update_status');
@@ -66,37 +68,36 @@ jQuery(document).ready(function ($) {
             }
         });
     });
+    /*******************************
+     * show modal when click on disconnect and ask are you sure?
+     ******************************/
+    var $modal = $('#disconnect-modal');
+    var $btn = $('#show-disconnect-modal');
+    var $close = $('.disconnect-close');
+    var $confirmButton = $('#confirm-disconnect');
+    var $cancelButton = $('#cancel-disconnect');
+    var $form = $('#disconnect-form');
 
-    //modal handeling
-    jQuery(document).ready(function ($) {
-        var $modal = $('#disconnect-modal');
-        var $btn = $('#show-disconnect-modal');
-        var $close = $('.disconnect-close');
-        var $confirmButton = $('#confirm-disconnect');
-        var $cancelButton = $('#cancel-disconnect');
-        var $form = $('#disconnect-form');
+    $btn.on('click', function () {
+        $modal.show();
+    });
 
-        $btn.on('click', function () {
-            $modal.show();
-        });
+    $close.on('click', function () {
+        $modal.hide();
+    });
 
-        $close.on('click', function () {
+    $cancelButton.on('click', function () {
+        $modal.hide();
+    });
+
+    $confirmButton.on('click', function () {
+        $form.submit();
+    });
+
+    $(window).on('click', function (event) {
+        if ($(event.target).is($modal)) {
             $modal.hide();
-        });
-
-        $cancelButton.on('click', function () {
-            $modal.hide();
-        });
-
-        $confirmButton.on('click', function () {
-            $form.submit();
-        });
-
-        $(window).on('click', function (event) {
-            if ($(event.target).is($modal)) {
-                $modal.hide();
-            }
-        });
+        }
     });
 
 });

@@ -1,5 +1,7 @@
 <?php
-
+if (! defined('ABSPATH')) {
+    exit();
+}
 /*******************************
  * Create Custom MetaBox For Show Offices In Agents
  ******************************/

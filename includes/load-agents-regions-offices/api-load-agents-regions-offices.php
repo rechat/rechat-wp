@@ -1,5 +1,7 @@
 <?php
-// add_action('init', 'rch_update_agents_offices_regions_data');
+if (! defined('ABSPATH')) {
+    exit();
+}
 function rch_update_agents_offices_regions_data()
 {
     /*******************************
@@ -59,12 +61,12 @@ function rch_update_agents_offices_regions_data()
 
     // Process agents
     $agents_result = process_agents_data($access_token, $api_url_base);
-        // Get current agent IDs
-        $current_agent_ids = get_posts(array(
-            'post_type' => 'agents',
-            'numberposts' => -1,
-            'fields' => 'ids',
-        ));
+    // Get current agent IDs
+    $current_agent_ids = get_posts(array(
+        'post_type' => 'agents',
+        'numberposts' => -1,
+        'fields' => 'ids',
+    ));
     if (!$agents_result) {
         wp_send_json(array('success' => false, 'message' => 'Error processing agents'));
     }

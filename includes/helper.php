@@ -1,5 +1,7 @@
 <?php
-
+if ( ! defined( 'ABSPATH' ) ) {
+	exit();
+}
 /*******************************
  * change to readable Date
  ******************************/
@@ -17,7 +19,6 @@ function get_token_expiry_date($seconds_until_expire)
 /*******************************
  * disconnect handler from rechat oauth
  ******************************/
-add_action('init', 'handle_disconnect_rechat');
 
 function handle_disconnect_rechat()
 {
@@ -39,6 +40,7 @@ function handle_disconnect_rechat()
         exit;
     }
 }
+add_action('init', 'handle_disconnect_rechat');
 /*******************************
  * Helper function to filter brands by type
  ******************************/
@@ -338,4 +340,42 @@ function process_agents_data($access_token, $api_url_base)
         'agent_update_count' => $agent_update_count,
     );
 }
-
+/*******************************
+ * this function get all filters that use in listing shortcode
+ ******************************/
+function rch_get_filters($atts)
+{
+    return array_filter([
+        'minimum_price' => isset($atts['minimum_price']) ? intval($atts['minimum_price']) : '',
+        'maximum_price' => isset($atts['maximum_price']) ? intval($atts['maximum_price']) : '',
+        'minimum_lot_square_meters' => isset($atts['minimum_lot_square_meters']) ? intval($atts['minimum_lot_square_meters']) : '',
+        'maximum_lot_square_meters' => isset($atts['maximum_lot_square_meters']) ? intval($atts['maximum_lot_square_meters']) : '',
+        'minimum_bathrooms' => isset($atts['minimum_bathrooms']) ? intval($atts['minimum_bathrooms']) : '',
+        'maximum_bathrooms' => isset($atts['maximum_bathrooms']) ? intval($atts['maximum_bathrooms']) : '',
+        'minimum_square_meters' => isset($atts['minimum_square_meters']) ? intval($atts['minimum_square_meters']) : '',
+        'maximum_square_meters' => isset($atts['maximum_square_meters']) ? intval($atts['maximum_square_meters']) : '',
+        'minimum_year_built' => isset($atts['minimum_year_built']) ? intval($atts['minimum_year_built']) : '',
+        'maximum_year_built' => isset($atts['maximum_year_built']) ? intval($atts['maximum_year_built']) : '',
+        'minimum_bedrooms' => isset($atts['minimum_bedrooms']) ? intval($atts['minimum_bedrooms']) : '',
+        'maximum_bedrooms' => isset($atts['maximum_bedrooms']) ? intval($atts['maximum_bedrooms']) : ''
+    ]);
+}
+/*******************************
+ *title for page house detail
+ ******************************/
+function custom_single_listing_title($title) {
+    if (isset($_GET['house_id'])) {
+        $house_id = sanitize_text_field($_GET['house_id']);
+        // You can modify the title as per your needs
+        $title = 'House Details - ' . $house_id;
+    }
+    return $title;
+}
+add_filter('wp_title', 'custom_single_listing_title');
+function remove_404_for_house_listing() {
+    if (isset($_GET['house_id'])) {
+        global $wp_query;
+        $wp_query->is_404 = false; // Mark this request as a valid one, not 404
+    }
+}
+add_action('wp', 'remove_404_for_house_listing');

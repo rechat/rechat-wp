@@ -1,5 +1,10 @@
 <?php
-// Add meta box for the 'offices' post type
+if ( ! defined( 'ABSPATH' ) ) {
+	exit();
+}
+/*******************************
+ * Add meta box for the 'offices' post type
+ ******************************/
 function add_office_meta_box()
 {
     add_meta_box(
@@ -13,7 +18,9 @@ function add_office_meta_box()
 }
 add_action('add_meta_boxes', 'add_office_meta_box');
 
-// Function to display the meta box for 'offices' post type
+/*******************************
+ * Function to display the meta box for 'offices' post type
+ ******************************/
 function display_office_meta_box($post)
 {
     // Retrieve the 'office_id' meta value
@@ -26,20 +33,9 @@ function display_office_meta_box($post)
 <?php
 }
 
-// // Save meta data for 'office_id'
-// function save_office_meta_box($post_id)
-// {
-//     // Check the post type to prevent interference with other post types
-//     if (get_post_type($post_id) == 'offices') {
-//         // Save values to meta only if a new value is provided
-//         if (isset($_POST['office_id'])) {
-//             update_post_meta($post_id, 'office_id', sanitize_text_field($_POST['office_id']));
-//         }
-//     }
-// }
-// add_action('save_post', 'save_office_meta_box');
-
-// Add a custom column to the 'offices' post type list table
+/*******************************
+ * Add a custom column to the 'offices' post type list table
+ ******************************/
 function add_office_id_column($columns) {
     // Add a new column for Office ID
     $columns['office_id'] = 'Office ID';
@@ -47,7 +43,9 @@ function add_office_id_column($columns) {
 }
 add_filter('manage_offices_posts_columns', 'add_office_id_column');
 
-// Display the content of the custom column
+/*******************************
+ * Display the content of the custom column
+ ******************************/
 function show_office_id_column_content($column, $post_id) {
     if ($column === 'office_id') {
         // Retrieve the 'office_id' meta value
@@ -57,14 +55,18 @@ function show_office_id_column_content($column, $post_id) {
 }
 add_action('manage_offices_posts_custom_column', 'show_office_id_column_content', 10, 2);
 
-// Make the 'Office ID' column sortable
+/*******************************
+ * Make the 'Office ID' column sortable
+ ******************************/
 function make_office_id_column_sortable($columns) {
     $columns['office_id'] = 'office_id';
     return $columns;
 }
 add_filter('manage_edit-offices_sortable_columns', 'make_office_id_column_sortable');
 
-// Handle sorting by 'Office ID' column
+/*******************************
+ * Handle sorting by 'Office ID' column
+ ******************************/
 function sort_office_id_column($query) {
     if (!is_admin()) {
         return;

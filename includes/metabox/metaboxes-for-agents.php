@@ -1,5 +1,10 @@
 <?php
-// Function to add meta box to the 'agents' post type
+if ( ! defined( 'ABSPATH' ) ) {
+	exit();
+} 
+/*******************************
+ * Function to add meta box to the 'agents' post type
+ ******************************/
 function add_agents_meta_box()
 {
     add_meta_box(
@@ -13,8 +18,9 @@ function add_agents_meta_box()
 }
 add_action('add_meta_boxes', 'add_agents_meta_box');
 
-
-// Callback function to display the meta box HTML
+/*******************************
+ * Callback function to display the meta box HTML
+ ******************************/
 function agents_meta_box_html($post)
 {
     // Add a nonce field for security
@@ -75,8 +81,9 @@ function agents_meta_box_html($post)
 <?php
 }
 
-
-// Function to save custom field data
+/*******************************
+ * Function to save custom field data
+ ******************************/
 function save_agents_meta_box($post_id)
 {
     // Check if our nonce is set.
@@ -127,24 +134,23 @@ function save_agents_meta_box($post_id)
     }
 }
 
-
-// Save meta box data
 add_action('save_post', 'save_agents_meta_box');
+
+/*******************************
+ * Function to show api id column in custom post type
+ ******************************/
 function add_api_id_columns($columns) {
     // Add a new column for API ID
     $columns['api_id'] = 'Rechat ID (not available for locally added agents)';
     return $columns;
 }
-// Hook to add a new column to the custom post type list view
 add_filter('manage_agents_posts_columns', 'add_api_id_columns');
 
 
 function show_api_id_column_data($column, $post_id) {
     if ($column === 'api_id') {
-        // Retrieve and display the API ID
         $api_id = get_post_meta($post_id, 'api_id', true);
         echo esc_html($api_id);
     }
 }
-// Hook to populate the custom column with data
 add_action('manage_agents_posts_custom_column', 'show_api_id_column_data', 10, 2);
