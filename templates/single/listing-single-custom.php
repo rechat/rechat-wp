@@ -217,11 +217,36 @@
     // Call the initMap function when the window loads
     window.onload = initMap;
     var swiper = new Swiper(".rch-houses-mySwiper", {
-        spaceBetween: 10,
-        slidesPerView: 8,
-        freeMode: true,
-        watchSlidesProgress: true,
-    });
+    spaceBetween: 10,
+    slidesPerView: 8, // Default for desktop
+    freeMode: true,
+    watchSlidesProgress: true,
+    
+    // Add responsive breakpoints
+    breakpoints: {
+        // When the window width is >= 320px (small mobile)
+        320: {
+            slidesPerView: 3,  // 1 slide per view on small screens
+        },
+        // When the window width is >= 480px (mobile)
+        480: {
+            slidesPerView: 4,  // 2 slides per view on mobile screens
+        },
+        // When the window width is >= 768px (tablets)
+        768: {
+            slidesPerView: 5,  // 4 slides per view on tablet screens
+        },
+        // When the window width is >= 1024px (desktops)
+        1024: {
+            slidesPerView: 6,  // 6 slides per view on large tablets or small desktops
+        },
+        // When the window width is >= 1280px (desktops)
+        1280: {
+            slidesPerView: 8,  // Full slides per view on desktop
+        }
+    }
+});
+
     var swiper2 = new Swiper(".rch-houses-mySwiper2", {
         spaceBetween: 10,
         navigation: {

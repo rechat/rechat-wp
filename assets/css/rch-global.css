@@ -1,3 +1,32 @@
+/* CSS for the loader */
+.rch-image-container {
+  position: relative;
+}
+.rch-loader {
+  position: absolute;
+  display: inline-block;
+  width: 50px;
+  height: 50px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+  -webkit-animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+@-webkit-keyframes spin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
 /*********************
 START: CSS FOR LISTING ARCHIVE SHORTCODE
 *********************/
@@ -70,4 +99,21 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
 }
 .rch-house-pagination {
   margin-block-start: 20px;
+}
+/* Medium screens */
+@media (max-width: 1200px) {
+}
+
+/* Small screens */
+@media (max-width: 768px) {
+  .rch-houses-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 530px) {
+  .rch-houses-list {
+    grid-template-columns: repeat(1, 1fr);
+  }
 }

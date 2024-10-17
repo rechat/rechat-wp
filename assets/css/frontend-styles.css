@@ -80,35 +80,6 @@ html {
   border: solid 1px #2271b1;
   color: #2271b1;
 }
-/* CSS for the loader */
-.rch-image-container {
-  position: relative;
-}
-.rch-loader {
-  position: absolute;
-  display: inline-block;
-  width: 50px;
-  height: 50px;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: #fff;
-  animation: spin 1s ease-in-out infinite;
-  -webkit-animation: spin 1s ease-in-out infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: translate(-50%, -50%) rotate(360deg);
-  }
-}
-@-webkit-keyframes spin {
-  to {
-    transform: translate(-50%, -50%) rotate(360deg);
-  }
-}
 
 .rch-profile-image {
   display: block;
