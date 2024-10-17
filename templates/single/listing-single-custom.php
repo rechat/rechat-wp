@@ -190,7 +190,7 @@
 
 </div>
 <?php get_footer() ?>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDM0ekC92c_YLlnEdpGMg00Ug1mqKgNjyU&callback=initMap&language=en"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=API_KEY&callback=initMap&language=en"></script>
 <script>
     function initMap() {
         // Get latitude and longitude from PHP
