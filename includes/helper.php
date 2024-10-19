@@ -364,8 +364,8 @@ function rch_get_filters($atts)
  *title for page house detail
  ******************************/
 function custom_single_listing_title($title) {
-    if (isset($_GET['house_id'])) {
-        $house_id = sanitize_text_field($_GET['house_id']);
+    if (isset($_GET['listing_id'])) {
+        $house_id = sanitize_text_field($_GET['listing_id']);
         // You can modify the title as per your needs
         $title = 'House Details - ' . $house_id;
     }
@@ -373,9 +373,57 @@ function custom_single_listing_title($title) {
 }
 add_filter('wp_title', 'custom_single_listing_title');
 function remove_404_for_house_listing() {
-    if (isset($_GET['house_id'])) {
+    if (isset($_GET['listing_id'])) {
         global $wp_query;
         $wp_query->is_404 = false; // Mark this request as a valid one, not 404
     }
 }
 add_action('wp', 'remove_404_for_house_listing');
+
+/*******************************
+ *Helper function to fetch the primary color from a brand or its parent.
+ ******************************/
+function rch_get_primary_color($brand_id) {
+    // API endpoint to fetch brand settings, including parent brands
+    $palette_url = 'https://api.rechat.com/brands/' . $brand_id . '?associations[]=brand.parent&associations[]=brand.settings';
+
+    // Make the API request
+    $palette_response = wp_remote_get($palette_url);
+    if (is_wp_error($palette_response)) {
+        error_log('Error fetching marketing palette: ' . $palette_response->get_error_message());
+        return '#2271b1'; // Return default color on error
+    }
+
+    // Parse the response body
+    $palette_body = wp_remote_retrieve_body($palette_response);
+    $palette_data = json_decode($palette_body, true);
+
+
+    // Traverse the brand and its parents to find the color
+    if (isset($palette_data['data'])) {
+        $brand = $palette_data['data'];
+        return rch_find_primary_color($brand);
+    }
+
+    // Return default color if no data is found
+    return '#2271b1';
+}
+
+/*******************************
+ *Helper function to find the button color by traversing the brand hierarchy.
+ ******************************/
+function rch_find_primary_color($brand) {
+    $primary_color = null;
+
+    // Traverse the brand hierarchy to find the primary color
+    do {
+        if (isset($brand['settings']['marketing_palette']['colors'][0])) {
+            $primary_color = $brand['settings']['marketing_palette']['colors'][0];
+        }
+        $brand = isset($brand['parent']) ? $brand['parent'] : null;
+    } while (!$primary_color && $brand);
+
+    // Sanitize the color or return a default color
+    return $primary_color ? sanitize_hex_color($primary_color) : '#2271b1';
+}
+

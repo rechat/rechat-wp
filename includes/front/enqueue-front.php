@@ -43,7 +43,7 @@ function rch_enqueue_frontend_styles()
         wp_enqueue_style('rch-front-css-agents');
         wp_enqueue_script('rch-ajax-front');
     }
-    if (isset($_GET['house_id'])) {
+    if (isset($_GET['listing_id'])) {
         // Enqueue the registered CSS and JS only when 'house_id' is present in the URL
         wp_enqueue_style('rch-rechat-listing');
         wp_enqueue_style('rch-swiper');

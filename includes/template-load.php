@@ -90,7 +90,7 @@ function load_custom_templates($template)
     }
 
     // House detail logic
-    if (isset($_GET['house_id'])) {
+    if (isset($_GET['listing_id'])) {
         $plugin_template = RCH_PLUGIN_INCLUDES . 'load-listing/' . $house_detail_template_name;
         return $plugin_template;
         /*******************************

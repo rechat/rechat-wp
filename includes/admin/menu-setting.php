@@ -46,13 +46,13 @@ function rch_appearance_setting()
         'appearance_setting'
     );
 
-    add_settings_field(
-        'rch_primary_color',
-        __('Primary Color', 'rch_rechat_plugin'),
-        'rch_render_color_picker',
-        'appearance_setting',
-        'rch_theme_appearance_setting'
-    );
+    // add_settings_field(
+    //     'rch_primary_color',
+    //     __('Primary Color', 'rch_rechat_plugin'),
+    //     'rch_render_color_picker',
+    //     'appearance_setting',
+    //     'rch_theme_appearance_setting'
+    // );
 
     // Add the field for posts per page
     add_settings_field(
@@ -77,11 +77,11 @@ function rch_render_posts_per_page_field()
 /*******************************
  * function for Color Picker
  ******************************/
-function rch_render_color_picker()
-{
-    $color = get_option('_rch_primary_color', '#2271b1'); // Default to white
-    echo '<input type="text" id="rch_primary_color" name="_rch_primary_color" value="' . esc_attr($color) . '" class="my-color-field" data-default-color="#2271b1" />';
-}
+// function rch_render_color_picker()
+// {
+//     $color = get_option('_rch_primary_color', '#2271b1'); // Default to white
+//     echo '<input type="text" id="rch_primary_color" name="_rch_primary_color" value="' . esc_attr($color) . '" class="my-color-field" data-default-color="#2271b1" />';
+// }
 
 /*******************************
  * AJAX handler for updating all data
@@ -140,7 +140,15 @@ function rch_rechat_menu_page()
                                 <!-- This will display the status message after AJAX request -->
                                 <div id="agents_update_status" style="margin-top: 20px;"></div>
 
-
+                                <?php if (!$access_token_exists): ?>
+                        <p style="display: flex;align-items: center;">
+                            <img src="<?php echo RCH_PLUGIN_ASSETS_URL . 'ph_info.png' ?>" alt="info" style="margin-inline-end: 5px;">
+                            <?php _e('You are not yet connected to Rechat. Please connect your Rechat account to enable syncing your data.', 'rch_rechat_plugin'); ?>
+                            <a href="?page=rechat-setting&tab=connect-to-rechat" class="nav-tab-link" style="font-weight: bold; margin-inline-start: 3px;">
+                                <?php _e('Connect To Rechat', 'rch_rechat_plugin'); ?>
+                            </a>
+                        </p>
+                    <?php endif; ?>
                             </td>
                         </tr>
                         <tr valign="top">
@@ -198,15 +206,7 @@ function rch_rechat_menu_page()
 
 
                     </table>
-                    <?php if (!$access_token_exists): ?>
-                        <p style="display: flex;align-items: center;">
-                            <img src="<?php echo RCH_PLUGIN_ASSETS_URL . 'ph_info.png' ?>" alt="info" style="margin-inline-end: 5px;">
-                            <?php _e('You are not yet connected to Rechat. Please connect your Rechat account to enable syncing your data.', 'rch_rechat_plugin'); ?>
-                            <a href="?page=rechat-setting&tab=connect-to-rechat" class="nav-tab-link" style="font-weight: bold; margin-inline-start: 3px;">
-                                <?php _e('Connect To Rechat', 'rch_rechat_plugin'); ?>
-                            </a>
-                        </p>
-                    <?php endif; ?>
+
                 <?php elseif ($active_tab === 'connect-to-rechat') : ?>
 
                     <h2 class="rch-title-connect"><?php _e('Connect to Rechat (OAuth)', 'rch_rechat_plugin'); ?></h2>

@@ -1,5 +1,5 @@
 <div class="house-item">
-    <a href="<?php echo esc_url(get_home_url() . '/house-detail/?house_id=' . $house['id']); ?>">
+    <a href="<?php echo esc_url(get_home_url() . '/listing-detail/?listing_id=' . $house['id']); ?>">
         <picture>
             <img src="<?php echo !empty($house['cover_image_url']) ? $house['cover_image_url'] : RCH_PLUGIN_ASSETS_URL . 'rechat_logo.jpg'; ?>" alt="House Image">
         </picture>
