@@ -1,6 +1,6 @@
 <?php
-if ( ! defined( 'ABSPATH' ) ) {
-	exit();
+if (! defined('ABSPATH')) {
+    exit();
 }
 /*******************************
  * change to readable Date
@@ -73,13 +73,34 @@ function collect_brands($brand, &$regions, &$offices, &$processed_brands)
         return;
     }
     $processed_brands[] = $brand['id'];
+
+    // If the brand is of type 'Region', add it to regions
     if ($brand['brand_type'] == 'Region') {
         $regions[] = $brand;
-    } elseif ($brand['brand_type'] == 'Office') {
-        $offices[] = $brand;
     }
-    if (isset($brand['parent']) && !empty($brand['parent'])) {
-        collect_brands($brand['parent'], $regions, $offices, $processed_brands);
+    // If the brand is of type 'Office'
+    elseif ($brand['brand_type'] == 'Office') {
+        // Initialize an array to hold region parent IDs
+        $region_parent_ids = [];
+
+        // Check parent brands until a 'Region' is found
+        $current_parent = $brand['parent'] ?? null;
+        while ($current_parent) {
+            if ($current_parent['brand_type'] == 'Region') {
+                // Add the ID of the Region to the region parent IDs
+                $region_parent_ids[] = $current_parent['id'];
+            }
+
+            // Move up the hierarchy to the next parent
+            $current_parent = $current_parent['parent'] ?? null;
+        }
+
+        // Add office data along with the collected region parent IDs
+        $offices[] = [
+            'id' => $brand['id'],
+            'name' => $brand['name'], // Adjust this according to the structure of your brand
+            'region_parent_ids' => $region_parent_ids, // Add the region parent IDs here
+        ];
     }
 }
 /*******************************
@@ -100,7 +121,7 @@ function api_request($url, $token)
 /*******************************
  * Function to insert or update posts and save meta data
  ******************************/
-function insert_or_update_post($post_type, $brand_name, $brand_id, $meta_key)
+function insert_or_update_post($post_type, $brand_name, $brand_id, $meta_key, $associated_regions = null)
 {
     $existing_posts = get_posts(array(
         'post_type'   => $post_type,
@@ -117,6 +138,24 @@ function insert_or_update_post($post_type, $brand_name, $brand_id, $meta_key)
             'ID'         => $post_id,
             'post_title' => $brand_name,
         ));
+
+        // Update the associated regions if provided
+        if (!empty($associated_regions) && is_array($associated_regions)) {
+            $region_post_ids = array(); // To store all region post IDs
+            foreach ($associated_regions as $region_id) {
+                // Find the region post ID for each region
+                $region_post_id = get_region_post_id_by_region_id($region_id);
+                if ($region_post_id) {
+                    $region_post_ids[] = $region_post_id; // Collect region post ID
+                }
+            }
+
+            // Update meta field with all region IDs
+            if (!empty($region_post_ids)) {
+                update_post_meta($post_id, 'rch_associated_regions_to_office', $region_post_ids);
+            }
+        }
+
         return 'updated';
     } else {
         // Insert new post
@@ -127,9 +166,44 @@ function insert_or_update_post($post_type, $brand_name, $brand_id, $meta_key)
         );
         $post_id = wp_insert_post($post_data);
         update_post_meta($post_id, $meta_key, $brand_id);
+
+        // Insert associated regions if provided
+        if (!empty($associated_regions) && is_array($associated_regions)) {
+            $region_post_ids = array(); // To store all region post IDs
+            foreach ($associated_regions as $region_id) {
+                // Find the region post ID for each region
+                $region_post_id = get_region_post_id_by_region_id($region_id);
+                if ($region_post_id) {
+                    $region_post_ids[] = $region_post_id; // Collect region post ID
+                }
+            }
+
+            // Update meta field with all region IDs
+            if (!empty($region_post_ids)) {
+                update_post_meta($post_id, 'rch_associated_regions_to_office', $region_post_ids);
+            }
+        }
+
         return 'added';
     }
 }
+
+/*******************************
+ * Function to get the region post ID by its region ID
+ ******************************/
+function get_region_post_id_by_region_id($region_id)
+{
+    $regions = get_posts(array(
+        'post_type'   => 'regions', // Replace with your actual custom post type
+        'meta_key'    => 'region_id', // Replace with the actual meta key for region ID
+        'meta_value'  => $region_id,
+        'post_status' => 'publish',
+        'numberposts' => 1,
+    ));
+
+    return !empty($regions) ? $regions[0]->ID : null;
+}
+
 /*******************************
  * Function to delete outdated posts
  ******************************/
@@ -214,7 +288,7 @@ function process_agents_data($access_token, $api_url_base)
         'fields'         => 'menu_order',
         'post_status'    => 'publish',
     ));
-    
+
     $current_menu_order = $max_menu_order + 1;
     $agent_add_count = 0;
     $agent_update_count = 0;
@@ -223,31 +297,36 @@ function process_agents_data($access_token, $api_url_base)
     do {
         $api_url = $api_url_base . "&limit=$limit&start=$offset";
         $response = api_request($api_url, $access_token);
-        
+
         if (!$response['success']) {
             return $response; // Return error if API request fails
         }
-        
+
         $data = $response['data'];
         if (isset($data['http']) && $data['http'] == 401) {
             return array('success' => false, 'message' => 'Expired Token. Please reconnect to Rechat.');
         }
-        
+
         if (isset($data['data']) && is_array($data['data'])) {
             foreach ($data['data'] as $item) {
                 $api_id = $item['id']; // Store API ID for later use
                 $new_api_ids[] = $api_id; // Add to new API IDs
-                
+
                 $regions_for_agent = [];
                 $offices_for_agent = [];
                 $brands = isset($item['brands']) ? filter_brands_by_type($item['brands'], ["Region", "Office"]) : [];
-                
                 foreach ($brands as $brand) {
                     if ($brand['brand_type'] === 'Region') {
-                        // Find region post by title
+                        // Find region post by custom meta field region_id
                         $region_query = new WP_Query(array(
                             'post_type' => 'regions',
-                            'title' => $brand['name'],
+                            'meta_query' => array(
+                                array(
+                                    'key' => 'region_id',
+                                    'value' => $brand['id'], // Assuming 'id' is the custom field value in $brands
+                                    'compare' => '='
+                                )
+                            ),
                             'post_status' => 'publish',
                             'posts_per_page' => 1,
                         ));
@@ -258,10 +337,16 @@ function process_agents_data($access_token, $api_url_base)
                             wp_reset_postdata();
                         }
                     } elseif ($brand['brand_type'] === 'Office') {
-                        // Find office post by title
+                        // Find office post by custom meta field office_id
                         $office_query = new WP_Query(array(
                             'post_type' => 'offices',
-                            'title' => $brand['name'],
+                            'meta_query' => array(
+                                array(
+                                    'key' => 'office_id',
+                                    'value' => $brand['id'], // Assuming 'id' is the custom field value in $brands
+                                    'compare' => '='
+                                )
+                            ),
                             'post_status' => 'publish',
                             'posts_per_page' => 1,
                         ));
@@ -273,6 +358,7 @@ function process_agents_data($access_token, $api_url_base)
                         }
                     }
                 }
+
 
                 // Prepare other fields
                 $user = $item['user'];
@@ -363,7 +449,8 @@ function rch_get_filters($atts)
 /*******************************
  *title for page house detail
  ******************************/
-function custom_single_listing_title($title) {
+function custom_single_listing_title($title)
+{
     if (isset($_GET['listing_id'])) {
         $house_id = sanitize_text_field($_GET['listing_id']);
         // You can modify the title as per your needs
@@ -372,7 +459,8 @@ function custom_single_listing_title($title) {
     return $title;
 }
 add_filter('wp_title', 'custom_single_listing_title');
-function remove_404_for_house_listing() {
+function remove_404_for_house_listing()
+{
     if (isset($_GET['listing_id'])) {
         global $wp_query;
         $wp_query->is_404 = false; // Mark this request as a valid one, not 404
@@ -383,7 +471,8 @@ add_action('wp', 'remove_404_for_house_listing');
 /*******************************
  *Helper function to fetch the primary color from a brand or its parent.
  ******************************/
-function rch_get_primary_color($brand_id) {
+function rch_get_primary_color($brand_id)
+{
     // API endpoint to fetch brand settings, including parent brands
     $palette_url = 'https://api.rechat.com/brands/' . $brand_id . '?associations[]=brand.parent&associations[]=brand.settings';
 
@@ -412,7 +501,8 @@ function rch_get_primary_color($brand_id) {
 /*******************************
  *Helper function to find the button color by traversing the brand hierarchy.
  ******************************/
-function rch_find_primary_color($brand) {
+function rch_find_primary_color($brand)
+{
     $primary_color = null;
 
     // Traverse the brand hierarchy to find the primary color

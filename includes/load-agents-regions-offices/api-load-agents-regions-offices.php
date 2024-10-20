@@ -2,6 +2,7 @@
 if (! defined('ABSPATH')) {
     exit();
 }
+// add_action('init','rch_update_agents_offices_regions_data');
 function rch_update_agents_offices_regions_data()
 {
     /*******************************
@@ -25,7 +26,6 @@ function rch_update_agents_offices_regions_data()
 
     $regions = $brands_result['regions'];
     $offices = $brands_result['offices'];
-
     // Insert or update Region and Office posts
     $current_region_ids = [];
     $region_add_count = 0;
@@ -44,12 +44,16 @@ function rch_update_agents_offices_regions_data()
     $office_add_count = 0;
     $office_update_count = 0;
     foreach ($offices as $office) {
-        $result = insert_or_update_post('offices', $office['name'], $office['id'], 'office_id');
+        // Insert or update the office post with regions
+        $result = insert_or_update_post('offices', $office['name'], $office['id'], 'office_id', $office['region_parent_ids']);
+        
         if ($result === 'added') {
             $office_add_count++;
         } elseif ($result === 'updated') {
             $office_update_count++;
         }
+    
+        // Store the office ID for later use
         $current_office_ids[] = $office['id'];
     }
 

@@ -23,10 +23,10 @@ jQuery(document).ready(function ($) {
         var simulatedProgress = 0;
         var progressInterval = setInterval(function () {
             if (simulatedProgress < 90) {
-                simulatedProgress += 10; // Increment progress
+                simulatedProgress += 5; // Increment progress
                 progressBar.css('width', simulatedProgress + '%');
             }
-        }, 500); // Update every 500ms
+        }, 2000); // Update every 500ms
 
         // Send the AJAX request
         $.ajax({

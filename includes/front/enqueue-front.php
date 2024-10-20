@@ -49,5 +49,15 @@ function rch_enqueue_frontend_styles()
         wp_enqueue_style('rch-swiper');
         wp_enqueue_script('rch-swiper-js');
     }
+    //register gurenburg block 
+        // Register block script
+        wp_register_script(
+            'regions-block',
+            get_template_directory_uri() . '/js/regions-block.js', // Path to your block JS file
+            array( 'wp-blocks', 'wp-editor', 'wp-components', 'wp-element' ),
+            true
+        );
+    
+
 }
 add_action('wp_enqueue_scripts', 'rch_enqueue_frontend_styles');
