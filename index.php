@@ -15,8 +15,9 @@ if (! defined('ABSPATH')) {
 define('RCH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('RCH_PLUGIN_URL', plugin_dir_url(__FILE__));
 const RCH_PLUGIN_INCLUDES = RCH_PLUGIN_DIR . 'includes/';
-const RCH_PLUGIN_ASSETS = RCH_PLUGIN_DIR . 'assets/';
-const RCH_PLUGIN_ASSETS_URL = RCH_PLUGIN_URL . 'assets/images/';
+const RCH_PLUGIN_ASSETS = RCH_PLUGIN_URL . 'assets/';
+const RCH_PLUGIN_ASSETS_URL_IMG = RCH_PLUGIN_URL . 'assets/images/';
+
 
 // Add a "Settings" link to the plugin actions
 function rch_plugin_action_links($links)
@@ -56,7 +57,9 @@ include RCH_PLUGIN_INCLUDES . 'cron-job/schedule.php';
 include RCH_PLUGIN_INCLUDES . 'oauth2/oauth-handler.php';
 include RCH_PLUGIN_INCLUDES . 'load-listing/fetch-archive-listings.php';
 include RCH_PLUGIN_INCLUDES . 'shortcodes/listing-shortcodes.php';
-include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-regions.php';
+include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-offices-regions.php';
+include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-agents.php';
+include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-listing.php';
 
 if (is_admin()) {
     include RCH_PLUGIN_INCLUDES . 'admin/enqueue-admin.php';

@@ -51,7 +51,7 @@ function rch_handle_oauth_callback()
             $refresh_token = sanitize_text_field($data['refresh_token']);
             $brand_id = sanitize_text_field($data['brand']);
             $expires_in = is_numeric($data['expires_in']) ? absint($data['expires_in']) : 0;
-            $expiry_date = get_token_expiry_date($expires_in);
+            $expiry_date = rch_get_token_expiry_date($expires_in);
 
             // Save tokens and brand ID
             update_option('rch_rechat_access_token', $access_token);
@@ -129,7 +129,7 @@ function rch_refresh_access_token()
         } else {
             $expires_in = 0; // Default value in case of invalid expiry time
         }
-        $expiry_date = get_token_expiry_date($expires_in);
+        $expiry_date = rch_get_token_expiry_date($expires_in);
 
         // Update the options with new token values
         update_option('rch_rechat_access_token', $new_access_token);

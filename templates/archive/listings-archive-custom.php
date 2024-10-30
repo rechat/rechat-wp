@@ -1,6 +1,5 @@
 
     <div id="houses-list" class="rch-houses-list">
-
     </div>
 
     <!-- Loading spinner -->
@@ -19,7 +18,6 @@
     const housesPerPage = <?php echo $housesPerPage; ?>; // Set number of houses per page
     const totalHouses = <?php echo $totalHouses; ?>; // Set total number of houses
     const totalPages = Math.ceil(totalHouses / housesPerPage); // Calculate total pages
-
     // Extract filters passed through the shortcode attributes
     const filters = {
         minimum_price: "<?php echo $atts['minimum_price']; ?>",
@@ -60,7 +58,6 @@
             .then(html => {
                 loading.style.display = 'none'; // Hide the loading indicator
                 housesList.innerHTML = html; // Insert the returned HTML
-
                 // Update pagination info
                 document.getElementById('page-info').textContent = `Page ${currentPage} of ${totalPages}`;
 
@@ -75,5 +72,7 @@
             });
     }
 
-    updateHousesList();
+    window.onload = function() {
+        updateHousesList(); // Call updateHousesList when the window has loaded
+    };
 </script>

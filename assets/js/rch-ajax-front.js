@@ -3,7 +3,7 @@ jQuery(document).ready(function ($) {
     /*******************************
      * show loading to images when they are not loaded
      ******************************/
-    $('.rch-image-container img').each(function () {
+    $('.rch-archive-agents .rch-image-container img').each(function () {
         var img = $(this);
         var loader = img.siblings('.rch-loader');
 

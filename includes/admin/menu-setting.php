@@ -142,7 +142,7 @@ function rch_rechat_menu_page()
 
                                 <?php if (!$access_token_exists): ?>
                         <p style="display: flex;align-items: center;">
-                            <img src="<?php echo RCH_PLUGIN_ASSETS_URL . 'ph_info.png' ?>" alt="info" style="margin-inline-end: 5px;">
+                            <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG . 'ph_info.png' ?>" alt="info" style="margin-inline-end: 5px;">
                             <?php _e('You are not yet connected to Rechat. Please connect your Rechat account to enable syncing your data.', 'rch_rechat_plugin'); ?>
                             <a href="?page=rechat-setting&tab=connect-to-rechat" class="nav-tab-link" style="font-weight: bold; margin-inline-start: 3px;">
                                 <?php _e('Connect To Rechat', 'rch_rechat_plugin'); ?>
@@ -228,7 +228,7 @@ function rch_rechat_menu_page()
                                 </button>
                             </form>
                             <p class="rch-connected-text">
-                                <img src=<?php echo RCH_PLUGIN_ASSETS_URL . 'ph_check.svg' ?> alt="">
+                                <img src=<?php echo RCH_PLUGIN_ASSETS_URL_IMG . 'ph_check.svg' ?> alt="">
                                 You are connected to Rechat.
                             </p>
                         <?php endif; ?>
@@ -262,7 +262,7 @@ function rch_rechat_menu_page()
                                         Token status
                                     </th>
                                     <td class="<?php echo esc_attr($class); ?> rch-token-status-text">
-                                        <img src=<?php echo RCH_PLUGIN_ASSETS_URL . 'ph_check.svg' ?> alt="" style="position: relative;top: 4px;">
+                                        <img src=<?php echo RCH_PLUGIN_ASSETS_URL_IMG . 'ph_check.svg' ?> alt="" style="position: relative;top: 4px;">
                                         Your OAuth token is active and valid.
                                     </td>
                                 </tr>

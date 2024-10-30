@@ -22,12 +22,13 @@ function rch_fetch_listing($filters, $page, $housesPerPage)
         'method' => 'POST',
         'headers' => ['Content-Type' => 'application/json'],
         'body' => json_encode($requestBody),
+        'timeout' => 15, // Set the timeout to 15 seconds
+
     ]);
 
     if (is_wp_error($response)) {
         return 'Error: ' . $response->get_error_message();
     }
-
     return json_decode(wp_remote_retrieve_body($response), true);
 }
 
@@ -44,6 +45,7 @@ function rch_fetch_total_listing_count($filters = [])
         'method' => 'POST',
         'headers' => ['Content-Type' => 'application/json'],
         'body' => json_encode($requestBody),
+        'timeout' => 15, // Set the timeout to 15 seco
     ]);
 
     if (is_wp_error($response)) {
@@ -66,7 +68,6 @@ function rch_fetch_listing_ajax()
 
     // Fetch houses
     $housesData = rch_fetch_listing($filters, $page, $housesPerPage);
-
     if (!empty($housesData['data'])) {
         ob_start();
         foreach ($housesData['data'] as $house) {

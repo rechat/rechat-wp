@@ -18,7 +18,7 @@ function rch_update_agents_offices_regions_data()
     /*******************************
      * Fetch and process regions and offices
      ******************************/
-    $brands_result = fetch_and_process_brands($api_url_base, $access_token);
+    $brands_result = rch_fetch_and_process_brands($api_url_base, $access_token);
 
     if (!$brands_result['success']) {
         wp_send_json(array('success' => false, 'data' => $brands_result['message']));
@@ -31,7 +31,7 @@ function rch_update_agents_offices_regions_data()
     $region_add_count = 0;
     $region_update_count = 0;
     foreach ($regions as $region) {
-        $result = insert_or_update_post('regions', $region['name'], $region['id'], 'region_id');
+        $result = rch_insert_or_update_post('regions', $region['name'], $region['id'], 'region_id');
         if ($result === 'added') {
             $region_add_count++;
         } elseif ($result === 'updated') {
@@ -45,7 +45,7 @@ function rch_update_agents_offices_regions_data()
     $office_update_count = 0;
     foreach ($offices as $office) {
         // Insert or update the office post with regions
-        $result = insert_or_update_post('offices', $office['name'], $office['id'], 'office_id', $office['region_parent_ids']);
+        $result = rch_insert_or_update_post('offices', $office['name'], $office['id'], 'office_id', $office['region_parent_ids']);
         
         if ($result === 'added') {
             $office_add_count++;
@@ -58,13 +58,13 @@ function rch_update_agents_offices_regions_data()
     }
 
     // Delete outdated Region and Office posts
-    delete_outdated_posts('regions', $current_region_ids, 'region_id');
-    delete_outdated_posts('offices', $current_office_ids, 'office_id');
+    rch_delete_outdated_posts('regions', $current_region_ids, 'region_id');
+    rch_delete_outdated_posts('offices', $current_office_ids, 'office_id');
 
 
 
     // Process agents
-    $agents_result = process_agents_data($access_token, $api_url_base);
+    $agents_result = rch_process_agents_data($access_token, $api_url_base);
     // Get current agent IDs
     $current_agent_ids = get_posts(array(
         'post_type' => 'agents',

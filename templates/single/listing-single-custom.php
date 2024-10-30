@@ -9,7 +9,7 @@
                             <img src="<?php echo esc_url($house_detail['cover_image_url']); ?>" alt="Image of House">
                         </picture>
                         <button id="myBtn" data-slider="0" class="rch-load-images">
-                            <img src="<?php echo RCH_PLUGIN_ASSETS_URL ?>gallery.svg" alt="">
+                            <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>gallery.svg" alt="">
                             View all Photos
                         </button>
                     <?php
@@ -85,27 +85,27 @@
                         </h2>
                         <ul>
                             <li>
-                                <img src="<?php echo RCH_PLUGIN_ASSETS_URL ?>bedroomsingle.svg" alt="">
+                                <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>bedroomsingle.svg" alt="">
                                 <?php echo esc_html($house_detail['property']['bedroom_count']); ?>
                                 Bedrooms
                             </li>
                             <li>
-                                <img src="<?php echo RCH_PLUGIN_ASSETS_URL ?>fbathsingle.svg" alt="">
+                                <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>fbathsingle.svg" alt="">
                                 <?php echo esc_html($house_detail['property']['full_bathroom_count']); ?>
                                 Full Bathrooms
                             </li>
                             <li>
-                                <img src="<?php echo RCH_PLUGIN_ASSETS_URL ?>hbathsingle.svg" alt="">
+                                <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>hbathsingle.svg" alt="">
                                 <?php echo esc_html($house_detail['property']['half_bathroom_count']); ?>
                                 Half Bathrooms
                             </li>
                             <li>
-                                <img src="<?php echo RCH_PLUGIN_ASSETS_URL ?>areasingle.svg" alt="">
+                                <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>areasingle.svg" alt="">
                                 <?php echo esc_html($house_detail['property']['square_meters']); ?>
                                 meter
                             </li>
                             <li>
-                                <img src="<?php echo RCH_PLUGIN_ASSETS_URL ?>yearsingle.svg" alt="">
+                                <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>yearsingle.svg" alt="">
                                 <?php echo esc_html($house_detail['property']['year_built']); ?>
                                 Year Built
                             </li>
@@ -113,7 +113,7 @@
                             <?php
                             if (!empty($house_detail['property']['pool_features'])) { ?>
                                 <li>
-                                    <img src="<?php echo RCH_PLUGIN_ASSETS_URL ?>poolsingle.svg" alt="">
+                                    <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>poolsingle.svg" alt="">
                                     Pool
                                 </li>
                             <?php
@@ -122,19 +122,19 @@
                             <?php
                             if (!empty($house_detail['property']['security_features'])) { ?>
                                 <li>
-                                    <img src="<?php echo RCH_PLUGIN_ASSETS_URL ?>securitysingle.svg" alt="">
+                                    <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>securitysingle.svg" alt="">
                                     Security
                                 </li>
                             <?php
                             }
                             ?>
                             <li>
-                                <img src="<?php echo RCH_PLUGIN_ASSETS_URL ?>garagesingle.svg" alt="">
+                                <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>garagesingle.svg" alt="">
                                 <?php echo esc_html($house_detail['property']['number_of_parking_spaces']); ?>
                                 Parking
                             </li>
                             <li>
-                                <img src="<?php echo RCH_PLUGIN_ASSETS_URL ?>outdoor-activity.svg" alt="">
+                                <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>outdoor-activity.svg" alt="">
                                 <?php echo esc_html($house_detail['property']['construction_materials']); ?>
                             </li>
                         </ul>

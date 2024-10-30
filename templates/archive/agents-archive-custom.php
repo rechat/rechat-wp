@@ -22,7 +22,7 @@ $query = new WP_Query($args);
         <div class="rch-top-filter">
             <!-- AJAX Search Form -->
             <form id="rch-agent-search-form" method="get" action="">
-                <img src="<?php echo RCH_PLUGIN_ASSETS_URL ?>search.svg" alt="Search Icon">
+                <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>search.svg" alt="Search Icon">
                 <input type="text" id="rch-agent-search" name="rch_agent_search" placeholder="Search agents by name, specialty, or location">
                 <div id="rch-agent-search-results" class="rch-dropdown-menu" style="display: none;">
                     <!-- AJAX results will appear here -->
@@ -59,7 +59,7 @@ $query = new WP_Query($args);
                         <div class="rch-archive-end-line">
                             <a href="<?php the_permalink() ?>">View Profile</a>
                             <?php if ($phone_number) : ?>
-                                <a href="tel:<?php echo esc_attr($phone_number); ?>">Contact</a>
+                                <a href="tel:<?php echo esc_attr($phone_number); ?>" class="rch-agent-phone-archive">Contact</a>
                             <?php endif; ?>
                         </div>
                     </li>
@@ -71,7 +71,7 @@ $query = new WP_Query($args);
         </ul>
 
         <!-- Add pagination if needed -->
-        <div class="rch-pagination">
+        <div class="rch-pagination-agent">
             <div class="rch-pagination-container">
                 <?php
                 echo paginate_links(array(

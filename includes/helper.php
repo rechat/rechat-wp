@@ -5,7 +5,7 @@ if (! defined('ABSPATH')) {
 /*******************************
  * change to readable Date
  ******************************/
-function get_token_expiry_date($seconds_until_expire)
+function rch_get_token_expiry_date($seconds_until_expire)
 {
     // Get the current timestamp
     $current_timestamp = time();
@@ -20,7 +20,7 @@ function get_token_expiry_date($seconds_until_expire)
  * disconnect handler from rechat oauth
  ******************************/
 
-function handle_disconnect_rechat()
+function rch_handle_disconnect_rechat()
 {
     // Check if the form was submitted
     if (isset($_POST['action']) && $_POST['action'] === 'disconnect_rechat') {
@@ -40,11 +40,11 @@ function handle_disconnect_rechat()
         exit;
     }
 }
-add_action('init', 'handle_disconnect_rechat');
+add_action('init', 'rch_handle_disconnect_rechat');
 /*******************************
  * Helper function to filter brands by type
  ******************************/
-function filter_brands_by_type($brands, $types)
+function rch_filter_brands_by_type($brands, $types)
 {
     $filtered_brands = [];
     foreach ($brands as $brand) {
@@ -59,7 +59,7 @@ function filter_brands_by_type($brands, $types)
         }
         // Recursively filter parent brands
         if (isset($brand['parent'])) {
-            $filtered_brands = array_merge($filtered_brands, filter_brands_by_type([$brand['parent']], $types));
+            $filtered_brands = array_merge($filtered_brands, rch_filter_brands_by_type([$brand['parent']], $types));
         }
     }
     return $filtered_brands;
@@ -67,7 +67,7 @@ function filter_brands_by_type($brands, $types)
 /*******************************
  * Function to collect brands recursively
  ******************************/
-function collect_brands($brand, &$regions, &$offices, &$processed_brands)
+function rch_collect_brands($brand, &$regions, &$offices, &$processed_brands)
 {
     if (in_array($brand['id'], $processed_brands)) {
         return;
@@ -106,7 +106,7 @@ function collect_brands($brand, &$regions, &$offices, &$processed_brands)
 /*******************************
  * call api
  ******************************/
-function api_request($url, $token)
+function rch_api_request($url, $token)
 {
     $response = wp_remote_get($url, array(
         'headers' => array(
@@ -121,7 +121,7 @@ function api_request($url, $token)
 /*******************************
  * Function to insert or update posts and save meta data
  ******************************/
-function insert_or_update_post($post_type, $brand_name, $brand_id, $meta_key, $associated_regions = null)
+function rch_insert_or_update_post($post_type, $brand_name, $brand_id, $meta_key, $associated_regions = null)
 {
     $existing_posts = get_posts(array(
         'post_type'   => $post_type,
@@ -144,7 +144,7 @@ function insert_or_update_post($post_type, $brand_name, $brand_id, $meta_key, $a
             $region_post_ids = array(); // To store all region post IDs
             foreach ($associated_regions as $region_id) {
                 // Find the region post ID for each region
-                $region_post_id = get_region_post_id_by_region_id($region_id);
+                $region_post_id = rch_get_region_post_id_by_region_id($region_id);
                 if ($region_post_id) {
                     $region_post_ids[] = $region_post_id; // Collect region post ID
                 }
@@ -172,7 +172,7 @@ function insert_or_update_post($post_type, $brand_name, $brand_id, $meta_key, $a
             $region_post_ids = array(); // To store all region post IDs
             foreach ($associated_regions as $region_id) {
                 // Find the region post ID for each region
-                $region_post_id = get_region_post_id_by_region_id($region_id);
+                $region_post_id = rch_get_region_post_id_by_region_id($region_id);
                 if ($region_post_id) {
                     $region_post_ids[] = $region_post_id; // Collect region post ID
                 }
@@ -191,7 +191,7 @@ function insert_or_update_post($post_type, $brand_name, $brand_id, $meta_key, $a
 /*******************************
  * Function to get the region post ID by its region ID
  ******************************/
-function get_region_post_id_by_region_id($region_id)
+function rch_get_region_post_id_by_region_id($region_id)
 {
     $regions = get_posts(array(
         'post_type'   => 'regions', // Replace with your actual custom post type
@@ -207,7 +207,7 @@ function get_region_post_id_by_region_id($region_id)
 /*******************************
  * Function to delete outdated posts
  ******************************/
-function delete_outdated_posts($post_type, $current_brand_ids, $meta_key)
+function rch_delete_outdated_posts($post_type, $current_brand_ids, $meta_key)
 {
     $existing_posts = get_posts(array(
         'post_type'   => $post_type,
@@ -224,7 +224,7 @@ function delete_outdated_posts($post_type, $current_brand_ids, $meta_key)
 /*******************************
  * Fetch and process data with pagination for regions and offices
  ******************************/
-function fetch_and_process_brands($api_url_base, $access_token)
+function rch_fetch_and_process_brands($api_url_base, $access_token)
 {
     $regions = [];
     $offices = [];
@@ -234,7 +234,7 @@ function fetch_and_process_brands($api_url_base, $access_token)
 
     do {
         $api_url = $api_url_base . "&limit=$limit&start=$offset";
-        $response = api_request($api_url, $access_token);
+        $response = rch_api_request($api_url, $access_token);
         if (!$response['success']) {
             return $response; // Return error if API request fails
         }
@@ -244,7 +244,7 @@ function fetch_and_process_brands($api_url_base, $access_token)
             foreach ($data['data'] as $user_data) {
                 if (isset($user_data['brands'])) {
                     foreach ($user_data['brands'] as $brand) {
-                        collect_brands($brand, $regions, $offices, $processed_brands);
+                        rch_collect_brands($brand, $regions, $offices, $processed_brands);
                     }
                 }
             }
@@ -258,7 +258,7 @@ function fetch_and_process_brands($api_url_base, $access_token)
 /*******************************
  * Fetch and process agents data with pagination
  ******************************/
-function process_agents_data($access_token, $api_url_base)
+function rch_process_agents_data($access_token, $api_url_base)
 {
     $limit = 100;
     $offset = 0;
@@ -296,7 +296,7 @@ function process_agents_data($access_token, $api_url_base)
 
     do {
         $api_url = $api_url_base . "&limit=$limit&start=$offset";
-        $response = api_request($api_url, $access_token);
+        $response = rch_api_request($api_url, $access_token);
 
         if (!$response['success']) {
             return $response; // Return error if API request fails
@@ -314,7 +314,7 @@ function process_agents_data($access_token, $api_url_base)
 
                 $regions_for_agent = [];
                 $offices_for_agent = [];
-                $brands = isset($item['brands']) ? filter_brands_by_type($item['brands'], ["Region", "Office"]) : [];
+                $brands = isset($item['brands']) ? rch_filter_brands_by_type($item['brands'], ["Region", "Office"]) : [];
                 foreach ($brands as $brand) {
                     if ($brand['brand_type'] === 'Region') {
                         // Find region post by custom meta field region_id
@@ -419,7 +419,7 @@ function process_agents_data($access_token, $api_url_base)
     } while (count($data['data']) === $limit);
 
     // Delete outdated agents after processing
-    delete_outdated_posts('agents', $new_api_ids, 'api_id');
+    rch_delete_outdated_posts('agents', $new_api_ids, 'api_id');
 
     return array(
         'agent_add_count' => $agent_add_count,
@@ -449,7 +449,7 @@ function rch_get_filters($atts)
 /*******************************
  *title for page house detail
  ******************************/
-function custom_single_listing_title($title)
+function rch_custom_single_listing_title($title)
 {
     if (isset($_GET['listing_id'])) {
         $house_id = sanitize_text_field($_GET['listing_id']);
@@ -458,15 +458,15 @@ function custom_single_listing_title($title)
     }
     return $title;
 }
-add_filter('wp_title', 'custom_single_listing_title');
-function remove_404_for_house_listing()
+add_filter('wp_title', 'rch_custom_single_listing_title');
+function rch_remove_404_for_house_listing()
 {
     if (isset($_GET['listing_id'])) {
         global $wp_query;
         $wp_query->is_404 = false; // Mark this request as a valid one, not 404
     }
 }
-add_action('wp', 'remove_404_for_house_listing');
+add_action('wp', 'rch_remove_404_for_house_listing');
 
 /*******************************
  *Helper function to fetch the primary color from a brand or its parent.

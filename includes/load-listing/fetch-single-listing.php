@@ -10,7 +10,7 @@ if ($house_id) {
     // Define the brand ID and API endpoint
     $api_url = 'https://api.rechat.com/listings/' . $house_id;
     $access_token = get_option('rch_rechat_access_token');
-    $response = api_request($api_url, $access_token);
+    $response = rch_api_request($api_url, $access_token);
 
     // Check if the API request was successful
     if (isset($response['data']['http']) && $response['data']['http'] === 400) {

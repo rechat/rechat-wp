@@ -53,6 +53,7 @@ function rch_agents()
         'has_archive'           => true,
         'exclude_from_search'   => false,
         'publicly_queryable'    => true,
+        'show_in_rest'          => true,
         'capability_type'       => 'page',
         'rewrite'               => array('slug' => 'agents'),
     );
@@ -110,6 +111,7 @@ function rch_offices()
         'has_archive'           => true,
         'exclude_from_search'   => false,
         'publicly_queryable'    => true,
+        'show_in_rest'          => true,
         'capability_type'       => 'page',
         'rewrite'               => array('slug' => 'offices'),
     );
@@ -167,6 +169,7 @@ function rch_regions()
         'has_archive'           => true,
         'exclude_from_search'   => false,
         'publicly_queryable'    => true,
+        'show_in_rest'          => true,
         'capability_type'       => 'page',
         'rewrite'               => array('slug' => 'regions'),
     );

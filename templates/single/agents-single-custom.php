@@ -77,7 +77,7 @@ $timezone = get_post_meta($post_id, 'timezone', true);
                             <?php if ($instagram) : ?>
                                 <li>
                                     <a href="<?php echo esc_url($instagram); ?>" target="_blank">
-                                        <img src="<?php echo RCH_PLUGIN_ASSETS_URL ?>instagram.svg" alt="">
+                                        <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>instagram.svg" alt="">
                                     </a>
                                 </li>
                             <?php endif; ?>
@@ -85,7 +85,7 @@ $timezone = get_post_meta($post_id, 'timezone', true);
                             <?php if ($twitter) : ?>
                                 <li>
                                     <a href="<?php echo esc_url($twitter); ?>" target="_blank">
-                                        <img src="<?php echo RCH_PLUGIN_ASSETS_URL ?>x.svg" alt="">
+                                        <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>x.svg" alt="">
                                     </a>
                                 </li>
                             <?php endif; ?>
@@ -93,7 +93,7 @@ $timezone = get_post_meta($post_id, 'timezone', true);
                             <?php if ($linkedin) : ?>
                                 <li>
                                     <a href="<?php echo esc_url($linkedin); ?>" target="_blank">
-                                        <img src="<?php echo RCH_PLUGIN_ASSETS_URL ?>linkedin.svg" alt="">
+                                        <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>linkedin.svg" alt="">
                                     </a>
                                 </li>
                             <?php endif; ?>
@@ -101,7 +101,7 @@ $timezone = get_post_meta($post_id, 'timezone', true);
                             <?php if ($youtube) : ?>
                                 <li>
                                     <a href="<?php echo esc_url($youtube); ?>" target="_blank">
-                                        <img src="<?php echo RCH_PLUGIN_ASSETS_URL ?>youtube.svg" alt="">
+                                        <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>youtube.svg" alt="">
                                     </a>
                                 </li>
                             <?php endif; ?>
@@ -109,7 +109,7 @@ $timezone = get_post_meta($post_id, 'timezone', true);
                             <?php if ($facebook) : ?>
                                 <li>
                                     <a href="<?php echo esc_url($facebook); ?>" target="_blank">
-                                        <img src="<?php echo RCH_PLUGIN_ASSETS_URL ?>facebook.svg" alt="">
+                                        <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>facebook.svg" alt="">
                                     </a>
                                 </li>
                             <?php endif; ?>
