@@ -5,19 +5,18 @@ if (! defined('ABSPATH')) {
 }
 
 /*******************************
- * Fetch house listings with filters.
+ * Fetch listing listings with filters.
  ******************************/
-function rch_fetch_listing($filters, $page, $housesPerPage)
+function rch_fetch_listing($filters, $page, $listingPerPage)
 {
-    $brandId = get_option('rch_rechat_brand_id');
-    $offset = ($page - 1) * $housesPerPage;
+    // $brandId = get_option('rch_rechat_brand_id');
+    $offset = ($page - 1) * $listingPerPage;
 
     $requestBody = array_merge([
-        'brand' => $brandId,
-        'limit' => $housesPerPage,
+        // 'brand' => $brandId,
+        'limit' => $listingPerPage,
         'offset' => $offset,
     ], $filters);
-
     $response = wp_remote_post('https://api.rechat.com/valerts', [
         'method' => 'POST',
         'headers' => ['Content-Type' => 'application/json'],
@@ -37,9 +36,7 @@ function rch_fetch_listing($filters, $page, $housesPerPage)
  ******************************/
 function rch_fetch_total_listing_count($filters = [])
 {
-    $brandId = get_option('rch_rechat_brand_id');
-
-    $requestBody = array_merge(['brand' => $brandId], $filters);
+    $requestBody = array_merge($filters);
 
     $response = wp_remote_post('https://api.rechat.com/valerts/count', [
         'method' => 'POST',
@@ -61,16 +58,15 @@ function rch_fetch_total_listing_count($filters = [])
 function rch_fetch_listing_ajax()
 {
     $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
-    $housesPerPage = isset($_GET['houses_per_page']) ? intval($_GET['houses_per_page']) : 50;
+    $listingPerPage = isset($_GET['listing_per_page']) ? intval($_GET['listing_per_page']) : 50;
 
     // Get filters from the AJAX request
     $filters = rch_get_filters($_GET);
-
-    // Fetch houses
-    $housesData = rch_fetch_listing($filters, $page, $housesPerPage);
-    if (!empty($housesData['data'])) {
+    // Fetch listing
+    $listingData = rch_fetch_listing($filters, $page, $listingPerPage);
+    if (!empty($listingData['data'])) {
         ob_start();
-        foreach ($housesData['data'] as $house) {
+        foreach ($listingData['data'] as $listing) {
             // Use locate_template to check the theme first, then fall back to plugin template
             $template = locate_template('rechat/listing-item.php');
 

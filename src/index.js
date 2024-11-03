@@ -1,6 +1,6 @@
 const { registerBlockType } = wp.blocks;
 const { InspectorControls, ColorPalette } = wp.blockEditor || wp.editor;
-const { PanelBody, RangeControl, SelectControl ,TextControl } = wp.components;
+const { PanelBody, RangeControl, SelectControl, TextControl } = wp.components;
 import { useEffect, useState } from '@wordpress/element'; // useState and useEffect hooks
 import ServerSideRender from '@wordpress/server-side-render';
 //regions block
@@ -309,26 +309,26 @@ registerBlockType('rch-rechat-plugin/listing-block', {
     icon: 'building', // You can change the icon to something related to listings.
     category: 'widgets',
     attributes: {
-        minimum_price: { 
-            type: 'number', 
-            default: 0 
-        },
-        maximum_price: { 
+        minimum_price: {
             type: 'number',
-             default: 0 
-            },
-        minimum_lot_square_meters: {
-             type: 'number',
-              default: 0 
-            },
-        maximum_lot_square_meters: {
-             type: 'number', 
-             default: 0 
-            },
-        minimum_bathrooms: { 
-            type: 'number', 
             default: 0
-         },
+        },
+        maximum_price: {
+            type: 'number',
+            default: 0
+        },
+        minimum_lot_square_meters: {
+            type: 'number',
+            default: 0
+        },
+        maximum_lot_square_meters: {
+            type: 'number',
+            default: 0
+        },
+        minimum_bathrooms: {
+            type: 'number',
+            default: 0
+        },
         maximum_bathrooms: { type: 'number', default: 0 },
         minimum_square_meters: { type: 'number', default: 0 },
         maximum_square_meters: { type: 'number', default: 0 },
@@ -336,7 +336,10 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         maximum_year_built: { type: 'number', default: 0 },
         minimum_bedrooms: { type: 'number', default: 0 },
         maximum_bedrooms: { type: 'number', default: 0 },
-        houses_per_page: { type: 'number', default: 5 },
+        listing_per_page: { type: 'number', default: 5 },
+        filterByRegions: { type: 'string', default: '' },
+        filterByOffices: { type: 'string', default: '' },
+        brand: { type: 'string', default: '' }
     },
     edit({ attributes, setAttributes }) {
         const {
@@ -352,89 +355,164 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             maximum_year_built,
             minimum_bedrooms,
             maximum_bedrooms,
-            houses_per_page
+            listing_per_page,
+            filterByRegions,
+            filterByOffices,
+            brand
         } = attributes;
+        // React state for holding regions and offices data
+        const [regions, setRegions] = useState([]);
+        const [offices, setOffices] = useState([]);
+
+        // Fetch Regions on component mount
+        useEffect(() => {
+            const baseUrl = `${window.location.origin}`;
+            const apiUrl = `${baseUrl}/wp-json/wp/v2/regions?per_page=100`;
+            fetch(apiUrl)
+                .then((response) => response.json())
+                .then((data) => {
+                    const options = data.map((region) => ({
+                        label: region.title.rendered,
+                        value: region.meta.region_id
+                    }));
+                    options.unshift({ label: 'None', value: '' }); // Add "None" option
+                    setRegions(options);
+                })
+                .catch((error) => console.error('Error fetching regions:', error));
+        }, []);
+
+        // Fetch Offices on component mount
+        useEffect(() => {
+            const baseUrl = `${window.location.origin}`;
+            const apiUrl = `${baseUrl}/wp-json/wp/v2/offices?per_page=100`;
+
+            fetch(apiUrl)
+                .then((response) => response.json())
+                .then((data) => {
+                    const options = data.map((office) => ({
+                        label: office.title.rendered,
+                        value: office.meta.office_id
+                    }));
+                    options.unshift({ label: 'None', value: '' }); // Add "None" option
+                    setOffices(options);
+                })
+                .catch((error) => console.error('Error fetching offices:', error));
+        }, []);
+
+        // Handle Region selection
+        const handleRegionChange = (selectedRegion) => {
+            setAttributes({
+                ...attributes,
+                filterByRegions: selectedRegion,
+                filterByOffices: '', // Clear office selection
+                brand: selectedRegion || '' // Set brand to region ID or default to empty
+            });
+        };
+        // Handle Office selection
+        const handleOfficeChange = (selectedOffice) => {
+            setAttributes({
+                ...attributes,
+                filterByOffices: selectedOffice,
+                filterByRegions: '', // Clear region selection
+                brand: selectedOffice || '' // Set brand to office ID or default to empty
+            });
+        };
         return (
             <>
                 <InspectorControls>
                     <PanelBody title={'Listing Settings'}>
+                        <p><strong>Select a Regions for filter</strong></p>
+                        <SelectControl
+                            label="Select a Region"
+                            value={filterByRegions}
+                            options={regions}
+                            onChange={handleRegionChange}
+                        />
+                        <p><strong>Select an Office for filter</strong></p>
+                        {/* Select control for offices */}
+                        <SelectControl
+                            label="Select an Office"
+                            value={filterByOffices}
+                            options={offices}
+                            onChange={handleOfficeChange}
+                        />
                         <TextControl
                             label="Minimum Price"
                             value={minimum_price}
                             type="number"
-                            onChange={(value) => setAttributes({ minimum_price: parseInt(value) || 0 })}
+                            onChange={(value) => setAttributes({ minimum_price: value === '' ? '' : parseInt(value) || 0 })}
                         />
                         <TextControl
                             label="Maximum Price"
                             value={maximum_price}
                             type="number"
-                            onChange={(value) => setAttributes({ maximum_price: parseInt(value) || 0 })}
+                            onChange={(value) => setAttributes({ maximum_price: value === '' ? '' : parseInt(value) || 0 })}
                         />
                         <TextControl
                             label="Minimum Lot Size (m²)"
                             value={minimum_lot_square_meters}
                             type="number"
-                            onChange={(value) => setAttributes({ minimum_lot_square_meters: parseInt(value) || 0 })}
+                            onChange={(value) => setAttributes({ minimum_lot_square_meters: value === '' ? '' : parseInt(value) || 0 })}
                         />
                         <TextControl
                             label="Maximum Lot Size (m²)"
                             value={maximum_lot_square_meters}
                             type="number"
-                            onChange={(value) => setAttributes({ maximum_lot_square_meters: parseInt(value) || 0 })}
+                            onChange={(value) => setAttributes({ maximum_lot_square_meters: value === '' ? '' : parseInt(value) || 0 })}
                         />
                         <TextControl
                             label="Minimum Bathrooms"
                             value={minimum_bathrooms}
                             type="number"
-                            onChange={(value) => setAttributes({ minimum_bathrooms: parseInt(value) || 0 })}
+                            onChange={(value) => setAttributes({ minimum_bathrooms: value === '' ? '' : parseInt(value) || 0 })}
                         />
                         <TextControl
                             label="Maximum Bathrooms"
                             value={maximum_bathrooms}
                             type="number"
-                            onChange={(value) => setAttributes({ maximum_bathrooms: parseInt(value) || 0 })}
+                            onChange={(value) => setAttributes({ maximum_bathrooms: value === '' ? '' : parseInt(value) || 0 })}
                         />
                         <TextControl
                             label="Minimum Square Meters"
                             value={minimum_square_meters}
                             type="number"
-                            onChange={(value) => setAttributes({ minimum_square_meters: parseInt(value) || 0 })}
+                            onChange={(value) => setAttributes({ minimum_square_meters: value === '' ? '' : parseInt(value) || 0 })}
                         />
                         <TextControl
                             label="Maximum Square Meters"
                             value={maximum_square_meters}
                             type="number"
-                            onChange={(value) => setAttributes({ maximum_square_meters: parseInt(value) || 0 })}
+                            onChange={(value) => setAttributes({ maximum_square_meters: value === '' ? '' : parseInt(value) || 0 })}
                         />
                         <TextControl
                             label="Minimum Year Built"
                             value={minimum_year_built}
                             type="number"
-                            onChange={(value) => setAttributes({ minimum_year_built: parseInt(value) || 0 })}
+                            onChange={(value) => setAttributes({ minimum_year_built: value === '' ? '' : parseInt(value) || 0 })}
                         />
                         <TextControl
                             label="Maximum Year Built"
                             value={maximum_year_built}
                             type="number"
-                            onChange={(value) => setAttributes({ maximum_year_built: parseInt(value) || 0 })}
+                            onChange={(value) => setAttributes({ maximum_year_built: value === '' ? '' : parseInt(value) || 0 })}
                         />
                         <TextControl
                             label="Minimum Bedrooms"
                             value={minimum_bedrooms}
                             type="number"
-                            onChange={(value) => setAttributes({ minimum_bedrooms: parseInt(value) || 0 })}
+                            onChange={(value) => setAttributes({ minimum_bedrooms: value === '' ? '' : parseInt(value) || 0 })}
                         />
                         <TextControl
                             label="Maximum Bedrooms"
                             value={maximum_bedrooms}
                             type="number"
-                            onChange={(value) => setAttributes({ maximum_bedrooms: parseInt(value) || 0 })}
+                            onChange={(value) => setAttributes({ maximum_bedrooms: value === '' ? '' : parseInt(value) || 0 })}
                         />
                         <TextControl
-                            label="Houses Per Page"
-                            value={houses_per_page}
+                            label="listing Per Page"
+                            value={listing_per_page}
                             type="number"
-                            onChange={(value) => setAttributes({ houses_per_page: parseInt(value) || 1 })}
+                            onChange={(value) => setAttributes({ listing_per_page: value === '' ? '' : parseInt(value) || 1 })}
                         />
                     </PanelBody>
                 </InspectorControls>
@@ -444,7 +522,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                     block="rch-rechat-plugin/listing-block"
                     attributes={attributes}
                 /> */}
-                                <div className="listing-block-preview">
+                <div className="listing-block-preview">
                     <p><strong>Listing Block:</strong></p>
                     <p>We display listing items based on your selected filters on the front end of the site.</p>
                 </div>

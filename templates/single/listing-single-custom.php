@@ -4,9 +4,9 @@
         <div id="rch-house-detail" class="rch-house-main-details">
             <div class="rch-top-img-slider">
                 <div class="rch-left-top-slider">
-                    <?php if (is_array($house_detail['gallery_image_urls']) && !empty($house_detail['gallery_image_urls'])) { ?>
+                    <?php if (is_array($listing_detail['gallery_image_urls']) && !empty($listing_detail['gallery_image_urls'])) { ?>
                         <picture data-slider="0" id="myBtn">
-                            <img src="<?php echo esc_url($house_detail['cover_image_url']); ?>" alt="Image of House">
+                            <img src="<?php echo esc_url($listing_detail['cover_image_url']); ?>" alt="Image of House">
                         </picture>
                         <button id="myBtn" data-slider="0" class="rch-load-images">
                             <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>gallery.svg" alt="">
@@ -19,10 +19,10 @@
                 <div class="rch-right-top-slider">
                     <?php
                     // Ensure the gallery_image_urls is an array and has values
-                    if (is_array($house_detail['gallery_image_urls']) && !empty($house_detail['gallery_image_urls'])) {
+                    if (is_array($listing_detail['gallery_image_urls']) && !empty($listing_detail['gallery_image_urls'])) {
                         // Loop through the first 4 images
                         $i = 1;
-                        foreach (array_slice($house_detail['gallery_image_urls'], 1, 4) as $image_url) {
+                        foreach (array_slice($listing_detail['gallery_image_urls'], 1, 4) as $image_url) {
                     ?>
                             <picture data-slider="<?php echo $i; ?>" id="myBtn">
                                 <img src="<?php echo esc_url($image_url); ?>" alt="Gallery of House">
@@ -41,8 +41,8 @@
 
                 <?php
                 // Check if address property exists
-                if (isset($house_detail['property']['address']['full_address'])) {
-                    $address = $house_detail['property']['address']['full_address'];
+                if (isset($listing_detail['property']['address']['full_address'])) {
+                    $address = $listing_detail['property']['address']['full_address'];
                     $full_address = '';
                     echo esc_html($address);
                 } else {
@@ -52,7 +52,7 @@
                 ?>
             </h1>
             <div class="rch-single-price-house">
-                <?php echo '$' . number_format(floatval($house_detail['price'])); ?>
+                <?php echo '$' . number_format(floatval($listing_detail['price'])); ?>
             </div>
             <div class="rch-single-house-main-layout">
                 <div class="rch-single-left-main-layout">
@@ -73,7 +73,7 @@
                                 Property Description
                             </h2>
                             <p>
-                                <?php echo esc_html($house_detail['property']['description']); ?>
+                                <?php echo esc_html($listing_detail['property']['description']); ?>
                             </p>
                         </div>
                     </div>
@@ -86,32 +86,32 @@
                         <ul>
                             <li>
                                 <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>bedroomsingle.svg" alt="">
-                                <?php echo esc_html($house_detail['property']['bedroom_count']); ?>
+                                <?php echo esc_html($listing_detail['property']['bedroom_count']); ?>
                                 Bedrooms
                             </li>
                             <li>
                                 <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>fbathsingle.svg" alt="">
-                                <?php echo esc_html($house_detail['property']['full_bathroom_count']); ?>
+                                <?php echo esc_html($listing_detail['property']['full_bathroom_count']); ?>
                                 Full Bathrooms
                             </li>
                             <li>
                                 <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>hbathsingle.svg" alt="">
-                                <?php echo esc_html($house_detail['property']['half_bathroom_count']); ?>
+                                <?php echo esc_html($listing_detail['property']['half_bathroom_count']); ?>
                                 Half Bathrooms
                             </li>
                             <li>
                                 <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>areasingle.svg" alt="">
-                                <?php echo esc_html($house_detail['property']['square_meters']); ?>
+                                <?php echo esc_html($listing_detail['property']['square_meters']); ?>
                                 meter
                             </li>
                             <li>
                                 <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>yearsingle.svg" alt="">
-                                <?php echo esc_html($house_detail['property']['year_built']); ?>
+                                <?php echo esc_html($listing_detail['property']['year_built']); ?>
                                 Year Built
                             </li>
 
                             <?php
-                            if (!empty($house_detail['property']['pool_features'])) { ?>
+                            if (!empty($listing_detail['property']['pool_features'])) { ?>
                                 <li>
                                     <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>poolsingle.svg" alt="">
                                     Pool
@@ -120,7 +120,7 @@
                             }
                             ?>
                             <?php
-                            if (!empty($house_detail['property']['security_features'])) { ?>
+                            if (!empty($listing_detail['property']['security_features'])) { ?>
                                 <li>
                                     <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>securitysingle.svg" alt="">
                                     Security
@@ -130,12 +130,12 @@
                             ?>
                             <li>
                                 <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>garagesingle.svg" alt="">
-                                <?php echo esc_html($house_detail['property']['number_of_parking_spaces']); ?>
+                                <?php echo esc_html($listing_detail['property']['number_of_parking_spaces']); ?>
                                 Parking
                             </li>
                             <li>
                                 <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>outdoor-activity.svg" alt="">
-                                <?php echo esc_html($house_detail['property']['construction_materials']); ?>
+                                <?php echo esc_html($listing_detail['property']['construction_materials']); ?>
                             </li>
                         </ul>
                     </div>
@@ -164,7 +164,7 @@
         <span class="rch-img-modal-close">&times;</span>
         <div class="swiper rch-houses-mySwiper2">
             <div class="swiper-wrapper">
-                <?php foreach ($house_detail['gallery_image_urls'] as $attachment_url) { ?>
+                <?php foreach ($listing_detail['gallery_image_urls'] as $attachment_url) { ?>
                     <div class="swiper-slide">
                         <picture>
                             <img src="<?php echo esc_url($attachment_url); ?>" alt="">
@@ -177,7 +177,7 @@
         </div>
         <div thumbsSlider="" class="swiper rch-houses-mySwiper">
             <div class="swiper-wrapper">
-                <?php foreach ($house_detail['gallery_image_urls'] as $attachment_url) { ?>
+                <?php foreach ($listing_detail['gallery_image_urls'] as $attachment_url) { ?>
                     <div class="swiper-slide">
                         <picture>
                             <img src="<?php echo esc_url($attachment_url); ?>" alt="">
@@ -194,8 +194,8 @@
 <script>
     function initMap() {
         // Get latitude and longitude from PHP
-        var latitude = <?php echo json_encode($house_detail['property']['address']['location']['latitude']); ?>;
-        var longitude = <?php echo json_encode($house_detail['property']['address']['location']['longitude']); ?>;
+        var latitude = <?php echo json_encode($listing_detail['property']['address']['location']['latitude']); ?>;
+        var longitude = <?php echo json_encode($listing_detail['property']['address']['location']['longitude']); ?>;
         var location = {
             lat: latitude,
             lng: longitude

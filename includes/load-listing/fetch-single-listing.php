@@ -3,7 +3,7 @@ if (! defined('ABSPATH')) {
     exit();
 }
 
-// Extract the house ID from the URL using PHP
+// Extract the listing ID from the URL using PHP
 $house_id = isset($_GET['listing_id']) ? sanitize_text_field($_GET['listing_id']) : null;
 
 if ($house_id) {
@@ -16,18 +16,18 @@ if ($house_id) {
     if (isset($response['data']['http']) && $response['data']['http'] === 400) {
         // Check for validation errors
         if (isset($response['data']['code']) && $response['data']['code'] === 'Validation') {
-            echo '<p>Invalid House ID provided. Please check the ID and try again.</p>';
+            echo '<p>Invalid listing ID provided. Please check the ID and try again.</p>';
         } else {
-            echo '<p>No house details found for this ID.</p>';
+            echo '<p>No listing details found for this ID.</p>';
         }
     } elseif (!$response['success']) {
         // Return error if API request fails for other reasons
-        echo '<p>An error occurred while fetching the house details. Please try again later.</p>';
+        echo '<p>An error occurred while fetching the listing details. Please try again later.</p>';
     } else {
-        // Proceed to display house details if the response was successful
+        // Proceed to display listing details if the response was successful
         $data = $response['data']['data'];
         if ($data) {
-            $house_detail = $data;
+            $listing_detail = $data;
 
             // Check if the template exists in the child theme or theme's /rechat folder
             $theme_template = locate_template('rechat/listing-single-custom.php');
@@ -40,9 +40,9 @@ if ($house_id) {
                 include RCH_PLUGIN_DIR . 'templates/single/listing-single-custom.php';
             }
         } else {
-            echo '<p>No house details found for this ID.</p>';
+            echo '<p>No listing details found for this ID.</p>';
         }
     }
 } else {
-    echo '<p>House ID is missing.</p>';
+    echo '<p>listing ID is missing.</p>';
 }

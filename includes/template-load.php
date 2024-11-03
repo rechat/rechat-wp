@@ -3,10 +3,10 @@ if (! defined('ABSPATH')) {
     exit();
 }
 
-// Template redirect logic for custom post types and house details
+// Template redirect logic for custom post types and listing details
 function load_custom_templates($template)
 {
-    // Define custom templates for post types and house details
+    // Define custom templates for post types and listing details
     $agents_single_template_name = 'agents-single-custom.php';
     $agents_archive_template_name = 'agents-archive-custom.php';
 
@@ -89,7 +89,7 @@ function load_custom_templates($template)
         }
     }
 
-    // House detail logic
+    // listing detail logic
     if (isset($_GET['listing_id'])) {
         $plugin_template = RCH_PLUGIN_INCLUDES . 'load-listing/' . $house_detail_template_name;
         return $plugin_template;

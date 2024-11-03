@@ -77,3 +77,18 @@ function sort_region_id_column($query) {
     }
 }
 add_action('pre_get_posts', 'sort_region_id_column');
+/*******************************
+ * Register the 'region_id' meta field for the 'regions' post type
+ ******************************/
+function register_region_id_meta() {
+    register_meta('post', 'region_id', array(
+        'type'         => 'string', // Specify the data type of the meta value
+        'description'  => 'Region ID', // Description of the meta field
+        'single'       => true, // Whether the meta value is a single entry or an array
+        'show_in_rest' => true, // Make it accessible via the REST API
+        'auth_callback' => function() {
+            return current_user_can('edit_posts'); // Authentication callback
+        }
+    ));
+}
+add_action('init', 'register_region_id_meta');

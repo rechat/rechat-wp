@@ -443,18 +443,20 @@ function rch_get_filters($atts)
         'minimum_year_built' => isset($atts['minimum_year_built']) ? intval($atts['minimum_year_built']) : '',
         'maximum_year_built' => isset($atts['maximum_year_built']) ? intval($atts['maximum_year_built']) : '',
         'minimum_bedrooms' => isset($atts['minimum_bedrooms']) ? intval($atts['minimum_bedrooms']) : '',
-        'maximum_bedrooms' => isset($atts['maximum_bedrooms']) ? intval($atts['maximum_bedrooms']) : ''
+        'maximum_bedrooms' => isset($atts['maximum_bedrooms']) ? intval($atts['maximum_bedrooms']) : '',
+        'brand' => isset($atts['brand']) ? $atts['brand'] : ''
+
     ]);
 }
 /*******************************
- *title for page house detail
+ *title for page listing detail
  ******************************/
 function rch_custom_single_listing_title($title)
 {
     if (isset($_GET['listing_id'])) {
         $house_id = sanitize_text_field($_GET['listing_id']);
         // You can modify the title as per your needs
-        $title = 'House Details - ' . $house_id;
+        $title = 'Listing Details - ' . $house_id;
     }
     return $title;
 }

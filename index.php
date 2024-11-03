@@ -32,7 +32,7 @@ add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'rch_plugin_actio
 
 function rch_plugin_activate()
 {
-    add_rewrite_rule('^house-detail/?$', 'index.php?house_detail=1', 'top');
+    add_rewrite_rule('^listing-detail/?$', 'index.php?listing_detail=1', 'top');
     flush_rewrite_rules();
 }
 register_activation_hook(__FILE__, 'rch_plugin_activate');
@@ -60,9 +60,9 @@ include RCH_PLUGIN_INCLUDES . 'shortcodes/listing-shortcodes.php';
 include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-offices-regions.php';
 include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-agents.php';
 include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-listing.php';
-
+include RCH_PLUGIN_INCLUDES . 'metabox/load-all-meta-boxes.php';
 if (is_admin()) {
     include RCH_PLUGIN_INCLUDES . 'admin/enqueue-admin.php';
 
-    include RCH_PLUGIN_INCLUDES . 'metabox/load-all-meta-boxes.php';
+
 }

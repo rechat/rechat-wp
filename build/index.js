@@ -555,9 +555,21 @@ registerBlockType('rch-rechat-plugin/listing-block', {
       type: 'number',
       default: 0
     },
-    houses_per_page: {
+    listing_per_page: {
       type: 'number',
       default: 5
+    },
+    filterByRegions: {
+      type: 'string',
+      default: ''
+    },
+    filterByOffices: {
+      type: 'string',
+      default: ''
+    },
+    brand: {
+      type: 'string',
+      default: ''
     }
   },
   edit({
@@ -577,102 +589,181 @@ registerBlockType('rch-rechat-plugin/listing-block', {
       maximum_year_built,
       minimum_bedrooms,
       maximum_bedrooms,
-      houses_per_page
+      listing_per_page,
+      filterByRegions,
+      filterByOffices,
+      brand
     } = attributes;
+    // React state for holding regions and offices data
+    const [regions, setRegions] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
+    const [offices, setOffices] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
+
+    // Fetch Regions on component mount
+    (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+      const baseUrl = `${window.location.origin}`;
+      const apiUrl = `${baseUrl}/wp-json/wp/v2/regions?per_page=100`;
+      fetch(apiUrl).then(response => response.json()).then(data => {
+        const options = data.map(region => ({
+          label: region.title.rendered,
+          value: region.meta.region_id
+        }));
+        options.unshift({
+          label: 'None',
+          value: ''
+        }); // Add "None" option
+        setRegions(options);
+      }).catch(error => console.error('Error fetching regions:', error));
+    }, []);
+
+    // Fetch Offices on component mount
+    (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+      const baseUrl = `${window.location.origin}`;
+      const apiUrl = `${baseUrl}/wp-json/wp/v2/offices?per_page=100`;
+      fetch(apiUrl).then(response => response.json()).then(data => {
+        const options = data.map(office => ({
+          label: office.title.rendered,
+          value: office.meta.office_id
+        }));
+        options.unshift({
+          label: 'None',
+          value: ''
+        }); // Add "None" option
+        setOffices(options);
+      }).catch(error => console.error('Error fetching offices:', error));
+    }, []);
+
+    // Handle Region selection
+    const handleRegionChange = selectedRegion => {
+      setAttributes({
+        ...attributes,
+        filterByRegions: selectedRegion,
+        filterByOffices: '',
+        // Clear office selection
+        brand: selectedRegion || '' // Set brand to region ID or default to empty
+      });
+    };
+    // Handle Office selection
+    const handleOfficeChange = selectedOffice => {
+      setAttributes({
+        ...attributes,
+        filterByOffices: selectedOffice,
+        filterByRegions: '',
+        // Clear region selection
+        brand: selectedOffice || '' // Set brand to office ID or default to empty
+      });
+    };
     return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.Fragment, {
       children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(InspectorControls, {
         children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)(PanelBody, {
           title: 'Listing Settings',
-          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(TextControl, {
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("p", {
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("strong", {
+              children: "Select a Regions for filter"
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(SelectControl, {
+            label: "Select a Region",
+            value: filterByRegions,
+            options: regions,
+            onChange: handleRegionChange
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("p", {
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("strong", {
+              children: "Select an Office for filter"
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(SelectControl, {
+            label: "Select an Office",
+            value: filterByOffices,
+            options: offices,
+            onChange: handleOfficeChange
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(TextControl, {
             label: "Minimum Price",
             value: minimum_price,
             type: "number",
             onChange: value => setAttributes({
-              minimum_price: parseInt(value) || 0
+              minimum_price: value === '' ? '' : parseInt(value) || 0
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(TextControl, {
             label: "Maximum Price",
             value: maximum_price,
             type: "number",
             onChange: value => setAttributes({
-              maximum_price: parseInt(value) || 0
+              maximum_price: value === '' ? '' : parseInt(value) || 0
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(TextControl, {
             label: "Minimum Lot Size (m\xB2)",
             value: minimum_lot_square_meters,
             type: "number",
             onChange: value => setAttributes({
-              minimum_lot_square_meters: parseInt(value) || 0
+              minimum_lot_square_meters: value === '' ? '' : parseInt(value) || 0
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(TextControl, {
             label: "Maximum Lot Size (m\xB2)",
             value: maximum_lot_square_meters,
             type: "number",
             onChange: value => setAttributes({
-              maximum_lot_square_meters: parseInt(value) || 0
+              maximum_lot_square_meters: value === '' ? '' : parseInt(value) || 0
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(TextControl, {
             label: "Minimum Bathrooms",
             value: minimum_bathrooms,
             type: "number",
             onChange: value => setAttributes({
-              minimum_bathrooms: parseInt(value) || 0
+              minimum_bathrooms: value === '' ? '' : parseInt(value) || 0
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(TextControl, {
             label: "Maximum Bathrooms",
             value: maximum_bathrooms,
             type: "number",
             onChange: value => setAttributes({
-              maximum_bathrooms: parseInt(value) || 0
+              maximum_bathrooms: value === '' ? '' : parseInt(value) || 0
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(TextControl, {
             label: "Minimum Square Meters",
             value: minimum_square_meters,
             type: "number",
             onChange: value => setAttributes({
-              minimum_square_meters: parseInt(value) || 0
+              minimum_square_meters: value === '' ? '' : parseInt(value) || 0
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(TextControl, {
             label: "Maximum Square Meters",
             value: maximum_square_meters,
             type: "number",
             onChange: value => setAttributes({
-              maximum_square_meters: parseInt(value) || 0
+              maximum_square_meters: value === '' ? '' : parseInt(value) || 0
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(TextControl, {
             label: "Minimum Year Built",
             value: minimum_year_built,
             type: "number",
             onChange: value => setAttributes({
-              minimum_year_built: parseInt(value) || 0
+              minimum_year_built: value === '' ? '' : parseInt(value) || 0
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(TextControl, {
             label: "Maximum Year Built",
             value: maximum_year_built,
             type: "number",
             onChange: value => setAttributes({
-              maximum_year_built: parseInt(value) || 0
+              maximum_year_built: value === '' ? '' : parseInt(value) || 0
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(TextControl, {
             label: "Minimum Bedrooms",
             value: minimum_bedrooms,
             type: "number",
             onChange: value => setAttributes({
-              minimum_bedrooms: parseInt(value) || 0
+              minimum_bedrooms: value === '' ? '' : parseInt(value) || 0
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(TextControl, {
             label: "Maximum Bedrooms",
             value: maximum_bedrooms,
             type: "number",
             onChange: value => setAttributes({
-              maximum_bedrooms: parseInt(value) || 0
+              maximum_bedrooms: value === '' ? '' : parseInt(value) || 0
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(TextControl, {
-            label: "Houses Per Page",
-            value: houses_per_page,
+            label: "listing Per Page",
+            value: listing_per_page,
             type: "number",
             onChange: value => setAttributes({
-              houses_per_page: parseInt(value) || 1
+              listing_per_page: value === '' ? '' : parseInt(value) || 1
             })
           })]
         })

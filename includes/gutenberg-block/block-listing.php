@@ -25,7 +25,10 @@ function rch_register_block_assets_listing()
             'maximum_year_built' => array('type' => 'number', 'default' => ''),
             'minimum_bedrooms' => array('type' => 'number', 'default' => ''),
             'maximum_bedrooms' => array('type' => 'number', 'default' => ''),
-            'houses_per_page' => array('type' => 'number', 'default' => 5),
+            'listing_per_page' => array('type' => 'number', 'default' => 5),
+            'filterByRegions' => array('type' => 'string', 'default' => ''),
+            'filterByOffices' => array('type' => 'string', 'default' => ''),
+            'brand' => array('type' => 'string', 'default' => get_option('rch_rechat_brand_id'))
         ),
         'render_callback' => 'rch_render_listing_block',
     ));
@@ -51,9 +54,10 @@ function rch_render_listing_block($attributes)
         'maximum_year_built' => isset($attributes['maximum_year_built']) ? $attributes['maximum_year_built'] : '',
         'minimum_bedrooms' => isset($attributes['minimum_bedrooms']) ? $attributes['minimum_bedrooms'] : '',
         'maximum_bedrooms' => isset($attributes['maximum_bedrooms']) ? $attributes['maximum_bedrooms'] : '',
-        'houses_per_page' => isset($attributes['houses_per_page']) ? $attributes['houses_per_page'] : 5,
-    );
+        'listing_per_page' => isset($attributes['listing_per_page']) ? $attributes['listing_per_page'] : 5,
+        'brand' => isset($attributes['brand']) ? $attributes['brand'] : get_option('rch_rechat_brand_id')
 
+    );
     // Build shortcode string
     $shortcode = '[listings ';
     foreach ($shortcode_params as $param => $value) {
@@ -63,5 +67,7 @@ function rch_render_listing_block($attributes)
     }
     $shortcode .= ']';
     // Execute the shortcode and return the output
-    return do_shortcode($shortcode);
+    return $shortcode;
 }
+
+

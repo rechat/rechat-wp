@@ -1,25 +1,26 @@
 
-    <div id="houses-list" class="rch-houses-list">
+    <div id="listing-list" class="rch-houses-list">
     </div>
 
     <!-- Loading spinner -->
-    <div id="rch-loading-houses" style="display: none;" class="rch-loader">
+    <div id="rch-loading-listing" style="display: none;" class="rch-loader">
 
     </div>
 
     <div id="pagination" class="rch-house-pagination">
         <button id="prev" onclick="changePage(-1)" disabled>Previous</button>
-        <span id="page-info">Page 1 of <?php echo ceil($totalHouses / $housesPerPage); ?></span>
+        <span id="page-info">Page 1 of <?php echo ceil($totalLisitng / $listingPerPage); ?></span>
         <button id="next" onclick="changePage(1)">Next</button>
     </div>
 
     <script>
     let currentPage = 1; // Initialize current page
-    const housesPerPage = <?php echo $housesPerPage; ?>; // Set number of houses per page
-    const totalHouses = <?php echo $totalHouses; ?>; // Set total number of houses
-    const totalPages = Math.ceil(totalHouses / housesPerPage); // Calculate total pages
+    const listingPerPage = <?php echo $listingPerPage; ?>; // Set number of listing per page
+    const totalListing = <?php echo $totalLisitng; ?>; // Set total number of listing
+    const totalPages = Math.ceil(totalListing / listingPerPage); // Calculate total pages
     // Extract filters passed through the shortcode attributes
     const filters = {
+        brand: "<?php echo $atts['brand']; ?>",
         minimum_price: "<?php echo $atts['minimum_price']; ?>",
         maximum_price: "<?php echo $atts['maximum_price']; ?>",
         minimum_lot_square_meters: "<?php echo $atts['minimum_lot_square_meters']; ?>",
@@ -31,33 +32,34 @@
         minimum_year_built: "<?php echo $atts['minimum_year_built']; ?>",
         maximum_year_built: "<?php echo $atts['maximum_year_built']; ?>",
         minimum_bedrooms: "<?php echo $atts['minimum_bedrooms']; ?>",
-        maximum_bedrooms: "<?php echo $atts['maximum_bedrooms']; ?>"
+        maximum_bedrooms: "<?php echo $atts['maximum_bedrooms']; ?>",
+        
     };
 
     function changePage(direction) {
         currentPage += direction; // Update current page
-        updateHousesList(); // Update the house list based on current page
+        updateListingList(); // Update the listing list based on current page
     }
 
-    function updateHousesList() {
-        const housesList = document.getElementById('houses-list');
-        const loading = document.getElementById('rch-loading-houses'); // Get the loading element
+    function updateListingList() {
+        const listingList = document.getElementById('listing-list');
+        const loading = document.getElementById('rch-loading-listing'); // Get the loading element
 
-        housesList.innerHTML = ''; // Clear existing houses
+        listingList.innerHTML = ''; // Clear existing listing
         loading.style.display = 'block'; // Show the loading indicator
 
         // Construct the query string with filters and pagination
-        let queryString = `?action=rch_fetch_listing&page=${currentPage}&houses_per_page=${housesPerPage}`;
+        
+        let queryString = `?action=rch_fetch_listing&page=${currentPage}&listing_per_page=${listingPerPage}`;
         Object.keys(filters).forEach(key => {
             if (filters[key]) queryString += `&${key}=${filters[key]}`;
         });
-
-        // Fetch new houses for the current page with filters
+        // Fetch new listing for the current page with filters
         fetch(`<?php echo admin_url('admin-ajax.php'); ?>${queryString}`)
             .then(response => response.text()) // Read the response as text
             .then(html => {
                 loading.style.display = 'none'; // Hide the loading indicator
-                housesList.innerHTML = html; // Insert the returned HTML
+                listingList.innerHTML = html; // Insert the returned HTML
                 // Update pagination info
                 document.getElementById('page-info').textContent = `Page ${currentPage} of ${totalPages}`;
 
@@ -67,12 +69,12 @@
             })
             .catch(error => {
                 loading.style.display = 'none'; // Hide the loading indicator on error
-                console.error('Error fetching houses:', error);
-                housesList.innerHTML = '<p>Error loading houses.</p>';
+                console.error('Error fetching listing:', error);
+                listingList.innerHTML = '<p>Error loading listing.</p>';
             });
     }
 
     window.onload = function() {
-        updateHousesList(); // Call updateHousesList when the window has loaded
+        updateListingList(); // Call updatelistingsList when the window has loaded
     };
 </script>

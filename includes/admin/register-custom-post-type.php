@@ -180,3 +180,4 @@ function rch_regions()
 add_action('init', 'rch_agents', 0);
 add_action('init', 'rch_offices', 0);
 add_action('init', 'rch_regions', 0);
+
