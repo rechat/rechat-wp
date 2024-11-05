@@ -1,6 +1,6 @@
 const { registerBlockType } = wp.blocks;
 const { InspectorControls, ColorPalette } = wp.blockEditor || wp.editor;
-const { PanelBody, RangeControl, SelectControl, TextControl } = wp.components;
+const { PanelBody, RangeControl, SelectControl, TextControl, CheckboxControl } = wp.components;
 import { useEffect, useState } from '@wordpress/element'; // useState and useEffect hooks
 import ServerSideRender from '@wordpress/server-side-render';
 //regions block
@@ -311,35 +311,37 @@ registerBlockType('rch-rechat-plugin/listing-block', {
     attributes: {
         minimum_price: {
             type: 'number',
-            default: 0
+            default: null
         },
         maximum_price: {
             type: 'number',
-            default: 0
+            default: null
         },
         minimum_lot_square_meters: {
             type: 'number',
-            default: 0
+            default: null
         },
         maximum_lot_square_meters: {
             type: 'number',
-            default: 0
+            default: null
         },
         minimum_bathrooms: {
             type: 'number',
-            default: 0
+            default: null
         },
-        maximum_bathrooms: { type: 'number', default: 0 },
-        minimum_square_meters: { type: 'number', default: 0 },
-        maximum_square_meters: { type: 'number', default: 0 },
-        minimum_year_built: { type: 'number', default: 0 },
-        maximum_year_built: { type: 'number', default: 0 },
-        minimum_bedrooms: { type: 'number', default: 0 },
-        maximum_bedrooms: { type: 'number', default: 0 },
+        maximum_bathrooms: { type: 'number', default: null },
+        minimum_square_meters: { type: 'number', default: null },
+        maximum_square_meters: { type: 'number', default: null },
+        minimum_year_built: { type: 'number', default: null },
+        maximum_year_built: { type: 'number', default: null },
+        minimum_bedrooms: { type: 'number', default: null },
+        maximum_bedrooms: { type: 'number', default: null },
         listing_per_page: { type: 'number', default: 5 },
         filterByRegions: { type: 'string', default: '' },
         filterByOffices: { type: 'string', default: '' },
-        brand: { type: 'string', default: '' }
+        brand: { type: 'string', default: '' },
+        selectedStatuses: { type: 'array', default: [] }, // New attribute for selected statuses
+        listing_statuses: { type: 'array', default: [] }, // New attribute for listing statuses
     },
     edit({ attributes, setAttributes }) {
         const {
@@ -358,12 +360,44 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             listing_per_page,
             filterByRegions,
             filterByOffices,
-            brand
+            brand,
+            selectedStatuses,
+            listing_statuses,
+
         } = attributes;
         // React state for holding regions and offices data
         const [regions, setRegions] = useState([]);
         const [offices, setOffices] = useState([]);
-
+        // Mapping of status options to their values
+        const statusMapping = {
+            Active: [
+                'Active',
+                'Incoming',
+                'Coming Soon',
+                'Pending',
+                'Active Option Contract',
+                'Active Contingent',
+                'Active Kick Out',
+                'Active Under Contract',
+            ],
+            Closed: ['Sold', 'Leased'],
+            Archived: [
+                'Withdrawn',
+                'Expired',
+                'Cancelled',
+                'Withdrawn Sublisting',
+                'Incomplete',
+                'Unknown',
+                'Out Of Sync',
+                'Temp Off Market',
+            ],
+        };
+        const statusOptions = [
+            { label: 'Empty', value: 'Empty' },
+            { label: 'Active', value: 'Active' },
+            { label: 'Closed', value: 'Closed' },
+            { label: 'Archived', value: 'Archived' },
+        ];
         // Fetch Regions on component mount
         useEffect(() => {
             const baseUrl = `${window.location.origin}`;
@@ -398,7 +432,23 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                 })
                 .catch((error) => console.error('Error fetching offices:', error));
         }, []);
+        // Handle status selection
+        const handleStatusChange = (status) => {
+            const newSelectedStatuses = selectedStatuses.includes(status)
+                ? selectedStatuses.filter((s) => s !== status)
+                : [...selectedStatuses, status];
 
+            // Collect all corresponding listing statuses based on the selection
+            const newListingStatuses = newSelectedStatuses
+                .flatMap((selected) => statusMapping[selected] || [])
+                .filter((value, index, self) => self.indexOf(value) === index); // Remove duplicates
+
+            setAttributes({
+                selectedStatuses: newSelectedStatuses,
+                listing_statuses: newListingStatuses,
+            });
+        };
+        
         // Handle Region selection
         const handleRegionChange = (selectedRegion) => {
             setAttributes({
@@ -436,6 +486,15 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                             options={offices}
                             onChange={handleOfficeChange}
                         />
+                        <p><strong>Select Statuses</strong></p>
+                        {statusOptions.map((option) => (
+                            <CheckboxControl
+                                key={option.value}
+                                label={option.label}
+                                checked={selectedStatuses.includes(option.value)}
+                                onChange={() => handleStatusChange(option.value)}
+                            />
+                        ))}
                         <TextControl
                             label="Minimum Price"
                             value={minimum_price}

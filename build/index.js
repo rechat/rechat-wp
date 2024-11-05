@@ -124,7 +124,8 @@ const {
   PanelBody,
   RangeControl,
   SelectControl,
-  TextControl
+  TextControl,
+  CheckboxControl
 } = wp.components;
  // useState and useEffect hooks
 
@@ -509,51 +510,51 @@ registerBlockType('rch-rechat-plugin/listing-block', {
   attributes: {
     minimum_price: {
       type: 'number',
-      default: 0
+      default: null
     },
     maximum_price: {
       type: 'number',
-      default: 0
+      default: null
     },
     minimum_lot_square_meters: {
       type: 'number',
-      default: 0
+      default: null
     },
     maximum_lot_square_meters: {
       type: 'number',
-      default: 0
+      default: null
     },
     minimum_bathrooms: {
       type: 'number',
-      default: 0
+      default: null
     },
     maximum_bathrooms: {
       type: 'number',
-      default: 0
+      default: null
     },
     minimum_square_meters: {
       type: 'number',
-      default: 0
+      default: null
     },
     maximum_square_meters: {
       type: 'number',
-      default: 0
+      default: null
     },
     minimum_year_built: {
       type: 'number',
-      default: 0
+      default: null
     },
     maximum_year_built: {
       type: 'number',
-      default: 0
+      default: null
     },
     minimum_bedrooms: {
       type: 'number',
-      default: 0
+      default: null
     },
     maximum_bedrooms: {
       type: 'number',
-      default: 0
+      default: null
     },
     listing_per_page: {
       type: 'number',
@@ -570,7 +571,16 @@ registerBlockType('rch-rechat-plugin/listing-block', {
     brand: {
       type: 'string',
       default: ''
-    }
+    },
+    selectedStatuses: {
+      type: 'array',
+      default: []
+    },
+    // New attribute for selected statuses
+    listing_statuses: {
+      type: 'array',
+      default: []
+    } // New attribute for listing statuses
   },
   edit({
     attributes,
@@ -592,12 +602,32 @@ registerBlockType('rch-rechat-plugin/listing-block', {
       listing_per_page,
       filterByRegions,
       filterByOffices,
-      brand
+      brand,
+      selectedStatuses,
+      listing_statuses
     } = attributes;
     // React state for holding regions and offices data
     const [regions, setRegions] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
     const [offices, setOffices] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
-
+    // Mapping of status options to their values
+    const statusMapping = {
+      Active: ['Active', 'Incoming', 'Coming Soon', 'Pending', 'Active Option Contract', 'Active Contingent', 'Active Kick Out', 'Active Under Contract'],
+      Closed: ['Sold', 'Leased'],
+      Archived: ['Withdrawn', 'Expired', 'Cancelled', 'Withdrawn Sublisting', 'Incomplete', 'Unknown', 'Out Of Sync', 'Temp Off Market']
+    };
+    const statusOptions = [{
+      label: 'Empty',
+      value: 'Empty'
+    }, {
+      label: 'Active',
+      value: 'Active'
+    }, {
+      label: 'Closed',
+      value: 'Closed'
+    }, {
+      label: 'Archived',
+      value: 'Archived'
+    }];
     // Fetch Regions on component mount
     (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
       const baseUrl = `${window.location.origin}`;
@@ -631,6 +661,18 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         setOffices(options);
       }).catch(error => console.error('Error fetching offices:', error));
     }, []);
+    // Handle status selection
+    const handleStatusChange = status => {
+      const newSelectedStatuses = selectedStatuses.includes(status) ? selectedStatuses.filter(s => s !== status) : [...selectedStatuses, status];
+
+      // Collect all corresponding listing statuses based on the selection
+      const newListingStatuses = newSelectedStatuses.flatMap(selected => statusMapping[selected] || []).filter((value, index, self) => self.indexOf(value) === index); // Remove duplicates
+
+      setAttributes({
+        selectedStatuses: newSelectedStatuses,
+        listing_statuses: newListingStatuses
+      });
+    };
 
     // Handle Region selection
     const handleRegionChange = selectedRegion => {
@@ -674,7 +716,15 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             value: filterByOffices,
             options: offices,
             onChange: handleOfficeChange
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(TextControl, {
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("p", {
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("strong", {
+              children: "Select Statuses"
+            })
+          }), statusOptions.map(option => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(CheckboxControl, {
+            label: option.label,
+            checked: selectedStatuses.includes(option.value),
+            onChange: () => handleStatusChange(option.value)
+          }, option.value)), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(TextControl, {
             label: "Minimum Price",
             value: minimum_price,
             type: "number",

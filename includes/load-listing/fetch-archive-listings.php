@@ -11,20 +11,24 @@ function rch_fetch_listing($filters, $page, $listingPerPage)
 {
     // $brandId = get_option('rch_rechat_brand_id');
     $offset = ($page - 1) * $listingPerPage;
-
+    // Extract the brand value from the filters
+    $brand = isset($filters['brand']) ? $filters['brand'] : get_option('rch_rechat_brand_id');
     $requestBody = array_merge([
         // 'brand' => $brandId,
         'limit' => $listingPerPage,
         'offset' => $offset,
     ], $filters);
+    $headers = [
+        'Content-Type' => 'application/json',
+        'X-RECHAT-BRAND' => $brand,
+    ];
     $response = wp_remote_post('https://api.rechat.com/valerts', [
         'method' => 'POST',
-        'headers' => ['Content-Type' => 'application/json'],
+        'headers' => $headers,
         'body' => json_encode($requestBody),
-        'timeout' => 15, // Set the timeout to 15 seconds
+        'timeout' => 20, // Set the timeout to 15 seconds
 
     ]);
-
     if (is_wp_error($response)) {
         return 'Error: ' . $response->get_error_message();
     }
@@ -36,21 +40,33 @@ function rch_fetch_listing($filters, $page, $listingPerPage)
  ******************************/
 function rch_fetch_total_listing_count($filters = [])
 {
+    // Extract the brand value from the filters
+    $brand = isset($filters['brand']) ? $filters['brand'] : '';
+
+    // Prepare the request body
     $requestBody = array_merge($filters);
 
+    // Prepare the headers, including the custom X-RECHAT-BRAND header
+    $headers = [
+        'Content-Type' => 'application/json',
+        'X-RECHAT-BRAND' => $brand,
+    ];
+
+    // Make the API request
     $response = wp_remote_post('https://api.rechat.com/valerts/count', [
         'method' => 'POST',
-        'headers' => ['Content-Type' => 'application/json'],
+        'headers' => $headers,
         'body' => json_encode($requestBody),
-        'timeout' => 15, // Set the timeout to 15 seco
+        'timeout' => 20, // Set the timeout to 15 seconds
     ]);
-
+    // Check for errors and return the response
     if (is_wp_error($response)) {
         return 'Error: ' . $response->get_error_message();
     }
 
     return json_decode(wp_remote_retrieve_body($response), true);
 }
+
 
 /*******************************
  * Handle the AJAX request for fetching listings.

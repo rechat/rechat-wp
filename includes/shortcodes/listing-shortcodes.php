@@ -23,14 +23,14 @@ function rch_render_listing_list($atts)
         'maximum_year_built' => '',
         'minimum_bedrooms' => '',
         'maximum_bedrooms' => '',
-        'brand' => ''
+        'brand' => '',
+        'listing_statuses' => ''
     ], $atts);
 
     // Get sanitized filters
     $filters = rch_get_filters($atts);
     $page = intval($atts['page']);
     $listingPerPage = intval($atts['listing_per_page']);
-
     // Fetch total houses for pagination
     $totalListingData = rch_fetch_total_listing_count($filters);
     $totalLisitng = $totalListingData['info']['total'] ?? 0; // Ensure default if empty

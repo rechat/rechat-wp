@@ -33,6 +33,7 @@
         maximum_year_built: "<?php echo $atts['maximum_year_built']; ?>",
         minimum_bedrooms: "<?php echo $atts['minimum_bedrooms']; ?>",
         maximum_bedrooms: "<?php echo $atts['maximum_bedrooms']; ?>",
+        listing_statuses: "<?php echo $atts['listing_statuses']; ?>",
         
     };
 
