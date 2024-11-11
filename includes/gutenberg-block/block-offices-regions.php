@@ -56,24 +56,27 @@ function rch_render_block($attributes, $post_type, $meta_key = '', $meta_value =
     $regionBgColor = isset($attributes['regionBgColor']) ? $attributes['regionBgColor'] : '#edf1f5';
     $textColor = isset($attributes['textColor']) ? $attributes['textColor'] : '#000';
     $filterByRegions = isset($attributes['filterByRegions']) ? $attributes['filterByRegions'] : '';
+
     // Ensure $filterByRegions is treated correctly based on whether it's an array or string
     if (is_array($filterByRegions)) {
-        // No need to add quotes, just search for each value directly
         $serialized_values = array_map(function ($value) {
-            return $value; // Return the value directly for LIKE comparison
+            return $value;
         }, $filterByRegions);
     } else {
-        // For a single value, just use it as is
         $serialized_values = $filterByRegions;
     }
-    // Meta query setup (for filtering by region or any other key)
-    $meta_query = !empty($meta_key) ? array(
-        array(
+
+    // Initialize the meta query array
+    $meta_query = [];
+
+    // Add a meta query condition only if filterByRegions is not empty
+    if (!empty($filterByRegions) && !empty($meta_key)) {
+        $meta_query[] = array(
             'key'     => $meta_key,
             'value'   => $serialized_values,
             'compare' => 'LIKE',
-        )
-    ) : '';
+        );
+    }
 
     // Build WP Query
     $args = array(
@@ -87,7 +90,7 @@ function rch_render_block($attributes, $post_type, $meta_key = '', $meta_value =
 
     // Output the block
     ob_start();
-?>
+    ?>
     <div id="rch-block-<?php echo esc_attr($post_type); ?>"
         data-nonce="<?php echo wp_create_nonce('rch_load_more_' . $post_type . '_nonce'); ?>"
         data-posts-per-page="<?php echo esc_attr($posts_per_page); ?>"

@@ -106,13 +106,18 @@ function rch_collect_brands($brand, &$regions, &$offices, &$processed_brands)
 /*******************************
  * call api
  ******************************/
-function rch_api_request($url, $token)
+function rch_api_request($url, $token, $brand = null)
 {
-    $response = wp_remote_get($url, array(
-        'headers' => array(
-            'Authorization' => 'Bearer ' . $token,
-        ),
-    ));
+    // Initialize headers with Authorization
+    $headers = array(
+        'Authorization' => 'Bearer ' . $token,
+    );
+
+    // Conditionally add X-RECHAT-BRAND if brand is provided
+    if (!empty($brand)) {
+        $headers['X-RECHAT-BRAND'] = $brand;
+    }
+    $response = wp_remote_get($url, array('headers' => $headers));
     if (is_wp_error($response)) {
         return array('success' => false, 'message' => 'Error fetching data');
     }
@@ -429,7 +434,8 @@ function rch_process_agents_data($access_token, $api_url_base)
 /*******************************
  * this function get all filters that use in listing shortcode
  ******************************/
-function rch_get_filters($atts) {
+function rch_get_filters($atts)
+{
     return array_filter([
         'minimum_price' => isset($atts['minimum_price']) && $atts['minimum_price'] !== '' ? intval($atts['minimum_price']) : null,
         'maximum_price' => isset($atts['maximum_price']) && $atts['maximum_price'] !== '' ? intval($atts['maximum_price']) : null,
@@ -446,7 +452,7 @@ function rch_get_filters($atts) {
         'brand' => isset($atts['brand']) ? $atts['brand'] : null,
         // Only include listing_statuses if it’s not empty
         'listing_statuses' => !empty($atts['listing_statuses']) ? explode(',', $atts['listing_statuses']) : null
-    ], function($value) {
+    ], function ($value) {
         return $value !== null; // Filter out null values
     });
 }
@@ -522,4 +528,51 @@ function rch_find_primary_color($brand)
     // Sanitize the color or return a default color
     return $primary_color ? sanitize_hex_color($primary_color) : '#2271b1';
 }
+/*******************************
+ *Helper function to create api for sending data to react
+ ******************************/
+function register_custom_options_route() {
+    register_rest_route('wp/v2', '/options', array(
+        'methods' => 'GET',
+        'callback' => 'get_custom_options',
+        'permission_callback' => 'is_user_logged_in_permission', // Check if user is logged in
+    ));
+}
 
+function is_user_logged_in_permission() {
+    // Allow access only if the user is logged in
+    return is_user_logged_in();
+}
+
+function get_custom_options() {
+    // Retrieve the option stored in WordPress
+    $brand_id = get_option('rch_rechat_brand_id');
+    $access_token = get_option('rch_rechat_access_token');
+    
+    // Return the option as a JSON response
+    return new WP_REST_Response(array(
+        'rch_rechat_brand_id' => $brand_id,
+        'rch_rechat_access_token' => $access_token,
+    ), 200);
+}
+
+add_action('rest_api_init', 'register_custom_options_route');
+function register_check_user_logged_in_route() {
+    register_rest_route('wp/v2', '/check_logged_in', array(
+        'methods' => 'GET',
+        'callback' => 'check_logged_in_status',
+        'permission_callback' => function() {
+            return is_user_logged_in(); // Only proceed if the user is logged in
+        },
+    ));
+}
+
+function check_logged_in_status() {
+    // If the user is logged in, return success
+    return new WP_REST_Response(
+        array('status' => 'success', 'message' => 'User is logged in'),
+        200
+    );
+}
+
+add_action('rest_api_init', 'register_check_user_logged_in_route');

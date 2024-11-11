@@ -152,7 +152,53 @@
                     </div>
                 </div>
                 <div class="rch-single-right-main-layout">
+                    <div class="rch-listing-form-lead" id="leadCaptureForm">
+
+                        <form action="" method="post">
+                            <h2>Inquire About This Property</h2>
+                            <!-- First Name -->
+                            <div class="form-group">
+                                <label for="first_name">First Name</label>
+                                <input type="text" id="first_name" name="first_name" placeholder="Enter your first name" required>
+                            </div>
+
+                            <!-- Last Name -->
+                            <div class="form-group">
+                                <label for="last_name">Last Name</label>
+                                <input type="text" id="last_name" name="last_name" placeholder="Enter your last name" required>
+                            </div>
+
+                            <!-- Phone Number -->
+                            <div class="form-group">
+                                <label for="phone_number">Phone Number</label>
+                                <input type="tel" id="phone_number" name="phone_number" placeholder="Enter your phone number" required>
+                            </div>
+
+                            <!-- Email Address -->
+                            <div class="form-group">
+                                <label for="email">Email Address</label>
+                                <input type="email" id="email" name="email" placeholder="Enter your email address" required>
+                            </div>
+
+                            <!-- Note -->
+                            <div class="form-group">
+                                <label for="note">Note</label>
+                                <textarea id="note" name="note" placeholder="Write your note here" required></textarea>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <button type="submit">Submit Request</button>
+                            <div id="loading-spinner" class="rch-loading-spinner-form" style="display: none;"></div>
+                            <div id="rch-listing-success-sdk" class="rch-success-box-listing">
+                                Thank you! Your data has been successfully sent.
+                            </div>
+                            <div id="rch-listing-cancel-sdk" class="rch-error-box-listing">
+                                Something went wrong. Please try again.
+                            </div>
+                        </form>
+                    </div>
                 </div>
+
             </div>
         </div>
     </main><!-- #main -->
@@ -190,6 +236,49 @@
 
 </div>
 <?php get_footer() ?>
+<script src="https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.js"></script>
+<!-- <srcipt src="https://unpkg.com/@rechat/sdk@^1/dist/rechat.min.js" type="text/javascript"></script>
+<srcipt src="https://unpkg.com/@rechat/sdk@0.1.3/dist/rechat.min.js" type="text/javascript"></script> -->
+<script>
+    const sdk = new Rechat.Sdk();
+
+    const channel = {
+        lead_channel: '<?php echo get_option("rch_lead_channels"); ?>'
+    };
+
+    document.getElementById('leadCaptureForm').addEventListener('submit', function(event) {
+        event.preventDefault(); // Prevent form from submitting normally
+
+        const input = {
+            first_name: document.getElementById('first_name').value,
+            last_name: document.getElementById('last_name').value,
+            phone_number: document.getElementById('phone_number').value,
+            email: document.getElementById('email').value,
+            note: document.getElementById('note').value,
+            tag: <?php echo get_option("rch_selected_tags"); ?>, // Convert comma-separated string to array
+            source_type: 'Website',
+            mlsid:'<?php echo $listing_detail['mls_number'] ?>'
+        };
+
+        // Hide success, error alerts, and show loading spinner
+        document.getElementById('rch-listing-success-sdk').style.display = 'none';
+        document.getElementById('rch-listing-cancel-sdk').style.display = 'none';
+        document.getElementById('loading-spinner').style.display = 'block';
+
+        sdk.Leads.capture(channel, input)
+            .then(() => {
+                // Hide loading spinner and show success message
+                document.getElementById('loading-spinner').style.display = 'none';
+                document.getElementById('rch-listing-success-sdk').style.display = 'block';
+            })
+            .catch((e) => {
+                // Hide loading spinner and show error message
+                document.getElementById('loading-spinner').style.display = 'none';
+                document.getElementById('rch-listing-cancel-sdk').style.display = 'block';
+                console.log('Error:', e);
+            });
+    });
+</script>
 <script src="https://maps.googleapis.com/maps/api/js?key=API_KEY&callback=initMap&language=en"></script>
 <script>
     function initMap() {
@@ -217,35 +306,35 @@
     // Call the initMap function when the window loads
     window.onload = initMap;
     var swiper = new Swiper(".rch-houses-mySwiper", {
-    spaceBetween: 10,
-    slidesPerView: 8, // Default for desktop
-    freeMode: true,
-    watchSlidesProgress: true,
-    
-    // Add responsive breakpoints
-    breakpoints: {
-        // When the window width is >= 320px (small mobile)
-        320: {
-            slidesPerView: 3,  // 1 slide per view on small screens
-        },
-        // When the window width is >= 480px (mobile)
-        480: {
-            slidesPerView: 4,  // 2 slides per view on mobile screens
-        },
-        // When the window width is >= 768px (tablets)
-        768: {
-            slidesPerView: 5,  // 4 slides per view on tablet screens
-        },
-        // When the window width is >= 1024px (desktops)
-        1024: {
-            slidesPerView: 6,  // 6 slides per view on large tablets or small desktops
-        },
-        // When the window width is >= 1280px (desktops)
-        1280: {
-            slidesPerView: 8,  // Full slides per view on desktop
+        spaceBetween: 10,
+        slidesPerView: 8, // Default for desktop
+        freeMode: true,
+        watchSlidesProgress: true,
+
+        // Add responsive breakpoints
+        breakpoints: {
+            // When the window width is >= 320px (small mobile)
+            320: {
+                slidesPerView: 3, // 1 slide per view on small screens
+            },
+            // When the window width is >= 480px (mobile)
+            480: {
+                slidesPerView: 4, // 2 slides per view on mobile screens
+            },
+            // When the window width is >= 768px (tablets)
+            768: {
+                slidesPerView: 5, // 4 slides per view on tablet screens
+            },
+            // When the window width is >= 1024px (desktops)
+            1024: {
+                slidesPerView: 6, // 6 slides per view on large tablets or small desktops
+            },
+            // When the window width is >= 1280px (desktops)
+            1280: {
+                slidesPerView: 8, // Full slides per view on desktop
+            }
         }
-    }
-});
+    });
 
     var swiper2 = new Swiper(".rch-houses-mySwiper2", {
         spaceBetween: 10,

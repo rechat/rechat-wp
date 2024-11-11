@@ -38,6 +38,22 @@ function rch_appearance_setting()
         'default' => 10,
     );
     register_setting('appearance_settings', '_rch_posts_per_page', $posts_per_page_args);
+    // Register new settings for Lead Channel and Tags
+    function sanitize_lead_channel($input)
+    {
+        return sanitize_text_field($input); // Ensure the input is an integer (the ID of the lead channel)
+    }
+
+    function sanitize_tags($input)
+    {
+        return array_map('sanitize_text_field', $input); // Sanitizes each tag
+    }
+
+    // Register the 'rch_lead_channel' setting
+    register_setting('appearance_settings', 'rch_lead_channels', array(
+        'sanitize_callback' => 'sanitize_lead_channel',
+    ));
+    register_setting('appearance_settings', 'rch_selected_tags');
 
     add_settings_section(
         'rch_theme_appearance_setting',
@@ -46,19 +62,28 @@ function rch_appearance_setting()
         'appearance_setting'
     );
 
-    // add_settings_field(
-    //     'rch_primary_color',
-    //     __('Primary Color', 'rch_rechat_plugin'),
-    //     'rch_render_color_picker',
-    //     'appearance_setting',
-    //     'rch_theme_appearance_setting'
-    // );
 
     // Add the field for posts per page
     add_settings_field(
         'rch_posts_per_page',
         __('Posts Per Page', 'rch_rechat_plugin'),
         'rch_render_posts_per_page_field',
+        'appearance_setting',
+        'rch_theme_appearance_setting'
+    );
+    // Add the field for posts per page
+    add_settings_field(
+        'rch_lead_channels',
+        __('Lead Channels', 'rch_rechat_plugin'),
+        'rch_render_lead_channel',
+        'appearance_setting',
+        'rch_theme_appearance_setting'
+    );
+    // Add the field for posts per page
+    add_settings_field(
+        'rch_select_tag',
+        __('Tags', 'rch_rechat_plugin'),
+        'rch_render_select_tag',
         'appearance_setting',
         'rch_theme_appearance_setting'
     );
@@ -73,15 +98,160 @@ function rch_render_posts_per_page_field()
     $posts_per_page = get_option('_rch_posts_per_page', 12); // Default to 10
     echo '<input type="number" id="rch_posts_per_page" name="_rch_posts_per_page" value="' . esc_attr($posts_per_page) . '" min="1" />';
 }
+/*******************************
+ * Render the lead channel input field.
+ ******************************/
+function rch_render_lead_channel()
+{
+    // Retrieve brand ID from WordPress options
+    $brand_id = get_option('rch_rechat_brand_id');
+
+    // Define the API URL with the brand ID
+    $api_url = "https://api.rechat.com/brands/{$brand_id}/leads/channels";
+
+    // Optional: Define the token for authorization if required
+    $access_token = get_option('rch_rechat_access_token');
+
+    // Fetch data using the helper function
+    $response = rch_api_request($api_url, $access_token);
+
+    // Check if the request was successful
+    if (!$response['success']) {
+        echo $response['message'];
+        return;
+    }
+
+    // Get the data from the response
+    $data = $response['data'];
+    // Check if there's data to display
+    if (empty($data['data'])) {
+        echo 'No channels available';
+        return;
+    }
+
+    // Retrieve the saved option for the lead channel
+    $selected_channel = get_option('rch_lead_channels', '');
+
+    // Generate the options for the select dropdown
+    $options = '<option value="">Select Lead Channel</option>';
+    foreach ($data['data'] as $channel) {
+        $id = esc_attr($channel['id']);
+
+        $title = !empty($channel['title']) ? esc_html($channel['title']) : 'Unnamed';
+        // Check if the channel is selected
+        $selected = selected($id, $selected_channel, false);
+        $options .= "<option value='{$id}' {$selected}>{$title}</option>";
+    }
+
+    echo "<select id='rch_lead_channels' name='rch_lead_channels'>{$options}</select>";
+}
 
 /*******************************
- * function for Color Picker
+ * Render the Posts Per Page input field.
  ******************************/
-// function rch_render_color_picker()
-// {
-//     $color = get_option('_rch_primary_color', '#2271b1'); // Default to white
-//     echo '<input type="text" id="rch_primary_color" name="_rch_primary_color" value="' . esc_attr($color) . '" class="my-color-field" data-default-color="#2271b1" />';
-// }
+function rch_render_select_tag()
+{
+    // Define the API URL for fetching tags
+    $api_url = "https://api.rechat.com/contacts/tags";
+
+    // Optional: Define the token for authorization if required
+    $access_token = get_option('rch_rechat_access_token');
+    $brand_id = get_option('rch_rechat_brand_id');
+
+    // Fetch data using the helper function
+    $response = rch_api_request($api_url, $access_token, $brand_id);
+
+    // Check if the request was successful
+    if (!$response['success']) {
+        echo $response['message'];
+        return;
+    }
+
+    // Get the data from the response
+    $data = $response['data'];
+
+    // Check if there's data to display
+    if (empty($data['data'])) {
+        echo 'No tags available';
+        return;
+    }
+
+    // Get previously selected tags from the WordPress options
+    $selected_tags = get_option('rch_selected_tags', '[]'); // Default to an empty JSON array if not set
+    $selected_tags = json_decode($selected_tags, true); // Decode the JSON string to an array
+    // Ensure $selected_tags is an array
+    if (!is_array($selected_tags)) {
+        $selected_tags = []; // Convert to an empty array if decoding failed
+    }
+
+    // Generate the select dropdown with options for each tag
+    echo "<select id='tag-select' style='width:100%; margin-bottom:10px;'>";
+    echo "<option value='' disabled selected>Please select a tag</option>";
+    foreach ($data['data'] as $tag) {
+        $name = !empty($tag['tag']) ? esc_html($tag['tag']) : 'Unnamed';
+        // Check if this tag is in the selected tags array and set it as selected
+        $selected = in_array($name, $selected_tags) ? 'selected' : '';
+        echo "<option value='{$name}' {$selected}>{$name}</option>";
+    }
+    echo "</select>";
+
+    // Display container for selected tag chips below the dropdown
+    echo "<div id='selected-tags-container' style='margin-bottom:10px;'></div>";
+
+    // Hidden input to store selected tags as JSON array
+    echo "<input type='hidden' name='rch_selected_tags' id='rch_selected_tags_input' value='" . esc_attr(json_encode($selected_tags)) . "'>";
+
+    // JavaScript for managing tag selection and chip display
+    echo "
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const selectBox = document.getElementById('tag-select');
+                const selectedTagsContainer = document.getElementById('selected-tags-container');
+                const hiddenInput = document.getElementById('rch_selected_tags_input');
+
+                let selectedTagNames = hiddenInput.value ? JSON.parse(hiddenInput.value) : [];
+
+                function renderChips() {
+                    selectedTagsContainer.innerHTML = ''; // Clear current chips
+                    selectedTagNames.forEach(function(tagName) {
+                        const chip = document.createElement('span');
+                        chip.textContent = tagName;
+                        chip.className = 'tag-chip';
+                        chip.style.cssText = 'display: inline-block; margin: 0 5px 5px 0; padding: 5px; background-color: #ddd; border-radius: 3px;';
+                        const closeBtn = document.createElement('span');
+                        closeBtn.textContent = ' ×';
+                        closeBtn.style.cssText = 'margin-left: 5px; cursor: pointer;';
+                        closeBtn.onclick = function() {
+                            selectedTagNames = selectedTagNames.filter(tag => tag !== tagName);
+                            updateHiddenInput();
+                            renderChips();
+                        };
+                        chip.appendChild(closeBtn);
+                        selectedTagsContainer.appendChild(chip);
+                    });
+                }
+
+                function updateHiddenInput() {
+                    hiddenInput.value = JSON.stringify(selectedTagNames);
+                }
+
+                // Add event listener for selecting tags from the dropdown
+                selectBox.addEventListener('change', function() {
+                    const selectedTagName = selectBox.value;
+                    if (selectedTagName && !selectedTagNames.includes(selectedTagName)) {
+                        selectedTagNames.push(selectedTagName);
+                        updateHiddenInput();
+                        renderChips();
+                    }
+                    selectBox.value = ''; // Reset select box to the placeholder
+                });
+
+                // Initial render of chips if there are pre-selected tags
+                renderChips();
+            });
+        </script>
+    ";
+}
 
 /*******************************
  * AJAX handler for updating all data
@@ -141,14 +311,14 @@ function rch_rechat_menu_page()
                                 <div id="agents_update_status" style="margin-top: 20px;"></div>
 
                                 <?php if (!$access_token_exists): ?>
-                        <p style="display: flex;align-items: center;">
-                            <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG . 'ph_info.png' ?>" alt="info" style="margin-inline-end: 5px;">
-                            <?php _e('You are not yet connected to Rechat. Please connect your Rechat account to enable syncing your data.', 'rch_rechat_plugin'); ?>
-                            <a href="?page=rechat-setting&tab=connect-to-rechat" class="nav-tab-link" style="font-weight: bold; margin-inline-start: 3px;">
-                                <?php _e('Connect To Rechat', 'rch_rechat_plugin'); ?>
-                            </a>
-                        </p>
-                    <?php endif; ?>
+                                    <p style="display: flex;align-items: center;">
+                                        <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG . 'ph_info.png' ?>" alt="info" style="margin-inline-end: 5px;">
+                                        <?php _e('You are not yet connected to Rechat. Please connect your Rechat account to enable syncing your data.', 'rch_rechat_plugin'); ?>
+                                        <a href="?page=rechat-setting&tab=connect-to-rechat" class="nav-tab-link" style="font-weight: bold; margin-inline-start: 3px;">
+                                            <?php _e('Connect To Rechat', 'rch_rechat_plugin'); ?>
+                                        </a>
+                                    </p>
+                                <?php endif; ?>
                             </td>
                         </tr>
                         <tr valign="top">
@@ -299,7 +469,7 @@ function rch_rechat_menu_page()
                         </div>
                     </div>
                 <?php elseif ($active_tab === 'appearance') : ?>
-                    <form method="post" action="options.php">
+                    <form method="POST" action="options.php">
                         <?php
                         settings_fields('appearance_settings');
                         do_settings_sections('appearance_setting');

@@ -60,6 +60,7 @@ include RCH_PLUGIN_INCLUDES . 'shortcodes/listing-shortcodes.php';
 include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-offices-regions.php';
 include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-agents.php';
 include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-listing.php';
+include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-lead-form.php';
 include RCH_PLUGIN_INCLUDES . 'metabox/load-all-meta-boxes.php';
 if (is_admin()) {
     include RCH_PLUGIN_INCLUDES . 'admin/enqueue-admin.php';

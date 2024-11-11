@@ -1,8 +1,9 @@
 const { registerBlockType } = wp.blocks;
 const { InspectorControls, ColorPalette } = wp.blockEditor || wp.editor;
-const { PanelBody, RangeControl, SelectControl, TextControl, CheckboxControl } = wp.components;
+const { PanelBody, RangeControl, SelectControl, TextControl , MultiSelectControl, CheckboxControl,ToggleControl } = wp.components;
 import { useEffect, useState } from '@wordpress/element'; // useState and useEffect hooks
 import ServerSideRender from '@wordpress/server-side-render';
+import apiFetch from '@wordpress/api-fetch';
 //regions block
 registerBlockType('rch-rechat-plugin/regions-block', {
     title: 'Regions Block',
@@ -69,28 +70,17 @@ registerBlockType('rch-rechat-plugin/regions-block', {
     },
 });
 //offices block
+
 registerBlockType('rch-rechat-plugin/offices-block', {
     title: 'Offices Block',
     description: 'Block for showing Offices',
     icon: 'building',
     category: 'widgets',
     attributes: {
-        postsPerPage: {
-            type: 'number',
-            default: 5,
-        },
-        regionBgColor: {
-            type: 'string',
-            default: '#edf1f5',
-        },
-        textColor: {
-            type: 'string',
-            default: '#000',
-        },
-        filterByRegions: {
-            type: 'string',
-            default: '',
-        },
+        postsPerPage: { type: 'number', default: 5 },
+        regionBgColor: { type: 'string', default: '#edf1f5' },
+        textColor: { type: 'string', default: '#000' },
+        filterByRegions: { type: 'string', default: '' },
     },
     edit({ attributes, setAttributes }) {
         const { postsPerPage, regionBgColor, textColor, filterByRegions } = attributes;
@@ -98,12 +88,7 @@ registerBlockType('rch-rechat-plugin/offices-block', {
 
         // Fetch the custom post type 'regions'
         useEffect(() => {
-            // Dynamically get the base URL including the current subdirectory
-            const baseUrl = `${window.location.origin}`;
-            const apiUrl = `${baseUrl}/wp-json/wp/v2/regions?per_page=100`;
-
-            fetch(apiUrl)
-                .then((response) => response.json())
+            apiFetch({ path: '/wp/v2/regions?per_page=100' })
                 .then((data) => {
                     const options = data.map((region) => ({
                         label: region.title.rendered,
@@ -118,8 +103,7 @@ registerBlockType('rch-rechat-plugin/offices-block', {
         return (
             <>
                 <InspectorControls>
-
-                    <PanelBody title={'Settings'}>
+                    <PanelBody title="Settings">
                         <RangeControl
                             label="Posts Per Page"
                             value={postsPerPage}
@@ -127,7 +111,6 @@ registerBlockType('rch-rechat-plugin/offices-block', {
                             min={1}
                             max={20}
                         />
-                        <p><strong>Select aregion for filter</strong></p>
                         <SelectControl
                             label="Select a Region"
                             value={filterByRegions}
@@ -144,7 +127,6 @@ registerBlockType('rch-rechat-plugin/offices-block', {
                             value={textColor}
                             onChange={(color) => setAttributes({ textColor: color })}
                         />
-
                     </PanelBody>
                 </InspectorControls>
                 <ServerSideRender
@@ -155,7 +137,7 @@ registerBlockType('rch-rechat-plugin/offices-block', {
         );
     },
     save() {
-        return null;
+        return null; // Dynamic block, content will be rendered by the server
     },
 });
 
@@ -166,80 +148,42 @@ registerBlockType('rch-rechat-plugin/agents-block', {
     icon: 'businessperson',
     category: 'widgets',
     attributes: {
-        postsPerPage: {
-            type: 'number',
-            default: 5,
-        },
-        regionBgColor: {
-            type: 'string',
-            default: '#edf1f5',
-        },
-        textColor: {
-            type: 'string',
-            default: '#000',
-        },
-        filterByRegions: {
-            type: 'string',
-            default: '',
-        },
-        filterByOffices: {
-            type: 'string',
-            default: '',
-        },
-        sortBy: {
-            type: 'string',
-            default: 'date', // Default sort by date
-        },
-        sortOrder: {
-            type: 'string',
-            default: 'desc', // Default sort order
-        },
+        postsPerPage: { type: 'number', default: 5 },
+        regionBgColor: { type: 'string', default: '#edf1f5' },
+        textColor: { type: 'string', default: '#000' },
+        filterByRegions: { type: 'string', default: '' },
+        filterByOffices: { type: 'string', default: '' },
+        sortBy: { type: 'string', default: 'date' },
+        sortOrder: { type: 'string', default: 'desc' },
     },
     edit({ attributes, setAttributes }) {
         const { postsPerPage, regionBgColor, textColor, filterByRegions, filterByOffices, sortBy, sortOrder } = attributes;
-        const [regions, setRegions] = useState([]); // State to store fetched regions
-        const [offices, setOffices] = useState([]); // State to store fetched offices
+        const [regions, setRegions] = useState([]);
+        const [offices, setOffices] = useState([]);
 
-        // Fetch the custom post type 'regions'
+        const fetchData = async (endpoint, setState) => {
+            try {
+                const data = await apiFetch({ path: endpoint });
+                const options = data.map(item => ({
+                    label: item.title.rendered,
+                    value: item.id,
+                }));
+                options.unshift({ label: 'None', value: '' });
+                setState(options);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        };
+
         useEffect(() => {
-            const baseUrl = `${window.location.origin}`;
-            const apiUrl = `${baseUrl}/wp-json/wp/v2/regions?per_page=100`;
-
-            fetch(apiUrl)
-                .then((response) => response.json())
-                .then((data) => {
-                    const options = data.map((region) => ({
-                        label: region.title.rendered,
-                        value: region.id,
-                    }));
-                    options.unshift({ label: 'None', value: '' });
-                    setRegions(options);
-                })
-                .catch((error) => console.error('Error fetching regions:', error));
-        }, []);
-
-        // Fetch the custom post type 'offices'
-        useEffect(() => {
-            const baseUrl = `${window.location.origin}`;
-            const apiUrl = `${baseUrl}/wp-json/wp/v2/offices?per_page=100`;
-
-            fetch(apiUrl)
-                .then((response) => response.json())
-                .then((data) => {
-                    const options = data.map((office) => ({
-                        label: office.title.rendered,
-                        value: office.id,
-                    }));
-                    options.unshift({ label: 'None', value: '' });
-                    setOffices(options);
-                })
-                .catch((error) => console.error('Error fetching offices:', error));
+            fetchData('/wp/v2/regions?per_page=100', setRegions);
+            fetchData('/wp/v2/offices?per_page=100', setOffices);
         }, []);
 
         return (
             <>
                 <InspectorControls>
-                    <PanelBody title={'Settings'}>
+                    <PanelBody title="Settings">
                         <RangeControl
                             label="Posts Per Page"
                             value={postsPerPage}
@@ -247,14 +191,12 @@ registerBlockType('rch-rechat-plugin/agents-block', {
                             min={1}
                             max={20}
                         />
-                        <p><strong>Select a Region for filter</strong></p>
                         <SelectControl
                             label="Select a Region"
                             value={filterByRegions}
                             options={regions.length ? regions : [{ label: 'Loading regions...', value: '' }]}
                             onChange={(selectedRegion) => setAttributes({ filterByRegions: selectedRegion })}
                         />
-                        <p><strong>Select an Office for filter</strong></p>
                         <SelectControl
                             label="Select an Office"
                             value={filterByOffices}
@@ -299,36 +241,21 @@ registerBlockType('rch-rechat-plugin/agents-block', {
         );
     },
     save() {
-        return null;
+        return null; // Dynamic block, content will be generated by PHP
     },
 });
 
 registerBlockType('rch-rechat-plugin/listing-block', {
     title: 'Listing Block',
     description: 'Block for showing property listings',
-    icon: 'building', // You can change the icon to something related to listings.
+    icon: 'building',
     category: 'widgets',
     attributes: {
-        minimum_price: {
-            type: 'number',
-            default: null
-        },
-        maximum_price: {
-            type: 'number',
-            default: null
-        },
-        minimum_lot_square_meters: {
-            type: 'number',
-            default: null
-        },
-        maximum_lot_square_meters: {
-            type: 'number',
-            default: null
-        },
-        minimum_bathrooms: {
-            type: 'number',
-            default: null
-        },
+        minimum_price: { type: 'number', default: null },
+        maximum_price: { type: 'number', default: null },
+        minimum_lot_square_meters: { type: 'number', default: null },
+        maximum_lot_square_meters: { type: 'number', default: null },
+        minimum_bathrooms: { type: 'number', default: null },
         maximum_bathrooms: { type: 'number', default: null },
         minimum_square_meters: { type: 'number', default: null },
         maximum_square_meters: { type: 'number', default: null },
@@ -339,155 +266,79 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         listing_per_page: { type: 'number', default: 5 },
         filterByRegions: { type: 'string', default: '' },
         filterByOffices: { type: 'string', default: '' },
-        brand: { type: 'string', default: '' },
-        selectedStatuses: { type: 'array', default: [] }, // New attribute for selected statuses
-        listing_statuses: { type: 'array', default: [] }, // New attribute for listing statuses
+        selectedStatuses: { type: 'array', default: [] },
+        listing_statuses: { type: 'array', default: [] },
     },
     edit({ attributes, setAttributes }) {
-        const {
-            minimum_price,
-            maximum_price,
-            minimum_lot_square_meters,
-            maximum_lot_square_meters,
-            minimum_bathrooms,
-            maximum_bathrooms,
-            minimum_square_meters,
-            maximum_square_meters,
-            minimum_year_built,
-            maximum_year_built,
-            minimum_bedrooms,
-            maximum_bedrooms,
-            listing_per_page,
-            filterByRegions,
-            filterByOffices,
-            brand,
-            selectedStatuses,
-            listing_statuses,
-
+        const { 
+            minimum_price, maximum_price, minimum_lot_square_meters, maximum_lot_square_meters,
+            minimum_bathrooms, maximum_bathrooms, minimum_square_meters, maximum_square_meters,
+            minimum_year_built, maximum_year_built, minimum_bedrooms, maximum_bedrooms,
+            listing_per_page, filterByRegions, filterByOffices, selectedStatuses
         } = attributes;
-        // React state for holding regions and offices data
+
         const [regions, setRegions] = useState([]);
         const [offices, setOffices] = useState([]);
-        // Mapping of status options to their values
-        const statusMapping = {
-            Active: [
-                'Active',
-                'Incoming',
-                'Coming Soon',
-                'Pending',
-                'Active Option Contract',
-                'Active Contingent',
-                'Active Kick Out',
-                'Active Under Contract',
-            ],
-            Closed: ['Sold', 'Leased'],
-            Archived: [
-                'Withdrawn',
-                'Expired',
-                'Cancelled',
-                'Withdrawn Sublisting',
-                'Incomplete',
-                'Unknown',
-                'Out Of Sync',
-                'Temp Off Market',
-            ],
-        };
+
         const statusOptions = [
-            { label: 'Empty', value: 'Empty' },
             { label: 'Active', value: 'Active' },
             { label: 'Closed', value: 'Closed' },
             { label: 'Archived', value: 'Archived' },
         ];
-        // Fetch Regions on component mount
+
+        const fetchData = async (path, setState) => {
+            try {
+                const data = await apiFetch({ path });
+                setState([{ label: 'None', value: '' }, ...data.map(item => ({
+                    label: item.title.rendered,
+                    value: item.meta.region_id || item.meta.office_id
+                }))]);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        };
+
         useEffect(() => {
-            const baseUrl = `${window.location.origin}`;
-            const apiUrl = `${baseUrl}/wp-json/wp/v2/regions?per_page=100`;
-            fetch(apiUrl)
-                .then((response) => response.json())
-                .then((data) => {
-                    const options = data.map((region) => ({
-                        label: region.title.rendered,
-                        value: region.meta.region_id
-                    }));
-                    options.unshift({ label: 'None', value: '' }); // Add "None" option
-                    setRegions(options);
-                })
-                .catch((error) => console.error('Error fetching regions:', error));
+            fetchData('/wp/v2/regions?per_page=100', setRegions);
+            fetchData('/wp/v2/offices?per_page=100', setOffices);
         }, []);
 
-        // Fetch Offices on component mount
-        useEffect(() => {
-            const baseUrl = `${window.location.origin}`;
-            const apiUrl = `${baseUrl}/wp-json/wp/v2/offices?per_page=100`;
+        const handleAttributeChange = (attr, value) => {
+            setAttributes({ [attr]: value });
+        };
 
-            fetch(apiUrl)
-                .then((response) => response.json())
-                .then((data) => {
-                    const options = data.map((office) => ({
-                        label: office.title.rendered,
-                        value: office.meta.office_id
-                    }));
-                    options.unshift({ label: 'None', value: '' }); // Add "None" option
-                    setOffices(options);
-                })
-                .catch((error) => console.error('Error fetching offices:', error));
-        }, []);
-        // Handle status selection
         const handleStatusChange = (status) => {
-            const newSelectedStatuses = selectedStatuses.includes(status)
-                ? selectedStatuses.filter((s) => s !== status)
+            const updatedStatuses = selectedStatuses.includes(status)
+                ? selectedStatuses.filter(s => s !== status)
                 : [...selectedStatuses, status];
+            const listingStatuses = updatedStatuses.flatMap(status =>
+                ({
+                    Active: ['Active', 'Incoming', 'Coming Soon', 'Pending'],
+                    Closed: ['Sold', 'Leased'],
+                    Archived: ['Withdrawn', 'Expired']
+                }[status] || [])
+            );
+            setAttributes({ selectedStatuses: updatedStatuses, listing_statuses: listingStatuses });
+        };
 
-            // Collect all corresponding listing statuses based on the selection
-            const newListingStatuses = newSelectedStatuses
-                .flatMap((selected) => statusMapping[selected] || [])
-                .filter((value, index, self) => self.indexOf(value) === index); // Remove duplicates
-
-            setAttributes({
-                selectedStatuses: newSelectedStatuses,
-                listing_statuses: newListingStatuses,
-            });
-        };
-        
-        // Handle Region selection
-        const handleRegionChange = (selectedRegion) => {
-            setAttributes({
-                ...attributes,
-                filterByRegions: selectedRegion,
-                filterByOffices: '', // Clear office selection
-                brand: selectedRegion || '' // Set brand to region ID or default to empty
-            });
-        };
-        // Handle Office selection
-        const handleOfficeChange = (selectedOffice) => {
-            setAttributes({
-                ...attributes,
-                filterByOffices: selectedOffice,
-                filterByRegions: '', // Clear region selection
-                brand: selectedOffice || '' // Set brand to office ID or default to empty
-            });
-        };
         return (
             <>
                 <InspectorControls>
-                    <PanelBody title={'Listing Settings'}>
-                        <p><strong>Select a Regions for filter</strong></p>
+                    <PanelBody title="Listing Settings">
                         <SelectControl
                             label="Select a Region"
                             value={filterByRegions}
                             options={regions}
-                            onChange={handleRegionChange}
+                            onChange={(value) => handleAttributeChange('filterByRegions', value)}
                         />
-                        <p><strong>Select an Office for filter</strong></p>
-                        {/* Select control for offices */}
                         <SelectControl
                             label="Select an Office"
                             value={filterByOffices}
                             options={offices}
-                            onChange={handleOfficeChange}
+                            onChange={(value) => handleAttributeChange('filterByOffices', value)}
                         />
                         <p><strong>Select Statuses</strong></p>
-                        {statusOptions.map((option) => (
+                        {statusOptions.map(option => (
                             <CheckboxControl
                                 key={option.value}
                                 label={option.label}
@@ -495,95 +346,11 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                                 onChange={() => handleStatusChange(option.value)}
                             />
                         ))}
-                        <TextControl
-                            label="Minimum Price"
-                            value={minimum_price}
-                            type="number"
-                            onChange={(value) => setAttributes({ minimum_price: value === '' ? '' : parseInt(value) || 0 })}
-                        />
-                        <TextControl
-                            label="Maximum Price"
-                            value={maximum_price}
-                            type="number"
-                            onChange={(value) => setAttributes({ maximum_price: value === '' ? '' : parseInt(value) || 0 })}
-                        />
-                        <TextControl
-                            label="Minimum Lot Size (m²)"
-                            value={minimum_lot_square_meters}
-                            type="number"
-                            onChange={(value) => setAttributes({ minimum_lot_square_meters: value === '' ? '' : parseInt(value) || 0 })}
-                        />
-                        <TextControl
-                            label="Maximum Lot Size (m²)"
-                            value={maximum_lot_square_meters}
-                            type="number"
-                            onChange={(value) => setAttributes({ maximum_lot_square_meters: value === '' ? '' : parseInt(value) || 0 })}
-                        />
-                        <TextControl
-                            label="Minimum Bathrooms"
-                            value={minimum_bathrooms}
-                            type="number"
-                            onChange={(value) => setAttributes({ minimum_bathrooms: value === '' ? '' : parseInt(value) || 0 })}
-                        />
-                        <TextControl
-                            label="Maximum Bathrooms"
-                            value={maximum_bathrooms}
-                            type="number"
-                            onChange={(value) => setAttributes({ maximum_bathrooms: value === '' ? '' : parseInt(value) || 0 })}
-                        />
-                        <TextControl
-                            label="Minimum Square Meters"
-                            value={minimum_square_meters}
-                            type="number"
-                            onChange={(value) => setAttributes({ minimum_square_meters: value === '' ? '' : parseInt(value) || 0 })}
-                        />
-                        <TextControl
-                            label="Maximum Square Meters"
-                            value={maximum_square_meters}
-                            type="number"
-                            onChange={(value) => setAttributes({ maximum_square_meters: value === '' ? '' : parseInt(value) || 0 })}
-                        />
-                        <TextControl
-                            label="Minimum Year Built"
-                            value={minimum_year_built}
-                            type="number"
-                            onChange={(value) => setAttributes({ minimum_year_built: value === '' ? '' : parseInt(value) || 0 })}
-                        />
-                        <TextControl
-                            label="Maximum Year Built"
-                            value={maximum_year_built}
-                            type="number"
-                            onChange={(value) => setAttributes({ maximum_year_built: value === '' ? '' : parseInt(value) || 0 })}
-                        />
-                        <TextControl
-                            label="Minimum Bedrooms"
-                            value={minimum_bedrooms}
-                            type="number"
-                            onChange={(value) => setAttributes({ minimum_bedrooms: value === '' ? '' : parseInt(value) || 0 })}
-                        />
-                        <TextControl
-                            label="Maximum Bedrooms"
-                            value={maximum_bedrooms}
-                            type="number"
-                            onChange={(value) => setAttributes({ maximum_bedrooms: value === '' ? '' : parseInt(value) || 0 })}
-                        />
-                        <TextControl
-                            label="listing Per Page"
-                            value={listing_per_page}
-                            type="number"
-                            onChange={(value) => setAttributes({ listing_per_page: value === '' ? '' : parseInt(value) || 1 })}
-                        />
+                        {/* Add other controls here as needed */}
                     </PanelBody>
                 </InspectorControls>
-
-
-                {/* <ServerSideRender
-                    block="rch-rechat-plugin/listing-block"
-                    attributes={attributes}
-                /> */}
                 <div className="listing-block-preview">
-                    <p><strong>Listing Block:</strong></p>
-                    <p>We display listing items based on your selected filters on the front end of the site.</p>
+                    <p><strong>Listing Block:</strong> Preview will be shown on the frontend.</p>
                 </div>
             </>
         );
@@ -593,3 +360,208 @@ registerBlockType('rch-rechat-plugin/listing-block', {
     },
 });
 
+//register contact lead channel block
+registerBlockType('rch-rechat-plugin/leads-form-block', {
+    title: 'Leads Form Block',
+    description: 'Block for lead form submission',
+    icon: 'admin-users',
+    category: 'widgets',
+    attributes: {
+        leadChannel: { type: 'string', default: '' },
+        showFirstName: { type: 'boolean', default: true },
+        showLastName: { type: 'boolean', default: true },
+        showPhoneNumber: { type: 'boolean', default: true },
+        showEmail: { type: 'boolean', default: true },
+        showNote: { type: 'boolean', default: true },
+        selectedTagsFrom: { type: 'array', default: [] }, // Array to hold selected tags
+    },
+    edit({ attributes, setAttributes }) {
+        const { leadChannel, showFirstName, showLastName, showPhoneNumber, showEmail, showNote, selectedTagsFrom } = attributes;
+        const [leadChannels, setLeadChannels] = useState([]);
+        const [tags, setTags] = useState([]);
+        const [loadingChannels, setLoadingChannels] = useState(true);
+        const [loadingTags, setLoadingTags] = useState(true);
+        const [isLoggedIn, setIsLoggedIn] = useState(null);
+        const [brandId, setBrandId] = useState(null);
+        const [accessToken, setAccessToken] = useState(null);
+
+        useEffect(() => {
+            const checkUserLogin = async () => {
+                try {
+                    const response = await apiFetch({ path: '/wp/v2/users/me' });
+                    if (response && response.id) {
+                        setIsLoggedIn(true);
+                        fetchBrandId();
+                        fetchAccessToken();
+                    } else {
+                        setIsLoggedIn(false);
+                    }
+                } catch (error) {
+                    setIsLoggedIn(false);
+                    console.error('Error checking user login:', error);
+                }
+            };
+            checkUserLogin();
+        }, []);
+
+        const fetchBrandId = async () => {
+            try {
+                const brandResponse = await apiFetch({ path: '/wp/v2/options' });
+                if (brandResponse.rch_rechat_brand_id) {
+                    setBrandId(brandResponse.rch_rechat_brand_id);
+                } else {
+                    console.error('Brand ID not found in WordPress options.');
+                }
+            } catch (error) {
+                console.error('Error fetching brand ID:', error);
+            }
+        };
+
+        const fetchAccessToken = async () => {
+            try {
+                const tokenResponse = await apiFetch({ path: '/wp/v2/options' });
+                if (tokenResponse.rch_rechat_access_token) {
+                    setAccessToken(tokenResponse.rch_rechat_access_token);
+                } else {
+                    console.error('Access token not found in WordPress options.');
+                }
+            } catch (error) {
+                console.error('Error fetching access token:', error);
+            }
+        };
+
+        useEffect(() => {
+            if (isLoggedIn && brandId && accessToken) {
+                const fetchLeadChannels = async () => {
+                    try {
+                        const channelResponse = await fetch(`https://api.rechat.com/brands/${brandId}/leads/channels`, {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `Bearer ${accessToken}`,
+                            },
+                        });
+                        const channelData = await channelResponse.json();
+                        const options = channelData.data.map(channel => ({
+                            label: channel.title ? channel.title : 'Unnamed',
+                            value: channel.id,
+                        }));
+                        setLeadChannels(options);
+                    } catch (error) {
+                        console.error('Error fetching lead channels:', error);
+                    } finally {
+                        setLoadingChannels(false);
+                    }
+                };
+                fetchLeadChannels();
+
+                // Fetch tags from the API
+                const fetchTags = async () => {
+                    try {
+                        const tagsResponse = await fetch('https://api.rechat.com/contacts/tags', {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `Bearer ${accessToken}`,
+                                'X-RECHAT-BRAND': brandId,
+                            },
+                        });
+                        const tagsData = await tagsResponse.json();
+                        const tagOptions = tagsData.data.map(tag => ({
+                            label: tag.tag,
+                            value: tag.tag,
+                        }));
+                        setTags(tagOptions);
+                    } catch (error) {
+                        console.error('Error fetching tags:', error);
+                    } finally {
+                        setLoadingTags(false);
+                    }
+                };
+                fetchTags();
+            }
+        }, [isLoggedIn, brandId, accessToken]);
+
+        if (isLoggedIn === false) {
+            return <p>Please log in to view and manage the lead channels and tags.</p>;
+        }
+
+        if (isLoggedIn === null) {
+            return <p>Loading...</p>;
+        }
+
+        const handleTagChange = (tagId) => {
+            const newSelectedTagsFrom = selectedTagsFrom.includes(tagId)
+                ? selectedTagsFrom.filter(id => id !== tagId)
+                : [...selectedTagsFrom, tagId];
+            setAttributes({ selectedTagsFrom: newSelectedTagsFrom });
+        };
+
+        return (
+            <>
+                <InspectorControls>
+                    <PanelBody title="Lead Form Settings">
+                        <SelectControl
+                            label="Lead Channel"
+                            value={leadChannel}
+                            options={loadingChannels ? [{ label: 'Loading channels...', value: '' }] : leadChannels}
+                            onChange={(selectedChannel) => setAttributes({ leadChannel: selectedChannel })}
+                        />
+                        <ToggleControl
+                            label="Show First Name Field"
+                            checked={showFirstName}
+                            onChange={(value) => setAttributes({ showFirstName: value })}
+                        />
+                        <ToggleControl
+                            label="Show Last Name Field"
+                            checked={showLastName}
+                            onChange={(value) => setAttributes({ showLastName: value })}
+                        />
+                        <ToggleControl
+                            label="Show Phone Number Field"
+                            checked={showPhoneNumber}
+                            onChange={(value) => setAttributes({ showPhoneNumber: value })}
+                        />
+                        <ToggleControl
+                            label="Show Email Field"
+                            checked={showEmail}
+                            onChange={(value) => setAttributes({ showEmail: value })}
+                        />
+                        <ToggleControl
+                            label="Show Note Field"
+                            checked={showNote}
+                            onChange={(value) => setAttributes({ showNote: value })}
+                        />
+                        <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                            <fieldset>
+                                <legend>Tags</legend>
+                                {loadingTags ? (
+                                    <p>Loading tags...</p>
+                                ) : (
+                                    tags.map(tag => (
+                                        <div key={tag.value} style={{ marginBottom: '8px' }}>
+                                            <label>
+                                                <input
+                                                    type="checkbox"
+                                                    value={tag.value}
+                                                    checked={selectedTagsFrom.includes(tag.value)}
+                                                    onChange={() => handleTagChange(tag.value)}
+                                                />
+                                                {tag.label}
+                                            </label>
+                                        </div>
+                                    ))
+                                )}
+                            </fieldset>
+                        </div>
+                    </PanelBody>
+                </InspectorControls>
+                <ServerSideRender
+                    block="rch-rechat-plugin/leads-form-block"
+                    attributes={attributes}
+                />
+            </>
+        );
+    },
+    save() {
+        return null; // Server-rendered block
+    },
+});

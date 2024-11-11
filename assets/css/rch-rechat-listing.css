@@ -220,6 +220,58 @@ h1.rch-single-address {
   border-radius: 15px;
   margin-block-start: 15px;
 }
+.rch-single-house-main-layout {
+  display: flex;
+  flex-wrap: wrap;
+}
+.rch-single-house-main-layout .rch-single-right-main-layout {
+  flex-basis: 27%;
+  margin-inline-start: 20px;
+}
+.rch-listing-form-lead {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 20px;
+}
+.rch-single-house-main-layout .rch-single-right-main-layout form {
+  border: 1px solid var(--global-gray-400);
+  border-radius: 10px;
+  background-color: #9cbcdb42;
+  padding: 20px 30px;
+}
+.rch-single-house-main-layout .rch-single-right-main-layout form h2 {
+  font-size: 20px;
+  margin-block-end: 20px;
+  text-align: center;
+}
+.rch-single-house-main-layout .rch-single-right-main-layout label {
+  display: block;
+  margin-inline-end: 5px;
+  font-size: 16px;
+}
+.rch-single-house-main-layout .rch-single-right-main-layout .form-group {
+  margin-block: 10px;
+}
+.rch-single-house-main-layout .rch-single-right-main-layout .form-group input,
+.rch-single-house-main-layout
+  .rch-single-right-main-layout
+  .form-group
+  textarea {
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 16px;
+  width: 100%;
+}
+.rch-single-house-main-layout .rch-single-right-main-layout button {
+  width: 100%;
+  border-radius: 10px;
+  font-size: 16px;
+}
+.rch-single-house-main-layout .rch-single-left-main-layout {
+  flex-basis: 68%;
+  flex-grow: 2;
+}
+
 /* Medium screens */
 @media (max-width: 1200px) {
 }
@@ -246,10 +298,16 @@ h1.rch-single-address {
     font-size: 16px;
   }
   .facilities-in-single-houses ul {
-
     grid-template-columns: repeat(2, 1fr);
-
-}
+  }
+  .rch-single-house-main-layout .rch-single-left-main-layout {
+    flex-basis: 100%;
+  }
+  .rch-single-house-main-layout .rch-single-right-main-layout {
+    flex-basis: 100%;
+    margin-inline-start: 0;
+    margin-block-start: 40px;
+  }
 }
 
 /* Extra small screens */
