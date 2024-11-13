@@ -57,20 +57,20 @@ function rch_appearance_setting()
 
     add_settings_section(
         'rch_theme_appearance_setting',
-        __('Appearance Section', 'rch_rechat_plugin'),
+        __('Lead Channels and Tags Section', 'rch_rechat_plugin'),
         null,
         'appearance_setting'
     );
 
 
     // Add the field for posts per page
-    add_settings_field(
-        'rch_posts_per_page',
-        __('Posts Per Page', 'rch_rechat_plugin'),
-        'rch_render_posts_per_page_field',
-        'appearance_setting',
-        'rch_theme_appearance_setting'
-    );
+//     add_settings_field(
+//         'rch_posts_per_page',
+//         __('Posts Per Page', 'rch_rechat_plugin'),
+//         'rch_render_posts_per_page_field',
+//         'appearance_setting',
+//         'rch_theme_appearance_setting'
+//     );
     // Add the field for posts per page
     add_settings_field(
         'rch_lead_channels',
@@ -93,11 +93,11 @@ add_action('admin_init', 'rch_appearance_setting');
 /*******************************
  * Render the Posts Per Page input field.
  ******************************/
-function rch_render_posts_per_page_field()
-{
-    $posts_per_page = get_option('_rch_posts_per_page', 12); // Default to 10
-    echo '<input type="number" id="rch_posts_per_page" name="_rch_posts_per_page" value="' . esc_attr($posts_per_page) . '" min="1" />';
-}
+// function rch_render_posts_per_page_field()
+// {
+//     $posts_per_page = get_option('_rch_posts_per_page', 12); // Default to 10
+//     echo '<input type="number" id="rch_posts_per_page" name="_rch_posts_per_page" value="' . esc_attr($posts_per_page) . '" min="1" />';
+// }
 /*******************************
  * Render the lead channel input field.
  ******************************/
@@ -288,7 +288,7 @@ function rch_rechat_menu_page()
             <h2 class="nav-tab-wrapper">
                 <a href="?page=rechat-setting&tab=sync-data" class="nav-tab <?php echo $active_tab === 'sync-data' ? 'nav-tab-active' : ''; ?>"><?php _e('Sync Your Data', 'rch_rechat_plugin'); ?></a>
                 <a href="?page=rechat-setting&tab=connect-to-rechat" class="nav-tab <?php echo $active_tab === 'connect-to-rechat' ? 'nav-tab-active' : ''; ?>"><?php _e('Connect To Rechat', 'rch_rechat_plugin'); ?></a>
-                <a href="?page=rechat-setting&tab=appearance" class="nav-tab <?php echo $active_tab === 'appearance' ? 'nav-tab-active' : ''; ?>"><?php _e('Appearance', 'rch_rechat_plugin'); ?></a>
+                <a href="?page=rechat-setting&tab=appearance" class="nav-tab <?php echo $active_tab === 'appearance' ? 'nav-tab-active' : ''; ?>"><?php _e('Lead Channels and Tags', 'rch_rechat_plugin'); ?></a>
             </h2>
         </div>
         <?php settings_errors(); ?>
