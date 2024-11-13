@@ -67,24 +67,27 @@ function rch_fetch_total_listing_count($filters = [])
     return json_decode(wp_remote_retrieve_body($response), true);
 }
 
-
-/*******************************
- * Handle the AJAX request for fetching listings.
- ******************************/
-function rch_fetch_listing_ajax()
-{
+function rch_fetch_listing_ajax() {
     $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
     $listingPerPage = isset($_GET['listing_per_page']) ? intval($_GET['listing_per_page']) : 50;
 
     // Get filters from the AJAX request
     $filters = rch_get_filters($_GET);
-    // Fetch listing
+    
+    // Fetch listing data
     $listingData = rch_fetch_listing($filters, $page, $listingPerPage);
+
     if (!empty($listingData['data'])) {
         ob_start();
         foreach ($listingData['data'] as $listing) {
-            // Use locate_template to check the theme first, then fall back to plugin template
-            $template = locate_template('rechat/listing-item.php');
+            // Check if this is called from the shortcode and use a specific template
+            if (isset($_GET['shortcode_template']) && $_GET['shortcode_template'] === 'true') {
+                // Load the custom template for the shortcode
+                $template = locate_template('rechat/shortcode-listing-item.php');
+            } else {
+                // Default template
+                $template = locate_template('rechat/listing-item.php');
+            }
 
             if (!$template) {
                 $template = RCH_PLUGIN_DIR . 'templates/archive/template-part/listing-item.php';
@@ -92,6 +95,7 @@ function rch_fetch_listing_ajax()
 
             include $template;
         }
+
         echo ob_get_clean();
     } else {
         echo '<p>No listings found.</p>';

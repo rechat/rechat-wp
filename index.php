@@ -57,6 +57,7 @@ include RCH_PLUGIN_INCLUDES . 'cron-job/schedule.php';
 include RCH_PLUGIN_INCLUDES . 'oauth2/oauth-handler.php';
 include RCH_PLUGIN_INCLUDES . 'load-listing/fetch-archive-listings.php';
 include RCH_PLUGIN_INCLUDES . 'shortcodes/listing-shortcodes.php';
+include RCH_PLUGIN_INCLUDES . 'shortcodes/latest-listing-shortcode.php';
 include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-offices-regions.php';
 include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-agents.php';
 include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-listing.php';

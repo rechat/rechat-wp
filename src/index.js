@@ -346,7 +346,84 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                                 onChange={() => handleStatusChange(option.value)}
                             />
                         ))}
-                        {/* Add other controls here as needed */}
+                         <TextControl
+                            label="Minimum Price"
+                            value={minimum_price}
+                            type="number"
+                            onChange={(value) => setAttributes({ minimum_price: value === '' ? '' : parseInt(value) || 0 })}
+                        />
+                        <TextControl
+                            label="Maximum Price"
+                            value={maximum_price}
+                            type="number"
+                            onChange={(value) => setAttributes({ maximum_price: value === '' ? '' : parseInt(value) || 0 })}
+                        />
+                        <TextControl
+                            label="Minimum Lot Size (m²)"
+                            value={minimum_lot_square_meters}
+                            type="number"
+                            onChange={(value) => setAttributes({ minimum_lot_square_meters: value === '' ? '' : parseInt(value) || 0 })}
+                        />
+                        <TextControl
+                            label="Maximum Lot Size (m²)"
+                            value={maximum_lot_square_meters}
+                            type="number"
+                            onChange={(value) => setAttributes({ maximum_lot_square_meters: value === '' ? '' : parseInt(value) || 0 })}
+                        />
+                        <TextControl
+                            label="Minimum Bathrooms"
+                            value={minimum_bathrooms}
+                            type="number"
+                            onChange={(value) => setAttributes({ minimum_bathrooms: value === '' ? '' : parseInt(value) || 0 })}
+                        />
+                        <TextControl
+                            label="Maximum Bathrooms"
+                            value={maximum_bathrooms}
+                            type="number"
+                            onChange={(value) => setAttributes({ maximum_bathrooms: value === '' ? '' : parseInt(value) || 0 })}
+                        />
+                        <TextControl
+                            label="Minimum Square Meters"
+                            value={minimum_square_meters}
+                            type="number"
+                            onChange={(value) => setAttributes({ minimum_square_meters: value === '' ? '' : parseInt(value) || 0 })}
+                        />
+                        <TextControl
+                            label="Maximum Square Meters"
+                            value={maximum_square_meters}
+                            type="number"
+                            onChange={(value) => setAttributes({ maximum_square_meters: value === '' ? '' : parseInt(value) || 0 })}
+                        />
+                        <TextControl
+                            label="Minimum Year Built"
+                            value={minimum_year_built}
+                            type="number"
+                            onChange={(value) => setAttributes({ minimum_year_built: value === '' ? '' : parseInt(value) || 0 })}
+                        />
+                        <TextControl
+                            label="Maximum Year Built"
+                            value={maximum_year_built}
+                            type="number"
+                            onChange={(value) => setAttributes({ maximum_year_built: value === '' ? '' : parseInt(value) || 0 })}
+                        />
+                        <TextControl
+                            label="Minimum Bedrooms"
+                            value={minimum_bedrooms}
+                            type="number"
+                            onChange={(value) => setAttributes({ minimum_bedrooms: value === '' ? '' : parseInt(value) || 0 })}
+                        />
+                        <TextControl
+                            label="Maximum Bedrooms"
+                            value={maximum_bedrooms}
+                            type="number"
+                            onChange={(value) => setAttributes({ maximum_bedrooms: value === '' ? '' : parseInt(value) || 0 })}
+                        />
+                        <TextControl
+                            label="listing Per Page"
+                            value={listing_per_page}
+                            type="number"
+                            onChange={(value) => setAttributes({ listing_per_page: value === '' ? '' : parseInt(value) || 1 })}
+                        />
                     </PanelBody>
                 </InspectorControls>
                 <div className="listing-block-preview">
