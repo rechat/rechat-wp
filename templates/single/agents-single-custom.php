@@ -185,7 +185,7 @@ get_footer();
     const sdk = new Rechat.Sdk();
 
     const channel = {
-        lead_channel: '<?php echo get_option("rch_lead_channels"); ?>'
+        lead_channel: '<?php echo get_option("rch_agents_lead_channels"); ?>'
     };
 
     document.getElementById('leadCaptureForm').addEventListener('submit', function(event) {
@@ -197,7 +197,7 @@ get_footer();
             phone_number: document.getElementById('phone_number').value,
             email: document.getElementById('email').value,
             note: document.getElementById('note').value,
-            tag: <?php echo get_option("rch_selected_tags"); ?>, // Convert comma-separated string to array
+            tag: <?php echo get_option("rch_agents_selected_tags"); ?>, // Convert comma-separated string to array
             source_type: 'Website',
             agent_emails:'<?php echo esc_html($email); ?>'
         };
