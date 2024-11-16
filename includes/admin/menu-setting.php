@@ -68,7 +68,7 @@ function rch_appearance_setting()
 
     add_settings_section(
         'rch_theme_appearance_setting',
-        __('Lead Capture', 'rch_rechat_plugin'),
+        __('Listing Page Lead Capture', 'rch_rechat_plugin'),
         null,
         'appearance_setting'
     );
@@ -83,7 +83,7 @@ function rch_appearance_setting()
     // Add a section heading for 'Lead Channels and Tags' for the first set
     add_settings_field(
         'rch_lead_channels',
-        __('Lead Channels (Listing)', 'rch_rechat_plugin'),
+        __('Lead Source', 'rch_rechat_plugin'),
         'rch_render_lead_channel',
         'appearance_setting',
         'rch_theme_appearance_setting'
@@ -92,7 +92,7 @@ function rch_appearance_setting()
     // Add Tags for first lead
     add_settings_field(
         'rch_select_tag',
-        __('Tags (Listing)', 'rch_rechat_plugin'),
+        __('Tags', 'rch_rechat_plugin'),
         'rch_render_select_tag',
         'appearance_setting',
         'rch_theme_appearance_setting'
@@ -101,7 +101,7 @@ function rch_appearance_setting()
     // Add a new section heading for Agent's Lead Channels and Tags
     add_settings_section(
         'rch_agents_section',
-        __('Agents Lead Channels and Tags', 'rch_rechat_plugin'),
+        __('Agents Page Lead Capture', 'rch_rechat_plugin'),
         null,
         'appearance_setting'
     );
@@ -109,7 +109,7 @@ function rch_appearance_setting()
     // Add Lead Channels for agents
     add_settings_field(
         'rch_agents_lead_channels',
-        __('Lead Channels (Agent)', 'rch_rechat_plugin'),
+        __('Lead Source', 'rch_rechat_plugin'),
         'rch_render_agents_lead_channel',
         'appearance_setting',
         'rch_agents_section'
@@ -118,7 +118,7 @@ function rch_appearance_setting()
     // Add Tags for agents
     add_settings_field(
         'rch_agents_select_tag',
-        __('Tags (Agent)', 'rch_rechat_plugin'),
+        __('Tags', 'rch_rechat_plugin'),
         'rch_render_agents_select_tag',
         'appearance_setting',
         'rch_agents_section'
