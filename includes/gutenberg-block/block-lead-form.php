@@ -59,7 +59,6 @@ function rch_render_leads_form_block($attributes)
     $show_email = isset($attributes['showEmail']) ? $attributes['showEmail'] : true;
     $show_note = isset($attributes['showNote']) ? $attributes['showNote'] : true;
     $selected_tags = isset($attributes['selectedTagsFrom']) ? $attributes['selectedTagsFrom'] : array();
-var_dump($lead_channel);
     ob_start();
 ?>
     <div class="rch-leads-form-block">

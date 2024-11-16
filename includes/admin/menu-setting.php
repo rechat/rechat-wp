@@ -101,7 +101,7 @@ function rch_appearance_setting()
     // Add a new section heading for Agent's Lead Channels and Tags
     add_settings_section(
         'rch_agents_section',
-        __('Agents Page Lead Capture', 'rch_rechat_plugin'),
+        __('Agent Page Lead Capture', 'rch_rechat_plugin'),
         null,
         'appearance_setting'
     );
