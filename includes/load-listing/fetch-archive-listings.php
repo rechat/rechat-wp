@@ -70,30 +70,31 @@ function rch_fetch_total_listing_count($filters = [])
 function rch_fetch_listing_ajax() {
     $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
     $listingPerPage = isset($_GET['listing_per_page']) ? intval($_GET['listing_per_page']) : 50;
+    $template = isset($_GET['template']) ? sanitize_text_field($_GET['template']) : ''; // Get the template parameter
 
     // Get filters from the AJAX request
     $filters = rch_get_filters($_GET);
-    
+
     // Fetch listing data
     $listingData = rch_fetch_listing($filters, $page, $listingPerPage);
 
     if (!empty($listingData['data'])) {
         ob_start();
         foreach ($listingData['data'] as $listing) {
-            // Check if this is called from the shortcode and use a specific template
-            if (isset($_GET['shortcode_template']) && $_GET['shortcode_template'] === 'true') {
-                // Load the custom template for the shortcode
-                $template = locate_template('rechat/shortcode-listing-item.php');
+            // Determine the template to use
+            if ($template) {
+                // Load the custom template specified by the shortcode
+                $templateFile = locate_template("rechat/shortcodes/{$template}.php");
             } else {
                 // Default template
-                $template = locate_template('rechat/listing-item.php');
+                $templateFile = locate_template('rechat/listing-item.php');
             }
 
-            if (!$template) {
-                $template = RCH_PLUGIN_DIR . 'templates/archive/template-part/listing-item.php';
+            if (!$templateFile) {
+                $templateFile = RCH_PLUGIN_DIR . 'templates/archive/template-part/listing-item.php';
             }
 
-            include $template;
+            include $templateFile;
         }
 
         echo ob_get_clean();
@@ -105,3 +106,4 @@ function rch_fetch_listing_ajax() {
 }
 add_action('wp_ajax_rch_fetch_listing', 'rch_fetch_listing_ajax');
 add_action('wp_ajax_nopriv_rch_fetch_listing', 'rch_fetch_listing_ajax');
+
