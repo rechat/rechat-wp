@@ -444,6 +444,7 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
     icon: 'admin-users',
     category: 'widgets',
     attributes: {
+        formTitle: { type: 'string', default: 'Lead Form' }, // New attribute for form title
         leadChannel: { type: 'string', default: '' },
         showFirstName: { type: 'boolean', default: true },
         showLastName: { type: 'boolean', default: true },
@@ -453,7 +454,7 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
         selectedTagsFrom: { type: 'array', default: [] }, // Array to hold selected tags
     },
     edit({ attributes, setAttributes }) {
-        const { leadChannel, showFirstName, showLastName, showPhoneNumber, showEmail, showNote, selectedTagsFrom } = attributes;
+        const { formTitle ,leadChannel, showFirstName, showLastName, showPhoneNumber, showEmail, showNote, selectedTagsFrom } = attributes;
         const [leadChannels, setLeadChannels] = useState([]);
         const [tags, setTags] = useState([]);
         const [loadingChannels, setLoadingChannels] = useState(true);
@@ -576,6 +577,11 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
             <>
                 <InspectorControls>
                     <PanelBody title="Lead Form Settings">
+                    <TextControl
+                            label="Form Title"
+                            value={formTitle}
+                            onChange={(value) => setAttributes({ formTitle: value })}
+                        />
                         <SelectControl
                             label="Lead Channel"
                             value={leadChannel}

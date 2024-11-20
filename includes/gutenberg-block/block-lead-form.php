@@ -13,6 +13,10 @@ function rch_register_block_assets_leads_form()
     register_block_type('rch-rechat-plugin/leads-form-block', array(
         'editor_script' => 'rch-gutenberg-js', // JavaScript file for the block editor
         'attributes' => array(
+            'formTitle' => array(
+                'type' => 'string',
+                'default' => '',
+            ),
             'leadChannel' => array(
                 'type' => 'string',
                 'default' => '',
@@ -52,6 +56,8 @@ add_action('init', 'rch_register_block_assets_leads_form');
  ******************************/
 function rch_render_leads_form_block($attributes)
 {
+    // Extract attributes
+    $form_title = isset($attributes['formTitle']) ? $attributes['formTitle'] : '';
     $lead_channel = isset($attributes['leadChannel']) ? $attributes['leadChannel'] : '';
     $show_first_name = isset($attributes['showFirstName']) ? $attributes['showFirstName'] : true;
     $show_last_name = isset($attributes['showLastName']) ? $attributes['showLastName'] : true;
@@ -59,11 +65,17 @@ function rch_render_leads_form_block($attributes)
     $show_email = isset($attributes['showEmail']) ? $attributes['showEmail'] : true;
     $show_note = isset($attributes['showNote']) ? $attributes['showNote'] : true;
     $selected_tags = isset($attributes['selectedTagsFrom']) ? $attributes['selectedTagsFrom'] : array();
+    $is_editor = defined('REST_REQUEST') && REST_REQUEST && isset($_GET['context']) && $_GET['context'] === 'edit';
+    // Start output buffering
     ob_start();
+
+    // HTML for the form
 ?>
     <div class="rch-leads-form-block">
         <form id="leadCaptureForm" method="post">
-            <h2>Submit Your Form</h2>
+            <?php if ($form_title): ?>
+                <h2><?php echo $form_title ?></h2>
+            <?php endif; ?>
             <?php if ($show_first_name): ?>
                 <div class="form-group">
                     <label for="first_name">First Name</label>
@@ -94,8 +106,7 @@ function rch_render_leads_form_block($attributes)
                     <textarea id="note" name="note" placeholder="Write your note here" required></textarea>
                 </div>
             <?php endif; ?>
-
-            <button type="submit">Submit Request</button>
+            <button type="submit" <?php echo $is_editor ? 'disabled' : ''; ?>>Submit Request</button>
         </form>
         <div id="loading-spinner" class="rch-loading-spinner-form" style="display: none;"></div>
         <div id="rch-listing-success-sdk" class="rch-success-box-listing">
@@ -105,45 +116,47 @@ function rch_render_leads_form_block($attributes)
             Something went wrong. Please try again.
         </div>
     </div>
+    <?php if (!$is_editor): ?>
+        <script src="https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.js"></script>
+        <script>
+            const sdk = new Rechat.Sdk();
 
-    <script src="https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.js"></script>
-    <script>
-        const sdk = new Rechat.Sdk();
-
-        const channel = {
-            lead_channel: '<?php echo sanitize_text_field($lead_channel); ?>'
-        };
-
-        document.getElementById('leadCaptureForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-
-            const input = {
-                first_name: document.getElementById('first_name').value,
-                last_name: document.getElementById('last_name').value,
-                phone_number: document.getElementById('phone_number').value,
-                email: document.getElementById('email').value,
-                note: document.getElementById('note').value,
-                tag: <?php echo json_encode($selected_tags); ?>, // This will convert the PHP array to a JS array
-                source_type: 'Website',
+            const channel = {
+                lead_channel: '<?php echo sanitize_text_field($lead_channel); ?>'
             };
 
-            // Show loading spinner and hide success/error alerts
-            document.getElementById('loading-spinner').style.display = 'block';
-            document.getElementById('rch-listing-success-sdk').style.display = 'none';
-            document.getElementById('rch-listing-cancel-sdk').style.display = 'none';
+            document.getElementById('leadCaptureForm').addEventListener('submit', function(event) {
+                event.preventDefault();
 
-            sdk.Leads.capture(channel, input)
-                .then(() => {
-                    document.getElementById('loading-spinner').style.display = 'none';
-                    document.getElementById('rch-listing-success-sdk').style.display = 'block';
-                })
-                .catch((e) => {
-                    document.getElementById('loading-spinner').style.display = 'none';
-                    document.getElementById('rch-listing-cancel-sdk').style.display = 'block';
-                    console.error('Error:', e);
-                });
-        });
-    </script>
+                const input = {
+            first_name: document.getElementById('first_name')?.value.trim(),
+            last_name: document.getElementById('last_name')?.value.trim(),
+            phone_number: document.getElementById('phone_number')?.value.trim(),
+            email: document.getElementById('email')?.value.trim(),
+            note: document.getElementById('note')?.value.trim(),
+            tag: <?php echo json_encode($selected_tags); ?>, // Convert PHP array to JS array
+            source_type: 'Website',
+        };
+
+                // Show loading spinner and hide success/error alerts
+                document.getElementById('loading-spinner').style.display = 'block';
+                document.getElementById('rch-listing-success-sdk').style.display = 'none';
+                document.getElementById('rch-listing-cancel-sdk').style.display = 'none';
+
+                sdk.Leads.capture(channel, input)
+                    .then(() => {
+                        document.getElementById('loading-spinner').style.display = 'none';
+                        document.getElementById('rch-listing-success-sdk').style.display = 'block';
+                    })
+                    .catch((e) => {
+                        document.getElementById('loading-spinner').style.display = 'none';
+                        document.getElementById('rch-listing-cancel-sdk').style.display = 'block';
+                        console.error('Error:', e);
+                    });
+            });
+        </script>
+    <?php endif; ?>
 <?php
+
     return ob_get_clean();
 }

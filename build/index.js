@@ -775,6 +775,11 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
   icon: 'admin-users',
   category: 'widgets',
   attributes: {
+    formTitle: {
+      type: 'string',
+      default: 'Lead Form'
+    },
+    // New attribute for form title
     leadChannel: {
       type: 'string',
       default: ''
@@ -809,6 +814,7 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
     setAttributes
   }) {
     const {
+      formTitle,
       leadChannel,
       showFirstName,
       showLastName,
@@ -941,7 +947,13 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
       children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(InspectorControls, {
         children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(PanelBody, {
           title: "Lead Form Settings",
-          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(SelectControl, {
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(TextControl, {
+            label: "Form Title",
+            value: formTitle,
+            onChange: value => setAttributes({
+              formTitle: value
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(SelectControl, {
             label: "Lead Channel",
             value: leadChannel,
             options: loadingChannels ? [{
