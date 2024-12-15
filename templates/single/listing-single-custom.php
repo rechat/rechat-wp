@@ -140,6 +140,39 @@
                         </ul>
                     </div>
                     <hr />
+                    <?php
+                    // Retrieve the selected features from the settings
+                    $selected_features = get_option('rch_rechat_local_logic_features', []);
+
+                    // Define the available template parts corresponding to each feature
+                    $feature_templates = [
+                        // 'Hero' => 'hero', // Template part for Hero feature
+                        // 'Map' => 'map', // Template part for Map feature
+                        // 'Highlights' => 'highlights', // Template part for Highlights feature
+                        // 'Characteristics' => 'characteristics', // Template part for Characteristics feature
+                        // 'Schools' => 'schools', // Template part for Schools feature
+                        // 'Demographics' => 'demographics', // Template part for Demographics feature
+                        // 'PropertyValueDrivers' => 'property-value-drivers', // Template part for PropertyValueDrivers feature
+                        // 'MarketTrends' => 'market-trends', // Template part for MarketTrends feature
+                        // 'Match' => 'match', // Template part for Match feature
+                        'LocalContent' => 'widgets/local-content', // Template part for Match feature
+                    ];
+
+                    // Loop through the selected features and include the corresponding template part from the plugin
+                    foreach ($selected_features as $feature) {
+                        if (array_key_exists($feature, $feature_templates)) {
+                            // Get the plugin directory path
+                            $plugin_dir = RCH_PLUGIN_INCLUDES; // Adjust if your plugin files are in a subfolder
+
+                            // Construct the template part file path
+                            $template_part_path = $plugin_dir . 'local-logic/' . $feature_templates[$feature] . '.php';                            // Check if the template part file exists, then include it
+                            if (file_exists($template_part_path)) {
+                                include $template_part_path;
+                            }
+                        }
+                    }
+                    ?>
+
                     <div class="location-single-houser" id="rch-location">
                         <h2>
                             Location on the Map
@@ -148,7 +181,6 @@
                             Located in one of the city's most desirable neighborhoods, this home offers both serenity and convenience.
                         </p>
                         <div id="map" class="rch-map-single"></div> <!-- Map Container -->
-
                     </div>
                 </div>
                 <div class="rch-single-right-main-layout">
@@ -257,7 +289,8 @@
             note: document.getElementById('note').value,
             tag: <?php echo get_option("rch_selected_tags"); ?>, // Convert comma-separated string to array
             source_type: 'Website',
-            mlsid:'<?php echo $listing_detail['mls_number'] ?>'
+            mlsid: '<?php echo $listing_detail['mls_number'] ?>',
+            listing_id: '<?php echo $listing_detail['id'] ?>'
         };
 
         // Hide success, error alerts, and show loading spinner
@@ -279,32 +312,53 @@
             });
     });
 </script>
-<script src="https://maps.googleapis.com/maps/api/js?key=API_KEY&callback=initMap&language=en"></script>
+<!-- <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDvRzNSZS9NGxODmLKrplrVwFaHHuPC0Q0&callback=initMap&language=en"></script> -->
+<!-- Add Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+
+<!-- Add Leaflet JavaScript -->
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 <script>
-    function initMap() {
-        // Get latitude and longitude from PHP
-        var latitude = <?php echo json_encode($listing_detail['property']['address']['location']['latitude']); ?>;
-        var longitude = <?php echo json_encode($listing_detail['property']['address']['location']['longitude']); ?>;
-        var location = {
-            lat: latitude,
-            lng: longitude
-        };
+    // function initMap() {
+    //     // Get latitude and longitude from PHP
+    //     var latitude = <?php echo json_encode($listing_detail['property']['address']['location']['latitude']); ?>;
+    //     var longitude = <?php echo json_encode($listing_detail['property']['address']['location']['longitude']); ?>;
+    //     var location = {
+    //         lat: latitude,
+    //         lng: longitude
+    //     };
 
-        // Create the map centered at the specified location
-        var map = new google.maps.Map(document.getElementById('map'), {
-            zoom: 13, // Adjust the zoom level as needed
-            center: location
-        });
+    //     // Create the map centered at the specified location
+    //     var map = new google.maps.Map(document.getElementById('map'), {
+    //         zoom: 13, // Adjust the zoom level as needed
+    //         center: location
+    //     });
 
-        // Add a marker at the location
-        var marker = new google.maps.Marker({
-            position: location,
-            map: map
-        });
-    }
+    //     // Add a marker at the location
+    //     var marker = new google.maps.Marker({
+    //         position: location,
+    //         map: map
+    //     });
+    // }
 
-    // Call the initMap function when the window loads
-    window.onload = initMap;
+    // // Call the initMap function when the window loads
+    // window.onload = initMap;
+    // Get the property latitude and longitude from PHP (replace with actual values)
+    var propertyLat = <?php echo esc_js($listing_detail['property']['address']['location']['latitude']); ?>;
+    var propertyLng = <?php echo esc_js($listing_detail['property']['address']['location']['longitude']); ?>;
+
+    // Initialize the map and set the view to the property's location with zoom level 13
+    var map = L.map('map').setView([propertyLat, propertyLng], 13);
+
+    // Add OpenStreetMap tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Add a marker at the property location
+    L.marker([propertyLat, propertyLng]).addTo(map)
+        .bindPopup('<b>Property Location</b>')
+        .openPopup();
     var swiper = new Swiper(".rch-houses-mySwiper", {
         spaceBetween: 10,
         slidesPerView: 8, // Default for desktop

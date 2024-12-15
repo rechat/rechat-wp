@@ -807,7 +807,12 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
     selectedTagsFrom: {
       type: 'array',
       default: []
-    } // Array to hold selected tags
+    },
+    // Array to hold selected tags
+    emailForGetLead: {
+      type: 'string',
+      default: ''
+    }
   },
   edit({
     attributes,
@@ -821,9 +826,10 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
       showPhoneNumber,
       showEmail,
       showNote,
-      selectedTagsFrom
+      selectedTagsFrom,
+      emailForGetLead
     } = attributes;
-    const [leadChannels, setLeadChannels] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
+    const [leadChannels, setLeadChannels] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)();
     const [tags, setTags] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
     const [loadingChannels, setLoadingChannels] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(true);
     const [loadingTags, setLoadingTags] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(true);
@@ -893,6 +899,11 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
               label: channel.title ? channel.title : 'Unnamed',
               value: channel.id
             }));
+            // Add "Select your channel" option
+            options.unshift({
+              label: 'Select your channel',
+              value: '' // Empty value to represent "nothing selected"
+            });
             setLeadChannels(options);
           } catch (error) {
             console.error('Error fetching lead channels:', error);
@@ -962,6 +973,13 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
             }] : leadChannels,
             onChange: selectedChannel => setAttributes({
               leadChannel: selectedChannel
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(TextControl, {
+            label: "Email for Get This Lead In you Inbox",
+            value: emailForGetLead,
+            placeholder: "Enter the email to receive leads",
+            onChange: value => setAttributes({
+              emailForGetLead: value
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(ToggleControl, {
             label: "Show First Name Field",

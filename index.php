@@ -48,6 +48,8 @@ function rch_plugin_query_vars($vars)
 include RCH_PLUGIN_INCLUDES . 'front/enqueue-front.php';
 include RCH_PLUGIN_INCLUDES . 'front/add-css-in-setting.php';
 include RCH_PLUGIN_INCLUDES . 'admin/register-custom-post-type.php';
+include RCH_PLUGIN_INCLUDES . 'admin/settings-page/other-settings.php';
+include RCH_PLUGIN_INCLUDES . 'admin/settings-page/local-logic-setting.php';
 include RCH_PLUGIN_INCLUDES . 'admin/menu-setting.php';
 include RCH_PLUGIN_INCLUDES . 'template-load.php';
 include RCH_PLUGIN_INCLUDES . 'helper.php';
@@ -57,6 +59,7 @@ include RCH_PLUGIN_INCLUDES . 'cron-job/schedule.php';
 include RCH_PLUGIN_INCLUDES . 'oauth2/oauth-handler.php';
 include RCH_PLUGIN_INCLUDES . 'load-listing/fetch-archive-listings.php';
 include RCH_PLUGIN_INCLUDES . 'shortcodes/listing-shortcodes.php';
+include RCH_PLUGIN_INCLUDES . 'shortcodes/lead-capture-shortcode.php';
 include RCH_PLUGIN_INCLUDES . 'shortcodes/latest-listing-shortcode.php';
 include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-offices-regions.php';
 include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-agents.php';

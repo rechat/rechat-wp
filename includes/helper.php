@@ -379,6 +379,7 @@ function rch_process_agents_data($access_token, $api_url_base)
                     'phone_number' => $user['phone_number'] ?? '',
                     'email' => $user['email'] ?? '',
                     'timezone' => $user['timezone'] ?? '',
+                    'designation' => $user['designation'] ?? '',
                     'api_id' => $api_id,
                     '_rch_agent_regions' => $regions_for_agent,
                     '_rch_agent_offices' => $offices_for_agent,
@@ -531,7 +532,8 @@ function rch_find_primary_color($brand)
 /*******************************
  *Helper function to create api for sending data to react
  ******************************/
-function register_custom_options_route() {
+function register_custom_options_route()
+{
     register_rest_route('wp/v2', '/options', array(
         'methods' => 'GET',
         'callback' => 'get_custom_options',
@@ -539,16 +541,18 @@ function register_custom_options_route() {
     ));
 }
 
-function is_user_logged_in_permission() {
+function is_user_logged_in_permission()
+{
     // Allow access only if the user is logged in
     return is_user_logged_in();
 }
 
-function get_custom_options() {
+function get_custom_options()
+{
     // Retrieve the option stored in WordPress
     $brand_id = get_option('rch_rechat_brand_id');
     $access_token = get_option('rch_rechat_access_token');
-    
+
     // Return the option as a JSON response
     return new WP_REST_Response(array(
         'rch_rechat_brand_id' => $brand_id,
@@ -557,17 +561,19 @@ function get_custom_options() {
 }
 
 add_action('rest_api_init', 'register_custom_options_route');
-function register_check_user_logged_in_route() {
+function register_check_user_logged_in_route()
+{
     register_rest_route('wp/v2', '/check_logged_in', array(
         'methods' => 'GET',
         'callback' => 'check_logged_in_status',
-        'permission_callback' => function() {
+        'permission_callback' => function () {
             return is_user_logged_in(); // Only proceed if the user is logged in
         },
     ));
 }
 
-function check_logged_in_status() {
+function check_logged_in_status()
+{
     // If the user is logged in, return success
     return new WP_REST_Response(
         array('status' => 'success', 'message' => 'User is logged in'),

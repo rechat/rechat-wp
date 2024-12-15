@@ -36,6 +36,7 @@ $query = new WP_Query($args);
                     $profile_image_url = get_post_meta($post_id, 'profile_image_url', true);
                     $timezone = get_post_meta($post_id, 'timezone', true);
                     $phone_number = get_post_meta($post_id, 'phone_number', true);
+                    $designation = get_post_meta($post_id, 'designation', true);
             ?>
                     <li>
                         <div class="rch-image-container">
@@ -53,7 +54,7 @@ $query = new WP_Query($args);
                                 </a>
                             </h3>
                             <span>
-                                <?php echo $timezone ?>
+                                <?php echo $designation ?>
                             </span>
                         </div>
                         <div class="rch-archive-end-line">

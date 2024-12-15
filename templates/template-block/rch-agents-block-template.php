@@ -14,7 +14,7 @@
             </a>
         </h3>
         <span>
-            <?php echo esc_html($timezone); ?>
+            <?php echo $designation ?>
         </span>
     </div>
     <div class="rch-archive-end-line">

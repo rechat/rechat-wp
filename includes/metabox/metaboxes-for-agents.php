@@ -78,6 +78,9 @@ function agents_meta_box_html($post)
 
     <label for="agents_email">Email</label>
     <input type="text" id="agents_email" name="agents_email" value="<?php echo esc_attr($email); ?>" class="widefat" />
+    <label for="agents_designation">Designation</label>
+<input type="text" id="agents_designation" name="agents_designation" value="<?php echo esc_attr(get_post_meta($post->ID, 'designation', true)); ?>" class="widefat" />
+<br>
 <?php
 }
 
@@ -123,6 +126,7 @@ function save_agents_meta_box($post_id)
         'agents_phone_number' => 'phone_number',
         'agents_email' => 'email',
         'agents_timezone' => 'timezone',
+        'agents_designation'       => 'designation', // Add designation
     );
 
     foreach ($fields as $input_name => $meta_key) {

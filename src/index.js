@@ -1,6 +1,6 @@
 const { registerBlockType } = wp.blocks;
 const { InspectorControls, ColorPalette } = wp.blockEditor || wp.editor;
-const { PanelBody, RangeControl, SelectControl, TextControl , MultiSelectControl, CheckboxControl,ToggleControl } = wp.components;
+const { PanelBody, RangeControl, SelectControl, TextControl, MultiSelectControl, CheckboxControl, ToggleControl } = wp.components;
 import { useEffect, useState } from '@wordpress/element'; // useState and useEffect hooks
 import ServerSideRender from '@wordpress/server-side-render';
 import apiFetch from '@wordpress/api-fetch';
@@ -270,7 +270,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         listing_statuses: { type: 'array', default: [] },
     },
     edit({ attributes, setAttributes }) {
-        const { 
+        const {
             minimum_price, maximum_price, minimum_lot_square_meters, maximum_lot_square_meters,
             minimum_bathrooms, maximum_bathrooms, minimum_square_meters, maximum_square_meters,
             minimum_year_built, maximum_year_built, minimum_bedrooms, maximum_bedrooms,
@@ -312,11 +312,11 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                 ? selectedStatuses.filter(s => s !== status)
                 : [...selectedStatuses, status];
             const listingStatuses = updatedStatuses.flatMap(status =>
-                ({
-                    Active: ['Active', 'Incoming', 'Coming Soon', 'Pending'],
-                    Closed: ['Sold', 'Leased'],
-                    Archived: ['Withdrawn', 'Expired']
-                }[status] || [])
+            ({
+                Active: ['Active', 'Incoming', 'Coming Soon', 'Pending'],
+                Closed: ['Sold', 'Leased'],
+                Archived: ['Withdrawn', 'Expired']
+            }[status] || [])
             );
             setAttributes({ selectedStatuses: updatedStatuses, listing_statuses: listingStatuses });
         };
@@ -346,7 +346,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                                 onChange={() => handleStatusChange(option.value)}
                             />
                         ))}
-                         <TextControl
+                        <TextControl
                             label="Minimum Price"
                             value={minimum_price}
                             type="number"
@@ -452,10 +452,11 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
         showEmail: { type: 'boolean', default: true },
         showNote: { type: 'boolean', default: true },
         selectedTagsFrom: { type: 'array', default: [] }, // Array to hold selected tags
+        emailForGetLead: { type: 'string', default: '' },
     },
     edit({ attributes, setAttributes }) {
-        const { formTitle ,leadChannel, showFirstName, showLastName, showPhoneNumber, showEmail, showNote, selectedTagsFrom } = attributes;
-        const [leadChannels, setLeadChannels] = useState([]);
+        const { formTitle, leadChannel, showFirstName, showLastName, showPhoneNumber, showEmail, showNote, selectedTagsFrom, emailForGetLead } = attributes;
+        const [leadChannels, setLeadChannels] = useState();
         const [tags, setTags] = useState([]);
         const [loadingChannels, setLoadingChannels] = useState(true);
         const [loadingTags, setLoadingTags] = useState(true);
@@ -523,6 +524,11 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
                             label: channel.title ? channel.title : 'Unnamed',
                             value: channel.id,
                         }));
+                        // Add "Select your channel" option
+                        options.unshift({
+                            label: 'Select your channel',
+                            value: '', // Empty value to represent "nothing selected"
+                        });
                         setLeadChannels(options);
                     } catch (error) {
                         console.error('Error fetching lead channels:', error);
@@ -577,7 +583,7 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
             <>
                 <InspectorControls>
                     <PanelBody title="Lead Form Settings">
-                    <TextControl
+                        <TextControl
                             label="Form Title"
                             value={formTitle}
                             onChange={(value) => setAttributes({ formTitle: value })}
@@ -587,6 +593,12 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
                             value={leadChannel}
                             options={loadingChannels ? [{ label: 'Loading channels...', value: '' }] : leadChannels}
                             onChange={(selectedChannel) => setAttributes({ leadChannel: selectedChannel })}
+                        />
+                        <TextControl
+                            label="Email for Get This Lead In you Inbox"
+                            value={emailForGetLead}
+                            placeholder="Enter the email to receive leads"
+                            onChange={(value) => setAttributes({ emailForGetLead: value })}
                         />
                         <ToggleControl
                             label="Show First Name Field"

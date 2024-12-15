@@ -6,14 +6,25 @@ function rch_display_latest_listings_shortcode($atts)
         array(
             'limit' => 7, // Default limit to 7 listings if not provided
             'template' => '', // Default template is empty (uses the default template)
+            'slides_per_view' => 3.5, // Default for slidesPerView
+            'space_between' => 16, // Default for spaceBetween
+            'loop' => true, // Default for loop
+            'breakpoints' => '', // Default breakpoints as empty
+            'centered_slides' => false, // Default for centeredSlides (false)
         ),
         $atts
     );
+
     $template = esc_js($atts['template']); // Use the template attribute in JavaScript
+    $slides_per_view = floatval($atts['slides_per_view']); // Convert to float
+    $space_between = intval($atts['space_between']); // Convert to integer
+    $loop = filter_var($atts['loop'], FILTER_VALIDATE_BOOLEAN); // Validate loop as boolean
+    $centered_slides = filter_var($atts['centered_slides'], FILTER_VALIDATE_BOOLEAN); // Validate centeredSlides as boolean
+    $breakpoints = $atts['breakpoints'] ? esc_js($atts['breakpoints']) : '{}'; // Escape breakpoints or use empty object
 
     ob_start();
 ?>
-    <div class="swiper trendingSwiper <?php echo $template ?>">
+    <div class="swiper thumbsSwiper trendingSwiper <?php echo $template ?>" thumbsSlider="">
         <div class="swiper-wrapper" id="rch-listing-list-latest-<?php echo $template ?>"></div>
         <div id="rch-loading-listing" style="display: none;" class="rch-loader"></div>
     </div>
@@ -21,6 +32,19 @@ function rch_display_latest_listings_shortcode($atts)
         document.addEventListener('DOMContentLoaded', function() {
             const listingPerPage = <?php echo intval($atts['limit']); ?>;
             const template = "<?php echo esc_js($atts['template']); ?>"; // Template parameter from shortcode
+
+            // Swiper settings from shortcode attributes
+            const swiperSettings = {
+                slidesPerView: <?php echo $slides_per_view; ?>,
+                spaceBetween: <?php echo $space_between; ?>,
+                loop: <?php echo $loop ? 'true' : 'false'; ?>,
+                centeredSlides: <?php echo $centered_slides ? 'true' : 'false'; ?>, // Use the centeredSlides attribute
+                breakpoints: <?php echo $breakpoints; ?>, // Parsed breakpoints
+                navigation: {
+                    nextEl: ".swiper-button-next",
+                    prevEl: ".swiper-button-prev",
+                },
+            };
 
             function updateListingList() {
                 const listingList = document.getElementById('rch-listing-list-latest-<?php echo $template ?>');
@@ -38,7 +62,7 @@ function rch_display_latest_listings_shortcode($atts)
                         loading.style.display = 'none';
                         listingList.innerHTML = html;
 
-                        initializeSwiper();
+                        initializeSwiper(swiperSettings);
                     })
                     .catch(error => {
                         loading.style.display = 'none';
@@ -47,74 +71,11 @@ function rch_display_latest_listings_shortcode($atts)
                     });
             }
 
-            function initializeSwiper() {
+            function initializeSwiper(settings) {
                 const swiperWrapper = document.querySelector('.swiper-wrapper');
                 if (swiperWrapper && swiperWrapper.children.length > 0) {
-                    new Swiper(".top-listing", {
-                        spaceBetween: 30,
-                        slidesPerView: 4.5,
-                        loop: true,
-                        centeredSlides: true,
-                        speed: 20000,
-                        effect: "slide",
-                        grabCursor: true,
-                        simulateTouch: false,
-                        autoplay: {
-                            delay: 0,
-                            disableOnInteraction: false,
-                        },
-                        breakpoints: {
-                            0: {
-                                slidesPerView: 1.5
-                            },
-                            576: {
-                                slidesPerView: 2.5
-                            },
-                            768: {
-                                slidesPerView: 3.5
-                            },
-                            1200: {
-                                slidesPerView: 4.5
-                            },
-                        },
-                    });
-                    new Swiper(".main-listing-index", {
-                        slidesPerView: 3.5,
-                        spaceBetween: 16,
-                        centeredSlides: true,
-                        loop: true,
-                        navigation: {
-                            nextEl: ".swiper-button-next",
-                            prevEl: ".swiper-button-prev",
-                        },
-
-                        breakpoints: {
-                            0: {
-                                slidesPerView: 1.15,
-                            },
-                            375: {
-                                slidesPerView: 1.25,
-                            },
-                            425: {
-                                slidesPerView: 1.75,
-                            },
-                            576: {
-                                slidesPerView: 2.15,
-                            },
-                            768: {
-                                slidesPerView: 2.25,
-                            },
-                            992: {
-                                slidesPerView: 2.75,
-                            },
-                            1200: {
-                                slidesPerView: 3.15,
-                            },
-                            1320: {
-                                slidesPerView: 3.5,
-                            },
-                        },
-                    });
+                    new Swiper(".top-listing", settings); // Initialize Swiper with dynamic settings
+                    new Swiper(".main-listing-index", settings); // Initialize another Swiper with same settings
                 }
             }
 

@@ -21,6 +21,10 @@ function rch_register_block_assets_leads_form()
                 'type' => 'string',
                 'default' => '',
             ),
+            'emailForGetLead' => array(
+                'type' => 'string',
+                'default' => '',
+            ),
             'showFirstName' => array(
                 'type' => 'boolean',
                 'default' => true,
@@ -59,6 +63,7 @@ function rch_render_leads_form_block($attributes)
     // Extract attributes
     $form_title = isset($attributes['formTitle']) ? $attributes['formTitle'] : '';
     $lead_channel = isset($attributes['leadChannel']) ? $attributes['leadChannel'] : '';
+    $email_get_lead = isset($attributes['emailForGetLead']) ? $attributes['emailForGetLead'] : '';
     $show_first_name = isset($attributes['showFirstName']) ? $attributes['showFirstName'] : true;
     $show_last_name = isset($attributes['showLastName']) ? $attributes['showLastName'] : true;
     $show_phone_number = isset($attributes['showPhoneNumber']) ? $attributes['showPhoneNumber'] : true;
@@ -66,6 +71,7 @@ function rch_render_leads_form_block($attributes)
     $show_note = isset($attributes['showNote']) ? $attributes['showNote'] : true;
     $selected_tags = isset($attributes['selectedTagsFrom']) ? $attributes['selectedTagsFrom'] : array();
     $is_editor = defined('REST_REQUEST') && REST_REQUEST && isset($_GET['context']) && $_GET['context'] === 'edit';
+
     // Start output buffering
     ob_start();
 
@@ -116,6 +122,7 @@ function rch_render_leads_form_block($attributes)
             Something went wrong. Please try again.
         </div>
     </div>
+
     <?php if (!$is_editor): ?>
         <script src="https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.js"></script>
         <script>
@@ -129,14 +136,14 @@ function rch_render_leads_form_block($attributes)
                 event.preventDefault();
 
                 const input = {
-            first_name: document.getElementById('first_name')?.value.trim(),
-            last_name: document.getElementById('last_name')?.value.trim(),
-            phone_number: document.getElementById('phone_number')?.value.trim(),
-            email: document.getElementById('email')?.value.trim(),
-            note: document.getElementById('note')?.value.trim(),
-            tag: <?php echo json_encode($selected_tags); ?>, // Convert PHP array to JS array
-            source_type: 'Website',
-        };
+                    first_name: document.getElementById('first_name')?.value.trim(),
+                    last_name: document.getElementById('last_name')?.value.trim(),
+                    phone_number: document.getElementById('phone_number')?.value.trim(),
+                    email: document.getElementById('email')?.value.trim(),
+                    note: document.getElementById('note')?.value.trim(),
+                    tag: <?php echo json_encode($selected_tags); ?>, // Convert PHP array to JS array
+                    source_type: 'Website',
+                };
 
                 // Show loading spinner and hide success/error alerts
                 document.getElementById('loading-spinner').style.display = 'block';
@@ -156,7 +163,69 @@ function rch_render_leads_form_block($attributes)
             });
         </script>
     <?php endif; ?>
-<?php
 
+<?php
     return ob_get_clean();
 }
+function handle_lead_submission()
+{
+    // Get the form data
+    $first_name = sanitize_text_field($_POST['first_name']);
+    $last_name = sanitize_text_field($_POST['last_name']);
+    $phone_number = sanitize_text_field($_POST['phone_number']);
+    $email = sanitize_email($_POST['email']);
+    $note = sanitize_textarea_field($_POST['note']);
+    $tags = isset($_POST['tag']) ? implode(', ', $_POST['tag']) : ''; // Tags should be an array
+    $lead_channel = sanitize_text_field($_POST['lead_channel']);
+
+    // Email data
+    $to = 'mseiedmiri@gmail.com'; // The email address to send the lead data to
+    $subject = 'New Lead Submission';
+    $message = "First Name: $first_name\n";
+    $message .= "Last Name: $last_name\n";
+    $message .= "Phone Number: $phone_number\n";
+    $message .= "Email: $email\n";
+    $message .= "Note: $note\n";
+    $message .= "Tags: $tags\n";
+    $message .= "Lead Channel: $lead_channel\n";
+
+    // Email headers
+    $headers = array(
+        'Content-Type' => 'text/plain; charset=UTF-8',
+        'From' => 'no-reply@example.com',
+    );
+
+    // Send the email
+    $mail_sent = wp_mail($to, $subject, $message, $headers);
+
+    // Prepare the response data
+    $response_data = array(
+        'first_name' => $first_name,
+        'last_name' => $last_name,
+        'phone_number' => $phone_number,
+        'email' => $email,
+        'note' => $note,
+        'tags' => $tags,
+        'lead_channel' => $lead_channel,
+        'mail_sent' => $mail_sent ? 'Yes' : 'No' // Ensure it is a string
+    );
+
+    // Capture debug output
+    ob_start();
+    print_r($mail_sent); // You can also use var_export() or var_dump() here
+    print_r($to); // You can also use var_export() or var_dump() here
+    $debug_output = ob_get_clean();
+
+    // Prepare the debug output in the response data
+    $response_data['debug_output'] = $debug_output;
+
+    // Return the response as JSON
+    header('Content-Type: application/json');
+    echo json_encode(array('success' => true, 'data' => $response_data));
+
+    // Always terminate the request after sending the response
+    exit();
+}
+
+add_action('wp_ajax_handle_lead_submission', 'handle_lead_submission');
+add_action('wp_ajax_nopriv_handle_lead_submission', 'handle_lead_submission');
