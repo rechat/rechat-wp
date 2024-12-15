@@ -6,8 +6,11 @@
 // Register settings and fields for the 'local-logic' tab
 function rch_rechat_register_local_logic_settings()
 {
-    // Register the API Key field
+    // Register the Local Logic API Key field
     register_setting('local_logic_settings', 'rch_rechat_local_logic_api_key'); // API Key field
+
+    // Register the Google Map API Key field
+    register_setting('local_logic_settings', 'rch_rechat_google_map_api_key'); // Google Map API Key field
 
     // Register the checkboxes field (as an array to store multiple values)
     register_setting('local_logic_settings', 'rch_rechat_local_logic_features', [
@@ -22,11 +25,20 @@ function rch_rechat_register_local_logic_settings()
         'local_logic_settings' // Page slug
     );
 
-    // Add the API Key field
+    // Add the Local Logic API Key field
     add_settings_field(
         'rch_rechat_local_logic_api_key', // Field ID
-        __('API Key', 'rch-rechat-plugin'), // Field label
+        __('Local Logic API Key', 'rch-rechat-plugin'), // Field label
         'rch_rechat_render_api_key_field', // Callback function to render the field
+        'local_logic_settings', // Page slug
+        'rch_rechat_local_logic_section' // Section ID
+    );
+
+    // Add the Google Map API Key field
+    add_settings_field(
+        'rch_rechat_google_map_api_key', // Field ID
+        __('Google Map API Key', 'rch-rechat-plugin'), // Field label
+        'rch_rechat_render_google_map_api_key_field', // Callback function to render the field
         'local_logic_settings', // Page slug
         'rch_rechat_local_logic_section' // Section ID
     );
@@ -42,15 +54,16 @@ function rch_rechat_register_local_logic_settings()
 }
 // Hook the function to 'admin_init' so it runs when the admin interface initializes
 add_action('admin_init', 'rch_rechat_register_local_logic_settings');
+
 /*******************************
  * Render the local logic settings
  ******************************/
 function rch_rechat_local_logic_section_description()
 {
-    echo '<p>' . __('Configure the API Key and features for Local Logic integration.', 'rch-rechat-plugin') . '</p>';
+    echo '<p>' . __('Configure the API Keys and features for Local Logic integration.', 'rch-rechat-plugin') . '</p>';
 }
 
-// Render the API Key field
+// Render the Local Logic API Key field
 function rch_rechat_render_api_key_field()
 {
     // Get the current value of the API Key
@@ -58,6 +71,16 @@ function rch_rechat_render_api_key_field()
     // Render the input field
     echo '<input type="text" name="rch_rechat_local_logic_api_key" value="' . esc_attr($value) . '" class="regular-text" />';
 }
+
+// Render the Google Map API Key field
+function rch_rechat_render_google_map_api_key_field()
+{
+    // Get the current value of the Google Map API Key
+    $value = get_option('rch_rechat_google_map_api_key', '');
+    // Render the input field
+    echo '<input type="text" name="rch_rechat_google_map_api_key" value="' . esc_attr($value) . '" class="regular-text" />';
+}
+
 /*******************************
  * Render the checkboxes for features
  ******************************/
@@ -67,16 +90,7 @@ function rch_rechat_render_features_checkboxes()
     $selected_features = get_option('rch_rechat_local_logic_features', []);
     // Define the available options
     $features = [
-        // 'Hero' => __('Hero', 'rch-rechat-plugin'),
-        // 'Map' => __('Map', 'rch-rechat-plugin'),
-        // 'Highlights' => __('Highlights', 'rch-rechat-plugin'),
-        // 'Characteristics' => __('Characteristics', 'rch-rechat-plugin'),
-        // 'Schools' => __('Schools', 'rch-rechat-plugin'),
-        // 'Demographics' => __('Demographics', 'rch-rechat-plugin'),
-        // 'PropertyValueDrivers' => __('Property Value Drivers', 'rch-rechat-plugin'),
-        // 'MarketTrends' => __('Market Trends', 'rch-rechat-plugin'),
-        // 'Match' => __('Match', 'rch-rechat-plugin'),
-        'LocalContent' => __('Match', 'widgets/local-content'),
+        'LocalContent' => __('Local Content', 'widgets/local-content'),
     ];
     // Render the checkboxes
     foreach ($features as $key => $label) {

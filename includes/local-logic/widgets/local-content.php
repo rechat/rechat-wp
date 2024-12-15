@@ -1,6 +1,9 @@
 <?php $api_key = get_option('rch_rechat_local_logic_api_key');
 $primary_color = get_option('_rch_primary_color');
+
 ?>
+
+
 <script
     async
     src="https://sdk.locallogic.co/sdks-js/1.22.21/index.umd.js"
@@ -17,15 +20,16 @@ $primary_color = get_option('_rch_primary_color');
 
 <script>
     const globalOptions = {
-        locale: "en", // Change to either english or french
-        appearance: {
-            theme: "day",
-            // Add any other appearance changes here
-            variables: {
-
-                "--ll-font-family": "inherit"
-            }
+      locale: "en", // Change to either english or french
+      appearance: {
+        theme: "day",
+        // Add any other appearance changes here
+        variables: {
+          "--ll-color-primary": "<?php echo $primary_color; ?>",
+          "--ll-color-primary-variant1": "<?php echo $primary_color ?>",
+          "--ll-font-family": "Avenir, sans-serif"
         }
+      }
     };
 
     function loadLocalContentSDK() {
@@ -37,9 +41,14 @@ $primary_color = get_option('_rch_primary_color');
 
         const sdkOptions = {
             lat: <?php echo isset($listing_detail['property']['address']['location']['latitude']) ? $listing_detail['property']['address']['location']['latitude'] : "''"; ?>,
-            lng: <?php echo isset($listing_detail['property']['address']['location']['longitude']) ? $listing_detail['property']['address']['location']['longitude'] : "''"; ?>
+            lng: <?php echo isset($listing_detail['property']['address']['location']['longitude']) ? $listing_detail['property']['address']['location']['longitude'] : "''"; ?>,
 
             // ...Other sdk specific options
+            mapProvider: {
+                name: "google",
+                key: "<?php echo $google_map_api ?>",
+            },
+            
         }
 
         const sdkInstance = ll.create("local-content", sdkContainer, sdkOptions);

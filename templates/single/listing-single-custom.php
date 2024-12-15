@@ -140,10 +140,11 @@
                         </ul>
                     </div>
                     <hr />
+
                     <?php
                     // Retrieve the selected features from the settings
                     $selected_features = get_option('rch_rechat_local_logic_features', []);
-
+                    $google_map_api = get_option('rch_rechat_google_map_api_key');
                     // Define the available template parts corresponding to each feature
                     $feature_templates = [
                         // 'Hero' => 'hero', // Template part for Hero feature
@@ -173,15 +174,6 @@
                     }
                     ?>
 
-                    <div class="location-single-houser" id="rch-location">
-                        <h2>
-                            Location on the Map
-                        </h2>
-                        <p>
-                            Located in one of the city's most desirable neighborhoods, this home offers both serenity and convenience.
-                        </p>
-                        <div id="map" class="rch-map-single"></div> <!-- Map Container -->
-                    </div>
                 </div>
                 <div class="rch-single-right-main-layout">
                     <div class="rch-listing-form-lead" id="leadCaptureForm">
@@ -268,9 +260,8 @@
 
 </div>
 <?php get_footer() ?>
+
 <script src="https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.js"></script>
-<!-- <srcipt src="https://unpkg.com/@rechat/sdk@^1/dist/rechat.min.js" type="text/javascript"></script>
-<srcipt src="https://unpkg.com/@rechat/sdk@0.1.3/dist/rechat.min.js" type="text/javascript"></script> -->
 <script>
     const sdk = new Rechat.Sdk();
 
@@ -312,53 +303,9 @@
             });
     });
 </script>
-<!-- <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDvRzNSZS9NGxODmLKrplrVwFaHHuPC0Q0&callback=initMap&language=en"></script> -->
-<!-- Add Leaflet CSS -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
 
-<!-- Add Leaflet JavaScript -->
-<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 <script>
-    // function initMap() {
-    //     // Get latitude and longitude from PHP
-    //     var latitude = <?php echo json_encode($listing_detail['property']['address']['location']['latitude']); ?>;
-    //     var longitude = <?php echo json_encode($listing_detail['property']['address']['location']['longitude']); ?>;
-    //     var location = {
-    //         lat: latitude,
-    //         lng: longitude
-    //     };
 
-    //     // Create the map centered at the specified location
-    //     var map = new google.maps.Map(document.getElementById('map'), {
-    //         zoom: 13, // Adjust the zoom level as needed
-    //         center: location
-    //     });
-
-    //     // Add a marker at the location
-    //     var marker = new google.maps.Marker({
-    //         position: location,
-    //         map: map
-    //     });
-    // }
-
-    // // Call the initMap function when the window loads
-    // window.onload = initMap;
-    // Get the property latitude and longitude from PHP (replace with actual values)
-    var propertyLat = <?php echo esc_js($listing_detail['property']['address']['location']['latitude']); ?>;
-    var propertyLng = <?php echo esc_js($listing_detail['property']['address']['location']['longitude']); ?>;
-
-    // Initialize the map and set the view to the property's location with zoom level 13
-    var map = L.map('map').setView([propertyLat, propertyLng], 13);
-
-    // Add OpenStreetMap tile layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
-
-    // Add a marker at the property location
-    L.marker([propertyLat, propertyLng]).addTo(map)
-        .bindPopup('<b>Property Location</b>')
-        .openPopup();
     var swiper = new Swiper(".rch-houses-mySwiper", {
         spaceBetween: 10,
         slidesPerView: 8, // Default for desktop

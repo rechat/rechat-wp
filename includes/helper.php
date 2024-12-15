@@ -520,8 +520,8 @@ function rch_find_primary_color($brand)
 
     // Traverse the brand hierarchy to find the primary color
     do {
-        if (isset($brand['settings']['marketing_palette']['colors'][0])) {
-            $primary_color = $brand['settings']['marketing_palette']['colors'][0];
+        if (isset($brand['settings']['marketing_palette']['colors'])) {
+            $primary_color = $brand['settings']['marketing_palette']['inverted-container-bg-color'];
         }
         $brand = isset($brand['parent']) ? $brand['parent'] : null;
     } while (!$primary_color && $brand);
@@ -582,3 +582,4 @@ function check_logged_in_status()
 }
 
 add_action('rest_api_init', 'register_check_user_logged_in_route');
+
