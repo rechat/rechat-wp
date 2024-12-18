@@ -91,26 +91,22 @@ function save_agents_meta_box($post_id)
 {
     // Check if our nonce is set.
     if (!isset($_POST['agents_meta_box_nonce'])) {
-        error_log('Nonce not set.');
         return $post_id;
     }
     $nonce = $_POST['agents_meta_box_nonce'];
 
     // Verify that the nonce is valid.
     if (!wp_verify_nonce($nonce, 'agents_meta_box')) {
-        error_log('Nonce verification failed.');
         return $post_id;
     }
 
     // Check if this is an autosave.
     if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
-        error_log('Autosave.');
         return $post_id;
     }
 
     // Check the user's permissions.
     if (!current_user_can('edit_post', $post_id)) {
-        error_log('User cannot edit post.');
         return $post_id;
     }
 
@@ -133,10 +129,10 @@ function save_agents_meta_box($post_id)
         if (isset($_POST[$input_name])) {
             $value = sanitize_text_field($_POST[$input_name]);
             update_post_meta($post_id, $meta_key, $value);
-            error_log("Updated $meta_key with value: $value");
         }
     }
 }
+
 
 add_action('save_post', 'save_agents_meta_box');
 

@@ -10,7 +10,7 @@ function custom_add_regions_meta_box_in_Offices()
 {
     add_meta_box(
         'regions_meta_box_in_Offices', // ID of the meta box
-        __('Rechat Regions', 'textdomain'), // Title of the meta box
+        __('Rechat Regions', 'rechat-plugin'), // Title of the meta box
         'rch_custom_regions_meta_box_callback_in_Offices', // Callback function
         'offices', // Post type where the meta box appears
         'side', // Context (normal, side, advanced)
@@ -47,7 +47,7 @@ function rch_custom_regions_meta_box_callback_in_Offices($post)
             $checked = in_array($region->ID, (array) $associated_region_metas) ? 'checked="checked"' : '';
 
             // Display the checkbox for each region
-            echo '<label><input type="checkbox" name="agent_regions[]" value="' . esc_attr($region->ID) . '" ' . $checked . '> ' . esc_html($region->post_title) . '</label><br>';
+            echo '<label><input type="checkbox" name="agent_regions[]" value="' . esc_attr($region->ID) . '" ' . esc_attr($checked) . '> ' . esc_html($region->post_title) . '</label><br>';
         }
     } else {
         echo '<p>No regions available.</p>';
@@ -123,7 +123,7 @@ function rch_custom_ajax_search_regions_in_Offices()
     if ($regions->have_posts()) {
         while ($regions->have_posts()) : $regions->the_post();
             $checked = in_array(get_the_ID(), $selected_regions) ? 'checked="checked"' : '';
-            echo '<label><input type="checkbox" name="agent_regions[]" value="' . esc_attr(get_the_ID()) . '" ' . $checked . '> ' . esc_html(get_the_title()) . '</label><br>';
+            echo '<label><input type="checkbox" name="agent_regions[]" value="' . esc_attr(get_the_ID()) . '" ' . esc_attr($checked) . '> ' . esc_html(get_the_title()) . '</label><br>';
         endwhile;
     } else {
         echo '<p>No regions found.</p>';
@@ -162,7 +162,7 @@ add_action('save_post', 'custom_save_regions_meta_box_data_in_Offices');
  *******************************/
 function custom_regions_columns_in_Offices($columns)
 {
-    $columns['regions'] = __('Associated Regions');
+    $columns['regions'] = __('Associated Regions', 'rechat-plugin');
     return $columns;
 }
 add_filter('manage_offices_posts_columns', 'custom_regions_columns_in_Offices');
@@ -190,9 +190,9 @@ function custom_regions_custom_column_in_Offices($column, $post_id)
             }
 
             // Display the region titles separated by commas
-            echo implode(', ', $output);
+            echo implode(', ', array_map('esc_html', $output));
         } else {
-            echo __('No Regions Assigned');
+            echo esc_html(__('No Regions Assigned', 'rechat-plugin'));
         }
     }
 }

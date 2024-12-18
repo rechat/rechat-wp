@@ -80,7 +80,7 @@ function rch_render_leads_form_block($attributes)
     <div class="rch-leads-form-block">
         <form id="leadCaptureForm" method="post">
             <?php if ($form_title): ?>
-                <h2><?php echo $form_title ?></h2>
+                <h2><?php echo esc_html($form_title); ?></h2>
             <?php endif; ?>
             <?php if ($show_first_name): ?>
                 <div class="form-group">
@@ -129,7 +129,7 @@ function rch_render_leads_form_block($attributes)
             const sdk = new Rechat.Sdk();
 
             const channel = {
-                lead_channel: '<?php echo sanitize_text_field($lead_channel); ?>'
+                lead_channel: '<?php echo esc_js(sanitize_text_field($lead_channel)); ?>'
             };
 
             document.getElementById('leadCaptureForm').addEventListener('submit', function(event) {
@@ -141,7 +141,7 @@ function rch_render_leads_form_block($attributes)
                     phone_number: document.getElementById('phone_number')?.value.trim(),
                     email: document.getElementById('email')?.value.trim(),
                     note: document.getElementById('note')?.value.trim(),
-                    tag: <?php echo json_encode($selected_tags); ?>, // Convert PHP array to JS array
+                    tag: <?php echo wp_json_encode($selected_tags); ?>,
                     source_type: 'Website',
                 };
 
@@ -170,13 +170,45 @@ function rch_render_leads_form_block($attributes)
 function handle_lead_submission()
 {
     // Get the form data
-    $first_name = sanitize_text_field($_POST['first_name']);
-    $last_name = sanitize_text_field($_POST['last_name']);
-    $phone_number = sanitize_text_field($_POST['phone_number']);
-    $email = sanitize_email($_POST['email']);
-    $note = sanitize_textarea_field($_POST['note']);
-    $tags = isset($_POST['tag']) ? implode(', ', $_POST['tag']) : ''; // Tags should be an array
-    $lead_channel = sanitize_text_field($_POST['lead_channel']);
+    $first_name = '';
+    $last_name = '';
+    $phone_number = '';
+    $email = '';
+    $note = '';
+    $tags = '';
+    $lead_channel = '';
+    if (isset($_POST['first_name'])) {
+        $first_name = sanitize_text_field(wp_unslash($_POST['first_name']));
+    }
+    // Validate and sanitize last_name
+    if (isset($_POST['last_name'])) {
+        $last_name = sanitize_text_field(wp_unslash($_POST['last_name']));
+    }
+
+    // Validate and sanitize phone_number
+    if (isset($_POST['phone_number'])) {
+        $phone_number = sanitize_text_field(wp_unslash($_POST['phone_number']));
+    }
+
+    // Validate and sanitize email
+    if (isset($_POST['email'])) {
+        $email = sanitize_email(wp_unslash($_POST['email']));
+    }
+
+    // Validate and sanitize note
+    if (isset($_POST['note'])) {
+        $note = sanitize_textarea_field(wp_unslash($_POST['note']));
+    }
+
+    // Validate and sanitize tags (array)
+    if (isset($_POST['tag']) && is_array($_POST['tag'])) {
+        $tags = implode(', ', array_map('sanitize_text_field', wp_unslash($_POST['tag'])));
+    }
+
+    // Validate and sanitize lead_channel
+    if (isset($_POST['lead_channel'])) {
+        $lead_channel = sanitize_text_field(wp_unslash($_POST['lead_channel']));
+    }
 
     // Email data
     $to = 'mseiedmiri@gmail.com'; // The email address to send the lead data to
@@ -212,8 +244,6 @@ function handle_lead_submission()
 
     // Capture debug output
     ob_start();
-    print_r($mail_sent); // You can also use var_export() or var_dump() here
-    print_r($to); // You can also use var_export() or var_dump() here
     $debug_output = ob_get_clean();
 
     // Prepare the debug output in the response data
@@ -221,7 +251,7 @@ function handle_lead_submission()
 
     // Return the response as JSON
     header('Content-Type: application/json');
-    echo json_encode(array('success' => true, 'data' => $response_data));
+    echo wp_json_encode(array('success' => true, 'data' => $response_data));
 
     // Always terminate the request after sending the response
     exit();

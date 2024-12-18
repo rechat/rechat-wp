@@ -98,7 +98,7 @@ function rch_render_agents_block($attributes)
     ob_start();
 ?>
     <div id="rch-agents-block"
-        data-nonce="<?php echo wp_create_nonce('rch_load_more_agents_nonce'); ?>"
+        data-nonce="<?php echo esc_attr(wp_create_nonce('rch_load_more_agents_nonce')); ?>"
         data-posts-per-page="<?php echo esc_attr($posts_per_page); ?>"
         data-region-bg-color="<?php echo esc_attr($region_bg_color); ?>"
         data-text-color="<?php echo esc_attr($text_color); ?>"
@@ -106,8 +106,7 @@ function rch_render_agents_block($attributes)
         data-filter-region="<?php echo esc_attr($filter_by_Regions); ?>"
         data-filter-office="<?php echo esc_attr($filter_by_offices); ?>"
         data-sort_by="<?php echo esc_attr($sort_by); ?>"
-        data-sort_order="<?php echo esc_attr($sort_order); ?>"
-        >
+        data-sort_order="<?php echo esc_attr($sort_order); ?>">
         <ul class="rch-archive-agents">
 
             <?php if ($query->have_posts()) : ?>
@@ -152,14 +151,15 @@ function rch_load_more_agents()
 {
     check_ajax_referer('rch_load_more_agents_nonce', 'nonce');
 
-    $page = isset($_POST['page']) ? intval($_POST['page']) : 1;
-    $posts_per_page = isset($_POST['posts_per_page']) ? intval($_POST['posts_per_page']) : 5;
-    $region_bg_color = isset($_POST['region_bg_color']) ? sanitize_hex_color($_POST['region_bg_color']) : '#edf1f5';
-    $text_color = isset($_POST['text_color']) ? sanitize_hex_color($_POST['text_color']) : '#000';
-    $filter_by_Regions = isset($_POST['filter_by_Regions']) ? sanitize_text_field($_POST['filter_by_Regions']) : '';
-    $filter_by_offices = isset($_POST['filter_by_offices']) ? sanitize_text_field($_POST['filter_by_offices']) : '';
-    $sort_by = isset($_POST['sort_by']) ? sanitize_text_field($_POST['sort_by']) : '';
-    $sort_order = isset($_POST['sort_order']) ? sanitize_text_field($_POST['sort_order']) : '';
+    // Unslash and sanitize POST data
+    $page = isset($_POST['page']) ? intval(wp_unslash($_POST['page'])) : 1;
+    $posts_per_page = isset($_POST['posts_per_page']) ? intval(wp_unslash($_POST['posts_per_page'])) : 5;
+    $region_bg_color = isset($_POST['region_bg_color']) ? sanitize_hex_color(wp_unslash($_POST['region_bg_color'])) : '#edf1f5';
+    $text_color = isset($_POST['text_color']) ? sanitize_hex_color(wp_unslash($_POST['text_color'])) : '#000';
+    $filter_by_Regions = isset($_POST['filter_by_Regions']) ? sanitize_text_field(wp_unslash($_POST['filter_by_Regions'])) : '';
+    $filter_by_offices = isset($_POST['filter_by_offices']) ? sanitize_text_field(wp_unslash($_POST['filter_by_offices'])) : '';
+    $sort_by = isset($_POST['sort_by']) ? sanitize_text_field(wp_unslash($_POST['sort_by'])) : '';
+    $sort_order = isset($_POST['sort_order']) ? sanitize_text_field(wp_unslash($_POST['sort_order'])) : '';
 
     // Set up the meta query based on the provided filters
     $meta_query = array('relation' => 'AND');
@@ -179,6 +179,7 @@ function rch_load_more_agents()
             'compare' => 'LIKE', // Use LIKE if storing multiple offices, or '=' if a single value
         );
     }
+
     $orderby = ($sort_by === 'name') ? 'title' : 'date'; // Determine the order by field
     $order = ($sort_order === 'asc') ? 'ASC' : 'DESC'; // Determine the order direction
     $args = array(
@@ -217,6 +218,7 @@ function rch_load_more_agents()
     $html = ob_get_clean();
     wp_send_json_success(array('html' => $html));
 }
+
 
 add_action('wp_ajax_rch_load_more_agents', 'rch_load_more_agents');
 add_action('wp_ajax_nopriv_rch_load_more_agents', 'rch_load_more_agents');

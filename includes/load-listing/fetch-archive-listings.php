@@ -22,10 +22,10 @@ function rch_fetch_listing($filters, $page, $listingPerPage)
         'Content-Type' => 'application/json',
         'X-RECHAT-BRAND' => $brand,
     ];
-    $response = wp_remote_post('https://api.rechat.com/valerts', [
+    $response = wp_remote_post('https://api.rechat.com/valerts?order_by[]=-price', [
         'method' => 'POST',
         'headers' => $headers,
-        'body' => json_encode($requestBody),
+        'body' => wp_json_encode($requestBody),
         'timeout' => 20, // Set the timeout to 15 seconds
 
     ]);
@@ -56,7 +56,7 @@ function rch_fetch_total_listing_count($filters = [])
     $response = wp_remote_post('https://api.rechat.com/valerts/count', [
         'method' => 'POST',
         'headers' => $headers,
-        'body' => json_encode($requestBody),
+        'body' => wp_json_encode($requestBody),
         'timeout' => 20, // Set the timeout to 15 seconds
     ]);
     // Check for errors and return the response

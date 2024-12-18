@@ -20,7 +20,7 @@ function rch_rechat_register_local_logic_settings()
     // Add a section for the settings
     add_settings_section(
         'rch_rechat_local_logic_section', // Section ID
-        __('Local Logic Settings', 'rch-rechat-plugin'), // Section title
+        __('Local Logic Settings', 'rechat-plugin'), // Section title
         'rch_rechat_local_logic_section_description', // Callback function for description
         'local_logic_settings' // Page slug
     );
@@ -28,7 +28,7 @@ function rch_rechat_register_local_logic_settings()
     // Add the Local Logic API Key field
     add_settings_field(
         'rch_rechat_local_logic_api_key', // Field ID
-        __('Local Logic API Key', 'rch-rechat-plugin'), // Field label
+        __('Local Logic API Key', 'rechat-plugin'), // Field label
         'rch_rechat_render_api_key_field', // Callback function to render the field
         'local_logic_settings', // Page slug
         'rch_rechat_local_logic_section' // Section ID
@@ -37,7 +37,7 @@ function rch_rechat_register_local_logic_settings()
     // Add the Google Map API Key field
     add_settings_field(
         'rch_rechat_google_map_api_key', // Field ID
-        __('Google Map API Key', 'rch-rechat-plugin'), // Field label
+        __('Google Map API Key', 'rechat-plugin'), // Field label
         'rch_rechat_render_google_map_api_key_field', // Callback function to render the field
         'local_logic_settings', // Page slug
         'rch_rechat_local_logic_section' // Section ID
@@ -46,7 +46,7 @@ function rch_rechat_register_local_logic_settings()
     // Add the checkboxes for features
     add_settings_field(
         'rch_rechat_local_logic_features', // Field ID
-        __('Features', 'rch-rechat-plugin'), // Field label
+        __('Features', 'rechat-plugin'), // Field label
         'rch_rechat_render_features_checkboxes', // Callback function to render the field
         'local_logic_settings', // Page slug
         'rch_rechat_local_logic_section' // Section ID
@@ -60,7 +60,7 @@ add_action('admin_init', 'rch_rechat_register_local_logic_settings');
  ******************************/
 function rch_rechat_local_logic_section_description()
 {
-    echo '<p>' . __('Configure the API Keys and features for Local Logic integration.', 'rch-rechat-plugin') . '</p>';
+    echo '<p>' . esc_html__('Configure the API Keys and features for Local Logic integration.', 'rechat-plugin') . '</p>';
 }
 
 // Render the Local Logic API Key field
@@ -90,13 +90,13 @@ function rch_rechat_render_features_checkboxes()
     $selected_features = get_option('rch_rechat_local_logic_features', []);
     // Define the available options
     $features = [
-        'LocalContent' => __('Local Content', 'widgets/local-content'),
+        'LocalContent' => __('Local Content', 'rechat-plugin'),
     ];
     // Render the checkboxes
     foreach ($features as $key => $label) {
         $checked = in_array($key, $selected_features) ? 'checked' : '';
         echo '<label>';
-        echo '<input type="checkbox" name="rch_rechat_local_logic_features[]" value="' . esc_attr($key) . '" ' . $checked . ' />';
+        echo '<input type="checkbox" name="rch_rechat_local_logic_features[]" value="' . esc_attr($key) . '" ' . esc_attr($checked) . ' />';
         echo ' ' . esc_html($label);
         echo '</label><br>';
     }

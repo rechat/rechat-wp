@@ -1,11 +1,13 @@
 <?php
 /*
 Plugin Name: Rechat Plugin
-Description: Fetches and manages agent, offices, regions and Listing data from Rechat.
+Description: Fetches and manages agent, offices, regions, and Listing data from Rechat.
 Version: 3.0.0
 Author URI: https://rechat.com/
+Text Domain: rechat-plugin
+License: GPL-2.0-or-later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 */
-
 // Exit if accessed directly
 if (! defined('ABSPATH')) {
     http_response_code(404);
@@ -22,7 +24,7 @@ const RCH_PLUGIN_ASSETS_URL_IMG = RCH_PLUGIN_URL . 'assets/images/';
 // Add a "Settings" link to the plugin actions
 function rch_plugin_action_links($links)
 {
-    $settings_link = '<a href="admin.php?page=rechat-setting">' . __('Settings') . '</a>';
+    $settings_link = '<a href="admin.php?page=rechat-setting">' . __('Settings', 'rechat-plugin') . '</a>';
     array_push($links, $settings_link);
     return $links;
 }

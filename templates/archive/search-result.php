@@ -1,12 +1,13 @@
 <?php
-function rch_agent_search() {
+function rch_agent_search()
+{
     // Verify the nonce
-    if (!isset($_GET['nonce']) || !wp_verify_nonce($_GET['nonce'], 'rch_ajax_front_nonce')) {
-        wp_send_json_error('Invalid nonce'); // Send a JSON response with an error
-        wp_die(); // Stop execution
+    if (!isset($_GET['nonce']) || !wp_verify_nonce(wp_unslash($_GET['nonce']), 'rch_ajax_front_nonce')) {
+        wp_send_json_error('Invalid nonce', 403);
+        exit;
     }
     // Get the search query from AJAX
-    $search_query = isset($_GET['query']) ? sanitize_text_field($_GET['query']) : '';
+    $search_query = isset($_GET['query']) ? sanitize_text_field(wp_unslash($_GET['query'])) : '';
 
     // Arguments for WP_Query
     $args = array(
@@ -23,7 +24,7 @@ function rch_agent_search() {
             $post_id = get_the_ID();
             $profile_image_url = get_post_meta($post_id, 'profile_image_url', true);
             $timezone = get_post_meta($post_id, 'timezone', true);
-            ?>
+?>
             <li>
                 <a href="<?php the_permalink(); ?>" class="rch-search-result-item">
                     <img src="<?php echo esc_url($profile_image_url); ?>" alt="<?php the_title(); ?>">
@@ -31,15 +32,15 @@ function rch_agent_search() {
                     <span><?php echo esc_html($timezone); ?></span>
                 </a>
             </li>
-            <?php
+<?php
         endwhile;
         echo '</ul>';
     else :
-        echo '<div class="notfound">' . __('No agents found.') . '</div>';
+        echo '<div class="notfound">' . esc_html__('No agents found.', 'rechat-plugin') . '</div>';
     endif;
 
     wp_reset_postdata();
-    
+
     wp_die();
 }
 add_action('wp_ajax_rch_agent_search', 'rch_agent_search');

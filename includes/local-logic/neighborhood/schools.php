@@ -1,18 +1,20 @@
 <?php $api_key = get_option('rch_rechat_local_logic_api_key') ?>
+
 <script
     async
     src="https://sdk.locallogic.co/sdks-js/1.22.21/index.umd.js"
-    onload="loadNeighborhoodCharacteristicsSDK()"></script>
+    onload="loadNeighborhoodSchoolsSDK()"></script>
 
 
 <style>
-    #neighborhood-characteristics-widget {
+    #neighborhood-schools-widget {
+        height: 700px;
         width: 100%;
     }
 </style>
 
 <!--NOTE: If you are implementing multiple SDKs, make sure you create unique IDs for each-->
-<div id="neighborhood-characteristics-widget"></div>
+<div id="neighborhood-schools-widget"></div>
 
 <script>
     const globalOptions = {
@@ -30,15 +32,14 @@
         }
     };
 
-    function loadNeighborhoodCharacteristicsSDK() {
+    function loadNeighborhoodSchoolsSDK() {
         // Your API key or token
-        const ll = LLSDKsJS("<?php echo $api_key ?>", globalOptions);
+        const ll = LLSDKsJS("<?php echo esc_js($api_key) ?>", globalOptions);
 
         // This is the div that will contain the widget
-        const sdkContainer = document.getElementById("neighborhood-characteristics-widget");
-
-        const lat = <?php echo isset($listing_detail['property']['address']['location']['latitude']) ? $listing_detail['property']['address']['location']['latitude'] : "''"; ?>;
-        const lng = <?php echo isset($listing_detail['property']['address']['location']['longitude']) ? $listing_detail['property']['address']['location']['longitude'] : "''"; ?>;
+        const sdkContainer = document.getElementById("neighborhood-schools-widget");
+        const lat = <?php echo isset($listing_detail['property']['address']['location']['latitude']) ? esc_js($listing_detail['property']['address']['location']['latitude']) : "''"; ?>;
+        const lng = <?php echo isset($listing_detail['property']['address']['location']['longitude']) ? esc_js($listing_detail['property']['address']['location']['longitude']) : "''"; ?>;
 
         const sdkOptions = {
             lat: lat,
@@ -46,6 +47,6 @@
             // ...Other sdk specific options
         };
 
-        const sdkInstance = ll.create("neighborhood-characteristics", sdkContainer, sdkOptions);
+        const sdkInstance = ll.create("neighborhood-schools", sdkContainer, sdkOptions);
     }
 </script>

@@ -31,7 +31,7 @@ $query = new WP_Query($args);
                     </li>
                 <?php endwhile;
             else : ?>
-                <div class='notfound'><?php _e('Sorry. There Is Nothing.'); ?></div>
+                <div class='notfound'><?php esc_html_e('Sorry. There Is Nothing.', 'rechat-plugin'); ?></div>
             <?php endif; ?>
             <?php wp_reset_postdata(); ?>
         </ul>
@@ -40,14 +40,15 @@ $query = new WP_Query($args);
         <div class="rch-pagination">
             <div class="rch-pagination-container">
                 <?php
-                echo paginate_links(array(
+                // Escape pagination output
+                echo wp_kses_post(paginate_links(array(
                     'total' => $query->max_num_pages,
                     'current' => $paged,
-                    'prev_text' => __('<'),
-                    'next_text' => __('>'),
+                    'prev_text' => __('&lt;', 'rechat-plugin'),
+                    'next_text' => __('&gt;', 'rechat-plugin'),
                     'end_size'  => 2,
                     'mid_size'  => 2,
-                ));
+                )));
                 ?>
             </div>
         </div>

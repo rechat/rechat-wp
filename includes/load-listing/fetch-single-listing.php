@@ -4,7 +4,7 @@ if (! defined('ABSPATH')) {
 }
 
 // Extract the listing ID from the URL using PHP
-$house_id = isset($_GET['listing_id']) ? sanitize_text_field($_GET['listing_id']) : null;
+$house_id = isset($_GET['listing_id']) ? sanitize_text_field(wp_unslash($_GET['listing_id'])) : null;
 
 if ($house_id) {
     // Define the brand ID and API endpoint

@@ -14,7 +14,7 @@
             </a>
         </h3>
         <span>
-            <?php echo $designation ?>
+            <?php echo esc_html($designation) ?>
         </span>
     </div>
     <div class="rch-archive-end-line">

@@ -9,7 +9,8 @@
                             <img src="<?php echo esc_url($listing_detail['cover_image_url']); ?>" alt="Image of House">
                         </picture>
                         <button id="myBtn" data-slider="0" class="rch-load-images">
-                            <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>gallery.svg" alt="">
+                            <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'gallery.svg'); ?>" alt=" gallery icon">
+
                             View all Photos
                         </button>
                     <?php
@@ -24,7 +25,7 @@
                         $i = 1;
                         foreach (array_slice($listing_detail['gallery_image_urls'], 1, 4) as $image_url) {
                     ?>
-                            <picture data-slider="<?php echo $i; ?>" id="myBtn">
+                            <picture data-slider="<?php echo esc_attr($i); ?>" id="myBtn">
                                 <img src="<?php echo esc_url($image_url); ?>" alt="Gallery of House">
                             </picture>
                     <?php
@@ -85,27 +86,27 @@
                         </h2>
                         <ul>
                             <li>
-                                <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>bedroomsingle.svg" alt="">
+                                <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'bedroomsingle.svg'); ?>" alt="Bedroom icon">
                                 <?php echo esc_html($listing_detail['property']['bedroom_count']); ?>
                                 Bedrooms
                             </li>
                             <li>
-                                <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>fbathsingle.svg" alt="">
+                                <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'fbathsingle.svg'); ?>" alt="Fullbath icon">
                                 <?php echo esc_html($listing_detail['property']['full_bathroom_count']); ?>
                                 Full Bathrooms
                             </li>
                             <li>
-                                <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>hbathsingle.svg" alt="">
+                                <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'hbathsingle.svg'); ?>" alt="Halfbath icon">
                                 <?php echo esc_html($listing_detail['property']['half_bathroom_count']); ?>
                                 Half Bathrooms
                             </li>
                             <li>
-                                <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>areasingle.svg" alt="">
+                                <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'areasingle.svg'); ?>" alt="Area icon">
                                 <?php echo esc_html($listing_detail['property']['square_meters']); ?>
                                 meter
                             </li>
                             <li>
-                                <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>yearsingle.svg" alt="">
+                                <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'yearsingle.svg'); ?>" alt="">
                                 <?php echo esc_html($listing_detail['property']['year_built']); ?>
                                 Year Built
                             </li>
@@ -113,7 +114,7 @@
                             <?php
                             if (!empty($listing_detail['property']['pool_features'])) { ?>
                                 <li>
-                                    <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>poolsingle.svg" alt="">
+                                    <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'poolsingle.svg'); ?>" alt=" Pool icon">
                                     Pool
                                 </li>
                             <?php
@@ -122,22 +123,23 @@
                             <?php
                             if (!empty($listing_detail['property']['security_features'])) { ?>
                                 <li>
-                                    <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>securitysingle.svg" alt="">
+                                    <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'securitysingle.svg'); ?>" alt="Security Icon">
                                     Security
                                 </li>
                             <?php
                             }
                             ?>
                             <li>
-                                <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>garagesingle.svg" alt="">
+                                <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'garagesingle.svg'); ?>" alt="Garage Icon">
                                 <?php echo esc_html($listing_detail['property']['number_of_parking_spaces']); ?>
                                 Parking
                             </li>
                             <li>
-                                <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>outdoor-activity.svg" alt="">
+                                <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'outdoor-activity.svg'); ?>" alt="Activity icon">
                                 <?php echo esc_html($listing_detail['property']['construction_materials']); ?>
                             </li>
                         </ul>
+
                     </div>
                     <hr />
 
@@ -237,7 +239,7 @@
                 <?php foreach ($listing_detail['gallery_image_urls'] as $attachment_url) { ?>
                     <div class="swiper-slide">
                         <picture>
-                            <img src="<?php echo esc_url($attachment_url); ?>" alt="">
+                            <img src="<?php echo esc_url($attachment_url); ?>" alt="Image Of House">
                         </picture>
                     </div>
                 <?php } ?>
@@ -250,7 +252,7 @@
                 <?php foreach ($listing_detail['gallery_image_urls'] as $attachment_url) { ?>
                     <div class="swiper-slide">
                         <picture>
-                            <img src="<?php echo esc_url($attachment_url); ?>" alt="">
+                            <img src="<?php echo esc_url($attachment_url); ?>" alt="Images of House">
                         </picture>
                     </div>
                 <?php } ?>
@@ -260,13 +262,12 @@
 
 </div>
 <?php get_footer() ?>
-
 <script src="https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.js"></script>
 <script>
     const sdk = new Rechat.Sdk();
 
     const channel = {
-        lead_channel: '<?php echo get_option("rch_lead_channels"); ?>'
+        lead_channel: '<?php echo esc_js(get_option("rch_lead_channels")); ?>'
     };
 
     document.getElementById('leadCaptureForm').addEventListener('submit', function(event) {
@@ -278,10 +279,10 @@
             phone_number: document.getElementById('phone_number').value,
             email: document.getElementById('email').value,
             note: document.getElementById('note').value,
-            tag: <?php echo get_option("rch_selected_tags"); ?>, // Convert comma-separated string to array
+            tag: <?php echo wp_json_encode(explode(',', get_option("rch_selected_tags"))); ?>, // Convert comma-separated string to array
             source_type: 'Website',
-            mlsid: '<?php echo $listing_detail['mls_number'] ?>',
-            listing_id: '<?php echo $listing_detail['id'] ?>'
+            mlsid: '<?php echo esc_js($listing_detail['mls_number']) ?>',
+            listing_id: '<?php echo esc_js($listing_detail['id']) ?>'
         };
 
         // Hide success, error alerts, and show loading spinner
@@ -303,9 +304,7 @@
             });
     });
 </script>
-
 <script>
-
     var swiper = new Swiper(".rch-houses-mySwiper", {
         spaceBetween: 10,
         slidesPerView: 8, // Default for desktop
@@ -356,7 +355,7 @@
     // Get the <span> element that closes the modal
     var span = document.getElementsByClassName("rch-img-modal-close")[0];
 
-    // When the user clicks the button, open the modal 
+    // When the user clicks the button, open the modal
     for (const btn of btns) {
         btn.addEventListener('click', function(event) {
             const data = this.getAttribute('data-slider');

@@ -7,8 +7,10 @@ get_header();
 
         <?php
         while (have_posts()) : the_post();
+            // Escape the title
             the_title('<h1>', '</h1>');
-            echo '<div class="rch-office-main-content">' . get_the_content() . '</div>';
+            // Escape the content
+            echo '<div class="rch-office-main-content">' . wp_kses_post(get_the_content()) . '</div>';
 
             // Get the current office ID
             $office_id = get_the_ID();
@@ -38,7 +40,7 @@ get_header();
                     <li>
                         <div class="rch-image-container">
                             <picture>
-                                <a href="<?php echo get_permalink($agent->ID); ?>">
+                                <a href="<?php echo esc_url(get_permalink($agent->ID)); ?>">
                                     <div class="rch-loader"></div>
                                     <img src="<?php echo esc_url($profile_image_url); ?>" alt="<?php echo esc_attr($agent->post_title); ?>" class="rch-profile-image">
                                 </a>
@@ -46,7 +48,7 @@ get_header();
                         </div>
                         <div class="rch-archive-name">
                             <h3>
-                                <a href="<?php echo get_permalink($agent->ID); ?>">
+                                <a href="<?php echo esc_url(get_permalink($agent->ID)); ?>">
                                     <?php echo esc_html($agent->post_title); ?>
                                 </a>
                             </h3>
@@ -55,7 +57,7 @@ get_header();
                             </span>
                         </div>
                         <div class="rch-archive-end-line">
-                            <a href="<?php echo get_permalink($agent->ID); ?>">View Profile</a>
+                            <a href="<?php echo esc_url(get_permalink($agent->ID)); ?>">View Profile</a>
                             <?php if ($phone_number) : ?>
                                 <a href="tel:<?php echo esc_attr($phone_number); ?>">Contact</a>
                             <?php endif; ?>

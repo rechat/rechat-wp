@@ -85,7 +85,7 @@ function rch_render_leads_form_shortcode($atts)
         const sdk = new Rechat.Sdk();
 
         const channel = {
-            lead_channel: '<?php echo sanitize_text_field($lead_channel); ?>'
+            lead_channel: "<?php echo esc_js(sanitize_text_field($lead_channel)); ?>"
         };
 
         document.getElementById('leadCaptureForm').addEventListener('submit', function(event) {
@@ -97,7 +97,7 @@ function rch_render_leads_form_shortcode($atts)
                 phone_number: document.getElementById('phone_number')?.value.trim(),
                 email: document.getElementById('email')?.value.trim(),
                 note: document.getElementById('note')?.value.trim(),
-                tag: <?php echo json_encode($selected_tags); ?>, // Convert PHP array to JS array
+                tag: <?php echo wp_json_encode($selected_tags); ?>, // Convert PHP array to JS array
                 source_type: 'Website',
             };
 

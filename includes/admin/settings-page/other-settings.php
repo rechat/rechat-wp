@@ -50,14 +50,14 @@ function rch_appearance_setting()
 
     add_settings_section(
         'rch_theme_appearance_setting',
-        __('Listing Page Lead Capture', 'rch_rechat_plugin'),
+        __('Listing Page Lead Capture', 'rechat-plugin'),
         null,
         'appearance_setting'
     );
     // Add the field for posts per page
     //     add_settings_field(
     //         'rch_posts_per_page',
-    //         __('Posts Per Page', 'rch_rechat_plugin'),
+    //         __('Posts Per Page', 'rechat-plugin'),
     //         'rch_render_posts_per_page_field',
     //         'appearance_setting',
     //         'rch_theme_appearance_setting'
@@ -65,7 +65,7 @@ function rch_appearance_setting()
     // Add a section heading for 'Lead Channels and Tags' for the first set
     add_settings_field(
         'rch_lead_channels',
-        __('Lead Source', 'rch_rechat_plugin'),
+        __('Lead Source', 'rechat-plugin'),
         'rch_render_lead_channel',
         'appearance_setting',
         'rch_theme_appearance_setting'
@@ -74,7 +74,7 @@ function rch_appearance_setting()
     // Add Tags for first lead
     add_settings_field(
         'rch_select_tag',
-        __('Tags', 'rch_rechat_plugin'),
+        __('Tags', 'rechat-plugin'),
         'rch_render_select_tag',
         'appearance_setting',
         'rch_theme_appearance_setting'
@@ -83,7 +83,7 @@ function rch_appearance_setting()
     // Add a new section heading for Agent's Lead Channels and Tags
     add_settings_section(
         'rch_agents_section',
-        __('Agent Page Lead Capture', 'rch_rechat_plugin'),
+        __('Agent Page Lead Capture', 'rechat-plugin'),
         null,
         'appearance_setting'
     );
@@ -91,7 +91,7 @@ function rch_appearance_setting()
     // Add Lead Channels for agents
     add_settings_field(
         'rch_agents_lead_channels',
-        __('Lead Source', 'rch_rechat_plugin'),
+        __('Lead Source', 'rechat-plugin'),
         'rch_render_agents_lead_channel',
         'appearance_setting',
         'rch_agents_section'
@@ -100,7 +100,7 @@ function rch_appearance_setting()
     // Add Tags for agents
     add_settings_field(
         'rch_agents_select_tag',
-        __('Tags', 'rch_rechat_plugin'),
+        __('Tags', 'rechat-plugin'),
         'rch_render_agents_select_tag',
         'appearance_setting',
         'rch_agents_section'
@@ -128,7 +128,7 @@ function rch_render_lead_channel()
     $response = rch_api_request($api_url, $access_token);
 
     if (!$response['success']) {
-        echo $response['message'];
+        echo esc_html($response['message']);
         return;
     }
 
@@ -147,7 +147,8 @@ function rch_render_lead_channel()
         $options .= "<option value='{$id}' {$selected}>{$title}</option>";
     }
 
-    echo "<select id='rch_lead_channels' name='rch_lead_channels'>{$options}</select>";
+    // Output the <select> element with the options
+    echo '<select id="' . esc_attr('rch_lead_channels') . '" name="' . esc_attr('rch_lead_channels') . '">' . $options . '</select>';
 }
 
 /*******************************
@@ -161,7 +162,7 @@ function rch_render_select_tag()
     $response = rch_api_request($api_url, $access_token, $brand_id);
 
     if (!$response['success']) {
-        echo $response['message'];
+        echo esc_html($response['message']);
         return;
     }
 
@@ -183,12 +184,12 @@ function rch_render_select_tag()
     foreach ($data['data'] as $tag) {
         $name = !empty($tag['tag']) ? esc_html($tag['tag']) : 'Unnamed';
         $selected = in_array($name, $selected_tags) ? 'selected' : '';
-        echo "<option value='{$name}' {$selected}>{$name}</option>";
+        echo "<option value='" . esc_attr($name) . "' " . esc_html($selected) . ">" . esc_html($name) . "</option>";
     }
     echo "</select>";
 
     echo "<div id='selected-tags-container' style='margin-bottom:10px;'></div>";
-    echo "<input type='hidden' name='rch_selected_tags' id='rch_selected_tags_input' value='" . esc_attr(json_encode($selected_tags)) . "'>";
+    echo "<input type='hidden' name='rch_selected_tags' id='rch_selected_tags_input' value='" . esc_attr(wp_json_encode($selected_tags)) . "'>";
 
     echo "
         <script>
@@ -249,7 +250,7 @@ function rch_render_agents_lead_channel()
     $response = rch_api_request($api_url, $access_token);
 
     if (!$response['success']) {
-        echo $response['message'];
+        echo esc_html($response['message']);
         return;
     }
 
@@ -268,8 +269,10 @@ function rch_render_agents_lead_channel()
         $options .= "<option value='{$id}' {$selected}>{$title}</option>";
     }
 
-    echo "<select id='rch_agents_lead_channels' name='rch_agents_lead_channels'>{$options}</select>";
+    // Output the <select> element with the options
+    echo "<select id='" . esc_attr('rch_agents_lead_channels') . "' name='" . esc_attr('rch_agents_lead_channels') . "'>{$options}</select>";
 }
+
 
 /*******************************
  * Render the tags input field for Agent's Tags
@@ -282,7 +285,7 @@ function rch_render_agents_select_tag()
     $response = rch_api_request($api_url, $access_token, $brand_id);
 
     if (!$response['success']) {
-        echo $response['message'];
+        echo esc_html($response['message']);
         return;
     }
 
@@ -304,12 +307,12 @@ function rch_render_agents_select_tag()
     foreach ($data['data'] as $tag) {
         $name = !empty($tag['tag']) ? esc_html($tag['tag']) : 'Unnamed';
         $selected = in_array($name, $selected_tags) ? 'selected' : '';
-        echo "<option value='{$name}' {$selected}>{$name}</option>";
+        echo "<option value='" . esc_attr($name) . "' " . esc_attr($selected) . ">" . esc_html($name) . "</option>";
     }
     echo "</select>";
 
     echo "<div id='agent-selected-tags-container' style='margin-bottom:10px;'></div>";
-    echo "<input type='hidden' name='rch_agents_selected_tags' id='rch_agents_selected_tags_input' value='" . esc_attr(json_encode($selected_tags)) . "'>";
+    echo "<input type='hidden' name='rch_agents_selected_tags' id='rch_agents_selected_tags_input' value='" . esc_attr(wp_json_encode($selected_tags)) . "'>";
 
     echo "
         <script>

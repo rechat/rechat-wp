@@ -6,16 +6,15 @@ if (! defined('ABSPATH')) {
 /*******************************
  * enqueue styles and scripts for Front
  ******************************/
-
 function rch_enqueue_frontend_styles()
 {
     // Enqueue CSS styles
     wp_enqueue_style('rch-front-css-global', RCH_PLUGIN_ASSETS . 'css/rch-global.css', [], '1.0.0');
     wp_register_style('rch-swiper', RCH_PLUGIN_ASSETS . 'css/swiper-bundle.min.css', [], '8.4.5');
     wp_register_style('rch-rechat-listing', RCH_PLUGIN_ASSETS . 'css/rch-rechat-listing.css', [], '1.0.0');
-    
-    // Enqueue JavaScript files
-    wp_enqueue_script('rch-ajax-front', RCH_PLUGIN_ASSETS . 'js/rch-ajax-front.js', ['jquery'], null, true);
+
+    // Enqueue JavaScript files with version
+    wp_enqueue_script('rch-ajax-front', RCH_PLUGIN_ASSETS . 'js/rch-ajax-front.js', ['jquery'], '1.0.0', true);
     wp_enqueue_script('rch-swiper-js', RCH_PLUGIN_ASSETS . 'js/swiper-bundle.min.js', [], '8.4.5', true);
     wp_enqueue_script('rch-gutenberg-ajax', RCH_PLUGIN_ASSETS . 'js/rch-gutenberg-ajax.js', ['jquery'], '8.4.5', true);
     wp_enqueue_script('rch-gutenberg-agent-pagination', RCH_PLUGIN_ASSETS . 'js/rch-gutenberg-agent-pagination.js', ['jquery'], '8.4.5', true);
@@ -35,7 +34,7 @@ function rch_enqueue_frontend_styles()
     if (isset($_GET['listing_id'])) {
         wp_enqueue_style('rch-rechat-listing');
         wp_enqueue_style('rch-swiper');
-        wp_enqueue_script('rch-swiper-js');
+        wp_enqueue_script('rch-swiper-js', [], '8.4.5', true);
     }
 
     // Register Gutenberg block script (if used in the frontend)
@@ -43,9 +42,8 @@ function rch_enqueue_frontend_styles()
         'regions-block',
         get_template_directory_uri() . '/js/regions-block.js', // Path to your block JS file
         ['wp-blocks', 'wp-editor', 'wp-components', 'wp-element'],
+        '1.0.0',
         true
     );
-
-
 }
 add_action('wp_enqueue_scripts', 'rch_enqueue_frontend_styles');

@@ -24,64 +24,66 @@ function rch_display_latest_listings_shortcode($atts)
 
     ob_start();
 ?>
-    <div class="swiper thumbsSwiper trendingSwiper <?php echo $template ?>" thumbsSlider="">
-        <div class="swiper-wrapper" id="rch-listing-list-latest-<?php echo $template ?>"></div>
+<div class="swiper thumbsSwiper trendingSwiper <?php echo esc_attr($template); ?>" thumbsSlider="">
+<div class="swiper-wrapper" id="rch-listing-list-latest-<?php echo esc_attr($template); ?>"></div>
         <div id="rch-loading-listing" style="display: none;" class="rch-loader"></div>
     </div>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const listingPerPage = <?php echo intval($atts['limit']); ?>;
-            const template = "<?php echo esc_js($atts['template']); ?>"; // Template parameter from shortcode
+    document.addEventListener('DOMContentLoaded', function() {
+        const listingPerPage = <?php echo intval($atts['limit']); ?>; // Escaped as an integer
+        const template = "<?php echo esc_js($atts['template']); ?>"; // Escaped for use in JS
+        const adminAjaxUrl = "<?php echo esc_url(admin_url('admin-ajax.php')); ?>"; // Escaped for use in URLs
 
-            // Swiper settings from shortcode attributes
-            const swiperSettings = {
-                slidesPerView: <?php echo $slides_per_view; ?>,
-                spaceBetween: <?php echo $space_between; ?>,
-                loop: <?php echo $loop ? 'true' : 'false'; ?>,
-                centeredSlides: <?php echo $centered_slides ? 'true' : 'false'; ?>, // Use the centeredSlides attribute
-                breakpoints: <?php echo $breakpoints; ?>, // Parsed breakpoints
-                navigation: {
-                    nextEl: ".swiper-button-next",
-                    prevEl: ".swiper-button-prev",
-                },
-            };
+        // Swiper settings from shortcode attributes
+        const swiperSettings = {
+            slidesPerView: <?php echo intval($slides_per_view); ?>, // Escaped as an integer
+            spaceBetween: <?php echo intval($space_between); ?>, // Escaped as an integer
+            loop: <?php echo $loop ? 'true' : 'false'; ?>, // Escaped as boolean
+            centeredSlides: <?php echo $centered_slides ? 'true' : 'false'; ?>, // Escaped as boolean
+            breakpoints: <?php echo wp_json_encode($breakpoints); ?>, // Escaped for JSON format
+            navigation: {
+                nextEl: ".swiper-button-next",
+                prevEl: ".swiper-button-prev",
+            },
+        };
 
-            function updateListingList() {
-                const listingList = document.getElementById('rch-listing-list-latest-<?php echo $template ?>');
-                const loading = document.getElementById('rch-loading-listing');
+        function updateListingList() {
+            const listingList = document.getElementById('rch-listing-list-latest-<?php echo esc_attr($template); ?>'); // Escaped as attribute
+            const loading = document.getElementById('rch-loading-listing');
 
-                listingList.innerHTML = '';
-                loading.style.display = 'block';
+            listingList.innerHTML = '';
+            loading.style.display = 'block';
 
-                // Construct the query string with the template parameter
-                let queryString = `?action=rch_fetch_listing&listing_per_page=${listingPerPage}&shortcode_template=true&template=${template}`;
+            // Construct the query string with the template parameter
+            let queryString = `?action=rch_fetch_listing&listing_per_page=${listingPerPage}&shortcode_template=true&template=${template}`;
 
-                fetch(`<?php echo admin_url('admin-ajax.php'); ?>${queryString}`)
-                    .then(response => response.text())
-                    .then(html => {
-                        loading.style.display = 'none';
-                        listingList.innerHTML = html;
+            fetch(`${adminAjaxUrl}${queryString}`) // Safe URL output
+                .then(response => response.text())
+                .then(html => {
+                    loading.style.display = 'none';
+                    listingList.innerHTML = html;
 
-                        initializeSwiper(swiperSettings);
-                    })
-                    .catch(error => {
-                        loading.style.display = 'none';
-                        console.error('Error fetching listing:', error);
-                        listingList.innerHTML = '<p>Error loading listing.</p>';
-                    });
+                    initializeSwiper(swiperSettings);
+                })
+                .catch(error => {
+                    loading.style.display = 'none';
+                    console.error('Error fetching listing:', error);
+                    listingList.innerHTML = '<p>Error loading listing.</p>';
+                });
+        }
+
+        function initializeSwiper(settings) {
+            const swiperWrapper = document.querySelector('.swiper-wrapper');
+            if (swiperWrapper && swiperWrapper.children.length > 0) {
+                new Swiper(".top-listing", settings); // Initialize Swiper with dynamic settings
+                new Swiper(".main-listing-index", settings); // Initialize another Swiper with same settings
             }
+        }
 
-            function initializeSwiper(settings) {
-                const swiperWrapper = document.querySelector('.swiper-wrapper');
-                if (swiperWrapper && swiperWrapper.children.length > 0) {
-                    new Swiper(".top-listing", settings); // Initialize Swiper with dynamic settings
-                    new Swiper(".main-listing-index", settings); // Initialize another Swiper with same settings
-                }
-            }
+        updateListingList();
+    });
+</script>
 
-            updateListingList();
-        });
-    </script>
 <?php
     return ob_get_clean();
 }

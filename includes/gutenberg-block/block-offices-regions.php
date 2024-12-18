@@ -11,8 +11,13 @@ if (! defined('ABSPATH')) {
 // 
 function rch_register_block_assets($block_name, $render_callback)
 {
-    wp_register_script('rch-gutenberg-js', RCH_PLUGIN_URL . 'build/index.js', array('wp-blocks', 'wp-element', 'wp-editor', 'wp-components'));
-
+    wp_register_script(
+        'rch-gutenberg-js',
+        RCH_PLUGIN_URL . 'build/index.js',
+        array('wp-blocks', 'wp-element', 'wp-editor', 'wp-components'),
+        '1.0.0',
+        true // 
+    );
     register_block_type($block_name, array(
         'editor_script' => 'rch-gutenberg-js',
         'attributes' => array(
@@ -90,9 +95,9 @@ function rch_render_block($attributes, $post_type, $meta_key = '', $meta_value =
 
     // Output the block
     ob_start();
-    ?>
+?>
     <div id="rch-block-<?php echo esc_attr($post_type); ?>"
-        data-nonce="<?php echo wp_create_nonce('rch_load_more_' . $post_type . '_nonce'); ?>"
+        data-nonce="<?php echo esc_attr(wp_create_nonce('rch_load_more_' . $post_type . '_nonce')); ?>"
         data-posts-per-page="<?php echo esc_attr($posts_per_page); ?>"
         data-region-bg-color="<?php echo esc_attr($regionBgColor); ?>"
         data-text-color="<?php echo esc_attr($textColor); ?>"
@@ -100,7 +105,7 @@ function rch_render_block($attributes, $post_type, $meta_key = '', $meta_value =
         class="rch-rechat-clock-group"
         data-meta-key="<?php echo esc_attr($meta_key); ?>"
         data-meta-value="<?php echo esc_attr($serialized_values); ?>"
-        data-nonce="<?php echo wp_create_nonce('rch_load_more_offices_nonce'); ?>">
+        data-nonce="<?php echo esc_attr(wp_create_nonce('rch_load_more_offices_nonce')); ?>">
         <ul class="rch-rechat-block">
             <?php if ($query->have_posts()) : ?>
                 <?php while ($query->have_posts()) : $query->the_post();
@@ -158,16 +163,44 @@ function rch_render_offices_block($attributes)
  ******************************/
 function rch_load_more_posts()
 {
-    $post_type = sanitize_text_field($_POST['postType']);
+    // Validate and sanitize postType
+    $post_type = '';
+    if (isset($_POST['postType'])) {
+        $post_type = sanitize_text_field(wp_unslash($_POST['postType']));
+    }
+
+    // Validate nonce
     check_ajax_referer('rch_load_more_' . $post_type . '_nonce', 'nonce');
-    $post_type = sanitize_text_field($_POST['postType']);
-    $posts_per_page = isset($_POST['postsPerPage']) ? intval($_POST['postsPerPage']) : 5;
-    $paged = isset($_POST['page']) ? intval($_POST['page']) : 1;
-    $regionBgColor = sanitize_text_field($_POST['regionBgColor']);
-    $textColor = sanitize_text_field($_POST['textColor']);
-    // Get the meta key and value from the POST data if provided
-    $meta_key = isset($_POST['meta_key']) ? sanitize_text_field($_POST['meta_key']) : '';
-    $meta_value = isset($_POST['meta_value']) ? sanitize_text_field($_POST['meta_value']) : '';
+
+    // Validate and sanitize postsPerPage
+    $posts_per_page = isset($_POST['postsPerPage']) ? intval(wp_unslash($_POST['postsPerPage'])) : 5;
+
+    // Validate and sanitize page
+    $paged = isset($_POST['page']) ? intval(wp_unslash($_POST['page'])) : 1;
+
+    // Validate and sanitize regionBgColor
+    $regionBgColor = '';
+    if (isset($_POST['regionBgColor'])) {
+        $regionBgColor = sanitize_text_field(wp_unslash($_POST['regionBgColor']));
+    }
+
+    // Validate and sanitize textColor
+    $textColor = '';
+    if (isset($_POST['textColor'])) {
+        $textColor = sanitize_text_field(wp_unslash($_POST['textColor']));
+    }
+
+    // Validate and sanitize meta_key
+    $meta_key = '';
+    if (isset($_POST['meta_key'])) {
+        $meta_key = sanitize_text_field(wp_unslash($_POST['meta_key']));
+    }
+
+    // Validate and sanitize meta_value
+    $meta_value = '';
+    if (isset($_POST['meta_value'])) {
+        $meta_value = sanitize_text_field(wp_unslash($_POST['meta_value']));
+    }
 
     // Prepare the meta query if a meta key is provided
     $meta_query = [];
@@ -175,15 +208,15 @@ function rch_load_more_posts()
         $meta_query[] = array(
             'key'     => $meta_key,
             'value'   => $meta_value,
-            'compare' => 'LIKE', // Use 'LIKE' for partial matching; change as needed
+            'compare' => 'LIKE',
         );
     }
 
     $args = array(
-        'post_type' => $post_type,
+        'post_type'      => $post_type,
         'posts_per_page' => $posts_per_page,
-        'paged' => $paged,
-        'meta_query' => !empty($meta_query) ? $meta_query : null, // Include the meta query if it exists
+        'paged'          => $paged,
+        'meta_query'     => !empty($meta_query) ? $meta_query : null,
     );
 
     $query = new WP_Query($args);
@@ -195,10 +228,8 @@ function rch_load_more_posts()
             $theme_template = locate_template('rechat/rch-regions-block-template.php');
 
             if ($theme_template) {
-                // If the template is found in the theme/child theme, load it
                 include $theme_template;
             } else {
-                // Fall back to the plugin's template
                 include RCH_PLUGIN_DIR . 'templates/template-block/rch-regions-block-template.php';
             }
         endwhile;
@@ -207,9 +238,9 @@ function rch_load_more_posts()
         $output = ob_get_clean();
 
         wp_send_json_success(array(
-            'html' => $output,
+            'html'         => $output,
             'current_page' => $paged,
-            'total_pages' => $query->max_num_pages,
+            'total_pages'  => $query->max_num_pages,
         ));
     } else {
         wp_send_json_error('No posts found.');
@@ -217,5 +248,6 @@ function rch_load_more_posts()
 
     wp_die();
 }
+
 add_action('wp_ajax_rch_load_more_posts', 'rch_load_more_posts');
 add_action('wp_ajax_nopriv_rch_load_more_posts', 'rch_load_more_posts'); // This is for non-logged-in users

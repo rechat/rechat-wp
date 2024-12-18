@@ -9,7 +9,7 @@ function custom_add_regions_meta_box()
 {
     add_meta_box(
         'regions_meta_box', // ID of the meta box
-        __('Rechat-Regions', 'textdomain'), // Title of the meta box
+        __('Rechat-Regions', 'rechat-plugin'), // Title of the meta box
         'rch_custom_regions_meta_box_callback', // Callback function
         'agents', // Post type where the meta box appears
         'side', // Context (normal, side, advanced)
@@ -43,7 +43,7 @@ function rch_custom_regions_meta_box_callback($post)
     if ($regions) {
         foreach ($regions as $region) {
             $checked = in_array($region->ID, (array) $selected_regions) ? 'checked="checked"' : '';
-            echo '<label><input type="checkbox" name="agent_regions[]" value="' . esc_attr($region->ID) . '" ' . $checked . '> ' . esc_html($region->post_title) . '</label><br>';
+            echo '<label><input type="checkbox" name="agent_regions[]" value="' . esc_attr($region->ID) . '" ' . esc_attr($checked) . '> ' . esc_html($region->post_title) . '</label><br>';
         }
     } else {
         echo '<p>No regions available.</p>';
@@ -130,7 +130,7 @@ function rch_custom_ajax_search_regions()
     if ($regions->have_posts()) {
         while ($regions->have_posts()) : $regions->the_post();
             $checked = in_array(get_the_ID(), $selected_regions) ? 'checked="checked"' : '';
-            echo '<label><input type="checkbox" name="agent_regions[]" value="' . esc_attr(get_the_ID()) . '" ' . $checked . '> ' . esc_html(get_the_title()) . '</label><br>';
+            echo '<label><input type="checkbox" name="agent_regions[]" value="' . esc_attr(get_the_ID()) . '" ' . esc_attr($checked) . '> ' . esc_html(get_the_title()) . '</label><br>';
         endwhile;
     } else {
         echo '<p>No regions found.</p>';

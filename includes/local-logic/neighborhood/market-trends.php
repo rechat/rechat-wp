@@ -1,17 +1,18 @@
 <?php $api_key = get_option('rch_rechat_local_logic_api_key') ?>
+
 <script
     async
     src="https://sdk.locallogic.co/sdks-js/1.22.21/index.umd.js"
-    onload="loadNeighborhoodPropertyValueDriversSDK()"></script>
+    onload="loadNeighborhoodMarketTrendsSDK()"></script>
 
 <style>
-    #neighborhood-property-value-drivers-widget {
+    #neighborhood-market-trends-widget {
         width: 100%;
     }
 </style>
 
 <!--NOTE: If you are implementing multiple SDKs, make sure you create unique IDs for each-->
-<div id="neighborhood-property-value-drivers-widget"></div>
+<div id="neighborhood-market-trends-widget"></div>
 
 <script>
     const globalOptions = {
@@ -29,14 +30,14 @@
         }
     };
 
-    function loadNeighborhoodPropertyValueDriversSDK() {
+    function loadNeighborhoodMarketTrendsSDK() {
         // Your API key or token
-        const ll = LLSDKsJS("<?php echo $api_key ?>", globalOptions);
+        const ll = LLSDKsJS("<?php echo esc_js($api_key) ?>", globalOptions);
 
         // This is the div that will contain the widget
-        const sdkContainer = document.getElementById("neighborhood-property-value-drivers-widget");
-        const lat = <?php echo isset($listing_detail['property']['address']['location']['latitude']) ? $listing_detail['property']['address']['location']['latitude'] : "''"; ?>;
-        const lng = <?php echo isset($listing_detail['property']['address']['location']['longitude']) ? $listing_detail['property']['address']['location']['longitude'] : "''"; ?>;
+        const sdkContainer = document.getElementById("neighborhood-market-trends-widget");
+        const lat = <?php echo isset($listing_detail['property']['address']['location']['latitude']) ? esc_js($listing_detail['property']['address']['location']['latitude']) : "''"; ?>;
+        const lng = <?php echo isset($listing_detail['property']['address']['location']['longitude']) ? esc_js($listing_detail['property']['address']['location']['longitude']) : "''"; ?>;
 
         const sdkOptions = {
             lat: lat,
@@ -44,6 +45,6 @@
             // ...Other sdk specific options
         };
 
-        const sdkInstance = ll.create("neighborhood-property-value-drivers", sdkContainer, sdkOptions);
+        const sdkInstance = ll.create("neighborhood-market-trends", sdkContainer, sdkOptions);
     }
 </script>

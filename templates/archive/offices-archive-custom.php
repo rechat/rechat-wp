@@ -19,19 +19,17 @@ $query = new WP_Query($args);
 
 <div id="primary" class="content-area rch-primary-content">
     <main id="main" class="site-main rch-agents-rechat content-container site-container">
-        <?php the_archive_title('<h1>', '</h1>') ?>
+        <?php the_archive_title('<h1>', '</h1>'); ?>
         <ul class="rch-archive-regions-offices">
-            <?php if ($query->have_posts()) : while ($query->have_posts()) : $query->the_post();
-            ?>
+            <?php if ($query->have_posts()) : while ($query->have_posts()) : $query->the_post(); ?>
                     <li>
-                        <a href="<?php the_permalink() ?>">
-                            <?php the_title('<h2>', '</h2>') ?>
+                        <a href="<?php the_permalink(); ?>">
+                            <?php the_title('<h2>', '</h2>'); ?>
                         </a>
-
                     </li>
-                <?php endwhile;
-            else : ?>
-                <div class='notfound'><?php _e('Sorry. There Is Nothing.'); ?></div>
+                <?php endwhile; ?>
+            <?php else : ?>
+                <div class='notfound'><?php esc_html_e('Sorry. There Is Nothing.', 'rechat-plugin'); ?></div>
             <?php endif; ?>
             <?php wp_reset_postdata(); ?>
         </ul>
@@ -40,14 +38,15 @@ $query = new WP_Query($args);
         <div class="rch-pagination">
             <div class="rch-pagination-container">
                 <?php
-                echo paginate_links(array(
+                // Escape pagination output
+                echo wp_kses_post(paginate_links(array(
                     'total' => $query->max_num_pages,
                     'current' => $paged,
-                    'prev_text' => __('<'),
-                    'next_text' => __('>'),
+                    'prev_text' => __('&lt;', 'rechat-plugin'),
+                    'next_text' => __('&gt;', 'rechat-plugin'),
                     'end_size'  => 2,
                     'mid_size'  => 2,
-                ));
+                )));
                 ?>
             </div>
         </div>

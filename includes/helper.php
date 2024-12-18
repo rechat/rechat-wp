@@ -13,9 +13,10 @@ function rch_get_token_expiry_date($seconds_until_expire)
     // Calculate the expiry timestamp
     $expiry_timestamp = $current_timestamp + $seconds_until_expire;
 
-    // Format the expiry timestamp into a readable date
-    return date('Y-m-d H:i:s', $expiry_timestamp);
+    // Format the expiry timestamp into a readable date in UTC
+    return gmdate('Y-m-d H:i:s', $expiry_timestamp);
 }
+
 /*******************************
  * disconnect handler from rechat oauth
  ******************************/
@@ -25,7 +26,8 @@ function rch_handle_disconnect_rechat()
     // Check if the form was submitted
     if (isset($_POST['action']) && $_POST['action'] === 'disconnect_rechat') {
         // Verify nonce for security
-        if (!isset($_POST['disconnect_rechat_nonce_field']) || !wp_verify_nonce($_POST['disconnect_rechat_nonce_field'], 'disconnect_rechat_nonce')) {
+        // Unsash the value to make sure it is sanitized properly
+        if (!isset($_POST['disconnect_rechat_nonce_field']) || !wp_verify_nonce(wp_unslash($_POST['disconnect_rechat_nonce_field']), 'disconnect_rechat_nonce')) {
             wp_die('Nonce verification failed');
         }
 
@@ -40,6 +42,7 @@ function rch_handle_disconnect_rechat()
         exit;
     }
 }
+
 add_action('init', 'rch_handle_disconnect_rechat');
 /*******************************
  * Helper function to filter brands by type
@@ -582,4 +585,18 @@ function check_logged_in_status()
 }
 
 add_action('rest_api_init', 'register_check_user_logged_in_route');
+/*******************************
+ *Helper function to Images
+ ******************************/
+function rch_render_image($src, $alt, $classes = '')
+{
+    if (empty($src)) {
+        return '';
+    }
 
+    $alt = esc_attr($alt);
+    $src = esc_url($src);
+    $classes = esc_attr($classes);
+
+    return "<img src=\"$src\" alt=\"$alt\" class=\"$classes\">";
+}

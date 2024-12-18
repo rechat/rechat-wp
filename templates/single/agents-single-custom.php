@@ -22,7 +22,6 @@ $timezone = get_post_meta($post_id, 'timezone', true);
 
         <?php
         while (have_posts()) : the_post();
-
         ?>
             <div class="rch-main-layout-single-agent">
                 <div class="rch-left-main-layout-single-agent">
@@ -33,7 +32,7 @@ $timezone = get_post_meta($post_id, 'timezone', true);
                                     <picture>
                                         <a href="<?php the_permalink() ?>">
                                             <div class="rch-loader"></div>
-                                            <img src="<?php echo esc_url($profile_image_url); ?>" alt="<?php the_title() ?>" class="rch-profile-image">
+                                            <img src="<?php echo esc_url($profile_image_url); ?>" alt="<?php echo esc_attr(get_the_title()); ?>" class="rch-profile-image">
                                         </a>
                                     </picture>
                                 </div>
@@ -68,6 +67,7 @@ $timezone = get_post_meta($post_id, 'timezone', true);
                                         <a href="<?php echo esc_url($website); ?>" target="_blank"><?php echo esc_html($website); ?></a>
                                     </span>
                                 <?php endif; ?>
+
                                 <?php if ($instagram || $twitter || $linkedin || $youtube || $facebook) : ?>
                                     <span>
                                         Social Media:
@@ -76,7 +76,7 @@ $timezone = get_post_meta($post_id, 'timezone', true);
                                         <?php if ($instagram) : ?>
                                             <li>
                                                 <a href="<?php echo esc_url($instagram); ?>" target="_blank">
-                                                    <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>instagram.svg" alt="">
+                                                    <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'instagram.svg'); ?>" alt="Instagram">
                                                 </a>
                                             </li>
                                         <?php endif; ?>
@@ -84,7 +84,7 @@ $timezone = get_post_meta($post_id, 'timezone', true);
                                         <?php if ($twitter) : ?>
                                             <li>
                                                 <a href="<?php echo esc_url($twitter); ?>" target="_blank">
-                                                    <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>x.svg" alt="">
+                                                    <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'x.svg'); ?>" alt="Twitter">
                                                 </a>
                                             </li>
                                         <?php endif; ?>
@@ -92,7 +92,7 @@ $timezone = get_post_meta($post_id, 'timezone', true);
                                         <?php if ($linkedin) : ?>
                                             <li>
                                                 <a href="<?php echo esc_url($linkedin); ?>" target="_blank">
-                                                    <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>linkedin.svg" alt="">
+                                                    <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'linkedin.svg'); ?>" alt="LinkedIn">
                                                 </a>
                                             </li>
                                         <?php endif; ?>
@@ -100,7 +100,7 @@ $timezone = get_post_meta($post_id, 'timezone', true);
                                         <?php if ($youtube) : ?>
                                             <li>
                                                 <a href="<?php echo esc_url($youtube); ?>" target="_blank">
-                                                    <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>youtube.svg" alt="">
+                                                    <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'youtube.svg'); ?>" alt="YouTube">
                                                 </a>
                                             </li>
                                         <?php endif; ?>
@@ -108,7 +108,7 @@ $timezone = get_post_meta($post_id, 'timezone', true);
                                         <?php if ($facebook) : ?>
                                             <li>
                                                 <a href="<?php echo esc_url($facebook); ?>" target="_blank">
-                                                    <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>facebook.svg" alt="">
+                                                    <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'facebook.svg'); ?>" alt="Facebook">
                                                 </a>
                                             </li>
                                         <?php endif; ?>
@@ -119,13 +119,13 @@ $timezone = get_post_meta($post_id, 'timezone', true);
                         </div>
                     </div>
                     <div class="rch-main-content">
-                        <?php the_content() ?>
+                        <?php the_content(); ?>
                     </div>
                 </div>
                 <div class="rch-right-main-layout-single-agent">
                     <div class="rch-inner-right-agents" id="leadCaptureForm">
                     <form action="" method="post">
-                            <h2>Get in Touch with <?php the_title() ?></h2>
+                            <h2>Get in Touch with <?php echo esc_html(get_the_title()); ?></h2>
                             <!-- First Name -->
                             <div class="form-group">
                                 <label for="first_name">First Name</label>
@@ -170,22 +170,19 @@ $timezone = get_post_meta($post_id, 'timezone', true);
                 </div>
             </div>
 
-        <?php
-        endwhile;
-        ?>
+        <?php endwhile; ?>
 
     </main><!-- #main -->
 </div><!-- #primary -->
 
-<?php
-get_footer();
-?>
+<?php get_footer(); ?>
+
 <script src="https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.js"></script>
 <script>
     const sdk = new Rechat.Sdk();
 
     const channel = {
-        lead_channel: '<?php echo get_option("rch_agents_lead_channels"); ?>'
+        lead_channel: '<?php echo esc_js(get_option("rch_agents_lead_channels")); ?>'
     };
 
     document.getElementById('leadCaptureForm').addEventListener('submit', function(event) {
@@ -197,7 +194,7 @@ get_footer();
             phone_number: document.getElementById('phone_number').value,
             email: document.getElementById('email').value,
             note: document.getElementById('note').value,
-            tag: <?php echo get_option("rch_agents_selected_tags"); ?>, // Convert comma-separated string to array
+            tag: <?php echo wp_json_encode(explode(',', get_option("rch_agents_selected_tags"))); ?>, // Convert comma-separated string to array
             source_type: 'Website',
             agent_emails:'<?php echo esc_html($email); ?>'
         };

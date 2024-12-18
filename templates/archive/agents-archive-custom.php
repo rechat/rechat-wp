@@ -22,7 +22,7 @@ $query = new WP_Query($args);
         <div class="rch-top-filter">
             <!-- AJAX Search Form -->
             <form id="rch-agent-search-form" method="get" action="">
-                <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>search.svg" alt="Search Icon">
+                <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'search.svg'); ?>" alt="Search Icon">
                 <input type="text" id="rch-agent-search" name="rch_agent_search" placeholder="Search agents by name, specialty, or location">
                 <div id="rch-agent-search-results" class="rch-dropdown-menu" style="display: none;">
                     <!-- AJAX results will appear here -->
@@ -54,7 +54,7 @@ $query = new WP_Query($args);
                                 </a>
                             </h3>
                             <span>
-                                <?php echo $designation ?>
+                                <?php echo esc_html($designation); ?>
                             </span>
                         </div>
                         <div class="rch-archive-end-line">
@@ -66,7 +66,7 @@ $query = new WP_Query($args);
                     </li>
                 <?php endwhile;
             else : ?>
-                <div class='notfound'><?php _e('Sorry. There Is Nothing.'); ?></div>
+                <div class='notfound'><?php esc_html_e('Sorry. There Is Nothing.', 'rechat-plugin'); ?></div>
             <?php endif; ?>
             <?php wp_reset_postdata(); ?>
         </ul>
@@ -75,14 +75,14 @@ $query = new WP_Query($args);
         <div class="rch-pagination-agent">
             <div class="rch-pagination-container">
                 <?php
-                echo paginate_links(array(
+                echo wp_kses_post(paginate_links(array(
                     'total' => $query->max_num_pages,
                     'current' => $paged,
-                    'prev_text' => __('<'),
-                    'next_text' => __('>'),
+                    'prev_text' => esc_html__('<', 'rechat-plugin'),
+                    'next_text' => esc_html__('>', 'rechat-plugin'),
                     'end_size'  => 2,
                     'mid_size'  => 2,
-                ));
+                )));
                 ?>
             </div>
         </div>

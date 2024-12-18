@@ -21,7 +21,7 @@ function rch_get_oauth_authorization_url()
 function rch_handle_oauth_callback()
 {
     if (isset($_GET['code'])) {
-        $code = sanitize_text_field($_GET['code']);
+        $code = sanitize_text_field(wp_unslash($_GET['code']));
         $client_id = '65230631-97a6-4fb5-bf32-54aafb1e1b54';
         $client_secret = 'secret';
         $redirect_uri = admin_url('admin.php?page=rechat-setting');
@@ -39,8 +39,8 @@ function rch_handle_oauth_callback()
         ));
 
         if (is_wp_error($response)) {
-            var_dump($response->get_error_message());
-            exit;
+            add_settings_error('rechat_oauth', 'oauth_error', $response->get_error_message(), 'error');
+            return;
         }
 
         $body = wp_remote_retrieve_body($response);
@@ -63,7 +63,7 @@ function rch_handle_oauth_callback()
             $primary_color = rch_get_primary_color($brand_id);
             update_option('_rch_primary_color', $primary_color);
         } else {
-            error_log('Access token not found in the response.');
+            add_settings_error('rechat_oauth', 'oauth_error', 'Access token not found in the response.', 'error');
         }
     }
 }

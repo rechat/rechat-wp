@@ -27,14 +27,14 @@
 
     function loadNeighborhoodHeroSDK() {
         // Your API key or token
-        const ll = LLSDKsJS("<?php echo $api_key ?>", globalOptions);
+        const ll = LLSDKsJS("<?php echo esc_js($api_key) ?>", globalOptions);
 
         // This is the div that will contain the widget
         const sdkContainer = document.getElementById("neighborhood-hero-widget");
 
         // Check if lat and lng exist, if not set them to empty strings
-        const lat = <?php echo isset($listing_detail['property']['address']['location']['latitude']) ? $listing_detail['property']['address']['location']['latitude'] : "''"; ?>;
-        const lng = <?php echo isset($listing_detail['property']['address']['location']['longitude']) ? $listing_detail['property']['address']['location']['longitude'] : "''"; ?>;
+        const lat = <?php echo isset($listing_detail['property']['address']['location']['latitude']) ? esc_js($listing_detail['property']['address']['location']['latitude']) : "''"; ?>;
+        const lng = <?php echo isset($listing_detail['property']['address']['location']['longitude']) ? esc_js($listing_detail['property']['address']['location']['longitude']) : "''"; ?>;
 
         const sdkOptions = {
             lat: lat,
