@@ -65,7 +65,7 @@ ul.rch-archive-agents li .rch-archive-end-line a {
   display: block;
   text-align: center;
   margin-block-start: 23px;
-  background: #2271b1;
+  background: var(--rch-primary-color);
   color: white;
   border-radius: 5px;
   padding-block: 7px;
@@ -74,8 +74,8 @@ ul.rch-archive-agents li .rch-archive-end-line a {
 }
 ul.rch-archive-agents li .rch-archive-end-line a:first-child {
   background-color: white;
-  border: solid 1px #2271b1;
-  color: #2271b1;
+  border: solid 1px var(--rch-primary-color);
+  color: var(--rch-primary-color);
 }
 .rch-top-filter {
   margin-block-end: 30px;
@@ -111,7 +111,7 @@ ul.rch-archive-agents li .rch-archive-end-line a:first-child {
 .rch-top-filter
   form#rch-agent-search-form
   div#rch-agent-search-results::-webkit-scrollbar-thumb {
-  background: #2271b1;
+  background: var(--rch-primary-color);
   border-radius: 10px;
 }
 .rch-top-filter form#rch-agent-search-form div#rch-agent-search-results ul {
@@ -245,7 +245,8 @@ ul.rch-archive-agents li .rch-archive-end-line a:first-child {
   font-size: 16px;
   width: 100%;
 }
-.rch-main-layout-single-agent .rch-right-main-layout-single-agent form button ,.rch-leads-form-block form button{
+.rch-main-layout-single-agent .rch-right-main-layout-single-agent form button,
+.rch-leads-form-block form button {
   width: 100%;
   border-radius: 10px;
   font-size: 16px;
@@ -372,7 +373,7 @@ ul.rch-single-agents-social li a img {
 }
 .rch-single-call a {
   color: white;
-  background-color: #2271b1;
+  background-color: var(--rch-primary-color);
   border-radius: 5px;
   padding: 10px 20px;
 }
@@ -399,7 +400,7 @@ ul.rch-single-agents-social li a img {
   color: #b1b1b1;
 }
 .rch-pagination-agent .rch-pagination-container .current {
-  color: #2271b1;
+  color: var(--rch-primary-color);
 }
 /* CSS for the loader */
 .rch-image-container {
@@ -430,79 +431,7 @@ ul.rch-single-agents-social li a img {
     transform: translate(-50%, -50%) rotate(360deg);
   }
 }
-/*********************
-START: CSS FOR LISTING ARCHIVE SHORTCODE
-*********************/
-.rch-houses-list {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
-  min-height: 100px;
-}
-.rch-houses-list .house-item {
-  border-radius: 10px;
-  border: 1px solid rgba(126, 139, 150, 0.5);
-  background: #fff;
-  padding: 16px;
-}
-.rch-houses-list .house-item a {
-  text-decoration: none;
-}
-.rch-houses-list .house-item picture {
-  height: 200px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
-  margin-block-end: 20px;
-}
-.rch-houses-list .house-item picture img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-}
-.rch-houses-list .house-item p {
-  color: #000;
-}
-.rch-houses-list .house-item ul {
-  list-style: none;
-  display: flex;
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  flex-wrap: wrap;
-}
-.rch-houses-list .house-item ul li {
-  border-radius: 10px;
-  border: 1px solid #2271b1;
-  display: flex;
-  align-items: center;
-  background: #fff;
-  font-size: 11px;
-  color: #555;
-  padding: 5px 6px;
-  margin-block: 3px;
-}
-.rch-houses-list .house-item ul li:not(:last-child) {
-  margin-inline-end: 4px;
-}
-.rch-houses-list .house-item ul li b {
-  color: #000;
-  margin-inline-end: 2px;
-}
-.rch-houses-list .house-item ul li img {
-  margin-inline-end: 5px;
-}
-.rch-header-properties {
-  display: flex;
-  justify-content: space-between;
-  margin-block-start: 10px;
-}
-.rch-house-pagination {
-  margin-block-start: 20px;
-}
+
 /*********************
 START: CSS FOR BLOCKS IN GUTENBURG
 *********************/
@@ -553,9 +482,6 @@ ul.rch-rechat-block img {
   .rch-right-top-single-agent {
     margin-block-start: 40px;
   }
-  .rch-houses-list {
-    grid-template-columns: repeat(2, 1fr);
-  }
   .rch-main-layout-single-agent .rch-left-main-layout-single-agent {
     flex-basis: 100%;
   }
@@ -598,8 +524,5 @@ ul.rch-rechat-block img {
   }
   .rch-single-call {
     flex-direction: row;
-  }
-  .rch-houses-list {
-    grid-template-columns: repeat(1, 1fr);
   }
 }

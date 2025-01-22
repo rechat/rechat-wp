@@ -499,56 +499,56 @@ registerBlockType('rch-rechat-plugin/listing-block', {
   category: 'widgets',
   attributes: {
     minimum_price: {
-      type: 'number',
-      default: null
+      type: 'string',
+      default: ''
     },
     maximum_price: {
-      type: 'number',
-      default: null
+      type: 'string',
+      default: ''
     },
     minimum_lot_square_meters: {
-      type: 'number',
-      default: null
+      type: 'string',
+      default: ''
     },
     maximum_lot_square_meters: {
-      type: 'number',
-      default: null
+      type: 'string',
+      default: ''
     },
     minimum_bathrooms: {
-      type: 'number',
-      default: null
+      type: 'string',
+      default: ''
     },
     maximum_bathrooms: {
-      type: 'number',
-      default: null
+      type: 'string',
+      default: ''
     },
     minimum_square_meters: {
-      type: 'number',
-      default: null
+      type: 'string',
+      default: ''
     },
     maximum_square_meters: {
-      type: 'number',
-      default: null
+      type: 'string',
+      default: ''
     },
     minimum_year_built: {
-      type: 'number',
-      default: null
+      type: 'string',
+      default: ''
     },
     maximum_year_built: {
-      type: 'number',
-      default: null
+      type: 'string',
+      default: ''
     },
     minimum_bedrooms: {
-      type: 'number',
-      default: null
+      type: 'string',
+      default: ''
     },
     maximum_bedrooms: {
-      type: 'number',
-      default: null
+      type: 'string',
+      default: ''
     },
     listing_per_page: {
-      type: 'number',
-      default: 5
+      type: 'string',
+      default: '5'
     },
     filterByRegions: {
       type: 'string',
@@ -565,7 +565,11 @@ registerBlockType('rch-rechat-plugin/listing-block', {
     listing_statuses: {
       type: 'array',
       default: []
-    }
+    },
+    show_filter_bar: {
+      type: 'boolean',
+      default: true
+    } // New attribute for showing the filter bar
   },
   edit({
     attributes,
@@ -587,7 +591,8 @@ registerBlockType('rch-rechat-plugin/listing-block', {
       listing_per_page,
       filterByRegions,
       filterByOffices,
-      selectedStatuses
+      selectedStatuses,
+      show_filter_bar
     } = attributes;
     const [regions, setRegions] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
     const [offices, setOffices] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
@@ -642,7 +647,13 @@ registerBlockType('rch-rechat-plugin/listing-block', {
       children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(InspectorControls, {
         children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(PanelBody, {
           title: "Listing Settings",
-          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(SelectControl, {
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(CheckboxControl, {
+            label: "Show Filter Bar",
+            checked: show_filter_bar,
+            onChange: () => setAttributes({
+              show_filter_bar: !show_filter_bar
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(SelectControl, {
             label: "Select a Region",
             value: filterByRegions,
             options: regions,
@@ -665,101 +676,97 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             value: minimum_price,
             type: "number",
             onChange: value => setAttributes({
-              minimum_price: value === '' ? '' : parseInt(value) || 0
+              minimum_price: value === '' ? '' : value.toString()
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(TextControl, {
             label: "Maximum Price",
             value: maximum_price,
             type: "number",
             onChange: value => setAttributes({
-              maximum_price: value === '' ? '' : parseInt(value) || 0
+              maximum_price: value === '' ? '' : value.toString()
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(TextControl, {
             label: "Minimum Lot Size (m\xB2)",
             value: minimum_lot_square_meters,
             type: "number",
             onChange: value => setAttributes({
-              minimum_lot_square_meters: value === '' ? '' : parseInt(value) || 0
+              minimum_lot_square_meters: value === '' ? '' : value.toString()
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(TextControl, {
             label: "Maximum Lot Size (m\xB2)",
             value: maximum_lot_square_meters,
             type: "number",
             onChange: value => setAttributes({
-              maximum_lot_square_meters: value === '' ? '' : parseInt(value) || 0
+              maximum_lot_square_meters: value === '' ? '' : value.toString()
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(TextControl, {
             label: "Minimum Bathrooms",
             value: minimum_bathrooms,
             type: "number",
             onChange: value => setAttributes({
-              minimum_bathrooms: value === '' ? '' : parseInt(value) || 0
+              minimum_bathrooms: value === '' ? '' : value.toString()
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(TextControl, {
             label: "Maximum Bathrooms",
             value: maximum_bathrooms,
             type: "number",
             onChange: value => setAttributes({
-              maximum_bathrooms: value === '' ? '' : parseInt(value) || 0
+              maximum_bathrooms: value === '' ? '' : value.toString()
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(TextControl, {
             label: "Minimum Square Meters",
             value: minimum_square_meters,
             type: "number",
             onChange: value => setAttributes({
-              minimum_square_meters: value === '' ? '' : parseInt(value) || 0
+              minimum_square_meters: value === '' ? '' : value.toString()
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(TextControl, {
             label: "Maximum Square Meters",
             value: maximum_square_meters,
             type: "number",
             onChange: value => setAttributes({
-              maximum_square_meters: value === '' ? '' : parseInt(value) || 0
+              maximum_square_meters: value === '' ? '' : value.toString()
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(TextControl, {
             label: "Minimum Year Built",
             value: minimum_year_built,
             type: "number",
             onChange: value => setAttributes({
-              minimum_year_built: value === '' ? '' : parseInt(value) || 0
+              minimum_year_built: value === '' ? '' : value.toString()
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(TextControl, {
             label: "Maximum Year Built",
             value: maximum_year_built,
             type: "number",
             onChange: value => setAttributes({
-              maximum_year_built: value === '' ? '' : parseInt(value) || 0
+              maximum_year_built: value === '' ? '' : value.toString()
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(TextControl, {
             label: "Minimum Bedrooms",
             value: minimum_bedrooms,
             type: "number",
             onChange: value => setAttributes({
-              minimum_bedrooms: value === '' ? '' : parseInt(value) || 0
+              minimum_bedrooms: value === '' ? '' : value.toString()
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(TextControl, {
             label: "Maximum Bedrooms",
             value: maximum_bedrooms,
             type: "number",
             onChange: value => setAttributes({
-              maximum_bedrooms: value === '' ? '' : parseInt(value) || 0
+              maximum_bedrooms: value === '' ? '' : value.toString()
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(TextControl, {
-            label: "listing Per Page",
+            label: "Listing Per Page",
             value: listing_per_page,
             type: "number",
             onChange: value => setAttributes({
-              listing_per_page: value === '' ? '' : parseInt(value) || 1
+              listing_per_page: value === '' ? '' : value.toString()
             })
           })]
         })
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
-        className: "listing-block-preview",
-        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("p", {
-          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("strong", {
-            children: "Listing Block:"
-          }), " Preview will be shown on the frontend."]
-        })
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)((_wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1___default()), {
+        block: "rch-rechat-plugin/listing-block",
+        attributes: attributes
       })]
     });
   },

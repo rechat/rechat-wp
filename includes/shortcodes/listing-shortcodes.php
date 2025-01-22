@@ -24,7 +24,8 @@ function rch_render_listing_list($atts)
         'minimum_bedrooms' => '',
         'maximum_bedrooms' => '',
         'brand' => '',
-        'listing_statuses' => ''
+        'listing_statuses' => '',
+        'show_filter_bar' => true
     ], $atts);
 
     // Get sanitized filters
@@ -33,6 +34,7 @@ function rch_render_listing_list($atts)
     $listingPerPage = intval($atts['listing_per_page']);
     // Fetch total houses for pagination
     $totalListingData = rch_fetch_total_listing_count($filters);
+
     $totalLisitng = $totalListingData['info']['total'] ?? 0; // Ensure default if empty
     ob_start();
     include RCH_PLUGIN_DIR . 'templates/archive/listings-archive-custom.php';

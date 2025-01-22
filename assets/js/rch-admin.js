@@ -37,7 +37,6 @@ jQuery(document).ready(function ($) {
                 nonce: rch_ajax_object.nonce
             },
             success: function (response) {
-                console.log(response);
                 if (response.success) {
                     var messages = response.data;
                     var messageHtml = '<div class="notice notice-success is-dismissible"><p>' +

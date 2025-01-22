@@ -47,3 +47,29 @@ function rch_enqueue_frontend_styles()
     );
 }
 add_action('wp_enqueue_scripts', 'rch_enqueue_frontend_styles');
+//enqueue assets of listing block
+function my_custom_block_assets() {
+    // Register block script
+    wp_register_script(
+        'rch-listing-block-script',
+        RCH_PLUGIN_ASSETS . '/js/rch-rechat-listings.js',
+        ['wp-blocks', 'wp-element'],
+        '1.0.0',
+        true
+    );
+
+    // Register block style
+    wp_register_style(
+        'rch-listing-block-css',
+        RCH_PLUGIN_ASSETS . '/css/rch-listing-block.css',
+        [],
+        '1.0.0'
+    );
+
+    // Automatically enqueue script/style only when block is present
+    if ( has_block( 'rch-rechat-plugin/listing-block' ) ) {
+        wp_enqueue_script( 'rch-listing-block-script' );
+        wp_enqueue_style( 'rch-listing-block-css' );
+    }
+}
+add_action( 'enqueue_block_assets', 'my_custom_block_assets' );

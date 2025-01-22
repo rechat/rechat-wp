@@ -305,6 +305,7 @@
     });
 </script>
 <script>
+    
     var swiper = new Swiper(".rch-houses-mySwiper", {
         spaceBetween: 10,
         slidesPerView: 8, // Default for desktop

@@ -440,26 +440,57 @@ function rch_process_agents_data($access_token, $api_url_base)
  ******************************/
 function rch_get_filters($atts)
 {
-    return array_filter([
+    $filters = [
+        'property_types' => isset($atts['property_types']) && $atts['property_types'] !== ''
+            ? (is_string($atts['property_types']) && json_decode($atts['property_types'], true) !== null
+                ? json_decode($atts['property_types'], true) // Decode JSON array
+                : explode(',', $atts['property_types']) // Convert comma-separated string to array
+            )
+            : null,
         'minimum_price' => isset($atts['minimum_price']) && $atts['minimum_price'] !== '' ? intval($atts['minimum_price']) : null,
         'maximum_price' => isset($atts['maximum_price']) && $atts['maximum_price'] !== '' ? intval($atts['maximum_price']) : null,
         'minimum_lot_square_meters' => isset($atts['minimum_lot_square_meters']) && $atts['minimum_lot_square_meters'] !== '' ? intval($atts['minimum_lot_square_meters']) : null,
         'maximum_lot_square_meters' => isset($atts['maximum_lot_square_meters']) && $atts['maximum_lot_square_meters'] !== '' ? intval($atts['maximum_lot_square_meters']) : null,
         'minimum_bathrooms' => isset($atts['minimum_bathrooms']) && $atts['minimum_bathrooms'] !== '' ? intval($atts['minimum_bathrooms']) : null,
         'maximum_bathrooms' => isset($atts['maximum_bathrooms']) && $atts['maximum_bathrooms'] !== '' ? intval($atts['maximum_bathrooms']) : null,
-        'minimum_square_meters' => isset($atts['minimum_square_meters']) && $atts['minimum_square_meters'] !== '' ? intval($atts['minimum_square_meters']) : null,
-        'maximum_square_meters' => isset($atts['maximum_square_meters']) && $atts['maximum_square_meters'] !== '' ? intval($atts['maximum_square_meters']) : null,
+        'minimum_square_meters' => isset($atts['minimum_square_meters']) && $atts['minimum_square_meters'] !== '' ? floatval($atts['minimum_square_meters']) : null,
+        'maximum_square_meters' => isset($atts['maximum_square_meters']) && $atts['maximum_square_meters'] !== '' ? floatval($atts['maximum_square_meters']) : null,
         'minimum_year_built' => isset($atts['minimum_year_built']) && $atts['minimum_year_built'] !== '' ? intval($atts['minimum_year_built']) : null,
         'maximum_year_built' => isset($atts['maximum_year_built']) && $atts['maximum_year_built'] !== '' ? intval($atts['maximum_year_built']) : null,
         'minimum_bedrooms' => isset($atts['minimum_bedrooms']) && $atts['minimum_bedrooms'] !== '' ? intval($atts['minimum_bedrooms']) : null,
         'maximum_bedrooms' => isset($atts['maximum_bedrooms']) && $atts['maximum_bedrooms'] !== '' ? intval($atts['maximum_bedrooms']) : null,
+        'minimum_parking_spaces' => isset($atts['minimum_parking_spaces']) && $atts['minimum_parking_spaces'] !== '' ? intval($atts['minimum_parking_spaces']) : null,
+        'content' => isset($atts['content']) && $atts['content'] !== '' ? sanitize_text_field($atts['content']) : null,
+        'show_filter_bar' => isset($atts['show_filter_bar']) && $atts['show_filter_bar'] !== '' ? boolval($atts['show_filter_bar']) : null,
+        'postal_codes' => isset($atts['postal_codes']) && $atts['postal_codes'] !== ''
+            ? array_map('trim', explode(',', $atts['postal_codes'])) // Split and trim each value
+            : null,
         'brand' => isset($atts['brand']) ? $atts['brand'] : null,
-        // Only include listing_statuses if it’s not empty
-        'listing_statuses' => !empty($atts['listing_statuses']) ? explode(',', $atts['listing_statuses']) : null
-    ], function ($value) {
-        return $value !== null; // Filter out null values
+        'listing_statuses' => isset($atts['listing_statuses']) && $atts['listing_statuses'] !== ''
+            ? array_map('trim', explode(',', $atts['listing_statuses'])) // Split and trim each value
+            : null,
+        'points' => isset($atts['points']) && $atts['points'] !== ''
+            ? array_map(function ($point) {
+                $coords = explode(',', $point); // Split lat and lng
+                return [
+                    'longitude' => floatval($coords[1]), // Parse longitude
+                    'latitude' => floatval($coords[0]), // Parse latitude
+
+                ];
+            }, explode('|', $atts['points'])) // Split points string into array of "lat,lng"
+            : null,
+    ];
+
+    // Apply array_filter to remove null values
+    $filtered = array_filter($filters, function ($value) {
+        return $value !== null; // Keep non-null values
     });
+
+    return $filtered;
 }
+
+
+
 
 
 /*******************************

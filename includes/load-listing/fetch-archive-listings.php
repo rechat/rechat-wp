@@ -45,13 +45,11 @@ function rch_fetch_total_listing_count($filters = [])
 
     // Prepare the request body
     $requestBody = array_merge($filters);
-
     // Prepare the headers, including the custom X-RECHAT-BRAND header
     $headers = [
         'Content-Type' => 'application/json',
         'X-RECHAT-BRAND' => $brand,
     ];
-
     // Make the API request
     $response = wp_remote_post('https://api.rechat.com/valerts/count', [
         'method' => 'POST',
@@ -66,27 +64,42 @@ function rch_fetch_total_listing_count($filters = [])
 
     return json_decode(wp_remote_retrieve_body($response), true);
 }
+function rch_fetch_listing_ajax()
+{
+    // Start output buffering to catch any unexpected output
+    ob_start();
 
-function rch_fetch_listing_ajax() {
-    $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
-    $listingPerPage = isset($_GET['listing_per_page']) ? intval($_GET['listing_per_page']) : 50;
-    $template = isset($_GET['template']) ? sanitize_text_field($_GET['template']) : ''; // Get the template parameter
+    // Get request parameters
+    $page = isset($_POST['page']) ? intval($_POST['page']) : 1;
+    $listingPerPage = isset($_POST['listing_per_page']) ? intval($_POST['listing_per_page']) : 50;
+    $template = isset($_POST['template']) ? sanitize_text_field($_POST['template']) : '';
+    
+    // Capture filters for debugging
+    $filters = rch_get_filters($_POST);
 
-    // Get filters from the AJAX request
-    $filters = rch_get_filters($_GET);
+    // Debugging: Capture var_dump output
+    ob_start();
+    var_dump($filters);
+    $debugOutput = ob_get_clean(); // Store the var_dump output in a variable
 
     // Fetch listing data
     $listingData = rch_fetch_listing($filters, $page, $listingPerPage);
+    $totalListingData = rch_fetch_total_listing_count($filters);
+    $totalListing = $totalListingData['info']['total'] ?? 0;
+
+    // Prepare the response
+    $response = [
+        'total' => $totalListing,
+        'listings' => [],
+        'listingPerPage' => $listingPerPage,
+        'debug' => $debugOutput, // Add debug output to the response
+    ];
 
     if (!empty($listingData['data'])) {
-        ob_start();
         foreach ($listingData['data'] as $listing) {
-            // Determine the template to use
             if ($template) {
-                // Load the custom template specified by the shortcode
                 $templateFile = locate_template("rechat/shortcodes/{$template}.php");
             } else {
-                // Default template
                 $templateFile = locate_template('rechat/listing-item.php');
             }
 
@@ -94,16 +107,35 @@ function rch_fetch_listing_ajax() {
                 $templateFile = RCH_PLUGIN_DIR . 'templates/archive/template-part/listing-item.php';
             }
 
+            ob_start();
             include $templateFile;
-        }
+            $listingContent = ob_get_clean();
 
-        echo ob_get_clean();
+            // Add latitude and longitude to the response
+            $response['listings'][] = [
+                'content' => $listingContent,
+                'lat' => $listing['location']['latitude'], // Assuming lat is in the API response
+                'lng' => $listing['location']['longitude'], // Assuming lng is in the API response
+            ];
+        }
     } else {
-        echo '<p>No listings found.</p>';
+        $response['message'] = 'No listings found.';
     }
 
-    wp_die(); // Exit properly after AJAX
+    // Ensure no unexpected output corrupts JSON
+    $unexpectedOutput = ob_get_clean();
+    if (!empty($unexpectedOutput)) {
+        error_log($unexpectedOutput);
+        $response['debug'] .= $unexpectedOutput; // Append unexpected output to debug info
+    }
+
+    // Send the response as JSON
+    wp_send_json_success($response);
+
+    // Properly terminate the AJAX request
+    wp_die();
 }
 add_action('wp_ajax_rch_fetch_listing', 'rch_fetch_listing_ajax');
 add_action('wp_ajax_nopriv_rch_fetch_listing', 'rch_fetch_listing_ajax');
+
 

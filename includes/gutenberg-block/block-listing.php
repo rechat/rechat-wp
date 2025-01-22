@@ -13,24 +13,25 @@ function rch_register_block_assets_listing()
     register_block_type('rch-rechat-plugin/listing-block', array(
         'editor_script' => 'rch-gutenberg-js',
         'attributes' => array(
-            'minimum_price' => array('type' => 'number', 'default' => null),
-            'maximum_price' => array('type' => 'number', 'default' => null),
-            'minimum_lot_square_meters' => array('type' => 'number', 'default' => null),
-            'maximum_lot_square_meters' => array('type' => 'number', 'default' => null),
-            'minimum_bathrooms' => array('type' => 'number', 'default' => null),
-            'maximum_bathrooms' => array('type' => 'number', 'default' => null),
-            'minimum_square_meters' => array('type' => 'number', 'default' => null),
-            'maximum_square_meters' => array('type' => 'number', 'default' => null),
-            'minimum_year_built' => array('type' => 'number', 'default' => null),
-            'maximum_year_built' => array('type' => 'number', 'default' => null),
-            'minimum_bedrooms' => array('type' => 'number', 'default' => null),
-            'maximum_bedrooms' => array('type' => 'number', 'default' => null),
-            'listing_per_page' => array('type' => 'number', 'default' => 5),
+            'minimum_price' => array('type' => 'string', 'default' => ''),
+            'maximum_price' => array('type' => 'string', 'default' => ''),
+            'minimum_lot_square_meters' => array('type' => 'string', 'default' => ''),
+            'maximum_lot_square_meters' => array('type' => 'string', 'default' => ''),
+            'minimum_bathrooms' => array('type' => 'string', 'default' => ''),
+            'maximum_bathrooms' => array('type' => 'string', 'default' => ''),
+            'minimum_square_meters' => array('type' => 'string', 'default' => ''),
+            'maximum_square_meters' => array('type' => 'string', 'default' => ''),
+            'minimum_year_built' => array('type' => 'string', 'default' => ''),
+            'maximum_year_built' => array('type' => 'string', 'default' => ''),
+            'minimum_bedrooms' => array('type' => 'string', 'default' => ''),
+            'maximum_bedrooms' => array('type' => 'string', 'default' => ''),
+            'listing_per_page' => array('type' => 'string', 'default' => 5),
             'filterByRegions' => array('type' => 'string', 'default' => ''),
             'filterByOffices' => array('type' => 'string', 'default' => ''),
             'brand' => array('type' => 'string', 'default' => get_option('rch_rechat_brand_id')),
             'selectedStatuses' => array('type' => 'array', 'default' => []), // New attribute
             'listing_statuses' => array('type' => 'array', 'default' => []), // New attribute
+            'show_filter_bar' => array('type' => 'boolean', 'default' => true), // New attribute
         ),
         'render_callback' => 'rch_render_listing_block',
     ));
@@ -58,9 +59,8 @@ function rch_render_listing_block($attributes)
         'maximum_bedrooms' => isset($attributes['maximum_bedrooms']) ? $attributes['maximum_bedrooms'] : '',
         'listing_per_page' => isset($attributes['listing_per_page']) ? $attributes['listing_per_page'] : 5,
         'brand' => isset($attributes['brand']) ? $attributes['brand'] : get_option('rch_rechat_brand_id'),
-        'listing_statuses' => isset($attributes['listing_statuses']) ? implode(',', $attributes['listing_statuses']) : '', // New parameter
-
-
+        'listing_statuses' => isset($attributes['listing_statuses']) ? implode(',', $attributes['listing_statuses']) : '',
+        'show_filter_bar' => isset($attributes['show_filter_bar']) ? $attributes['show_filter_bar'] : ''
     );
     // Build shortcode string
     $shortcode = '[listings ';
@@ -68,11 +68,11 @@ function rch_render_listing_block($attributes)
         if ($value !== '') {
             $shortcode .= $param . '="' . esc_attr($value) . '" ';
         }
+        
     }
     $shortcode .= ']';
     // Execute the shortcode and return the output
-    // var_dump($shortcode);
-    return $shortcode;
+    return do_shortcode( $shortcode );
 }
 
 

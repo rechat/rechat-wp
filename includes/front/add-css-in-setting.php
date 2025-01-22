@@ -11,6 +11,9 @@ function rch_add_custom_color_css()
     $custom_color = get_option('_rch_primary_color', '#2271b1');
 ?>
     <style type="text/css">
+        :root {
+            --rch-primary-color:<?php echo esc_attr($custom_color); ?>;
+        }
         .rch-agents-rechat ul.rch-archive-agents li .rch-archive-end-line a.rch-agent-phone-archive,
         .rch-top-filter form#rch-agent-search-form div#rch-agent-search-results::-webkit-scrollbar-thumb,
         .rch-single-call a {
