@@ -6,7 +6,8 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   flex-wrap: wrap;
   margin-block-end: 30px;
 }
-.rch-filters > div {
+
+.rch-filters>div {
   border-radius: 40px;
   border: solid 1px rgb(215, 217, 220);
   background-color: white;
@@ -14,17 +15,20 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   cursor: pointer;
   margin-inline-end: 10px;
 }
-.rch-filters > div.box-filter-listing-text {
+
+.rch-filters>div.box-filter-listing-text {
   border-radius: 0;
   border: solid 1px transparent;
 }
+
 .box-filter-listing-text input[type="search"] {
   border-radius: 40px;
   border: solid 1px rgb(215, 217, 220);
   background-color: white;
   padding: 4px 15px;
 }
-.rch-filters > div .rch-inside-filters {
+
+.rch-filters>div .rch-inside-filters {
   position: absolute;
   width: 350px;
   padding: 15px;
@@ -33,21 +37,26 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   border-radius: 15px;
   box-shadow: 0px 3px 16px rgba(16, 24, 40, 0.12);
 }
-.rch-filters > div .rch-inside-filters > div {
+
+.rch-filters>div .rch-inside-filters>div {
   margin-block-end: 10px;
 }
-.rch-filters > div .toggleMain {
+
+.rch-filters>div .toggleMain {
   font-weight: bold;
   display: block;
   padding: 10px 20px;
   font-size: 13px;
 }
+
 .rch-filters .box-filter-listing:hover {
   border: solid 1px black;
 }
-.rch-filters > div .rch-inside-filters span {
+
+.rch-filters>div .rch-inside-filters span {
   display: block;
 }
+
 /* Hide the original radio buttons */
 .rch-inside-filters input[type="radio"] {
   display: none;
@@ -77,8 +86,8 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   background-color: #ddd;
   border-radius: 50%;
   transition:
-    background-color 0.3s,
-    box-shadow 0.3s;
+      background-color 0.3s,
+      box-shadow 0.3s;
 }
 
 /* Create the "checkmark" inside the circle */
@@ -96,20 +105,24 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
 }
 
 /* Style the selected state */
-.rch-inside-filters input[type="radio"]:checked + .ios-radio::before {
-  background-color: #4caf50; /* iOS green color */
+.rch-inside-filters input[type="radio"]:checked+.ios-radio::before {
+  background-color: #4caf50;
+  /* iOS green color */
   box-shadow: 0 0 4px #4caf50;
 }
 
-.rch-inside-filters input[type="radio"]:checked + .ios-radio::after {
+.rch-inside-filters input[type="radio"]:checked+.ios-radio::after {
   opacity: 1;
 }
+
 .rch-for-lease {
   flex-direction: column;
 }
+
 .rch-main-price {
   flex-wrap: wrap;
 }
+
 .rch-under-main-price {
   width: 100%;
   display: flex;
@@ -117,54 +130,64 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   align-items: end;
 }
 
-.rch-price-filter-listing .rch-inside-filters.rch-main-price > span {
+.rch-price-filter-listing .rch-inside-filters.rch-main-price>span {
   width: 100%;
   font-weight: bold;
   text-align: left;
 }
+
 .rch-price-filter-listing .rch-inside-filters {
   justify-content: space-between;
   align-items: center;
 }
-.rch-under-main-price > div {
+
+.rch-under-main-price>div {
   width: 40%;
 }
-.rch-under-main-price > span {
+
+.rch-under-main-price>span {
   width: 10%;
   text-align: center;
 }
-.rch-under-main-price > div label {
+
+.rch-under-main-price>div label {
   width: 100%;
   display: block;
   font-size: 14px;
 }
-.rch-under-main-price > div select {
+
+.rch-under-main-price>div select {
   width: 100%;
   border-radius: 4px;
 }
+
 .rch-price-filter-listing .rch-inside-filters input[type="text"] {
   width: 43%;
 }
+
 .rch-price-filter-listing .rch-inside-filters span {
   width: 10%;
   text-align: center;
 }
+
 .rch-other-filter-listing {
   flex-direction: column;
 }
+
 .rch-other-filter-listing span.title-each-filter-more {
   font-weight: bold;
   margin-block: 15px 5px;
 }
-.rch-other-filter-listing
-  .rch-status-filter-listing
-  span.title-each-filter-more {
+
+.rch-other-filter-listing .rch-status-filter-listing span.title-each-filter-more {
   margin-block: 0 5px;
 }
+
 .rch-button-select {
   display: flex;
   width: 100%;
 }
+
 .rch-button-select button {
   background-color: white;
   color: inherit;
@@ -174,17 +197,20 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   width: 17%;
   font-size: 14px;
   font-weight: bold;
-  border-inline-end: solid 1px rgb(215, 217, 220);
+  border-inline-end: solid 1px rgb(215, 217, 220) !important;
 }
+
 .rch-button-select button:first-of-type {
-  border-inline-start: solid 1px rgb(215, 217, 220);
+  border-inline-start: solid 1px rgb(215, 217, 220) !important;
   border-radius: 5px 0 0 5px;
-  border-inline-end: solid 1px rgb(215, 217, 220);
+  border-inline-end: solid 1px rgb(215, 217, 220) !important;
 }
+
 .rch-button-select button:last-of-type {
   border-inline-end: solid 1px rgb(215, 217, 220);
   border-radius: 0 5px 5px 0;
 }
+
 .rch-inside-filters .reset-btn {
   background-color: transparent;
   color: inherit;
@@ -195,71 +221,77 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   text-align: left;
   margin-block-start: 5px;
 }
+
 .rch-inside-filters .reset-btn:hover {
   box-shadow: none;
 }
+
 .filter-btn.active {
   background-color: var(--rch-primary-color);
   color: white;
 }
+
 .rch-status-filter-listing .rch-other-inside-filters {
   display: flex;
   flex-direction: column;
 
   & label {
-    display: flex;
-    justify-content: space-between;
-    flex-direction: row-reverse;
-    margin-block: 5px;
-    cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      flex-direction: row-reverse;
+      margin-block: 5px;
+      cursor: pointer;
   }
 }
+
 .rch-status-filter-listing .rch-other-inside-filters input[type="checkbox"] {
   position: relative;
   display: block;
   cursor: pointer;
 
   &:before {
-    content: "";
-    display: block;
-    position: absolute;
-    top: 6px;
-    left: -19px;
-    height: 15px;
-    width: 35px;
-    background-color: #bbb;
-    border-radius: 14px;
-    transition: background-color 0.2s;
-    cursor: pointer;
+      content: "";
+      display: block;
+      position: absolute;
+      top: 6px;
+      left: -19px;
+      height: 15px;
+      width: 35px;
+      background-color: #bbb;
+      border-radius: 14px;
+      transition: background-color 0.2s;
+      cursor: pointer;
   }
 
   &:after {
-    content: "";
-    display: block;
-    position: absolute;
-    transition:
-      transform 0.2s,
-      -webkit-transform 0.2s;
-    top: 6px;
-    left: -19px;
-    border-radius: 12px;
-    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3);
-    background-color: #fff;
-    height: 15px;
-    width: 15px;
-    cursor: pointer;
+      content: "";
+      display: block;
+      position: absolute;
+      transition:
+          transform 0.2s,
+          -webkit-transform 0.2s;
+      top: 6px;
+      left: -19px;
+      border-radius: 12px;
+      box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3);
+      background-color: #fff;
+      height: 15px;
+      width: 15px;
+      cursor: pointer;
   }
 
   &:checked {
-    &:before {
-      background-color: var(--rch-primary-color);
-    }
-    &:after {
-      transform: translateX(19px);
-      -webkit-transform: translateX(19px);
-    }
+      &:before {
+          background-color: var(--rch-primary-color);
+      }
+
+      &:after {
+          transform: translateX(19px);
+          -webkit-transform: translateX(19px);
+      }
   }
 }
+
 .rch-listing-list {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -267,15 +299,18 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   min-height: 200px;
   position: relative;
 }
+
 .rch-listing-list .house-item {
   border-radius: 10px;
   border: 1px solid rgba(126, 139, 150, 0.5);
   background: #fff;
   padding: 16px;
 }
+
 .rch-listing-list .house-item a {
   text-decoration: none;
 }
+
 .rch-listing-list .house-item picture {
   height: 200px;
   overflow: hidden;
@@ -289,15 +324,18 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   animation: rch-skeleton-loading 1.5s infinite;
   border-radius: 8px;
 }
+
 .rch-listing-list .house-item picture img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   object-position: center;
 }
+
 .rch-listing-list .house-item p {
   color: #000;
 }
+
 .rch-listing-list .house-item ul {
   list-style: none;
   display: flex;
@@ -306,6 +344,7 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   width: 100%;
   flex-wrap: wrap;
 }
+
 .rch-listing-list .house-item ul li {
   border-radius: 10px;
   border: 1px solid var(--rch-primary-color);
@@ -317,21 +356,26 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   padding: 5px 6px;
   margin-block: 3px;
 }
+
 .rch-listing-list .house-item ul li:not(:last-child) {
-  margin-inline-end: 4px;
+  margin-inline-end: 8px;
 }
+
 .rch-listing-list .house-item ul li b {
   color: #000;
   margin-inline-end: 2px;
 }
+
 .rch-listing-list .house-item ul li img {
   margin-inline-end: 5px;
 }
+
 .rch-header-properties {
   display: flex;
   justify-content: space-between;
   margin-block-start: 10px;
 }
+
 .rch-listing-pagination {
   display: flex;
   gap: 10px;
@@ -351,10 +395,12 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   align-items: center;
   justify-content: center;
 }
+
 .rch-listing-pagination button img {
   width: 10px;
   height: auto;
 }
+
 .rch-listing-pagination button:hover {
   background-color: #eaeaea;
   box-shadow: none;
@@ -365,11 +411,13 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   border: 1px solid rgba(0, 0, 0, 0.5);
   background-color: rgba(0, 0, 0, 0.12);
 }
+
 .rch-listing-skeleton-loader {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 15px;
 }
+
 .rch-listing-item-skeleton {
   background: #fff;
   overflow: hidden;
@@ -380,12 +428,14 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
 
 .rch-listing-item-skeleton .rch-skeleton-image {
   width: 100%;
-  height: 200px; /* Adjust for your image ratio */
+  height: 200px;
+  /* Adjust for your image ratio */
   background: linear-gradient(90deg, #e0e0e0 25%, #f5f5f5 50%, #e0e0e0 75%);
   background-size: 200% 100%;
   animation: rch-skeleton-loading 1.5s infinite;
   border-radius: 8px;
 }
+
 .rch-listing-item-skeleton ul {
   list-style: none;
   display: flex;
@@ -395,6 +445,7 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   flex-wrap: wrap;
   padding: 0 !important;
 }
+
 .rch-skeleton-text {
   height: 16px;
   background: linear-gradient(90deg, #e0e0e0 25%, #f5f5f5 50%, #e0e0e0 75%);
@@ -423,12 +474,14 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
 
 @keyframes rch-skeleton-loading {
   0% {
-    background-position: 200% 0;
+      background-position: 200% 0;
   }
+
   100% {
-    background-position: -200% 0;
+      background-position: -200% 0;
   }
 }
+
 .rch-no-listing {
   position: absolute;
   margin: 0 auto;
@@ -443,17 +496,23 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   border-radius: 10px;
   background-color: white;
 }
+
 .box-filter-listing.active {
-  border: 1px solid var(--rch-primary-color); /* Highlight with a border */
-  background-color: #f0f8ff; /* Optional background color */
+  border: 1px solid var(--rch-primary-color);
+  /* Highlight with a border */
+  background-color: #f0f8ff;
+  /* Optional background color */
 }
+
 .rch-inside-postal-code input {
   width: 100%;
 }
+
 .rch-tag-postal-codes {
   display: flex;
   margin-block-start: 5px;
 }
+
 .rch-tag-postal-codes .zip-code-tag {
   border-radius: 40px;
   background-color: #eee;
@@ -465,12 +524,14 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   height: 30px;
   margin-inline-end: 3px;
 }
+
 .rch-tag-postal-codes .zip-code-tag button.remove-tag {
   padding: 2px;
   background: transparent;
   color: #999;
   font-size: 12px;
 }
+
 /* Initially hide the filters and position them offscreen */
 .rch-filters-mobile {
   position: fixed;
@@ -485,38 +546,49 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
 
   transform: translateY(100%);
 }
+
 .rch-filters-mobile.close {
   animation: slide-down 0.5s ease-in-out forwards;
 }
+
 @keyframes slide-down {
   from {
-    transform: translateY(0);
+      transform: translateY(0);
   }
+
   to {
-    transform: translateY(100%);
+      transform: translateY(100%);
   }
 }
+
 .rch-filters-mobile::-webkit-scrollbar {
-  width: 7px; /* Width of the vertical scrollbar */
-  height: 12px; /* Height of the horizontal scrollbar */
+  width: 7px;
+  /* Width of the vertical scrollbar */
+  height: 12px;
+  /* Height of the horizontal scrollbar */
 }
 
 /* Scrollbar track (background) */
 .rch-filters-mobile::-webkit-scrollbar-track {
-  background: transparent; /* Light gray */
-  border-radius: 40px; /* Rounded corners */
+  background: transparent;
+  /* Light gray */
+  border-radius: 40px;
+  /* Rounded corners */
   margin-block-start: 30px;
 }
 
 /* Scrollbar thumb (scroll handle) */
 .rch-filters-mobile::-webkit-scrollbar-thumb {
-  background: #888; /* Darker gray */
-  border-radius: 10px; /* Rounded corners */
+  background: #888;
+  /* Darker gray */
+  border-radius: 10px;
+  /* Rounded corners */
 }
 
 /* Hover effect on the scrollbar thumb */
 .rch-filters-mobile::-webkit-scrollbar-thumb:hover {
-  background: #555; /* Even darker gray */
+  background: #555;
+  /* Even darker gray */
 }
 
 .rch-filters-mobile .box-filter-listing {
@@ -525,33 +597,42 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   padding: 20px;
   font-weight: bold;
 }
+
 .rch-filters-mobile .box-filter-listing span.toggleMain {
   display: flex;
   justify-content: space-between;
   cursor: pointer;
 }
+
 .rch-filters-mobile .box-filter-listing span.toggleMain img {
   width: 15px;
 }
+
 .rch-filters-mobile .box-filter-listing span.toggleMain img.rotate {
-  transform: rotate(180deg); /* Rotate the image by 180 degrees */
+  transform: rotate(180deg);
+  /* Rotate the image by 180 degrees */
 }
+
 /* Add sliding effect */
 .rch-filters-mobile.show {
   animation: slide-up 0.5s ease-in-out forwards;
 }
+
 @keyframes slide-up {
   from {
-    transform: translateY(100%);
+      transform: translateY(100%);
   }
+
   to {
-    transform: translateY(0);
+      transform: translateY(0);
   }
 }
+
 .rch-filters-mobile .rch-inside-filters {
   padding-block-start: 5px;
   flex-wrap: wrap;
 }
+
 .rch-filters-mobile .rch-other-inside-filters label {
   font-weight: normal;
 }
@@ -568,9 +649,11 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   border: none;
   cursor: pointer;
 }
+
 .filter-toggle-btn:hover {
   background-color: #0056b3;
 }
+
 .rch-head-mobile-filter {
   display: flex;
   justify-content: center;
@@ -585,6 +668,7 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   border-bottom: 1px solid #e7e7e7;
   z-index: 10;
 }
+
 .rch-head-mobile-filter button {
   position: absolute;
   inset-inline-end: 20px;
@@ -596,28 +680,35 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   align-items: center;
   justify-content: center;
 }
+
 .rch-head-mobile-filter button.reset-btn {
   inset-inline-start: 20px;
   inset-inline-end: auto;
   inset-block-start: 1px;
   font-size: 15px;
 }
+
 .rch-head-mobile-filter button.reset-btn:hover {
   color: black;
 }
+
 .rch-head-mobile-filter button img {
   width: 13px;
 }
+
 .rch-head-mobile-filter button:hover {
   background: transparent;
 }
+
 .rch-under-filter-in-mobile {
   display: flex;
   justify-content: space-between;
 }
+
 .rch-under-filter-in-mobile .box-filter-listing-text {
   width: 60%;
 }
+
 .rch-footer-filter-mobile {
   position: sticky;
   inset-block-end: 0;
@@ -626,9 +717,11 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   padding: 10px 10px 10px 22px;
   width: 100%;
 }
+
 .button-filter-for-mobile {
   display: none;
 }
+
 .rch-filter-badge {
   width: 20px;
   height: 20px;
@@ -641,10 +734,12 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
 
   margin-inline-start: 3px;
 }
-.rch-filters > div .toggleMain.more-filter-text {
+
+.rch-filters>div .toggleMain.more-filter-text {
   display: flex;
   align-items: center;
 }
+
 .reset-btn-all {
   background-color: transparent;
   color: black;
@@ -652,77 +747,219 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   font-weight: bold;
   padding: 4px;
 }
+
 .reset-btn-all:hover {
   background-color: transparent;
   color: black;
   box-shadow: none;
 }
+
+/* add complete style */
+.reset-btn-all,
+.rch-inside-filters .reset-btn {
+  border: none !important;
+}
+
+.box-filter-listing-text input[type="search"] {
+  padding-block: 10px !important;
+}
+
+.rch-filters>div .rch-inside-filters {
+  text-align: left;
+}
+
+.rch-filters>div .rch-inside-filters {
+  color: #000000;
+}
+
+.rch-filters-mobile select,
+.rch-filters-mobile input,
+.rch-filters select,
+.rch-filters input {
+  font-weight: 400;
+  font-size: 17px;
+  color: #2D3748;
+  border: 1px solid #CBD5E0;
+  max-width: 100%;
+  padding: 0.5em 35px 0.5em 0.5em;
+  border-radius: 3px;
+  outline: 0;
+}
+
+.rch-filters>div .toggleMain {
+  margin-top: 3px;
+}
+
+.rch-filters>div .rch-inside-filters>div {
+  line-height: 160%;
+}
+
+.rch-filters>div .rch-inside-filters span {
+  margin-bottom: 4px;
+}
+
+.rch-button-select button {
+  border-left: none !important;
+}
+
+.rch-filters {
+  row-gap: 0.5rem;
+}
+
 @media (max-width: 768px) {
+
   .rch-listing-list,
   .rch-listing-skeleton-loader {
-    grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(2, 1fr);
   }
+
   .rch-filters {
-    display: none;
+      display: none;
   }
+
+  .box-filter-listing-text input[type="search"] {
+      display: block;
+      margin-inline-end: auto;
+      width: 60%;
+  }
+
   .button-filter-for-mobile {
-    display: block;
-    background: transparent;
-    color: black;
-    border: 1px solid rgba(126, 139, 150, 0.5);
-    margin-block-end: 15px;
-    border-radius: 30px;
-    padding: 7px;
-    font-weight: bold;
-    font-size: 14px;
-    width: 38%;
+      display: block;
+      background: transparent;
+      color: #878484;
+      border: 1px solid rgba(126, 139, 150, 0.5);
+      margin-block-end: 15px;
+      border-radius: 30px;
+      padding: 10px 15px;
+      font-weight: 500;
+      font-size: 14px;
+      width: 38%;
   }
+
+  .filter-toggle-btn:hover {
+      background-color: #ffffff;
+  }
+
+  .rch-head-mobile-filter {
+      padding-block: 1.5rem;
+      padding-inline: 1rem;
+      justify-content: space-between;
+  }
+
+  .rch-head-mobile-filter button {
+      position: unset;
+  }
+
+  .rch-head-mobile-filter button.close-btn {
+      border-radius: 50%;
+      border: 1px solid black;
+  }
+
+  .rch-under-main-price>div label {
+      margin-bottom: 0.5rem;
+  }
+
+  .rch-filters-mobile select,
+  .rch-filters-mobile input,
+  .rch-filters select,
+  .rch-filters input {
+      font-size: 14px;
+  }
+
+  .rch-status-filter-listing .rch-other-inside-filters input[type="checkbox"]:before {
+      top: 2px;
+  }
+
+  .rch-status-filter-listing .rch-other-inside-filters input[type="checkbox"]:after {
+      top: 3px;
+  }
+
+  .rch-status-filter-listing .rch-other-inside-filters input[type="checkbox"]:before {
+      height: 18px;
+  }
+
+  .rch-filters-mobile {
+      box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.5);
+  }
+
+  .rch-footer-filter-mobile {
+      background: #7f7e7e;
+  }
+
+  .rch-footer-filter-mobile>button {
+      border: none;
+      padding: 0.5rem 1rem;
+      background: #c5c5c5;
+  }
+
   .box-filter-listing.active {
-    border: 1px solid transparent;
-    background-color: transparent;
+      border: 1px solid transparent;
+      background-color: transparent;
   }
+
   .reset-btn-all {
-    inset-inline-start: 20px;
-    inset-inline-end: auto !important;
-    inset-block-start: 4px !important;
+      inset-inline-start: 20px;
+      inset-inline-end: auto !important;
+      inset-block-start: 4px !important;
   }
+
   .rch-for-lease span {
-    display: block;
+      display: block;
+      text-align: left;
+  }
+
+  .rch-inside-filters .reset-btn {
+      display: block;
+      margin-inline-end: auto;
   }
 }
+
+@media screen and (max-width: 576px) {
+  .box-filter-listing-text input[type="search"] {
+      width: 75%;
+  }
+}
+
 @media screen and (min-width: 426px) and (max-width: 576px) {
+
   .rch-listing-list,
   .rch-listing-skeleton-loader {
-    grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(2, 1fr);
   }
 
   .rch-listing-list .house-item,
   .rch-listing-item-skeleton {
-    padding: 5px;
+      padding: 5px;
   }
+
   .rch-listing-list .house-item picture,
   .rch-listing-item-skeleton .rch-skeleton-image {
-    height: 120px;
+      height: 120px;
   }
+
   .rch-listing-list .house-item h3 {
-    font-size: 15px;
+      font-size: 15px;
   }
+
   .rch-listing-list .house-item p {
-    font-size: 14px;
-    margin-block-end: 10px;
+      font-size: 14px;
+      margin-block-end: 10px;
   }
+
   .rch-listing-list .house-item ul li {
-    padding: 3px 4px;
-    margin-block: 3px;
-    font-size: 9px;
+      padding: 3px 4px;
+      margin-block: 3px;
+      font-size: 9px;
   }
 }
+
 @media screen and (max-width: 425px) {
+
   .rch-listing-list,
   .rch-listing-skeleton-loader {
-    grid-template-columns: repeat(1, 1fr);
+      grid-template-columns: repeat(1, 1fr);
   }
 }
+
 /* Extra small screens */
-@media (max-width: 530px) {
-}
+@media (max-width: 530px) {}

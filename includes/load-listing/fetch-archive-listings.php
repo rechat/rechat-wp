@@ -79,7 +79,6 @@ function rch_fetch_listing_ajax()
 
     // Debugging: Capture var_dump output
     ob_start();
-    var_dump($filters);
     $debugOutput = ob_get_clean(); // Store the var_dump output in a variable
 
     // Fetch listing data
