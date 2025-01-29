@@ -37,7 +37,7 @@ if (isset($atts['show_filter_bar']) && $atts['show_filter_bar'] === '1') {
 
     // Extract filters passed through the shortcode attributes
     let filters = {
-        brand: "<?php echo esc_js($atts['brand']); ?>",
+        brand: "<?php echo esc_js($atts['own_listing'] == 1 ? $atts['brand'] : ''); ?>",
         minimum_price: "<?php echo esc_js($atts['minimum_price']); ?>",
         maximum_price: "<?php echo esc_js($atts['maximum_price']); ?>",
         minimum_lot_square_meters: "<?php echo esc_js($atts['minimum_lot_square_meters']); ?>",
@@ -144,7 +144,7 @@ if (isset($atts['show_filter_bar']) && $atts['show_filter_bar'] === '1') {
                 }
             }
         });
-        console.log(filters)
+
         fetch('<?php echo esc_url(admin_url('admin-ajax.php')); ?>', {
                 method: 'POST',
                 headers: {
@@ -160,7 +160,6 @@ if (isset($atts['show_filter_bar']) && $atts['show_filter_bar'] === '1') {
 
             .then(response => response.json())
             .then(data => {
-                // console.log(data.data);
                 loading.style.display = 'none'; // Hide the loading spinner
                 listingList.style.display = 'grid'; // Show the listing container
                 pagination.style.display = 'flex'; // Show pagination

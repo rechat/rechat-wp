@@ -269,6 +269,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         selectedStatuses: { type: 'array', default: [] },
         listing_statuses: { type: 'array', default: [] },
         show_filter_bar: { type: 'boolean', default: true }, // New attribute for showing the filter bar
+        own_listing: { type: 'boolean', default: true }, // New attribute for showing the filter bar
 
     },
     edit({ attributes, setAttributes }) {
@@ -276,7 +277,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             minimum_price, maximum_price, minimum_lot_square_meters, maximum_lot_square_meters,
             minimum_bathrooms, maximum_bathrooms, minimum_square_meters, maximum_square_meters,
             minimum_year_built, maximum_year_built, minimum_bedrooms, maximum_bedrooms,
-            listing_per_page, filterByRegions, filterByOffices, selectedStatuses,show_filter_bar
+            listing_per_page, filterByRegions, filterByOffices, selectedStatuses,show_filter_bar,own_listing
         } = attributes;
 
         const [regions, setRegions] = useState([]);
@@ -330,6 +331,11 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                             label="Show Filter Bar"
                             checked={show_filter_bar}
                             onChange={() => setAttributes({ show_filter_bar: !show_filter_bar })}
+                        />
+                    <CheckboxControl
+                            label="Only our own listings"
+                            checked={own_listing}
+                            onChange={() => setAttributes({ own_listing: !own_listing })}
                         />
                         <SelectControl
                             label="Select a Region"

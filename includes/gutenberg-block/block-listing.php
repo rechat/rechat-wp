@@ -32,6 +32,7 @@ function rch_register_block_assets_listing()
             'selectedStatuses' => array('type' => 'array', 'default' => []), // New attribute
             'listing_statuses' => array('type' => 'array', 'default' => []), // New attribute
             'show_filter_bar' => array('type' => 'boolean', 'default' => true), // New attribute
+            'own_listing' => array('type' => 'boolean', 'default' => true), // New attribute
         ),
         'render_callback' => 'rch_render_listing_block',
     ));
@@ -60,7 +61,8 @@ function rch_render_listing_block($attributes)
         'listing_per_page' => isset($attributes['listing_per_page']) ? $attributes['listing_per_page'] : 5,
         'brand' => isset($attributes['brand']) ? $attributes['brand'] : get_option('rch_rechat_brand_id'),
         'listing_statuses' => isset($attributes['listing_statuses']) ? implode(',', $attributes['listing_statuses']) : '',
-        'show_filter_bar' => isset($attributes['show_filter_bar']) ? $attributes['show_filter_bar'] : ''
+        'show_filter_bar' => isset($attributes['show_filter_bar']) ? $attributes['show_filter_bar'] : '',
+        'own_listing' => isset($attributes['own_listing']) ? $attributes['own_listing'] : false
     );
     // Build shortcode string
     $shortcode = '[listings ';

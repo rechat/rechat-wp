@@ -569,6 +569,11 @@ registerBlockType('rch-rechat-plugin/listing-block', {
     show_filter_bar: {
       type: 'boolean',
       default: true
+    },
+    // New attribute for showing the filter bar
+    own_listing: {
+      type: 'boolean',
+      default: true
     } // New attribute for showing the filter bar
   },
   edit({
@@ -592,7 +597,8 @@ registerBlockType('rch-rechat-plugin/listing-block', {
       filterByRegions,
       filterByOffices,
       selectedStatuses,
-      show_filter_bar
+      show_filter_bar,
+      own_listing
     } = attributes;
     const [regions, setRegions] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
     const [offices, setOffices] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
@@ -652,6 +658,12 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             checked: show_filter_bar,
             onChange: () => setAttributes({
               show_filter_bar: !show_filter_bar
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(CheckboxControl, {
+            label: "Only our own listings",
+            checked: own_listing,
+            onChange: () => setAttributes({
+              own_listing: !own_listing
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(SelectControl, {
             label: "Select a Region",

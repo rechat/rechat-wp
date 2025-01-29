@@ -41,21 +41,21 @@ function rch_fetch_listing($filters, $page, $listingPerPage)
 function rch_fetch_total_listing_count($filters = [])
 {
     // Extract the brand value from the filters
-    $brand = isset($filters['brand']) ? $filters['brand'] : '';
+    $brand = !empty($filters['brand']) ? $filters['brand'] : get_option('rch_rechat_brand_id');
 
     // Prepare the request body
     $requestBody = array_merge($filters);
     // Prepare the headers, including the custom X-RECHAT-BRAND header
     $headers = [
         'Content-Type' => 'application/json',
-        'X-RECHAT-BRAND' => $brand,
+        'X-RECHAT-BRAND' =>$brand,
     ];
     // Make the API request
     $response = wp_remote_post('https://api.rechat.com/valerts/count', [
         'method' => 'POST',
         'headers' => $headers,
         'body' => wp_json_encode($requestBody),
-        'timeout' => 20, // Set the timeout to 15 seconds
+        'timeout' => 30, // Set the timeout to 15 seconds
     ]);
     // Check for errors and return the response
     if (is_wp_error($response)) {
@@ -77,15 +77,16 @@ function rch_fetch_listing_ajax()
     // Capture filters for debugging
     $filters = rch_get_filters($_POST);
 
-    // Debugging: Capture var_dump output
-    ob_start();
-    $debugOutput = ob_get_clean(); // Store the var_dump output in a variable
+
 
     // Fetch listing data
     $listingData = rch_fetch_listing($filters, $page, $listingPerPage);
     $totalListingData = rch_fetch_total_listing_count($filters);
     $totalListing = $totalListingData['info']['total'] ?? 0;
-
+    // Debugging: Capture var_dump output
+    ob_start();
+    // var_dump($totalListingData);
+    $debugOutput = ob_get_clean(); // Store the var_dump output in a variable
     // Prepare the response
     $response = [
         'total' => $totalListing,
