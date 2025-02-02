@@ -85,7 +85,7 @@ function rch_fetch_listing_ajax()
     $totalListing = $totalListingData['info']['total'] ?? 0;
     // Debugging: Capture var_dump output
     ob_start();
-    // var_dump($totalListingData);
+    // var_dump($filters);
     $debugOutput = ob_get_clean(); // Store the var_dump output in a variable
     // Prepare the response
     $response = [

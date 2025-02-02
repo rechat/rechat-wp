@@ -79,27 +79,27 @@
                 <div class="rch-under-main-price">
                     <div>
                         <label for="minimum_bedrooms">Min:</label>
-                        <select id="minimum_bedrooms" class="rch-beds" onchange="updateMaxBedsOptions()">
+                        <select id="minimum_bedrooms" class="rch-beds" onchange="handleBedsChange('min')">
                             <option value="">No Min</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                            <option value="6">6</option>
+                            <option value="1" <?php echo (isset($atts['minimum_bedrooms']) && $atts['minimum_bedrooms'] == 1) ? 'selected' : ''; ?>>1</option>
+                            <option value="2" <?php echo (isset($atts['minimum_bedrooms']) && $atts['minimum_bedrooms'] == 2) ? 'selected' : ''; ?>>2</option>
+                            <option value="3" <?php echo (isset($atts['minimum_bedrooms']) && $atts['minimum_bedrooms'] == 3) ? 'selected' : ''; ?>>3</option>
+                            <option value="4" <?php echo (isset($atts['minimum_bedrooms']) && $atts['minimum_bedrooms'] == 4) ? 'selected' : ''; ?>>4</option>
+                            <option value="5" <?php echo (isset($atts['minimum_bedrooms']) && $atts['minimum_bedrooms'] == 5) ? 'selected' : ''; ?>>5</option>
+                            <option value="6" <?php echo (isset($atts['minimum_bedrooms']) && $atts['minimum_bedrooms'] == 6) ? 'selected' : ''; ?>>6</option>
                         </select>
                     </div>
                     <span>To</span>
                     <div>
                         <label for="maximum_bedrooms">Max:</label>
-                        <select id="maximum_bedrooms" class="rch-beds" onchange="applyFilters()">
+                        <select id="maximum_bedrooms" class="rch-beds" onchange="handleBedsChange()">
                             <option value="">No Max</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                            <option value="6">6</option>
+                            <option value="1" <?php echo (isset($atts['maximum_bedrooms']) && $atts['maximum_bedrooms'] == 1) ? 'selected' : ''; ?>>1</option>
+                            <option value="2" <?php echo (isset($atts['maximum_bedrooms']) && $atts['maximum_bedrooms'] == 2) ? 'selected' : ''; ?>>2</option>
+                            <option value="3" <?php echo (isset($atts['maximum_bedrooms']) && $atts['maximum_bedrooms'] == 3) ? 'selected' : ''; ?>>3</option>
+                            <option value="4" <?php echo (isset($atts['maximum_bedrooms']) && $atts['maximum_bedrooms'] == 4) ? 'selected' : ''; ?>>4</option>
+                            <option value="5" <?php echo (isset($atts['maximum_bedrooms']) && $atts['maximum_bedrooms'] == 5) ? 'selected' : ''; ?>>5</option>
+                            <option value="6" <?php echo (isset($atts['maximum_bedrooms']) && $atts['maximum_bedrooms'] == 6) ? 'selected' : ''; ?>>6</option>
                         </select>
                     </div>
                 </div>
@@ -130,13 +130,14 @@
                 <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>down-arrow.svg" alt="">
             </span>
             <div class="rch-inside-filters rch-main-price rch-main-beds" style="display: none;">
-                <div class="rch-button-select">
-                    <button type="button" class="filter-btn default-btn" data-value="">Any</button>
-                    <button type="button" class="filter-btn" data-value="1">+1</button>
-                    <button type="button" class="filter-btn" data-value="2">+2</button>
-                    <button type="button" class="filter-btn" data-value="3">+3</button>
-                    <button type="button" class="filter-btn" data-value="4">+4</button>
-                    <button type="button" class="filter-btn" data-value="5">+5</button>
+            <div class="rch-button-select">
+                    <!-- Buttons to select the number of bathrooms -->
+                    <button type="button" class="filter-btn " data-value="">Any</button>
+                    <button type="button" class="filter-btn <?php echo (isset($atts['minimum_bathrooms']) && $atts['minimum_bathrooms'] == 1) ? 'active' : ''; ?>" data-value="1">+1</button>
+                    <button type="button" class="filter-btn <?php echo (isset($atts['minimum_bathrooms']) && $atts['minimum_bathrooms'] == 2) ? 'active' : ''; ?>" data-value="2">+2</button>
+                    <button type="button" class="filter-btn <?php echo (isset($atts['minimum_bathrooms']) && $atts['minimum_bathrooms'] == 3) ? 'active' : ''; ?>" data-value="3">+3</button>
+                    <button type="button" class="filter-btn <?php echo (isset($atts['minimum_bathrooms']) && $atts['minimum_bathrooms'] == 4) ? 'active' : ''; ?>" data-value="4">+4</button>
+                    <button type="button" class="filter-btn <?php echo (isset($atts['minimum_bathrooms']) && $atts['minimum_bathrooms'] == 5) ? 'active' : ''; ?>" data-value="5">+5</button>
                 </div>
                 <button type="button" class="reset-btn" onclick="resetFilter('baths')">Reset</button> <!-- Reset Button -->
             </div>
@@ -298,12 +299,12 @@
                         <label for="minimum_bedrooms">Min:</label>
                         <select id="minimum_bedrooms" class="rch-beds" onchange="handleBedsChange('min')">
                             <option value="">No Min</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                            <option value="6">6</option>
+                            <option value="1" <?php echo (isset($atts['minimum_bedrooms']) && $atts['minimum_bedrooms'] == 1) ? 'selected' : ''; ?>>1</option>
+                            <option value="2" <?php echo (isset($atts['minimum_bedrooms']) && $atts['minimum_bedrooms'] == 2) ? 'selected' : ''; ?>>2</option>
+                            <option value="3" <?php echo (isset($atts['minimum_bedrooms']) && $atts['minimum_bedrooms'] == 3) ? 'selected' : ''; ?>>3</option>
+                            <option value="4" <?php echo (isset($atts['minimum_bedrooms']) && $atts['minimum_bedrooms'] == 4) ? 'selected' : ''; ?>>4</option>
+                            <option value="5" <?php echo (isset($atts['minimum_bedrooms']) && $atts['minimum_bedrooms'] == 5) ? 'selected' : ''; ?>>5</option>
+                            <option value="6" <?php echo (isset($atts['minimum_bedrooms']) && $atts['minimum_bedrooms'] == 6) ? 'selected' : ''; ?>>6</option>
                         </select>
                     </div>
                     <span>To</span>
@@ -311,18 +312,19 @@
                         <label for="maximum_bedrooms">Max:</label>
                         <select id="maximum_bedrooms" class="rch-beds" onchange="handleBedsChange()">
                             <option value="">No Max</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                            <option value="6">6</option>
+                            <option value="1" <?php echo (isset($atts['maximum_bedrooms']) && $atts['maximum_bedrooms'] == 1) ? 'selected' : ''; ?>>1</option>
+                            <option value="2" <?php echo (isset($atts['maximum_bedrooms']) && $atts['maximum_bedrooms'] == 2) ? 'selected' : ''; ?>>2</option>
+                            <option value="3" <?php echo (isset($atts['maximum_bedrooms']) && $atts['maximum_bedrooms'] == 3) ? 'selected' : ''; ?>>3</option>
+                            <option value="4" <?php echo (isset($atts['maximum_bedrooms']) && $atts['maximum_bedrooms'] == 4) ? 'selected' : ''; ?>>4</option>
+                            <option value="5" <?php echo (isset($atts['maximum_bedrooms']) && $atts['maximum_bedrooms'] == 5) ? 'selected' : ''; ?>>5</option>
+                            <option value="6" <?php echo (isset($atts['maximum_bedrooms']) && $atts['maximum_bedrooms'] == 6) ? 'selected' : ''; ?>>6</option>
                         </select>
                     </div>
                 </div>
                 <button type="button" class="reset-btn" id="reset-btn-beds" onclick="resetFilter('beds')">Reset</button>
             </div>
         </div>
+
 
         <div class="box-filter-listing rch-price-filter-listing rch-bath-filter-listing">
             <span id="rch-baths-text-filter" class="toggleMain">Bath</span>
@@ -331,18 +333,18 @@
                     Baths
                 </span>
                 <div class="rch-button-select">
-                    <button type="button" class="filter-btn default-btn" data-value="">Any</button>
-                    <button type="button" class="filter-btn" data-value="1">+1</button>
-                    <button type="button" class="filter-btn" data-value="2">+2</button>
-                    <button type="button" class="filter-btn" data-value="3">+3</button>
-                    <button type="button" class="filter-btn" data-value="4">+4</button>
-                    <button type="button" class="filter-btn" data-value="5">+5</button>
+                    <!-- Buttons to select the number of bathrooms -->
+                    <button type="button" class="filter-btn " data-value="">Any</button>
+                    <button type="button" class="filter-btn <?php echo (isset($atts['minimum_bathrooms']) && $atts['minimum_bathrooms'] == 1) ? 'active' : ''; ?>" data-value="1">+1</button>
+                    <button type="button" class="filter-btn <?php echo (isset($atts['minimum_bathrooms']) && $atts['minimum_bathrooms'] == 2) ? 'active' : ''; ?>" data-value="2">+2</button>
+                    <button type="button" class="filter-btn <?php echo (isset($atts['minimum_bathrooms']) && $atts['minimum_bathrooms'] == 3) ? 'active' : ''; ?>" data-value="3">+3</button>
+                    <button type="button" class="filter-btn <?php echo (isset($atts['minimum_bathrooms']) && $atts['minimum_bathrooms'] == 4) ? 'active' : ''; ?>" data-value="4">+4</button>
+                    <button type="button" class="filter-btn <?php echo (isset($atts['minimum_bathrooms']) && $atts['minimum_bathrooms'] == 5) ? 'active' : ''; ?>" data-value="5">+5</button>
                 </div>
                 <button type="button" class="reset-btn" onclick="resetFilter('baths')">Reset</button> <!-- Reset Button -->
             </div>
-
-
         </div>
+
         <div class="box-filter-listing">
             <span class="toggleMain more-filter-text">
                 More Filters
@@ -385,12 +387,12 @@
                     <div class="rch-other-inside-filters rch-under-main-price">
                         <div>
                             <label for="minimum_square_meters">Min</label>
-                            <input type="text" id="minimum_square_meters" class="rch-square" placeholder="Min" onkeyup="handleSquareChange()">
+                            <input type="text" id="minimum_square_meters" class="rch-square" value="<?php echo $atts['minimum_square_meters'] ?>" placeholder="Min" onkeyup="handleSquareChange()">
                         </div>
                         <span>To</span>
                         <div>
                             <label for="maximum_square_meters">Max</label>
-                            <input type="text" id="maximum_square_meters" class="rch-square" placeholder="Max" onkeyup="handleSquareChange()">
+                            <input type="text" id="maximum_square_meters" class="rch-square" value="<?php echo $atts['maximum_square_meters'] ?>" placeholder="Max" onkeyup="handleSquareChange()">
                         </div>
                     </div>
                     <button type="button" class="reset-btn" onclick="resetFilter('square')">Reset</button>
@@ -402,12 +404,12 @@
                     <div class="rch-other-inside-filters rch-under-main-price">
                         <div>
                             <label for="minimum_square_meters">Min</label>
-                            <input type="text" id="minimum_lot_square_meters" class="rch-lot" placeholder="Min" onkeyup="handleLotChange()">
+                            <input type="text" id="minimum_lot_square_meters" class="rch-lot" value="<?php echo $atts['minimum_lot_square_meters'] ?>" placeholder="Min" onkeyup="handleLotChange()">
                         </div>
                         <span>To</span>
                         <div>
                             <label for="maximum_lot_square_meters">Max</label>
-                            <input type="text" id="maximum_lot_square_meters" class="rch-lot" placeholder="Max" onkeyup="handleLotChange()">
+                            <input type="text" id="maximum_lot_square_meters" class="rch-lot" value="<?php echo $atts['maximum_lot_square_meters'] ?>" placeholder="Max" onkeyup="handleLotChange()">
                         </div>
                     </div>
                     <button type="button" class="reset-btn" onclick="resetFilter('lot')">Reset</button>

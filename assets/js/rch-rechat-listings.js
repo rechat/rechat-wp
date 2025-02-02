@@ -43,16 +43,17 @@ function handleConversion(event) {
 
 function applyFilters() {
     // Update the filters with user inputs
+    filters.content = document.getElementById('content').value;
     filters.property_types = getSelectedRadioCheckboxValue('property_types');
     filters.minimum_price = document.getElementById('minimum_price').value;
-    filters.content = document.getElementById('content').value;
     filters.maximum_price = document.getElementById('maximum_price').value;
     filters.minimum_bedrooms = document.getElementById('minimum_bedrooms').value;
     filters.maximum_bedrooms = document.getElementById('maximum_bedrooms').value;
-    filters.listing_statuses = getSelectedRadioCheckboxValue('listing_statuses');
+    filters.listing_statuses = getSelectedCheckboxValues('listing_statuses');
+    filters.minimum_square_meters = document.getElementById('minimum_square_meters').value;
+    filters.maximum_square_meters = document.getElementById('maximum_square_meters').value;
     filters.minimum_year_built = document.getElementById('minimum_year_built').value;
     filters.maximum_year_built = document.getElementById('maximum_year_built').value;
-    updateActiveClass();
     currentPage = 1; // Reset to the first page after applying filters
     updateListingList(); // Fetch filtered listings
 
@@ -155,6 +156,12 @@ setupFilterButtons('.rch-bath-filter-listing', 'minimum_bathrooms', 'rch-baths-t
 setupFilterButtons('.rch-parking-filter-listing', 'minimum_parking_spaces', 'rch-parking-text-filter', 'Parking');
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Retrieve default values from the server.
+    // (Make sure these PHP variables are defined and output correctly.)
+    const defaultMinPrice = defaultFilters.minimum_price
+    const defaultMaxPrice = defaultFilters.maximum_price;
+    const defaultMinYear = defaultFilters.minimum_year_built
+    const defaultMaxYear = defaultFilters.maximum_year_built;
     const currentYear = new Date().getFullYear();
     const priceOptions = generatePriceOptions();
 
@@ -164,24 +171,47 @@ document.addEventListener('DOMContentLoaded', () => {
     const minYearSelects = document.querySelectorAll('[id="minimum_year_built"]');
     const maxYearSelects = document.querySelectorAll('[id="maximum_year_built"]');
 
-    // Initialize filters for each set of selects
+    // Initialize filters for each set of selects.
+    // For price, pass the default values.
     minPriceSelects.forEach((minPriceSelect, index) => {
         const maxPriceSelect = maxPriceSelects[index];
-        initializeFilter(minPriceSelect, maxPriceSelect, generatePriceOptions, priceOptions, true);
+        initializeFilter(minPriceSelect, maxPriceSelect, generatePriceOptions, priceOptions, true, defaultMinPrice, defaultMaxPrice);
     });
 
+    // For year built filters (without defaults in this example)
     minYearSelects.forEach((minYearSelect, index) => {
         const maxYearSelect = maxYearSelects[index];
-        initializeFilter(minYearSelect, maxYearSelect, () => generateYearOptions(currentYear), [], false);
+        initializeFilter(minYearSelect, maxYearSelect, () => generateYearOptions(currentYear), [], false , defaultMinYear, defaultMaxYear);
     });
 
     // Initialize a Generic Filter (Price or Year Built)
-    function initializeFilter(minSelect, maxSelect, optionsGenerator, options, isPrice) {
-        populateMinOptions(minSelect, optionsGenerator(), isPrice);
-        updateMaxOptions(minSelect, maxSelect, optionsGenerator, isPrice);
+    // Added parameters defaultMin and defaultMax to be used for price defaults.
+    function initializeFilter(minSelect, maxSelect, optionsGenerator, options, isPrice, defaultMin = null, defaultMax = null) {
+        // Populate the minimum select and apply a default if provided
+        populateMinOptions(minSelect, optionsGenerator(), isPrice, defaultMin);
+        // Populate (or update) the maximum select and apply a default if provided
+        updateMaxOptions(minSelect, maxSelect, optionsGenerator, isPrice, defaultMax);
 
-        // Add event listener to update max options when min selection changes
-        minSelect.addEventListener('change', () => updateMaxOptions(minSelect, maxSelect, optionsGenerator, isPrice));
+        // When the user changes the min selection, update the max options.
+        // We still pass the defaultMax value so that if needed (e.g. on page load), it gets applied.
+        minSelect.addEventListener('change', () => updateMaxOptions(minSelect, maxSelect, optionsGenerator, isPrice, defaultMax));
+        //update default class come from server
+        updateActiveClass();
+        //update default price value come from server
+        updateDropdownTextGeneric("minimum_price", "maximum_price", "rch-price-text-filter", {
+            prefix: "Price",
+            formatNumbers: true, // Enable number formatting (e.g., "K", "M")
+            fallbackMin: "Any",
+            fallbackMax: "Any",
+        });
+        //update default Beds value come from server
+        updateDropdownTextGeneric("minimum_bedrooms", "maximum_bedrooms", "rch-beds-text-filter", {
+            prefix: "Beds",
+            formatNumbers: false, // No number formatting
+            fallbackMin: "Any",
+            fallbackMax: "Any",
+        });
+        setupFilterButtons('.rch-bath-filter-listing', 'minimum_bathrooms', 'rch-baths-text-filter', 'Baths');
     }
 
     // Helper function to generate year options (from 1990 to current year)
@@ -205,45 +235,66 @@ document.addEventListener('DOMContentLoaded', () => {
         return options;
     }
 
-    // General helper to populate min options
-    function populateMinOptions(selectElement, options, isPrice) {
+    // Populate the min select element and set its default value if provided.
+    function populateMinOptions(selectElement, options, isPrice, defaultValue = null) {
+       
         const noMinOption = createOptionElement('', 'No Min');
         selectElement.appendChild(noMinOption);
-
         options.forEach(optionValue => {
-            const formattedValue = isPrice ? formatNumber(optionValue) : optionValue; // Format only if price
+            const formattedValue = isPrice ? formatNumber(optionValue) : optionValue;
             const option = createOptionElement(optionValue, formattedValue);
             selectElement.appendChild(option);
         });
+        if (defaultValue) {
+            let candidateValue = '';
+            for (let i = 0; i < selectElement.options.length; i++) {
+                let option = selectElement.options[i];
+                if (option.value && parseInt(option.value) <= defaultValue) {
+                    candidateValue = option.value;
+                }
+            }
+            if (candidateValue) {
+                selectElement.value = candidateValue;
+            }
+        }
     }
 
-    // General helper to update max options based on the selected min value
-    function updateMaxOptions(minSelect, maxSelect, optionsGenerator, isPrice) {
+    function updateMaxOptions(minSelect, maxSelect, optionsGenerator, isPrice, defaultValue = null) {
         const selectedMin = parseInt(minSelect.value) || 0;
-        maxSelect.innerHTML = ''; // Clear existing options
-
+        maxSelect.innerHTML = '';
         const noMaxOption = createOptionElement('', 'No Max');
         maxSelect.appendChild(noMaxOption);
-
         const options = optionsGenerator();
         options.forEach(optionValue => {
             if (optionValue >= selectedMin) {
-                const formattedValue = isPrice ? formatNumber(optionValue) : optionValue; // Format only if price
+                const formattedValue = isPrice ? formatNumber(optionValue) : optionValue;
                 const option = createOptionElement(optionValue, formattedValue);
                 maxSelect.appendChild(option);
             }
         });
-
-        applyFilters(); // Assuming you have a function to apply filters
+        if (defaultValue) {
+            let candidateValue = '';
+            for (let i = 0; i < maxSelect.options.length; i++) {
+                let option = maxSelect.options[i];
+                if (option.value && parseInt(option.value) <= defaultValue) {
+                    candidateValue = option.value;
+                }
+            }
+            if (candidateValue) {
+                maxSelect.value = candidateValue;
+            }
+        }
     }
 
-    // Helper to create option elements
+    // Helper to create an option element.
     function createOptionElement(value, textContent) {
         const option = document.createElement('option');
         option.value = value;
         option.textContent = textContent;
         return option;
     }
+
+    // (The rest of your code—for postal codes and tag handling—remains unchanged.)
     const input = document.querySelector("#postal_codes");
     const tagsContainer = document.querySelector("#tags-container");
     let zipCodesArray = []; // Array to store ZIP codes
@@ -264,7 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Remove the ZIP code from the array and update the UI
                 zipCodesArray.splice(index, 1);
                 updateTagsUI();
-                filters.postal_codes = zipCodesArray
+                filters.postal_codes = zipCodesArray;
                 applyFilters();
             };
 
@@ -273,33 +324,51 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // Event listener for input
+    // Event listener for ZIP code input
     input.addEventListener("keydown", (e) => {
         if (e.key === "Enter" || e.keyCode === 13) {
             e.preventDefault();
             const value = input.value.trim();
 
-            // Add the ZIP code to the array if it's not empty and not already added
+            // Add the ZIP code if not empty and not already added
             if (value && !zipCodesArray.includes(value)) {
                 zipCodesArray.push(value);
                 updateTagsUI();
             }
-            filters.postal_codes = zipCodesArray
-            // Clear the input field
-            input.value = "";
+            filters.postal_codes = zipCodesArray;
+            input.value = ""; // Clear the input field
             applyFilters();
         }
     });
+
+    // Prevent user to not enter character in lot and square meter
+    function restrictToNumbers(event) {
+        let input = event.target;
+        input.value = input.value.replace(/\D/g, ""); // Remove non-numeric characters
+    }
+
+    // Select all relevant input fields
+    let squareInputs = document.querySelectorAll("#minimum_square_meters, #maximum_square_meters, #minimum_lot_square_meters, #maximum_lot_square_meters");
+
+    // Attach the event listener to each input field
+    squareInputs.forEach(input => {
+        input.addEventListener("input", restrictToNumbers);
+    });
+    applyFilters()
 });
+
 
 //Helper function for setting buttons
 function setupFilterButtons(containerSelector, filterKey, textElementId, prefix = "") {
     const textElement = document.getElementById(textElementId);
 
     if (!textElement) {
-        console.error("Invalid text element ID provided.");
         return;
     }
+
+    // Default value for set first
+    const initialValue = filters[filterKey] || "";
+    textElement.textContent = initialValue ? `${prefix} +${initialValue}` : prefix;
 
     // Loop through all the filter buttons inside the container
     document.querySelectorAll(`${containerSelector} .filter-btn`).forEach(button => {
@@ -330,11 +399,11 @@ function setupFilterButtons(containerSelector, filterKey, textElementId, prefix 
             applyFilters();
         });
     });
-
 }
 
+
 //Helper function for reset
-function resetFilter(filterName) {
+function resetFilter(filterName, skipApply = false) {
     // Helper function to clear input values
     const clearInputs = (selector) => {
         document.querySelectorAll(selector).forEach(input => input.value = '');
@@ -352,11 +421,9 @@ function resetFilter(filterName) {
     // Helper function to update text content
     const updateText = (elementId, text) => {
         const element = document.getElementById(elementId);
-
         if (!element) {
             return; // Exit the function if the element is not found
         }
-
         element.textContent = text;
     };
 
@@ -413,46 +480,147 @@ function resetFilter(filterName) {
             filters.content = '';
             // Reset listing statuses
             document.querySelectorAll('input[name="listing_statuses"]').forEach(input => input.checked = false);
-            // Reset all filters
-            resetFilter('property_types');
-            resetFilter('price');
-            resetFilter('beds');
-            resetFilter('baths');
-            resetFilter('parking');
-            resetFilter('square');
-            resetFilter('lot');
-            resetFilter('yearBuilt');
+            // Reset all individual filters without applying filters immediately
+            resetFilter('property_types', true);
+            resetFilter('price', true);
+            resetFilter('beds', true);
+            resetFilter('baths', true);
+            resetFilter('parking', true);
+            resetFilter('square', true);
+            resetFilter('lot', true);
+            resetFilter('yearBuilt', true);
+            // Hide filter badge if exists
             const badge = document.getElementsByClassName('rch-filter-badge')[0];
             if (badge) {
                 badge.style.display = 'none';
             }
-            filters.postal_codes = []
-
+            filters.postal_codes = [];
             break;
 
         default:
             console.warn(`Unknown filter: ${filterName}`);
     }
 
-    updateActiveClass();
-    applyFilters();
+    // Only update active classes and apply filters if not skipped.
+    if (!skipApply) {
+        updateActiveClass();
+        applyFilters();
+    }
 }
 
 
+
 // Helper Function for Select Radio
+let defaultOptionSet = false;
+
+function normalizeValue(val) {
+    return val.replace(/&amp;/g, '&').trim();
+}
+
 function getSelectedRadioCheckboxValue(name) {
+    const serverData = filters.property_types;
+    if (serverData && serverData.length > 0 && !defaultOptionSet) {
+        const normalizedServerData = serverData.map(item => normalizeValue(item));
+        const radioButtons = [...document.querySelectorAll(`input[name="${name}"]`)];
+        let bestMatch = null;
+        let bestMatchCount = 0;
+        let allListingButton = null;
+        let allListingValues = [];
+
+        for (const button of radioButtons) {
+            const buttonValues = button.value.split(',').map(v => normalizeValue(v));
+
+            if (button.id === "all") {
+                allListingButton = button;
+                allListingValues = buttonValues;
+                continue;
+            }
+
+            const matchCount = buttonValues.filter(value => normalizedServerData.includes(value)).length;
+
+            if (matchCount > bestMatchCount) {
+                bestMatch = button;
+                bestMatchCount = matchCount;
+            }
+        }
+
+        // Only select "All Listing" if all of its values are present in the server data
+        if (allListingButton && allListingValues.every(value => normalizedServerData.includes(value))) {
+            bestMatch = allListingButton;
+        }
+        if (bestMatch) {
+            bestMatch.checked = true;
+            const dataName = bestMatch.getAttribute('data-name');
+            
+            if (dataName) {
+                document.getElementById('rch-property-type-text').textContent = dataName;
+            }
+        }
+
+        defaultOptionSet = true;
+    }
+
     const selected = document.querySelector(`input[name="${name}"]:checked`);
     if (selected) {
-        const value = selected.value.split(','); // Get the value and split it into an array
-        const dataName = selected.getAttribute('data-name'); // Get the data-name attribute
+        const value = selected.value.split(',').map(v => normalizeValue(v));
+        const dataName = selected.getAttribute('data-name');
         if (dataName) {
             document.getElementById('rch-property-type-text').textContent = dataName;
         }
-        return value
+        return value;
     }
 
     return [];
 }
+
+
+let defaultOptionSetCheckbox = false;
+
+function normalizeValue(val) {
+    return val.replace(/&amp;/g, '&').trim();
+}
+
+function getSelectedCheckboxValues(name) {
+    const serverDataString = filters.listing_statuses;
+    const serverData = serverDataString ? serverDataString.split(',').map(item => normalizeValue(item)) : [];
+
+    if (serverData.length > 0 && !defaultOptionSetCheckbox) {
+        const checkboxes = [...document.querySelectorAll(`input[name="${name}"]`)];
+        let selectedCheckboxes = [];
+        let allListingCheckbox = null;
+        let allListingValues = [];
+
+        for (const checkbox of checkboxes) {
+            const checkboxValues = checkbox.value.split(',').map(v => normalizeValue(v));
+
+            if (checkbox.id === "all") {
+                allListingCheckbox = checkbox;
+                allListingValues = checkboxValues;
+                continue;
+            }
+
+            if (checkboxValues.some(value => serverData.includes(value))) {
+                checkbox.checked = true;
+                selectedCheckboxes.push(checkbox);
+            }
+        }
+
+        // Select "All Listings" checkbox if all its values exist in server data
+        if (allListingCheckbox && allListingValues.every(value => serverData.includes(value))) {
+            allListingCheckbox.checked = true;
+            selectedCheckboxes = [allListingCheckbox]; // Only select "All Listings"
+        }
+
+        defaultOptionSetCheckbox = true;
+    }
+
+    return "";
+}
+
+
+
+
+
 // Helper function for Close all Options
 function closeAllOptions() {
     document.querySelectorAll('.rch-inside-filters').forEach(optionsDiv => {
@@ -464,29 +632,54 @@ function closeAllOptions() {
 // Helper function to add or remove "active" class based on filter selections
 function updateActiveClass() {
     // Add 'active' class for select inputs if the value is not empty
-    document.querySelectorAll('select').forEach(select => {
-        select.addEventListener('change', function () {
-            if (this.value.trim() !== "") {
-                this.closest('.box-filter-listing').classList.add('active');
-            } else {
-                this.closest('.box-filter-listing').classList.remove('active');
-            }
-        });
-    });
+    document.querySelectorAll('input:not([type="search"]), select').forEach(element => {
+        const updateClass = (element) => {
+            const container = element.closest('.box-filter-listing');
+            if (!container) return;
 
-    // Add 'active' class for input fields if the value is not empty
-    document.querySelectorAll('input:not([type="search"])').forEach(input => {
-        input.addEventListener('change', function () {
-            if (this.value.trim() !== "") {
-                this.closest('.box-filter-listing').classList.add('active');
+            if (
+                (element.tagName === 'INPUT' &&
+                    (element.type === 'checkbox' || element.type === 'radio' ? element.checked : element.value.trim() !== "")) ||
+                (element.tagName === 'SELECT' && element.value.trim() !== "")
+            ) {
+                container.classList.add('active');
             } else {
-                this.closest('.box-filter-listing').classList.remove('active');
+                // Check if any other input or select inside this container is active
+                const hasActiveElement = container.querySelector(
+                    'input:checked, input:not([type="checkbox"]):not([type="radio"]):not([type="search"]):not(:placeholder-shown), select:not([value=""])'
+                );
+                if (!hasActiveElement) {
+                    container.classList.remove('active');
+                }
             }
+        };
+
+        // Initial check on page load
+        updateClass(element);
+        // Listen for changes
+        element.addEventListener('change', function () {
+            updateClass(this);
+
         });
+
+        // Handle typing for text inputs
+        if (element.tagName === 'INPUT' && element.type !== 'checkbox' && element.type !== 'radio') {
+            element.addEventListener('input', function () {
+                updateClass(this);
+            });
+        }
     });
 
     // Add 'active' class for buttons inside filter lists
-    document.querySelectorAll('.filter-btn').forEach(button => {
+    document.querySelectorAll('.rch-bath-filter-listing .filter-btn').forEach(button => {
+        // Check if the button has a selected value (either from a default value or clicked)
+        if (button.dataset.value) {
+            // Add 'active' class to buttons that have a value
+            if (button.checked || button.selected || button.classList.contains('active')) {
+                button.closest('.box-filter-listing').classList.add('active');
+            }
+        }
+        // Add event listener for click to toggle 'active' class
         button.addEventListener('click', function () {
             // Check if the dataset.value is not empty
             if (this.dataset.value) {
@@ -598,7 +791,7 @@ function updateDropdownTextGeneric(minSelectId, maxSelectId, textElementId, opti
     const textElement = document.getElementById(textElementId);
 
     if (!minSelect || !maxSelect || !textElement) {
-        console.error("Invalid element IDs provided.");
+
         return;
     }
 

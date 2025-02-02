@@ -27,8 +27,8 @@ function rch_render_listing_list($atts)
         'listing_statuses' => '',
         'show_filter_bar' => true,
         'own_listing' => true,
+        'property_types' => '',
     ], $atts);
-
     // Get sanitized filters
     $filters = rch_get_filters($atts);
     $page = intval($atts['page']);

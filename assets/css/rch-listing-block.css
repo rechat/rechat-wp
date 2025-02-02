@@ -895,6 +895,7 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   .box-filter-listing.active {
       border: 1px solid transparent;
       background-color: transparent;
+      border-bottom: 1px solid #e7e7e7;
   }
 
   .reset-btn-all {

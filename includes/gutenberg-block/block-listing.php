@@ -33,6 +33,7 @@ function rch_register_block_assets_listing()
             'listing_statuses' => array('type' => 'array', 'default' => []), // New attribute
             'show_filter_bar' => array('type' => 'boolean', 'default' => true), // New attribute
             'own_listing' => array('type' => 'boolean', 'default' => true), // New attribute
+            'property_types' => array('type' => 'string', 'default' => ''), // New attribute
         ),
         'render_callback' => 'rch_render_listing_block',
     ));
@@ -62,7 +63,8 @@ function rch_render_listing_block($attributes)
         'brand' => isset($attributes['brand']) ? $attributes['brand'] : get_option('rch_rechat_brand_id'),
         'listing_statuses' => isset($attributes['listing_statuses']) ? implode(',', $attributes['listing_statuses']) : '',
         'show_filter_bar' => isset($attributes['show_filter_bar']) ? $attributes['show_filter_bar'] : '',
-        'own_listing' => isset($attributes['own_listing']) ? $attributes['own_listing'] : false
+        'own_listing' => isset($attributes['own_listing']) ? $attributes['own_listing'] : false,
+        'property_types' => isset($attributes['property_types']) ?  $attributes['property_types'] : '',
     );
     // Build shortcode string
     $shortcode = '[listings ';
@@ -70,7 +72,6 @@ function rch_render_listing_block($attributes)
         if ($value !== '') {
             $shortcode .= $param . '="' . esc_attr($value) . '" ';
         }
-        
     }
     $shortcode .= ']';
     // Execute the shortcode and return the output

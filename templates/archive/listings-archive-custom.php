@@ -1,4 +1,5 @@
 <?php
+$property_types_array = !empty($atts['property_types']) ? explode(',', $atts['property_types']) : [];
 if (isset($atts['show_filter_bar']) && $atts['show_filter_bar'] === '1') {
     // Include the template if the condition is met
     include RCH_PLUGIN_DIR . 'templates/archive/template-part/listing-filters.php';
@@ -36,6 +37,26 @@ if (isset($atts['show_filter_bar']) && $atts['show_filter_bar'] === '1') {
     let totalPages = Math.ceil(totalListing / listingPerPage); // Calculate total pages
 
     // Extract filters passed through the shortcode attributes
+    
+
+    // JavaScript object to hold your filters
+    let defaultFilters = {
+        brand: "<?php echo esc_js($atts['own_listing'] == 1 ? $atts['brand'] : ''); ?>",
+        minimum_price: "<?php echo esc_js($atts['minimum_price']); ?>",
+        maximum_price: "<?php echo esc_js($atts['maximum_price']); ?>",
+        minimum_lot_square_meters: "<?php echo esc_js($atts['minimum_lot_square_meters']); ?>",
+        maximum_lot_square_meters: "<?php echo esc_js($atts['maximum_lot_square_meters']); ?>",
+        minimum_bathrooms: "<?php echo esc_js($atts['minimum_bathrooms']); ?>",
+        maximum_bathrooms: "<?php echo esc_js($atts['maximum_bathrooms']); ?>",
+        minimum_square_meters: "<?php echo esc_js($atts['minimum_square_meters']); ?>",
+        maximum_square_meters: "<?php echo esc_js($atts['maximum_square_meters']); ?>",
+        minimum_year_built: "<?php echo esc_js($atts['minimum_year_built']); ?>",
+        maximum_year_built: "<?php echo esc_js($atts['maximum_year_built']); ?>",
+        minimum_bedrooms: "<?php echo esc_js($atts['minimum_bedrooms']); ?>",
+        maximum_bedrooms: "<?php echo esc_js($atts['maximum_bedrooms']); ?>",
+        listing_statuses: "<?php echo esc_js($atts['listing_statuses']); ?>",
+        property_types: <?php echo json_encode($property_types_array); ?>, // Convert PHP array to JavaScript array
+    };
     let filters = {
         brand: "<?php echo esc_js($atts['own_listing'] == 1 ? $atts['brand'] : ''); ?>",
         minimum_price: "<?php echo esc_js($atts['minimum_price']); ?>",
@@ -55,13 +76,11 @@ if (isset($atts['show_filter_bar']) && $atts['show_filter_bar'] === '1') {
         minimum_year_built: "",
         maximum_year_built: "",
         postal_codes: [],
-        property_types: [],
+        property_types: <?php echo json_encode($property_types_array); ?>, // Convert PHP array to JavaScript array
         minimum_square_meters: "",
         maximum_square_meters: "",
         content: "",
-
     };
-
 
     // Initialize Google Map
     // let map;
@@ -144,7 +163,7 @@ if (isset($atts['show_filter_bar']) && $atts['show_filter_bar'] === '1') {
                 }
             }
         });
-
+        console.log(filters)
         fetch('<?php echo esc_url(admin_url('admin-ajax.php')); ?>', {
                 method: 'POST',
                 headers: {
@@ -217,7 +236,29 @@ if (isset($atts['show_filter_bar']) && $atts['show_filter_bar'] === '1') {
                 listingList.innerHTML = '<p>Error loading listing.</p>';
             });
     }
+    document.addEventListener('DOMContentLoaded', () => {
+        // var statusesArray = filters.listing_statuses;
+        // // Check if any status in the array matches a value in the radio buttons
+        // statusesArray.forEach(function(status) {
+        //     // Check if the status matches any radio button's value
+        //     var radioButton = document.querySelector('input[name="property_types"][value*="' + status.trim() + '"]');
+        //     if (radioButton) {
+        //         radioButton.checked = true; // Set the matching radio button as checked
+        //     }
+        // });
+        // // Check if minimum_bedrooms has a value
+        // const minBedrooms = document.getElementById('minimum_bedrooms');
+        // if (minBedrooms.value) {
+        //     minBedrooms.dispatchEvent(new Event('change'));
+        // }
 
+        // // Check if maximum_bedrooms has a value
+        // const maxBedrooms = document.getElementById('maximum_bedrooms');
+        // if (maxBedrooms.value) {
+        //     maxBedrooms.dispatchEvent(new Event('change'));
+        // }
+        // applyFilters()
+    })
 
     // Handle filter updates
 </script>

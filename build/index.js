@@ -139,7 +139,8 @@ const {
   TextControl,
   MultiSelectControl,
   CheckboxControl,
-  ToggleControl
+  ToggleControl,
+  RadioControl
 } = wp.components;
  // useState and useEffect hooks
 
@@ -574,7 +575,12 @@ registerBlockType('rch-rechat-plugin/listing-block', {
     own_listing: {
       type: 'boolean',
       default: true
-    } // New attribute for showing the filter bar
+    },
+    // New attribute for showing the filter bar
+    property_types: {
+      type: 'string',
+      default: ''
+    }
   },
   edit({
     attributes,
@@ -598,7 +604,8 @@ registerBlockType('rch-rechat-plugin/listing-block', {
       filterByOffices,
       selectedStatuses,
       show_filter_bar,
-      own_listing
+      own_listing,
+      property_types
     } = attributes;
     const [regions, setRegions] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
     const [offices, setOffices] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
@@ -649,6 +656,11 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         listing_statuses: listingStatuses
       });
     };
+    const handlePropertyTypeChange = value => {
+      setAttributes({
+        property_types: value
+      });
+    };
     return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.Fragment, {
       children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(InspectorControls, {
         children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(PanelBody, {
@@ -683,7 +695,31 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             label: option.label,
             checked: selectedStatuses.includes(option.value),
             onChange: () => handleStatusChange(option.value)
-          }, option.value)), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(TextControl, {
+          }, option.value)), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("p", {
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("strong", {
+              children: "Property Type"
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(RadioControl, {
+            label: "Select Property Type",
+            selected: property_types,
+            options: [{
+              label: 'All Listings',
+              value: 'Residential, Residential Lease, Lots & Acreage, Commercial, Multi-Family'
+            }, {
+              label: 'Sale',
+              value: 'Residential'
+            }, {
+              label: 'Lease',
+              value: 'Residential Lease'
+            }, {
+              label: 'Lots & Acreage',
+              value: 'Lots & Acreage'
+            }, {
+              label: 'Commercial',
+              value: 'Commercial'
+            }],
+            onChange: handlePropertyTypeChange
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(TextControl, {
             label: "Minimum Price",
             value: minimum_price,
             type: "number",

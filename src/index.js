@@ -1,6 +1,6 @@
 const { registerBlockType } = wp.blocks;
 const { InspectorControls, ColorPalette } = wp.blockEditor || wp.editor;
-const { PanelBody, RangeControl, SelectControl, TextControl, MultiSelectControl, CheckboxControl, ToggleControl } = wp.components;
+const { PanelBody, RangeControl, SelectControl, TextControl, MultiSelectControl, CheckboxControl, ToggleControl ,RadioControl } = wp.components;
 import { useEffect, useState } from '@wordpress/element'; // useState and useEffect hooks
 import ServerSideRender from '@wordpress/server-side-render';
 import apiFetch from '@wordpress/api-fetch';
@@ -270,6 +270,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         listing_statuses: { type: 'array', default: [] },
         show_filter_bar: { type: 'boolean', default: true }, // New attribute for showing the filter bar
         own_listing: { type: 'boolean', default: true }, // New attribute for showing the filter bar
+        property_types: { type: 'string', default: '' }
 
     },
     edit({ attributes, setAttributes }) {
@@ -277,7 +278,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             minimum_price, maximum_price, minimum_lot_square_meters, maximum_lot_square_meters,
             minimum_bathrooms, maximum_bathrooms, minimum_square_meters, maximum_square_meters,
             minimum_year_built, maximum_year_built, minimum_bedrooms, maximum_bedrooms,
-            listing_per_page, filterByRegions, filterByOffices, selectedStatuses,show_filter_bar,own_listing
+            listing_per_page, filterByRegions, filterByOffices, selectedStatuses, show_filter_bar, own_listing, property_types
         } = attributes;
 
         const [regions, setRegions] = useState([]);
@@ -315,24 +316,27 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                 ? selectedStatuses.filter(s => s !== status)
                 : [...selectedStatuses, status];
             const listingStatuses = updatedStatuses.flatMap(status =>
-                ({
-                    Active: ['Active', 'Incoming', 'Coming Soon', 'Pending'],
-                    Closed: ['Sold', 'Leased'],
-                    Archived: ['Withdrawn', 'Expired']
-                }[status] || [])
+            ({
+                Active: ['Active', 'Incoming', 'Coming Soon', 'Pending'],
+                Closed: ['Sold', 'Leased'],
+                Archived: ['Withdrawn', 'Expired']
+            }[status] || [])
             );
             setAttributes({ selectedStatuses: updatedStatuses, listing_statuses: listingStatuses });
+        };
+        const handlePropertyTypeChange = (value) => {
+            setAttributes({ property_types: value });
         };
         return (
             <>
                 <InspectorControls>
                     <PanelBody title="Listing Settings">
-                    <CheckboxControl
+                        <CheckboxControl
                             label="Show Filter Bar"
                             checked={show_filter_bar}
                             onChange={() => setAttributes({ show_filter_bar: !show_filter_bar })}
                         />
-                    <CheckboxControl
+                        <CheckboxControl
                             label="Only our own listings"
                             checked={own_listing}
                             onChange={() => setAttributes({ own_listing: !own_listing })}
@@ -358,7 +362,19 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                                 onChange={() => handleStatusChange(option.value)}
                             />
                         ))}
-
+                        <p><strong>Property Type</strong></p>
+                        <RadioControl
+                            label="Select Property Type"
+                            selected={property_types}
+                            options={[
+                                { label: 'All Listings', value: 'Residential, Residential Lease, Lots & Acreage, Commercial, Multi-Family' },
+                                { label: 'Sale', value: 'Residential' },
+                                { label: 'Lease', value: 'Residential Lease' },
+                                { label: 'Lots & Acreage', value: 'Lots & Acreage' },
+                                { label: 'Commercial', value: 'Commercial' },
+                            ]}
+                            onChange={handlePropertyTypeChange}
+                        />
                         <TextControl
                             label="Minimum Price"
                             value={minimum_price}

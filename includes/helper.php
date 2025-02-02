@@ -443,8 +443,8 @@ function rch_get_filters($atts)
     $filters = [
         'property_types' => isset($atts['property_types']) && $atts['property_types'] !== ''
             ? (is_string($atts['property_types']) && json_decode($atts['property_types'], true) !== null
-                ? json_decode($atts['property_types'], true) // Decode JSON array
-                : explode(',', $atts['property_types']) // Convert comma-separated string to array
+                ? array_map('htmlspecialchars_decode', json_decode($atts['property_types'], true)) // Decode JSON array and fix HTML entities
+                : array_map('htmlspecialchars_decode', array_map('trim', explode(',', $atts['property_types']))) // Convert comma-separated string to array and fix HTML entities
             )
             : null,
         'minimum_price' => isset($atts['minimum_price']) && $atts['minimum_price'] !== '' ? intval($atts['minimum_price']) : null,
@@ -475,7 +475,6 @@ function rch_get_filters($atts)
                 return [
                     'longitude' => floatval($coords[1]), // Parse longitude
                     'latitude' => floatval($coords[0]), // Parse latitude
-
                 ];
             }, explode('|', $atts['points'])) // Split points string into array of "lat,lng"
             : null,
@@ -488,10 +487,6 @@ function rch_get_filters($atts)
 
     return $filtered;
 }
-
-
-
-
 
 /*******************************
  *title for page listing detail
