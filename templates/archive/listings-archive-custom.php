@@ -162,7 +162,6 @@ if (isset($atts['show_filter_bar']) && $atts['show_filter_bar'] === '1') {
                 }
             }
         });
-        console.log(filters)
         fetch('<?php echo esc_url(admin_url('admin-ajax.php')); ?>', {
                 method: 'POST',
                 headers: {

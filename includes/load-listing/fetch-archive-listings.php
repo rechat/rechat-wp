@@ -29,7 +29,6 @@ function rch_fetch_listing($filters, $page, $listingPerPage)
         'timeout' => 20, // Set the timeout to 15 seconds
 
     ]);
-    var_dump($response);
 
     if (is_wp_error($response)) {
         return 'Error: ' . $response->get_error_message();
