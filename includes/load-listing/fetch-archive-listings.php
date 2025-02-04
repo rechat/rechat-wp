@@ -29,6 +29,8 @@ function rch_fetch_listing($filters, $page, $listingPerPage)
         'timeout' => 20, // Set the timeout to 15 seconds
 
     ]);
+    var_dump($response);
+
     if (is_wp_error($response)) {
         return 'Error: ' . $response->get_error_message();
     }
@@ -85,7 +87,6 @@ function rch_fetch_listing_ajax()
     $totalListing = $totalListingData['info']['total'] ?? 0;
     // Debugging: Capture var_dump output
     ob_start();
-    // var_dump($filters);
     $debugOutput = ob_get_clean(); // Store the var_dump output in a variable
     // Prepare the response
     $response = [

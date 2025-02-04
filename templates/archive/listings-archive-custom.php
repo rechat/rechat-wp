@@ -29,7 +29,6 @@ if (isset($atts['show_filter_bar']) && $atts['show_filter_bar'] === '1') {
 <?php include RCH_PLUGIN_DIR . 'templates/archive/template-part/listing-pagination.php'; ?>
 
 </div>
-
 <script>
     let currentPage = 1; // Initialize current page
     let listingPerPage = <?php echo esc_js($listingPerPage); ?>; // Set number of listings per page
@@ -179,6 +178,7 @@ if (isset($atts['show_filter_bar']) && $atts['show_filter_bar'] === '1') {
 
             .then(response => response.json())
             .then(data => {
+                console.log(data)
                 loading.style.display = 'none'; // Hide the loading spinner
                 listingList.style.display = 'grid'; // Show the listing container
                 pagination.style.display = 'flex'; // Show pagination
@@ -236,29 +236,6 @@ if (isset($atts['show_filter_bar']) && $atts['show_filter_bar'] === '1') {
                 listingList.innerHTML = '<p>Error loading listing.</p>';
             });
     }
-    document.addEventListener('DOMContentLoaded', () => {
-        // var statusesArray = filters.listing_statuses;
-        // // Check if any status in the array matches a value in the radio buttons
-        // statusesArray.forEach(function(status) {
-        //     // Check if the status matches any radio button's value
-        //     var radioButton = document.querySelector('input[name="property_types"][value*="' + status.trim() + '"]');
-        //     if (radioButton) {
-        //         radioButton.checked = true; // Set the matching radio button as checked
-        //     }
-        // });
-        // // Check if minimum_bedrooms has a value
-        // const minBedrooms = document.getElementById('minimum_bedrooms');
-        // if (minBedrooms.value) {
-        //     minBedrooms.dispatchEvent(new Event('change'));
-        // }
-
-        // // Check if maximum_bedrooms has a value
-        // const maxBedrooms = document.getElementById('maximum_bedrooms');
-        // if (maxBedrooms.value) {
-        //     maxBedrooms.dispatchEvent(new Event('change'));
-        // }
-        // applyFilters()
-    })
 
     // Handle filter updates
 </script>

@@ -55,6 +55,7 @@ function applyFilters() {
     filters.minimum_year_built = document.getElementById('minimum_year_built').value;
     filters.maximum_year_built = document.getElementById('maximum_year_built').value;
     currentPage = 1; // Reset to the first page after applying filters
+    updateActiveClass()
     updateListingList(); // Fetch filtered listings
 
 }
@@ -575,16 +576,11 @@ function getSelectedRadioCheckboxValue(name) {
 
 
 let defaultOptionSetCheckbox = false;
-
-function normalizeValue(val) {
-    return val.replace(/&amp;/g, '&').trim();
-}
-
 function getSelectedCheckboxValues(name) {
-    const serverDataString = filters.listing_statuses;
-    const serverData = serverDataString ? serverDataString.split(',').map(item => normalizeValue(item)) : [];
+    const serverData = filters.listing_statuses;
 
     if (serverData.length > 0 && !defaultOptionSetCheckbox) {
+        
         const checkboxes = [...document.querySelectorAll(`input[name="${name}"]`)];
         let selectedCheckboxes = [];
         let allListingCheckbox = null;
@@ -613,7 +609,11 @@ function getSelectedCheckboxValues(name) {
 
         defaultOptionSetCheckbox = true;
     }
-
+    const selected = document.querySelector(`input[name="${name}"]:checked`);
+    if (selected) {
+        const value = selected.value.split(',').map(v => normalizeValue(v));
+        return value;
+    }
     return "";
 }
 
@@ -648,6 +648,7 @@ function updateActiveClass() {
                 const hasActiveElement = container.querySelector(
                     'input:checked, input:not([type="checkbox"]):not([type="radio"]):not([type="search"]):not(:placeholder-shown), select:not([value=""])'
                 );
+                
                 if (!hasActiveElement) {
                     container.classList.remove('active');
                 }

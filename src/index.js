@@ -1,9 +1,10 @@
 const { registerBlockType } = wp.blocks;
 const { InspectorControls, ColorPalette } = wp.blockEditor || wp.editor;
-const { PanelBody, RangeControl, SelectControl, TextControl, MultiSelectControl, CheckboxControl, ToggleControl ,RadioControl } = wp.components;
+const { PanelBody, RangeControl, SelectControl, TextControl, MultiSelectControl, CheckboxControl, ToggleControl, RadioControl } = wp.components;
 import { useEffect, useState } from '@wordpress/element'; // useState and useEffect hooks
 import ServerSideRender from '@wordpress/server-side-render';
 import apiFetch from '@wordpress/api-fetch';
+import ListingMain from './listing-main';
 //regions block
 registerBlockType('rch-rechat-plugin/regions-block', {
     title: 'Regions Block',
@@ -278,7 +279,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             minimum_price, maximum_price, minimum_lot_square_meters, maximum_lot_square_meters,
             minimum_bathrooms, maximum_bathrooms, minimum_square_meters, maximum_square_meters,
             minimum_year_built, maximum_year_built, minimum_bedrooms, maximum_bedrooms,
-            listing_per_page, filterByRegions, filterByOffices, selectedStatuses, show_filter_bar, own_listing, property_types
+            listing_per_page, filterByRegions, filterByOffices, selectedStatuses, show_filter_bar, own_listing, property_types,listing_statuses
         } = attributes;
 
         const [regions, setRegions] = useState([]);
@@ -455,9 +456,29 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                         />
                     </PanelBody>
                 </InspectorControls>
-                <ServerSideRender
+                {/* <ServerSideRender
                     block="rch-rechat-plugin/listing-block"
                     attributes={attributes}
+                /> */}
+                <ListingMain
+                    listing_per_page={listing_per_page}
+                    maximum_bedrooms={maximum_bedrooms}
+                    minimum_bedrooms={minimum_bedrooms}
+                    maximum_year_built={maximum_year_built}
+                    minimum_year_built={minimum_year_built}
+                    maximum_square_meters={maximum_square_meters}
+                    minimum_square_meters={minimum_square_meters}
+                    maximum_bathrooms={maximum_bathrooms}
+                    minimum_bathrooms={minimum_bathrooms}
+                    maximum_lot_square_meters={maximum_lot_square_meters}
+                    minimum_lot_square_meters= {minimum_lot_square_meters}
+                    maximum_price={maximum_price}
+                    minimum_price={minimum_price}
+                    property_types ={property_types}
+                    own_listing={own_listing}
+                    show_filter_bar={show_filter_bar}
+                    selectedStatuses ={listing_statuses}
+
                 />
             </>
         );

@@ -48,7 +48,7 @@ function rch_enqueue_frontend_styles()
 }
 add_action('wp_enqueue_scripts', 'rch_enqueue_frontend_styles');
 //enqueue assets of listing block
-function my_custom_block_assets() {
+function rch_enqueue_block_assets() {
     // Register block script
     wp_register_script(
         'rch-listing-block-script',
@@ -72,4 +72,17 @@ function my_custom_block_assets() {
         wp_enqueue_style( 'rch-listing-block-css' );
     }
 }
-add_action( 'enqueue_block_assets', 'my_custom_block_assets' );
+add_action( 'enqueue_block_assets', 'rch_enqueue_block_assets' );
+function rch_script_block_editor_assets() {
+    // Get the active theme's style.css
+    $theme_style = get_stylesheet_directory_uri() . '/style.css';
+
+    // Enqueue the theme's style.css in the block editor
+    wp_enqueue_style(
+        'theme-style-editor',
+        $theme_style,
+        [],
+        filemtime( get_stylesheet_directory() . '/style.css' ) // Ensure latest version loads
+    );
+}
+add_action( 'enqueue_block_editor_assets', 'rch_script_block_editor_assets' );
