@@ -86,7 +86,6 @@ const ListingMain = (
             })
                 .then(res => res.json())
                 .then(data => {
-                    console.log(data)
                     setListings(data.data);
                     setLoading(false);
                 })

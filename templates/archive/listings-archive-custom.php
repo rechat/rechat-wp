@@ -177,7 +177,6 @@ if (isset($atts['show_filter_bar']) && $atts['show_filter_bar'] === '1') {
 
             .then(response => response.json())
             .then(data => {
-                console.log(data)
                 loading.style.display = 'none'; // Hide the loading spinner
                 listingList.style.display = 'grid'; // Show the listing container
                 pagination.style.display = 'flex'; // Show pagination
