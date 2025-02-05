@@ -49,7 +49,7 @@ const ListingMain = (
                 'Content-Type': 'application/json',
                 'X-RECHAT-BRAND': brandId,
             };
-
+console.log(headers)
             const bodyObject = {
                 limit: Number(listing_per_page),
                 maximum_bedrooms: (maximum_bedrooms ? Number(maximum_bedrooms) : ''),

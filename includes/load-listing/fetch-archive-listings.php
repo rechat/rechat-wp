@@ -12,7 +12,7 @@ function rch_fetch_listing($filters, $page, $listingPerPage)
     // $brandId = get_option('rch_rechat_brand_id');
     $offset = ($page - 1) * $listingPerPage;
     // Extract the brand value from the filters
-    $brand = isset($filters['brand']) ? $filters['brand'] : get_option('rch_rechat_brand_id');
+    $brand = !empty($filters['brand']) ? $filters['brand'] : get_option('rch_rechat_brand_id');
     $requestBody = array_merge([
         // 'brand' => $brandId,
         'limit' => $listingPerPage,
