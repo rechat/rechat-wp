@@ -1117,9 +1117,24 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             })
           })]
         })
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)((_wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1___default()), {
-        block: "rch-rechat-plugin/listing-block",
-        attributes: attributes
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_listing_main__WEBPACK_IMPORTED_MODULE_3__["default"], {
+        listing_per_page: listing_per_page,
+        maximum_bedrooms: maximum_bedrooms,
+        minimum_bedrooms: minimum_bedrooms,
+        maximum_year_built: maximum_year_built,
+        minimum_year_built: minimum_year_built,
+        maximum_square_meters: maximum_square_meters,
+        minimum_square_meters: minimum_square_meters,
+        maximum_bathrooms: maximum_bathrooms,
+        minimum_bathrooms: minimum_bathrooms,
+        maximum_lot_square_meters: maximum_lot_square_meters,
+        minimum_lot_square_meters: minimum_lot_square_meters,
+        maximum_price: maximum_price,
+        minimum_price: minimum_price,
+        property_types: property_types,
+        own_listing: own_listing,
+        show_filter_bar: show_filter_bar,
+        selectedStatuses: listing_statuses
       })]
     });
   },
