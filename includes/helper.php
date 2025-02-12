@@ -626,3 +626,61 @@ function rch_render_image($src, $alt, $classes = '')
 
     return "<img src=\"$src\" alt=\"$alt\" class=\"$classes\">";
 }
+// Helper function to check and return template
+function get_custom_template($theme_path, $plugin_path)
+{
+    $theme_template = locate_template($theme_path);
+    if ($theme_template) {
+        return $theme_template;
+    }
+    if (file_exists($plugin_path)) {
+        return $plugin_path;
+    }
+    return false;
+}
+/*******************************
+ *Helper function For Related Neghborhoods
+ ******************************/
+function get_related_neighborhoods() {
+    ob_start();
+    
+    // Get current post ID
+    $current_id = get_the_ID();
+    
+    // Define custom WP Query for related neighborhoods
+    $related_neighbourhoods = new WP_Query(array(
+        'post_type'      => 'neighborhoods', // Custom post type
+        'posts_per_page' => 3, // Number of related posts to show
+        'post__not_in'   => array($current_id), // Exclude current post
+        'orderby'        => 'rand', // Random order (optional)
+    ));
+    
+    // Loop through related posts
+    if ($related_neighbourhoods->have_posts()) :
+        while ($related_neighbourhoods->have_posts()) : $related_neighbourhoods->the_post();
+    ?>
+            <li class="blogs--content item">
+                <a href="<?php the_permalink(); ?>" class="related-item item-wrapper">
+                    <div class="image-holder">
+                        <?php if (has_post_thumbnail()) : ?>
+                            <img src="<?php the_post_thumbnail_url(); ?>" alt="<?php the_title(); ?>">
+                        <?php endif; ?>
+                    </div>
+                    <div class="overlay"></div>
+                    <div class="content-container">
+                        <h3 class="lp-h3 neighborhood-name"><?php the_title(); ?></h3>
+                        <div class="button-wrapper">
+                            <span class="btn">Learn More</span>
+                        </div>
+                    </div>
+                </a>
+            </li>
+    <?php
+        endwhile;
+        wp_reset_postdata(); // Reset query
+    else :
+        echo '<li>No related neighborhoods found.</li>';
+    endif;
+    
+    return ob_get_clean();
+}

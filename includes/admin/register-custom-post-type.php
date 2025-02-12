@@ -175,9 +175,50 @@ function rch_regions()
     );
     register_post_type('regions', $args);
 }
+/*******************************
+ * Register Custom Post Type for NeighbourHoods
+ ******************************/
+function rch_neighborhoods()
+{
+    $args = array(
+        'labels' => array(
+            'name'               => 'Neighborhoods',
+            'singular_name'      => 'Neighborhood',
+            'add_new'            => 'Add New',
+            'add_new_item'       => 'Add New Neighborhood',
+            'edit_item'          => 'Edit Neighborhood',
+            'new_item'           => 'New Neighborhood',
+            'view_item'          => 'View Neighborhood',
+            'search_items'       => 'Search Neighborhoods',
+            'not_found'          => 'No Neighborhoods found',
+            'not_found_in_trash' => 'No Neighborhoods found in Trash',
+            'parent_item_colon'  => 'Parent Neighborhood:',
+            'all_items'          => 'All Neighborhoods',
+            'archives'           => 'Neighborhood Archives',
+            'insert_into_item'   => 'Insert into Neighborhood',
+            'uploaded_to_this_item' => 'Uploaded to this Neighborhood',
+            'items_list'         => 'Neighborhoods list',
+            'items_list_navigation' => 'Neighborhoods list navigation',
+            'filter_items_list'  => 'Filter Neighborhoods list',
+        ),
+        'public'             => true,
+        'has_archive'        => true,
+        'menu_icon'          => 'dashicons-networking', // Change to any icon you prefer
+        'supports'           => array('title', 'editor', 'thumbnail', 'excerpt', 'custom-fields'),
+        'show_in_rest'       => true, // This enables Gutenberg editor
+        'show_ui'            => true,
+        'rewrite'            => array('slug' => 'neighborhoods'), // Slug for URLs
+        'taxonomies'         => array('category', 'post_tag'), // Add taxonomies if necessary
+        'hierarchical'       => false, // Set to true if you want hierarchical (parent-child) structure
+        'menu_position'      => 5, // Position in the menu (below 'Posts')
+    );
+
+    register_post_type('neighborhoods', $args);
+}
+
 
 // Hook into the 'init' action to register the custom post types
 add_action('init', 'rch_agents', 0);
 add_action('init', 'rch_offices', 0);
 add_action('init', 'rch_regions', 0);
-
+add_action('init', 'rch_neighborhoods', 0);
