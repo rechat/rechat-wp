@@ -53,6 +53,7 @@ include RCH_PLUGIN_INCLUDES . 'admin/register-custom-post-type.php';
 include RCH_PLUGIN_INCLUDES . 'admin/settings-page/other-settings.php';
 include RCH_PLUGIN_INCLUDES . 'admin/settings-page/local-logic-setting.php';
 include RCH_PLUGIN_INCLUDES . 'admin/menu-setting.php';
+include RCH_PLUGIN_INCLUDES . 'admin/custom-fields.php';
 include RCH_PLUGIN_INCLUDES . 'template-load.php';
 include RCH_PLUGIN_INCLUDES . 'helper.php';
 include RCH_PLUGIN_DIR . 'templates/archive/search-result.php';

@@ -1,50 +1,25 @@
-<?php $api_key = get_option('rch_rechat_local_logic_api_key') ?>
-
-<script
-    async
-    src="https://sdk.locallogic.co/sdks-js/1.22.21/index.umd.js"
-    onload="loadNeighborhoodMarketTrendsSDK()"></script>
-
-<style>
-    #neighborhood-market-trends-widget {
-        width: 100%;
-    }
-</style>
-
 <!--NOTE: If you are implementing multiple SDKs, make sure you create unique IDs for each-->
-<div id="neighborhood-market-trends-widget"></div>
-
+<div id="neighborhood-market-trends-widget" class="rch-neighborhood-local-logic"></div>
 <script>
-    const globalOptions = {
-        locale: "en", // Change to either english or french
-        appearance: {
-            theme: "day",
-            // Add any other appearance changes here
-            variables: {
-                "--ll-color-primary": "#fd3958",
-                "--ll-color-primary-variant1": "#d5405b",
-                "--ll-border-radius-small": "8px",
-                "--ll-border-radius-medium": "16px",
-                "--ll-font-family": "Avenir, sans-serif"
+    document.addEventListener("DOMContentLoaded", function() {
+        function initializeSDK() {
+            if (window.ll) {
+                const sdkContainer = document.getElementById("neighborhood-market-trends-widget");
+                const lat = <?php echo get_post_meta(get_the_ID(), '_neighborhood_lat', true); ?>;
+                const lng = <?php echo get_post_meta(get_the_ID(), '_neighborhood_lng', true); ?>;
+
+                const sdkOptions = {
+                    lat: lat,
+                    lng: lng
+                };
+
+                window.ll.create("neighborhood-market-trends", sdkContainer, sdkOptions);
+            } else {
+                console.error("Local Logic SDK is not loaded.");
+                setTimeout(initializeSDK, 1000); // Retry after 1 second
             }
         }
-    };
 
-    function loadNeighborhoodMarketTrendsSDK() {
-        // Your API key or token
-        const ll = LLSDKsJS("<?php echo esc_js($api_key) ?>", globalOptions);
-
-        // This is the div that will contain the widget
-        const sdkContainer = document.getElementById("neighborhood-market-trends-widget");
-        const lat = <?php echo isset($listing_detail['property']['address']['location']['latitude']) ? esc_js($listing_detail['property']['address']['location']['latitude']) : "''"; ?>;
-        const lng = <?php echo isset($listing_detail['property']['address']['location']['longitude']) ? esc_js($listing_detail['property']['address']['location']['longitude']) : "''"; ?>;
-
-        const sdkOptions = {
-            lat: lat,
-            lng: lng
-            // ...Other sdk specific options
-        };
-
-        const sdkInstance = ll.create("neighborhood-market-trends", sdkContainer, sdkOptions);
-    }
+        initializeSDK(); // Initialize on page load
+    });
 </script>
