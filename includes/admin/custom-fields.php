@@ -1,50 +1,69 @@
 <?php
-// Add a meta box for Latitude & Longitude
-function neighborhoods_add_meta_box() {
+
+function add_neighborhood_map_metabox()
+{
     add_meta_box(
-        'neighborhoods_location', 
-        __('Neighborhood Location', 'textdomain'), 
-        'neighborhoods_meta_box_callback', 
-        'neighborhoods', 
-        'normal', 
+        'neighborhood_map',
+        'Select Location on Map',
+        'neighborhood_map_callback',
+        'neighborhoods',
+        'normal',
         'high'
     );
 }
-add_action('add_meta_boxes', 'neighborhoods_add_meta_box');
+add_action('add_meta_boxes', 'add_neighborhood_map_metabox');
 
-// Display the Meta Box Fields
-function neighborhoods_meta_box_callback($post) {
-    $lat = get_post_meta($post->ID, '_neighborhood_lat', true);
-    $lng = get_post_meta($post->ID, '_neighborhood_lng', true);
+function neighborhood_map_callback($post)
+{
+    $lat = get_post_meta($post->ID, '_neighborhood_lat', true) ?: '37.7749';
+    $lng = get_post_meta($post->ID, '_neighborhood_lng', true) ?: '-122.4194';
 
-    wp_nonce_field('neighborhoods_save_location', 'neighborhoods_nonce');
-    ?>
+?>
+    <div id="map" style="width: 100%; height: 400px;"></div>
+    <input type="hidden" id="neighborhood_lat" name="neighborhood_lat" value="<?php echo esc_attr($lat); ?>">
+    <input type="hidden" id="neighborhood_lng" name="neighborhood_lng" value="<?php echo esc_attr($lng); ?>">
+    <p>Click on the map to select a location.</p>
 
-    <label for="neighborhood_lat"><?php _e('Latitude:', 'textdomain'); ?></label>
-    <input type="text" id="neighborhood_lat" name="neighborhood_lat" value="<?php echo esc_attr($lat); ?>" style="width:100%;">
-    <br><br>
+    <script>
+        function initMap() {
+            var defaultLocation = {
+                lat: parseFloat(<?php echo $lat; ?>),
+                lng: parseFloat(<?php echo $lng; ?>)
+            };
 
-    <label for="neighborhood_lng"><?php _e('Longitude:', 'textdomain'); ?></label>
-    <input type="text" id="neighborhood_lng" name="neighborhood_lng" value="<?php echo esc_attr($lng); ?>" style="width:100%;">
+            var map = new google.maps.Map(document.getElementById('map'), {
+                center: defaultLocation,
+                zoom: 10
+            });
 
-    <?php
+            var marker = new google.maps.Marker({
+                position: defaultLocation,
+                map: map,
+                draggable: true
+            });
+
+            map.addListener('click', function(event) {
+                marker.setPosition(event.latLng);
+                document.getElementById("neighborhood_lat").value = event.latLng.lat();
+                document.getElementById("neighborhood_lng").value = event.latLng.lng();
+            });
+
+            marker.addListener('dragend', function(event) {
+                document.getElementById("neighborhood_lat").value = event.latLng.lat();
+                document.getElementById("neighborhood_lng").value = event.latLng.lng();
+            });
+        }
+    </script>
+
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=<?php echo get_option('rch_rechat_google_map_api_key') ?>&callback=initMap"></script>
+
+<?php
 }
-function neighborhoods_save_location($post_id) {
-    if (!isset($_POST['neighborhoods_nonce']) || !wp_verify_nonce($_POST['neighborhoods_nonce'], 'neighborhoods_save_location')) {
-        return;
-    }
-    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
-        return;
-    }
-    if (!current_user_can('edit_post', $post_id)) {
-        return;
-    }
-
-    if (isset($_POST['neighborhood_lat'])) {
+function save_neighborhood_map_meta($post_id)
+{
+    if (isset($_POST['neighborhood_lat']) && isset($_POST['neighborhood_lng'])) {
         update_post_meta($post_id, '_neighborhood_lat', sanitize_text_field($_POST['neighborhood_lat']));
-    }
-    if (isset($_POST['neighborhood_lng'])) {
         update_post_meta($post_id, '_neighborhood_lng', sanitize_text_field($_POST['neighborhood_lng']));
     }
 }
-add_action('save_post', 'neighborhoods_save_location');
+add_action('save_post', 'save_neighborhood_map_meta');

@@ -15,6 +15,12 @@ function rch_enqueue_admin_styles()
         wp_enqueue_style('wp-color-picker');
         wp_enqueue_script('wp-color-picker');
         wp_add_inline_script('wp-color-picker', 'jQuery(document).ready(function($){$(".my-color-field").wpColorPicker();});');
+    
+        // Localize the script to pass the API key
+        wp_localize_script('rch-neighborhood-script', 'NeighborhoodData', array(
+            'apiUrl' => admin_url('admin-ajax.php'), // AJAX URL
+            'apiKey' => get_option('rch_rechat_neighborhood_api_key'), // Replace with your actual API key
+        ));
     }
 }
 
@@ -36,8 +42,9 @@ function rch_enqueue_admin_scripts($hook)
         'ajax_url' => admin_url('admin-ajax.php'),
         'nonce'    => wp_create_nonce('rch_ajax_nonce'),
     ));
-}
+    //this assets for neighborhoods
 
+}
 add_action('admin_enqueue_scripts', 'rch_enqueue_admin_scripts');
 
 function rch_enqueue_custom_gutenberg_assets()
@@ -46,7 +53,7 @@ function rch_enqueue_custom_gutenberg_assets()
     if (!is_admin()) {
         return;
     }
-    $version = '1.0.0'; // نسخه پلاگین یا زمان تغییرات فایل
+    $version = '1.0.0'; 
     wp_enqueue_style('rch-editor-css', RCH_PLUGIN_URL . 'assets/css/rch-editor.css', [], $version);
 }
 

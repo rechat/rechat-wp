@@ -5,8 +5,8 @@
         function initializeSDK() {
             if (window.ll) {
                 const sdkContainer = document.getElementById("neighborhood-map-widget");
-                const lat = 45.5282164; // Replace with dynamic latitude
-                const lng = -73.5978527; // Replace with dynamic longitude
+                const lat = <?php echo get_post_meta(get_the_ID(), '_neighborhood_lat', true); ?>;
+                const lng = <?php echo get_post_meta(get_the_ID(), '_neighborhood_lng', true); ?>;
 
                 const sdkOptions = {
                     lat: lat,

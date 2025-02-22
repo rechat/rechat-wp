@@ -1,5 +1,6 @@
 <!--NOTE: If you are implementing multiple SDKs, make sure you create unique IDs for each-->
 <div id="neighborhood-characteristics-widget" class="rch-neighborhood-local-logic"></div>
+
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         function initializeSDK() {
