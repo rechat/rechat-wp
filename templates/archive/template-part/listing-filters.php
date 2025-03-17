@@ -107,6 +107,7 @@
 
             </div>
         </div>
+
         <div class="box-filter-listing rch-status-filter-listing">
             <span class="toggleMain">
                 Status
@@ -130,7 +131,7 @@
                 <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>down-arrow.svg" alt="">
             </span>
             <div class="rch-inside-filters rch-main-price rch-main-beds" style="display: none;">
-            <div class="rch-button-select">
+                <div class="rch-button-select">
                     <!-- Buttons to select the number of bathrooms -->
                     <button type="button" class="filter-btn " data-value="">Any</button>
                     <button type="button" class="filter-btn <?php echo (isset($atts['minimum_bathrooms']) && $atts['minimum_bathrooms'] == 1) ? 'active' : ''; ?>" data-value="1">+1</button>
@@ -445,5 +446,14 @@
             </div>
         </div>
         <button type="button" class="reset-btn-all" onclick="resetFilter('all')">Reset</button>
+        <div class="rch-map-view">
+            <label>
+                <span>
+                    Show Map
+                </span>
+                <input type="checkbox" id="toggle-map" checked>
+
+            </label>
+        </div>
     </div>
 <?php } ?>

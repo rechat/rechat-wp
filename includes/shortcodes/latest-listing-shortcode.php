@@ -9,18 +9,27 @@ function rch_display_latest_listings_shortcode($atts)
             'slides_per_view' => 3.5,
             'space_between' => 16,
             'loop' => true,
-            'centered_slides' => false,
-            'breakpoints' => '', // Default breakpoints are empty
+            'breakpoints' => '',
+            'pagination' => false,
+            'pagination_clickable' => false,
+            'pagination_type' => 'bullets',
+            'pagination_render_bullet' => '',
+            'navigation' => false,
         ),
         $atts
     );
 
-    $template = esc_js($atts['template']); // Template attribute
+    $template = esc_js($atts['template']);
     $slides_per_view = floatval($atts['slides_per_view']);
     $space_between = intval($atts['space_between']);
     $loop = filter_var($atts['loop'], FILTER_VALIDATE_BOOLEAN);
-    $centered_slides = filter_var($atts['centered_slides'], FILTER_VALIDATE_BOOLEAN);
-    $breakpoints = $atts['breakpoints'] ? esc_js($atts['breakpoints']) : '{}'; // Escape breakpoints or use empty object
+    $breakpoints = !empty($atts['breakpoints']) ? $atts['breakpoints'] : '{}';
+    $pagination = filter_var($atts['pagination'], FILTER_VALIDATE_BOOLEAN);
+    $pagination_clickable = filter_var($atts['pagination_clickable'], FILTER_VALIDATE_BOOLEAN);
+    $pagination_type = esc_js($atts['pagination_type']);
+    $pagination_render_bullet = !empty($atts['pagination_render_bullet']) ? $atts['pagination_render_bullet'] : 'null';
+    $navigation = filter_var($atts['navigation'], FILTER_VALIDATE_BOOLEAN);
+
     ob_start();
 ?>
     <div class="swiper thumbsSwiper trendingSwiper <?php echo esc_attr($template); ?>" thumbsSlider="true">
@@ -34,19 +43,33 @@ function rch_display_latest_listings_shortcode($atts)
             const template = "<?php echo esc_js($atts['template']); ?>";
             const adminAjaxUrl = "<?php echo esc_url(admin_url('admin-ajax.php')); ?>";
 
-            // Swiper settings from shortcode attributes
+            // Build Swiper settings object conditionally
             const swiperSettings = {
                 slidesPerView: <?php echo floatval($slides_per_view); ?>,
                 spaceBetween: <?php echo intval($space_between); ?>,
                 loop: <?php echo $loop ? 'true' : 'false'; ?>,
-                centeredSlides: <?php echo $centered_slides ? 'true' : 'false'; ?>,
-                breakpoints: <?php echo $breakpoints; ?>, // Add breakpoints directly here
-                navigation: {
+                breakpoints: JSON.parse('<?php echo str_replace('\"', '"', $breakpoints); ?>'),
+            };
+
+            <?php if ($pagination): ?>
+                swiperSettings.pagination = {
+                    el: '.swiper-pagination',
+                    clickable: <?php echo $pagination_clickable ? 'true' : 'false'; ?>,
+                    type: '<?php echo $pagination_type; ?>'
+                };
+
+                <?php if (!empty($atts['pagination_render_bullet'])): ?>
+                    swiperSettings.pagination.renderBullet = <?php echo stripslashes($pagination_render_bullet); ?>;
+                <?php endif; ?>
+            <?php endif; ?>
+
+            <?php if ($navigation): ?>
+                swiperSettings.navigation = {
                     nextEl: ".swiper-button-next",
                     prevEl: ".swiper-button-prev",
-                },
-            };
-console.log(swiperSettings)
+                };
+            <?php endif; ?>
+
             function updateListingList() {
                 const listingList = document.getElementById('rch-listing-list-latest-<?php echo esc_attr($template); ?>');
                 const loading = document.getElementById('rch-loading-listing');
@@ -54,7 +77,6 @@ console.log(swiperSettings)
                 listingList.innerHTML = '';
                 loading.style.display = 'block';
 
-                let queryString = `?action=rch_fetch_listing&listing_per_page=${listingPerPage}&shortcode_template=true&template=${template}`;
                 fetch(adminAjaxUrl, {
                         method: 'POST', // Ensure method is POST
                         body: new URLSearchParams({
@@ -76,7 +98,7 @@ console.log(swiperSettings)
                         listings.forEach(listing => {
                             listingList.innerHTML += listing.content;
                         });
-                        initializeSwiper(swiperSettings);
+                        initializeSwiper(`.${template}`, swiperSettings);
 
                     })
                     .catch(error => {
@@ -84,11 +106,10 @@ console.log(swiperSettings)
                     });
             }
 
-            function initializeSwiper(settings) {
-                const swiperWrapper = document.querySelector('.swiper-wrapper');
+            function initializeSwiper(selector, settings) {
+                const swiperWrapper = document.querySelector(selector);
                 if (swiperWrapper && swiperWrapper.children.length > 0) {
-                    new Swiper(".top-listing", settings); // Initialize Swiper with dynamic settings
-                    new Swiper(".main-listing-index", settings); // Initialize another Swiper with same settings
+                    new Swiper(selector, settings);
                 }
             }
 

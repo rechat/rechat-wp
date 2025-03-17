@@ -3,7 +3,6 @@
 if (! defined('ABSPATH')) {
     exit();
 }
-
 /*******************************
  * Fetch listing listings with filters.
  ******************************/
@@ -49,7 +48,7 @@ function rch_fetch_total_listing_count($filters = [])
     // Prepare the headers, including the custom X-RECHAT-BRAND header
     $headers = [
         'Content-Type' => 'application/json',
-        'X-RECHAT-BRAND' =>$brand,
+        'X-RECHAT-BRAND' => $brand,
     ];
     // Make the API request
     $response = wp_remote_post('https://api.rechat.com/valerts/count', [
@@ -74,27 +73,35 @@ function rch_fetch_listing_ajax()
     $page = isset($_POST['page']) ? intval($_POST['page']) : 1;
     $listingPerPage = isset($_POST['listing_per_page']) ? intval($_POST['listing_per_page']) : 50;
     $template = isset($_POST['template']) ? sanitize_text_field($_POST['template']) : '';
-    
+
     // Capture filters for debugging
     $filters = rch_get_filters($_POST);
 
-
-
-    // Fetch listing data
+    // Fetch listing data with pagination
     $listingData = rch_fetch_listing($filters, $page, $listingPerPage);
+
+    // Fetch all listings data (no pagination) to get additional information
+    $allListingData = rch_fetch_listing($filters, 1, 99999);  // Pass large number to get all listings
+
+    // Fetch total listing count
     $totalListingData = rch_fetch_total_listing_count($filters);
     $totalListing = $totalListingData['info']['total'] ?? 0;
+
     // Debugging: Capture var_dump output
     ob_start();
+    var_dump($allListingData);
     $debugOutput = ob_get_clean(); // Store the var_dump output in a variable
+
     // Prepare the response
     $response = [
         'total' => $totalListing,
         'listings' => [],
+        'allListingsData' => [], // Separate field for all listings data without pagination
         'listingPerPage' => $listingPerPage,
         'debug' => $debugOutput, // Add debug output to the response
     ];
 
+    // Process the paginated listing data (content with pagination)
     if (!empty($listingData['data'])) {
         foreach ($listingData['data'] as $listing) {
             if ($template) {
@@ -110,16 +117,31 @@ function rch_fetch_listing_ajax()
             ob_start();
             include $templateFile;
             $listingContent = ob_get_clean();
-
-            // Add latitude and longitude to the response
+            // Add paginated content to response
             $response['listings'][] = [
                 'content' => $listingContent,
-                'lat' => $listing['location']['latitude'], // Assuming lat is in the API response
-                'lng' => $listing['location']['longitude'], // Assuming lng is in the API response
+                'lat' => $listing['location']['latitude'],  // All latitudes without pagination
+                'lng' => $listing['location']['longitude'], // All longitudes without pagination
+                'image' => $listing['cover_image_url'],     // All cover images without pagination
+                'price' => $listing['price'],               // All prices without pagination
+                'address' => $listing['address']['street_address'],  // All addresses without pagination
             ];
         }
-    } else {
-        $response['message'] = 'No listings found.';
+    }
+
+    // Process all listings' additional data without pagination (e.g., lat, lng, price, address)
+    if (!empty($allListingData['data'])) {
+        foreach ($allListingData['data'] as $listing) {
+            // Only include additional info without content (lat, lng, price, address)
+            $response['allListingsData'][] = [
+                'lat' => $listing['location']['latitude'],  // All latitudes without pagination
+                'lng' => $listing['location']['longitude'], // All longitudes without pagination
+                'image' => $listing['cover_image_url'],     // All cover images without pagination
+                'price' => $listing['price'],               // All prices without pagination
+                'address' => $listing['address']['street_address'],  // All addresses without pagination
+                'id' => $listing['id'],                     // All listing IDs without pagination
+            ];
+        }
     }
 
     // Ensure no unexpected output corrupts JSON
@@ -137,5 +159,3 @@ function rch_fetch_listing_ajax()
 }
 add_action('wp_ajax_rch_fetch_listing', 'rch_fetch_listing_ajax');
 add_action('wp_ajax_nopriv_rch_fetch_listing', 'rch_fetch_listing_ajax');
-
-

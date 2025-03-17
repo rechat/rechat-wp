@@ -5,9 +5,10 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   display: flex;
   flex-wrap: wrap;
   margin-block-end: 30px;
+  max-width: 100% !important;
 }
 
-.rch-filters>div {
+.rch-filters > div {
   border-radius: 40px;
   border: solid 1px rgb(215, 217, 220);
   background-color: white;
@@ -16,7 +17,7 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   margin-inline-end: 10px;
 }
 
-.rch-filters>div.box-filter-listing-text {
+.rch-filters > div.box-filter-listing-text {
   border-radius: 0;
   border: solid 1px transparent;
 }
@@ -28,7 +29,7 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   padding: 4px 15px;
 }
 
-.rch-filters>div .rch-inside-filters {
+.rch-filters > div .rch-inside-filters {
   position: absolute;
   width: 350px;
   padding: 15px;
@@ -38,11 +39,11 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   box-shadow: 0px 3px 16px rgba(16, 24, 40, 0.12);
 }
 
-.rch-filters>div .rch-inside-filters>div {
+.rch-filters > div .rch-inside-filters > div {
   margin-block-end: 10px;
 }
 
-.rch-filters>div .toggleMain {
+.rch-filters > div .toggleMain {
   font-weight: bold;
   display: block;
   padding: 10px 20px;
@@ -53,7 +54,7 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   border: solid 1px black;
 }
 
-.rch-filters>div .rch-inside-filters span {
+.rch-filters > div .rch-inside-filters span {
   display: block;
 }
 
@@ -86,8 +87,8 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   background-color: #ddd;
   border-radius: 50%;
   transition:
-      background-color 0.3s,
-      box-shadow 0.3s;
+    background-color 0.3s,
+    box-shadow 0.3s;
 }
 
 /* Create the "checkmark" inside the circle */
@@ -105,13 +106,13 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
 }
 
 /* Style the selected state */
-.rch-inside-filters input[type="radio"]:checked+.ios-radio::before {
+.rch-inside-filters input[type="radio"]:checked + .ios-radio::before {
   background-color: #4caf50;
   /* iOS green color */
   box-shadow: 0 0 4px #4caf50;
 }
 
-.rch-inside-filters input[type="radio"]:checked+.ios-radio::after {
+.rch-inside-filters input[type="radio"]:checked + .ios-radio::after {
   opacity: 1;
 }
 
@@ -130,7 +131,7 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   align-items: end;
 }
 
-.rch-price-filter-listing .rch-inside-filters.rch-main-price>span {
+.rch-price-filter-listing .rch-inside-filters.rch-main-price > span {
   width: 100%;
   font-weight: bold;
   text-align: left;
@@ -141,22 +142,22 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   align-items: center;
 }
 
-.rch-under-main-price>div {
+.rch-under-main-price > div {
   width: 40%;
 }
 
-.rch-under-main-price>span {
+.rch-under-main-price > span {
   width: 10%;
   text-align: center;
 }
 
-.rch-under-main-price>div label {
+.rch-under-main-price > div label {
   width: 100%;
   display: block;
   font-size: 14px;
 }
 
-.rch-under-main-price>div select {
+.rch-under-main-price > div select {
   width: 100%;
   border-radius: 4px;
 }
@@ -179,7 +180,9 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   margin-block: 15px 5px;
 }
 
-.rch-other-filter-listing .rch-status-filter-listing span.title-each-filter-more {
+.rch-other-filter-listing
+  .rch-status-filter-listing
+  span.title-each-filter-more {
   margin-block: 0 5px;
 }
 
@@ -236,66 +239,155 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   flex-direction: column;
 
   & label {
-      display: flex;
-      justify-content: space-between;
-      flex-direction: row-reverse;
-      margin-block: 5px;
-      cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row-reverse;
+    margin-block: 5px;
+    cursor: pointer;
   }
 }
 
-.rch-status-filter-listing .rch-other-inside-filters input[type="checkbox"] {
+.rch-status-filter-listing .rch-other-inside-filters input[type="checkbox"],
+.rch-map-view input[type="checkbox"] {
   position: relative;
   display: block;
   cursor: pointer;
 
   &:before {
-      content: "";
-      display: block;
-      position: absolute;
-      top: 6px;
-      left: -19px;
-      height: 15px;
-      width: 35px;
-      background-color: #bbb;
-      border-radius: 14px;
-      transition: background-color 0.2s;
-      cursor: pointer;
+    content: "";
+    display: block;
+    position: absolute;
+    top: 6px;
+    left: -19px;
+    height: 15px;
+    width: 35px;
+    background-color: #bbb;
+    border-radius: 14px;
+    transition: background-color 0.2s;
+    cursor: pointer;
   }
 
   &:after {
-      content: "";
-      display: block;
-      position: absolute;
-      transition:
-          transform 0.2s,
-          -webkit-transform 0.2s;
-      top: 6px;
-      left: -19px;
-      border-radius: 12px;
-      box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3);
-      background-color: #fff;
-      height: 15px;
-      width: 15px;
-      cursor: pointer;
+    content: "";
+    display: block;
+    position: absolute;
+    transition:
+      transform 0.2s,
+      -webkit-transform 0.2s;
+    top: 6px;
+    left: -19px;
+    border-radius: 12px;
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3);
+    background-color: #fff;
+    height: 15px;
+    width: 15px;
+    cursor: pointer;
   }
 
   &:checked {
-      &:before {
-          background-color: var(--rch-primary-color);
-      }
+    &:before {
+      background-color: var(--rch-primary-color);
+    }
 
-      &:after {
-          transform: translateX(19px);
-          -webkit-transform: translateX(19px);
-      }
+    &:after {
+      transform: translateX(19px);
+      -webkit-transform: translateX(19px);
+    }
+  }
+}
+.rch-filters > div.rch-map-view {
+  border-radius: 0;
+  border: none;
+}
+.rch-filters > div.rch-map-view span {
+  font-weight: bold;
+  display: block;
+  padding: 10px 20px;
+  font-size: 13px;
+}
+.rch-filters > div.rch-map-view input[type="checkbox"] {
+  &:before {
+    top: 0px;
+    left: -15px;
+  }
+  &:after {
+    top: 0px;
+    left: -14px;
   }
 }
 
+.rch-map-view label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.rch-container-listing-list {
+  display: flex;
+  justify-content: space-between;
+  transition: all 0.4s ease-in-out;
+  max-width: 100% !important;
+}
+
+.rch-under-main-listing {
+  width: 55%;
+  height: 80vh;
+  overflow-y: scroll;
+  padding-inline-end: 5px;
+  transition: width 0.4s ease-in-out;
+}
+.rch-map-listing-list {
+  width: 44%;
+  height: 80vh;
+  transition:
+    opacity 0.4s ease-in-out,
+    width 0.4s ease-in-out;
+  background: linear-gradient(90deg, #e0e0e0 25%, #f5f5f5 50%, #e0e0e0 75%);
+  background-size: 200% 100%;
+  animation: rch-skeleton-loading 1.5s infinite;
+  border-radius: 8px;
+}
+.rch-map-hidden {
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+.rch-expanded {
+  width: 100%;
+  overflow-y: initial;
+  height: auto;
+}
+.rch-under-main-listing::-webkit-scrollbar {
+  width: 8px;
+}
+
+/* Track */
+.rch-under-main-listing::-webkit-scrollbar-track {
+  background-color: transparent;
+  border-radius: 10px;
+}
+
+/* Handle */
+.rch-under-main-listing::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+/* Handle on hover */
+.rch-under-main-listing::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
 .rch-listing-list {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
+  --columns: 3;
+  --gap: 15px;
+  grid-row-gap: 20px;
+  grid-column-gap: var(--gap);
+  grid-template-columns: repeat(
+    var(--columns),
+    calc(
+      100% / var(--columns) - var(--gap) * (var(--columns) - 1) / var(--columns)
+    )
+  );
   min-height: 200px;
   position: relative;
 }
@@ -414,8 +506,18 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
 
 .rch-listing-skeleton-loader {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
+  --columns: 3;
+  --gap: 15px;
+  grid-row-gap: 20px;
+  grid-column-gap: var(--gap);
+  grid-template-columns: repeat(
+    var(--columns),
+    calc(
+      100% / var(--columns) - var(--gap) * (var(--columns) - 1) / var(--columns)
+    )
+  );
+  min-height: 200px;
+  position: relative;
 }
 
 .rch-listing-item-skeleton {
@@ -474,11 +576,11 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
 
 @keyframes rch-skeleton-loading {
   0% {
-      background-position: 200% 0;
+    background-position: 200% 0;
   }
 
   100% {
-      background-position: -200% 0;
+    background-position: -200% 0;
   }
 }
 
@@ -553,11 +655,11 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
 
 @keyframes slide-down {
   from {
-      transform: translateY(0);
+    transform: translateY(0);
   }
 
   to {
-      transform: translateY(100%);
+    transform: translateY(100%);
   }
 }
 
@@ -620,11 +722,11 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
 
 @keyframes slide-up {
   from {
-      transform: translateY(100%);
+    transform: translateY(100%);
   }
 
   to {
-      transform: translateY(0);
+    transform: translateY(0);
   }
 }
 
@@ -735,7 +837,7 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   margin-inline-start: 3px;
 }
 
-.rch-filters>div .toggleMain.more-filter-text {
+.rch-filters > div .toggleMain.more-filter-text {
   display: flex;
   align-items: center;
 }
@@ -764,11 +866,11 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   padding-block: 10px !important;
 }
 
-.rch-filters>div .rch-inside-filters {
+.rch-filters > div .rch-inside-filters {
   text-align: left;
 }
 
-.rch-filters>div .rch-inside-filters {
+.rch-filters > div .rch-inside-filters {
   color: #000000;
 }
 
@@ -778,23 +880,23 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
 .rch-filters input {
   font-weight: 400;
   font-size: 17px;
-  color: #2D3748;
-  border: 1px solid #CBD5E0;
+  color: #2d3748;
+  border: 1px solid #cbd5e0;
   max-width: 100%;
   padding: 0.5em 35px 0.5em 0.5em;
   border-radius: 3px;
   outline: 0;
 }
 
-.rch-filters>div .toggleMain {
+.rch-filters > div .toggleMain {
   margin-top: 3px;
 }
 
-.rch-filters>div .rch-inside-filters>div {
+.rch-filters > div .rch-inside-filters > div {
   line-height: 160%;
 }
 
-.rch-filters>div .rch-inside-filters span {
+.rch-filters > div .rch-inside-filters span {
   margin-bottom: 4px;
 }
 
@@ -805,162 +907,364 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
 .rch-filters {
   row-gap: 0.5rem;
 }
+.gm-style-iw-d,
+.gm-style .gm-style-iw-c {
+  padding: 0 !important;
+}
+.gm-style .gm-style-iw-c {
+  padding: 0 !important;
+  box-shadow: 0 2px 7px 1px rgba(0, 0, 0, 0.3) !important;
+  border: none !important;
+  outline: none !important;
+}
 
-@media (max-width: 768px) {
+.gm-style .gm-style-iw-t::after {
+  display: none !important; /* Remove the arrow */
+}
 
+.gm-style-iw-d {
+  overflow: hidden !important;
+  padding: 9px;
+  border: none !important;
+  outline: none !important;
+}
+
+.gm-style .gm-ui-hover-effect {
+  display: none !important; /* Hide the close button if needed */
+}
+.custom-info-window {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: 250px;
+  outline: none !important;
+  border: none !important;
+}
+
+.info-window-img {
+  width: 100%;
+  height: 90px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.info-window-content {
+  flex: 1;
+}
+
+.info-window-content h3 {
+  margin: 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.info-window-content p {
+  margin: 5px 0;
+  font-size: 12px;
+  color: #666;
+}
+
+.info-window-link {
+  display: inline-block;
+  margin-top: 5px;
+  color: #007bff;
+  text-decoration: none;
+  font-size: 12px;
+}
+
+.info-window-link:hover {
+  text-decoration: underline;
+}
+.gm-style-iw {
+  padding: 5px !important;
+}
+.gm-style-iw-chr {
+  display: none !important;
+}
+.gm-style-iw-d {
+  overflow: hidden !important;
+  padding: 9px;
+}
+
+.map-container {
+  position: relative;
+  overflow: visible;
+}
+
+.custom-absolute-info-window {
+  position: absolute;
+  z-index: 1000;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  width: 170px;
+  pointer-events: none;
+  transform: translate(0, -10px);
+  transition: transform 0.2s ease;
+}
+
+.info-window-inner {
+  padding: 10px;
+}
+
+.info-window-img {
+  width: 100%;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 4px 4px 0 0;
+}
+
+.info-window-content {
+  padding: 8px;
+}
+
+.info-window-content p {
+  margin: 4px 0;
+  font-size: 12px;
+}
+/* Center the spinner */
+.rch-spinner-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+/* Spinner animation */
+.rch-spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid rgba(0, 0, 0, 0.1);
+  border-top-color: #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+.rch-map-toggle-btn {
+  padding: 8px 15px;
+  background-color: #000;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 10px 0;
+  position: fixed;
+  inset-block-end: 17px;
+  inset-inline: 0;
+  margin: 0 auto;
+  width: 115px;
+  z-index: 2;
+  padding-block: 11px;
+}
+.rch-map-toggle-btn img {
+  width: 15px;
+  margin-inline-end: 5px;
+}
+@media screen and (min-width: 1440px) {
+  .rch-expanded .rch-listing-list,
+  .rch-expanded .rch-listing-skeleton-loader {
+    --columns: 5;
+  }
+}
+@media screen and (max-width: 992px) {
+  .rch-expanded .rch-listing-list,
+  .rch-expanded .rch-listing-skeleton-loader {
+    --columns: 3;
+  }
+}
+/* For larger screens, ensure at least two columns */
+@media (min-width: 768px) and (max-width: 991px) {
   .rch-listing-list,
   .rch-listing-skeleton-loader {
-      grid-template-columns: repeat(2, 1fr);
+    --columns: 2;
+  }
+}
+@media (max-width: 768px) {
+  .rch-listing-list,
+  .rch-listing-skeleton-loader {
+    --columns: 1;
   }
 
   .rch-filters {
-      display: none;
+    display: none;
   }
 
   .box-filter-listing-text input[type="search"] {
-      display: block;
-      margin-inline-end: auto;
-      width: 60%;
+    display: block;
+    margin-inline-end: auto;
+    width: 60%;
   }
 
   .button-filter-for-mobile {
-      display: block;
-      background: transparent;
-      color: #878484;
-      border: 1px solid rgba(126, 139, 150, 0.5);
-      margin-block-end: 15px;
-      border-radius: 30px;
-      padding: 10px 15px;
-      font-weight: 500;
-      font-size: 14px;
-      width: 38%;
+    display: block;
+    background: transparent;
+    color: #878484;
+    border: 1px solid rgba(126, 139, 150, 0.5);
+    margin-block-end: 15px;
+    border-radius: 30px;
+    padding: 10px 15px;
+    font-weight: 500;
+    font-size: 14px;
+    width: 38%;
   }
 
   .filter-toggle-btn:hover {
-      background-color: #ffffff;
+    background-color: #ffffff;
   }
 
   .rch-head-mobile-filter {
-      padding-block: 1.5rem;
-      padding-inline: 1rem;
-      justify-content: space-between;
+    padding-block: 1.5rem;
+    padding-inline: 1rem;
+    justify-content: space-between;
   }
 
   .rch-head-mobile-filter button {
-      position: unset;
+    position: unset;
   }
 
   .rch-head-mobile-filter button.close-btn {
-      border-radius: 50%;
-      border: 1px solid black;
+    border-radius: 50%;
+    border: 1px solid black;
   }
 
-  .rch-under-main-price>div label {
-      margin-bottom: 0.5rem;
+  .rch-under-main-price > div label {
+    margin-bottom: 0.5rem;
   }
 
   .rch-filters-mobile select,
   .rch-filters-mobile input,
   .rch-filters select,
   .rch-filters input {
-      font-size: 14px;
+    font-size: 14px;
   }
 
-  .rch-status-filter-listing .rch-other-inside-filters input[type="checkbox"]:before {
-      top: 2px;
+  .rch-status-filter-listing
+    .rch-other-inside-filters
+    input[type="checkbox"]:before {
+    top: 2px;
   }
 
-  .rch-status-filter-listing .rch-other-inside-filters input[type="checkbox"]:after {
-      top: 3px;
+  .rch-status-filter-listing
+    .rch-other-inside-filters
+    input[type="checkbox"]:after {
+    top: 3px;
   }
 
-  .rch-status-filter-listing .rch-other-inside-filters input[type="checkbox"]:before {
-      height: 18px;
+  .rch-status-filter-listing
+    .rch-other-inside-filters
+    input[type="checkbox"]:before {
+    height: 18px;
   }
 
   .rch-filters-mobile {
-      box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.5);
+    box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.5);
   }
 
   .rch-footer-filter-mobile {
-      background: #7f7e7e;
+    background: #7f7e7e;
   }
 
-  .rch-footer-filter-mobile>button {
-      border: none;
-      padding: 0.5rem 1rem;
-      background: #c5c5c5;
+  .rch-footer-filter-mobile > button {
+    border: none;
+    padding: 0.5rem 1rem;
+    background: #c5c5c5;
   }
 
   .box-filter-listing.active {
-      border: 1px solid transparent;
-      background-color: transparent;
-      border-bottom: 1px solid #e7e7e7;
+    border: 1px solid transparent;
+    background-color: transparent;
+    border-bottom: 1px solid #e7e7e7;
   }
 
   .reset-btn-all {
-      inset-inline-start: 20px;
-      inset-inline-end: auto !important;
-      inset-block-start: 4px !important;
+    inset-inline-start: 20px;
+    inset-inline-end: auto !important;
+    inset-block-start: 4px !important;
   }
 
   .rch-for-lease span {
-      display: block;
-      text-align: left;
+    display: block;
+    text-align: left;
   }
 
   .rch-inside-filters .reset-btn {
-      display: block;
-      margin-inline-end: auto;
+    display: block;
+    margin-inline-end: auto;
+  }
+  .rch-container-listing-list {
+    flex-direction: column-reverse;
+    position: relative;
+  }
+  .rch-container-listing-list .rch-under-main-listing {
+    width: 100%;
+    background-color: white;
+
+  }
+  .rch-map-listing-list {
+    position: absolute;
+    width: 100%;
+    z-index: -1;
+  }
+  .rch-map-listing-list::before {
+    content: '';
+    background-color: white;
+    width: 10px;
+    height: 100%;
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-end: -10px;
+  }
+  .rch-map-toggle-btn {
+    display: flex;
+    align-items: center;
+  }
+
+  #map.rch-map-listing-list {
+    transition: height 0.3s ease;
   }
 }
 
 @media screen and (max-width: 576px) {
   .box-filter-listing-text input[type="search"] {
-      width: 75%;
+    width: 75%;
   }
 }
 
 @media screen and (min-width: 426px) and (max-width: 576px) {
-
   .rch-listing-list,
   .rch-listing-skeleton-loader {
-      grid-template-columns: repeat(2, 1fr);
+    --columns: 1;
   }
 
   .rch-listing-list .house-item,
   .rch-listing-item-skeleton {
-      padding: 5px;
+    padding: 5px;
   }
 
   .rch-listing-list .house-item picture,
   .rch-listing-item-skeleton .rch-skeleton-image {
-      height: 120px;
+    height: 120px;
   }
 
   .rch-listing-list .house-item h3 {
-      font-size: 15px;
+    font-size: 15px;
   }
 
   .rch-listing-list .house-item p {
-      font-size: 14px;
-      margin-block-end: 10px;
+    font-size: 14px;
+    margin-block-end: 10px;
   }
 
   .rch-listing-list .house-item ul li {
-      padding: 3px 4px;
-      margin-block: 3px;
-      font-size: 9px;
+    padding: 3px 4px;
+    margin-block: 3px;
+    font-size: 9px;
   }
 }
 
 @media screen and (max-width: 425px) {
-
-  .rch-listing-list,
-  .rch-listing-skeleton-loader {
-      grid-template-columns: repeat(1, 1fr);
-  }
 }
 
 /* Extra small screens */
-@media (max-width: 530px) {}
+@media (max-width: 530px) {
+}

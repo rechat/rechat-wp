@@ -16,6 +16,8 @@ if (! defined('ABSPATH')) {
 // define required constants.
 define('RCH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('RCH_PLUGIN_URL', plugin_dir_url(__FILE__));
+define('RCH_VERSION', '1.0.0');
+define('RCH_VERSION_SWIPER', '11.2.5');
 const RCH_PLUGIN_INCLUDES = RCH_PLUGIN_DIR . 'includes/';
 const RCH_PLUGIN_ASSETS = RCH_PLUGIN_URL . 'assets/';
 const RCH_PLUGIN_ASSETS_URL_IMG = RCH_PLUGIN_URL . 'assets/images/';

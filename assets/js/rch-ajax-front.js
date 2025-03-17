@@ -17,9 +17,9 @@ jQuery(document).ready(function ($) {
             img.trigger('load');
         }
     });
-/*******************************
- * ajax search in agents archive
- ******************************/
+    /*******************************
+     * ajax search in agents archive
+     ******************************/
     $('#rch-agent-search').on('input', function () {
         var searchQuery = $(this).val();
         if (searchQuery.length > 0) {
