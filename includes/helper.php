@@ -656,27 +656,36 @@ function get_related_neighborhoods()
         'orderby'        => 'rand', // Random order (optional)
     ));
 
+    // Check if custom template exists in the theme
+    $custom_template = locate_template('rechat/neighborhoods-related.php');
+
     // Loop through related posts
     if ($related_neighbourhoods->have_posts()) :
         while ($related_neighbourhoods->have_posts()) : $related_neighbourhoods->the_post();
-?>
-            <li class="blogs--content item">
-                <a href="<?php the_permalink(); ?>" class="related-item item-wrapper">
-                    <div class="image-holder">
-                        <?php if (has_post_thumbnail()) : ?>
-                            <img src="<?php the_post_thumbnail_url(); ?>" alt="<?php the_title(); ?>">
-                        <?php endif; ?>
-                    </div>
-                    <div class="overlay"></div>
-                    <div class="content-container">
-                        <h3 class="lp-h3 neighborhood-name"><?php the_title(); ?></h3>
-                        <div class="button-wrapper">
-                            <span class="btn">Learn More</span>
+            if ($custom_template) {
+                // Include custom template if it exists
+                include($custom_template);
+            } else {
+                // Default HTML structure
+                ?>
+                <li class="blogs--content item">
+                    <a href="<?php the_permalink(); ?>" class="related-item item-wrapper">
+                        <div class="image-holder">
+                            <?php if (has_post_thumbnail()) : ?>
+                                <img src="<?php the_post_thumbnail_url(); ?>" alt="<?php the_title(); ?>">
+                            <?php endif; ?>
                         </div>
-                    </div>
-                </a>
-            </li>
-<?php
+                        <div class="overlay"></div>
+                        <div class="content-container">
+                            <h3 class="lp-h3 neighborhood-name"><?php the_title(); ?></h3>
+                            <div class="button-wrapper">
+                                <span class="btn">Learn More</span>
+                            </div>
+                        </div>
+                    </a>
+                </li>
+                <?php
+            }
         endwhile;
         wp_reset_postdata(); // Reset query
     else :
@@ -684,4 +693,45 @@ function get_related_neighborhoods()
     endif;
 
     return ob_get_clean();
+}
+/*******************************
+ *Helper function to Register REST API route to render listing templates
+ ******************************/
+function rch_register_listing_template_endpoint() {
+    register_rest_route('rechat/v1', '/render-listing-template/', array(
+        'methods' => 'POST',
+        'callback' => 'rch_render_listing_template',
+        'permission_callback' => '__return_true',
+    ));
+}
+add_action('rest_api_init', 'rch_register_listing_template_endpoint');
+
+// Callback function to render the template
+function rch_render_listing_template($request) {
+    $listings = $request->get_param('listings');
+    
+    if (empty($listings) || !is_array($listings)) {
+        return new WP_Error('no_listings', 'No listing data provided', array('status' => 400));
+    }
+    
+    // Define paths
+    $theme_template_path = 'rechat/listing-item.php';
+    $plugin_template_path = RCH_PLUGIN_DIR . '/templates/archive/template-part/listing-item.php';
+    
+    // Check if theme template exists
+    $template_path = locate_template($theme_template_path);
+    if (!$template_path) {
+        // If not found in theme, use the plugin's template
+        $template_path = $plugin_template_path;
+    }
+    
+    ob_start();
+    foreach ($listings as $listing) {
+        include $template_path;
+    }
+    $html = ob_get_clean();
+    
+    return array(
+        'html' => $html
+    );
 }

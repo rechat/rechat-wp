@@ -2,23 +2,21 @@
 if (! defined('ABSPATH')) {
     exit();
 }
-
 /*******************************
- * enqueue styles and scripts for Front
+ * Enqueue styles and scripts for Frontend
  ******************************/
 function rch_enqueue_frontend_styles()
 {
     // Enqueue CSS styles
-    wp_enqueue_style('rch-front-css-global', RCH_PLUGIN_ASSETS . 'css/rch-global.css', [], '1.0.0');
-    wp_register_style('rch-swiper', RCH_PLUGIN_ASSETS . 'css/swiper-bundle.min.css', [], '8.4.5');
-    wp_register_style('rch-rechat-listing', RCH_PLUGIN_ASSETS . 'css/rch-rechat-listing.css', [], '1.0.0');
+    wp_enqueue_style('rch-front-css-global', RCH_PLUGIN_ASSETS . 'css/rch-global.css', [], RCH_VERSION);
+    wp_register_style('rch-swiper', RCH_PLUGIN_ASSETS . 'css/swiper-bundle.min.css', [], RCH_VERSION_SWIPER);
+    wp_register_style('rch-rechat-listing', RCH_PLUGIN_ASSETS . 'css/rch-rechat-listing.css', [], RCH_VERSION);
 
     // Enqueue JavaScript files with version
-    wp_enqueue_script('rch-ajax-front', RCH_PLUGIN_ASSETS . 'js/rch-ajax-front.js', ['jquery'], '1.0.0', true);
-    wp_enqueue_script('rch-swiper-js', RCH_PLUGIN_ASSETS . 'js/swiper-bundle.min.js', [], '8.4.5', true);
-    wp_enqueue_script('rch-gutenberg-ajax', RCH_PLUGIN_ASSETS . 'js/rch-gutenberg-ajax.js', ['jquery'], '8.4.5', true);
-    wp_enqueue_script('rch-gutenberg-agent-pagination', RCH_PLUGIN_ASSETS . 'js/rch-gutenberg-agent-pagination.js', ['jquery'], '8.4.5', true);
-    // wp_enqueue_script('rch-rechat-houses', RCH_PLUGIN_ASSETS . 'js/rch-rechat-houses.js', ['jquery'], null, true);
+    wp_enqueue_script('rch-ajax-front', RCH_PLUGIN_ASSETS . 'js/rch-ajax-front.js', ['jquery'], RCH_VERSION, true);
+    wp_enqueue_script('rch-swiper-js', RCH_PLUGIN_ASSETS . 'js/swiper-bundle.min.js', [], RCH_VERSION_SWIPER, true);
+    wp_enqueue_script('rch-gutenberg-ajax', RCH_PLUGIN_ASSETS . 'js/rch-gutenberg-ajax.js', ['jquery'], RCH_VERSION, true);
+    wp_enqueue_script('rch-gutenberg-agent-pagination', RCH_PLUGIN_ASSETS . 'js/rch-gutenberg-agent-pagination.js', ['jquery'], RCH_VERSION, true);
 
     // Localize scripts for AJAX
     $ajax_url = admin_url('admin-ajax.php');
@@ -28,13 +26,12 @@ function rch_enqueue_frontend_styles()
         'ajax_url' => $ajax_url,
         'nonce'    => wp_create_nonce('rch_ajax_front_nonce'),
     ]);
-    // wp_localize_script('rch-rechat-houses', 'rechat_ajax_object', ['ajax_url' => $ajax_url]);
 
     // Conditionally enqueue Swiper and listing styles when 'listing_id' is in the URL
     if (isset($_GET['listing_id'])) {
         wp_enqueue_style('rch-rechat-listing');
         wp_enqueue_style('rch-swiper');
-        wp_enqueue_script('rch-swiper-js', [], '8.4.5', true);
+        wp_enqueue_script('rch-swiper-js');
     }
 
     // Register Gutenberg block script (if used in the frontend)
@@ -42,38 +39,77 @@ function rch_enqueue_frontend_styles()
         'regions-block',
         get_template_directory_uri() . '/js/regions-block.js', // Path to your block JS file
         ['wp-blocks', 'wp-editor', 'wp-components', 'wp-element'],
-        '1.0.0',
+        RCH_VERSION,
         true
     );
 }
 add_action('wp_enqueue_scripts', 'rch_enqueue_frontend_styles');
-//enqueue assets of listing block
-function rch_enqueue_block_assets() {
+
+/*******************************
+ * Enqueue assets for listing block
+ ******************************/
+function rch_enqueue_block_assets()
+{
+    $primary_color = get_option('_rch_primary_color', '#2271b1'); // Default to red if not set
+
     // Register block script
     wp_register_script(
-        'rch-listing-block-script',
-        RCH_PLUGIN_ASSETS . '/js/rch-rechat-listings.js',
-        ['wp-blocks', 'wp-element'],
-        '1.0.0',
+        'rch-listing-block-script-filter',
+        RCH_PLUGIN_ASSETS . '/js/rch-rechat-listings-filter.js',
+        ['wp-blocks', 'wp-element', 'rechat-listings-request'],
+        RCH_VERSION,
         true
     );
+    // Register block script For Map
+    wp_register_script(
+        'rch-listing-block-script-map',
+        RCH_PLUGIN_ASSETS . '/js/rch-rechat-listings-map.js',
+        ['wp-blocks', 'wp-element', 'rechat-listings-request'],
+        RCH_VERSION,
+        true
+    );
+    wp_localize_script('rch-listing-block-script-map', 'rchData', array(
+        'primaryColor' => $primary_color,
+        'homeUrl' => get_home_url(),
+
+    ));
 
     // Register block style
     wp_register_style(
         'rch-listing-block-css',
         RCH_PLUGIN_ASSETS . '/css/rch-listing-block.css',
         [],
-        '1.0.0'
+        RCH_VERSION
     );
-
+    // Enqueue Google Maps API script
+    $google_maps_api_key = get_option('rch_rechat_google_map_api_key');
+    wp_register_script(
+        'rch-google-maps-api',
+        'https://maps.googleapis.com/maps/api/js?key=' . $google_maps_api_key . '&libraries=drawing,places,geometry,marker&callback=initMap',
+        [],
+        null,
+        true
+    );
+    wp_register_script('rechat-map-toggle',
+     RCH_PLUGIN_URL . 'assets/js/rch-map-toggle.js',
+     [],
+      RCH_VERSION,
+      true);
     // Automatically enqueue script/style only when block is present
-    if ( has_block( 'rch-rechat-plugin/listing-block' ) ) {
-        wp_enqueue_script( 'rch-listing-block-script' );
-        wp_enqueue_style( 'rch-listing-block-css' );
+    if (has_block('rch-rechat-plugin/listing-block')) {
+        wp_enqueue_script('rch-listing-block-script-filter');
+        wp_enqueue_script('rch-listing-block-script-map');
+        wp_enqueue_script('rch-google-maps-api');
+        wp_enqueue_script('rechat-map-toggle');
+        wp_enqueue_style('rch-listing-block-css');
     }
 }
-add_action( 'enqueue_block_assets', 'rch_enqueue_block_assets' );
-function rch_script_block_editor_assets() {
+add_action('enqueue_block_assets', 'rch_enqueue_block_assets');
+/*******************************
+ * Enqueue theme styles in block editor
+ ******************************/
+function rch_script_block_editor_assets()
+{
     // Get the active theme's style.css
     $theme_style = get_stylesheet_directory_uri() . '/style.css';
 
@@ -82,7 +118,7 @@ function rch_script_block_editor_assets() {
         'theme-style-editor',
         $theme_style,
         [],
-        filemtime( get_stylesheet_directory() . '/style.css' ) // Ensure latest version loads
+        filemtime(get_stylesheet_directory() . '/style.css') // Ensure latest version loads
     );
 }
-add_action( 'enqueue_block_editor_assets', 'rch_script_block_editor_assets' );
+add_action('enqueue_block_editor_assets', 'rch_script_block_editor_assets');

@@ -44,8 +44,11 @@ const ListingMain = ({
 }) => {
   const siteUrl = wp.data.select("core").getSite()?.url;
   const [brandId, setBrandId] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null);
-  const [listings, setListings] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]); // State to store fetched listings
-  const [loading, setLoading] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(true); // State to track loading status
+  const [listings, setListings] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
+  const [loading, setLoading] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(true);
+  const [mapBounds, setMapBounds] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null);
+  const [isFirstMapLoad, setIsFirstMapLoad] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(true);
+  const mapRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
   const fetchBrandId = async () => {
     try {
       const brandResponse = await _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_1___default()({
@@ -60,56 +63,161 @@ const ListingMain = ({
       console.error('Error fetching brand ID:', error);
     }
   };
+  const fetchListings = (bounds = null) => {
+    if (!brandId) return;
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-RECHAT-BRAND': brandId
+    };
+    const bodyObject = {
+      limit: Number(listing_per_page),
+      maximum_bedrooms: maximum_bedrooms ? Number(maximum_bedrooms) : '',
+      minimum_bedrooms: minimum_bedrooms ? Number(minimum_bedrooms) : '',
+      maximum_bathrooms: maximum_bathrooms ? Number(maximum_bathrooms) : '',
+      minimum_bathrooms: minimum_bathrooms ? Number(minimum_bathrooms) : '',
+      maximum_year_built: maximum_year_built ? Number(maximum_year_built) : '',
+      minimum_year_built: minimum_year_built ? Number(minimum_year_built) : '',
+      maximum_square_meters: maximum_square_meters ? Number(maximum_square_meters) : '',
+      minimum_square_meters: minimum_square_meters ? Number(minimum_square_meters) : '',
+      minimum_price: minimum_price ? Number(minimum_price) : '',
+      maximum_price: maximum_price ? Number(maximum_price) : '',
+      minimum_lot_square_meters: minimum_lot_square_meters ? Number(minimum_lot_square_meters) : '',
+      maximum_lot_square_meters: maximum_lot_square_meters ? Number(maximum_lot_square_meters) : '',
+      property_types: property_types ? property_types.split(",").map(type => type.trim()) : [],
+      listing_statuses: selectedStatuses?.length ? selectedStatuses : "",
+      ...(own_listing && {
+        brand: brandId
+      })
+    };
+    if (bounds) {
+      bodyObject.points = [{
+        latitude: bounds.getNorthEast().lat(),
+        longitude: bounds.getNorthEast().lng()
+      }, {
+        latitude: bounds.getNorthEast().lat(),
+        longitude: bounds.getSouthWest().lng()
+      }, {
+        latitude: bounds.getSouthWest().lat(),
+        longitude: bounds.getSouthWest().lng()
+      }, {
+        latitude: bounds.getSouthWest().lat(),
+        longitude: bounds.getNorthEast().lng()
+      }];
+    }
+    const filteredBody = Object.fromEntries(Object.entries(bodyObject).filter(([_, value]) => value !== undefined && value !== null && value !== ""));
+    let body = null;
+    if (Object.keys(filteredBody).length > 0) {
+      body = JSON.stringify(filteredBody);
+    }
+    setLoading(true);
+    fetch('https://api.rechat.com/valerts?order_by[]=-price', {
+      method: 'POST',
+      headers: headers,
+      body: body
+    }).then(res => res.json()).then(data => {
+      setListings(data.data);
+      renderServerTemplates(data.data);
+      if (isFirstMapLoad) {
+        initGoogleMap(data.data);
+        setIsFirstMapLoad(false);
+      } else {
+        updateMapMarkers(data.data);
+      }
+      setLoading(false);
+    }).catch(error => {
+      console.error('Error:', error);
+      setLoading(false);
+    });
+  };
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
     fetchBrandId();
   }, []);
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
-    if (brandId) {
-      const headers = {
-        'Content-Type': 'application/json',
-        'X-RECHAT-BRAND': brandId
-      };
-      console.log(headers);
-      const bodyObject = {
-        limit: Number(listing_per_page),
-        maximum_bedrooms: maximum_bedrooms ? Number(maximum_bedrooms) : '',
-        minimum_bedrooms: minimum_bedrooms ? Number(minimum_bedrooms) : '',
-        maximum_bathrooms: maximum_bathrooms ? Number(maximum_bathrooms) : '',
-        minimum_bathrooms: minimum_bathrooms ? Number(minimum_bathrooms) : '',
-        maximum_year_built: maximum_year_built ? Number(maximum_year_built) : '',
-        minimum_year_built: minimum_year_built ? Number(minimum_year_built) : '',
-        maximum_square_meters: maximum_square_meters ? Number(maximum_square_meters) : '',
-        minimum_square_meters: minimum_square_meters ? Number(minimum_square_meters) : '',
-        minimum_price: minimum_price ? Number(minimum_price) : '',
-        maximum_price: maximum_price ? Number(maximum_price) : '',
-        minimum_lot_square_meters: minimum_lot_square_meters ? Number(minimum_lot_square_meters) : '',
-        maximum_lot_square_meters: maximum_lot_square_meters ? Number(maximum_lot_square_meters) : '',
-        property_types: property_types ? property_types.split(",").map(type => type.trim()) : [],
-        listing_statuses: selectedStatuses?.length ? selectedStatuses : "",
-        ...(own_listing && {
-          brand: brandId
-        })
-      };
-      const filteredBody = Object.fromEntries(Object.entries(bodyObject).filter(([_, value]) => value !== undefined && value !== null && value !== ""));
-      let body = null;
-      if (Object.keys(filteredBody).length > 0) {
-        body = JSON.stringify(filteredBody);
-      }
-      setLoading(true);
-      fetch('https://api.rechat.com/valerts?order_by[]=-price', {
-        method: 'POST',
-        headers: headers,
-        body: body
-      }).then(res => res.json()).then(data => {
-        setListings(data.data);
-        setLoading(false);
-      }).catch(error => {
-        console.error('Error:', error);
-        setLoading(false);
-      });
-    }
+    setMapBounds(null);
+    fetchListings();
   }, [brandId, listing_per_page, maximum_bedrooms, minimum_bedrooms, maximum_bathrooms, minimum_bathrooms, maximum_year_built, minimum_year_built, maximum_square_meters, minimum_square_meters, maximum_price, minimum_price, property_types, own_listing, maximum_lot_square_meters, minimum_lot_square_meters, property_types, selectedStatuses]);
-  // Add brandId, listing_per_page, and maximum_bedrooms as dependencies
+  const renderServerTemplates = listings => {
+    if (!listings || listings.length === 0) return;
+    _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_1___default()({
+      path: '/rechat/v1/render-listing-template/',
+      method: 'POST',
+      data: {
+        listings
+      }
+    }).then(response => {
+      const listingContainer = document.getElementById('listing-list');
+      if (listingContainer) {
+        listingContainer.innerHTML = response.html;
+      }
+    }).catch(error => {
+      console.error('Error rendering templates:', error);
+    });
+  };
+  const initGoogleMap = listings => {
+    if (!listings || listings.length === 0 || !window.google) return;
+    const mapContainer = document.getElementById('rch-google-map');
+    if (!mapContainer) return;
+    const map = new google.maps.Map(mapContainer, {
+      zoom: 10,
+      mapTypeControl: true,
+      streetViewControl: true,
+      fullscreenControl: true
+    });
+    mapRef.current = map;
+    const bounds = new google.maps.LatLngBounds();
+    const markers = addMarkersToMap(map, listings, bounds);
+    if (markers.length > 0) {
+      map.fitBounds(bounds);
+    }
+    let boundsChangeTimeout;
+    map.addListener('bounds_changed', () => {
+      clearTimeout(boundsChangeTimeout);
+      boundsChangeTimeout = setTimeout(() => {
+        const newBounds = map.getBounds();
+        if (newBounds && !isFirstMapLoad) {
+          setMapBounds(newBounds);
+          fetchListings(newBounds);
+        }
+      }, 800);
+    });
+    return map;
+  };
+  const addMarkersToMap = (map, listings, bounds = null) => {
+    return listings.map(listing => {
+      if (listing.property && listing.property.latitude && listing.property.longitude) {
+        const position = {
+          lat: parseFloat(listing.property.latitude),
+          lng: parseFloat(listing.property.longitude)
+        };
+        if (bounds) bounds.extend(position);
+        const marker = new google.maps.Marker({
+          position: position,
+          map: map,
+          title: listing.property.address.full_address
+        });
+        const price = listing.price ? `$${new Intl.NumberFormat().format(listing.price)}` : 'Price not available';
+        const infoContent = `
+                    <div class="rch-map-info-window">
+                        <h4>${price}</h4>
+                        <p>${listing.property.address.full_address}</p>
+                        <p>${listing.property.bedrooms || 0} beds, ${listing.property.bathrooms || 0} baths</p>
+                    </div>
+                `;
+        const infoWindow = new google.maps.InfoWindow({
+          content: infoContent
+        });
+        marker.addListener('click', () => {
+          infoWindow.open(map, marker);
+        });
+        return marker;
+      }
+      return null;
+    }).filter(Boolean);
+  };
+  const updateMapMarkers = listings => {
+    if (!mapRef.current || !listings) return;
+    addMarkersToMap(mapRef.current, listings);
+  };
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
     children: [show_filter_bar && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(_listings_filters__WEBPACK_IMPORTED_MODULE_2__["default"], {}), loading ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
       id: "rch-loading-listing",
@@ -132,57 +240,21 @@ const ListingMain = ({
           })]
         })]
       }, i))
-    }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
-      id: "listing-list",
-      className: "rch-listing-list",
-      children: Array.isArray(listings) && listings.length > 0 ? listings.map(listing => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
-        className: "house-item",
-        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("a", {
-          href: "#",
-          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("picture", {
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("img", {
-              src: listing.cover_image_url || `${siteUrl}/wp-content/plugins/rechat-plugin/assets/images/placeholder.webp`,
-              alt: "House Image"
-            })
-          }), listing.price && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("h3", {
-            children: ["$ ", new Intl.NumberFormat().format(listing.price)]
-          }), (listing.address.street_number || listing.address.street_name || listing.address.city || listing.address.state) && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("p", {
-            children: `${listing.address.street_number} ${listing.address.street_name}, ${listing.address.city}, ${listing.address.state}`
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("ul", {
-            children: [listing.compact_property.bedroom_count > 0 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("li", {
-              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("img", {
-                src: `${siteUrl}/wp-content/plugins/rechat-plugin/assets/images/bed.svg`,
-                alt: "Beds"
-              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("b", {
-                children: listing.compact_property.bedroom_count
-              }), " Beds"]
-            }), listing.compact_property.full_bathroom_count > 0 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("li", {
-              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("img", {
-                src: `${siteUrl}/wp-content/plugins/rechat-plugin/assets/images/shower-full.svg`,
-                alt: "Full shower"
-              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("b", {
-                children: listing.compact_property.full_bathroom_count
-              }), " Full Baths"]
-            }), listing.compact_property.half_bathroom_count > 0 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("li", {
-              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("img", {
-                src: `${siteUrl}/wp-content/plugins/rechat-plugin/assets/images/shower-half.svg`,
-                alt: "Half shower"
-              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("b", {
-                children: listing.compact_property.half_bathroom_count
-              }), " Half Baths"]
-            }), listing.compact_property.square_meters > 0 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("li", {
-              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("img", {
-                src: `${siteUrl}/wp-content/plugins/rechat-plugin/assets/images/sq.svg`,
-                alt: "sq ft"
-              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("b", {
-                children: new Intl.NumberFormat().format(listing.compact_property.square_meters)
-              }), " SQ.FT"]
-            })]
-          })]
+    }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+      className: "rch-container-listing-list",
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+        id: "rch-google-map",
+        className: "rch-map-listing-list"
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+        className: "rch-under-main-listing",
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+          id: "listing-list",
+          className: "rch-listing-list",
+          children: Array.isArray(listings) && listings.length === 0 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+            children: "No Listing Found"
+          })
         })
-      }, listing.id)) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
-        children: "No Listing Found"
-      })
+      })]
     })]
   });
 };
@@ -940,6 +1012,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         console.error('Error fetching data:', error);
       }
     };
+    const [iframeUrl, setIframeUrl] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)('');
     (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
       fetchData('/wp/v2/regions?per_page=100', setRegions);
       fetchData('/wp/v2/offices?per_page=100', setOffices);
@@ -1117,9 +1190,24 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             })
           })]
         })
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)((_wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1___default()), {
-        block: "rch-rechat-plugin/listing-block",
-        attributes: attributes
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_listing_main__WEBPACK_IMPORTED_MODULE_3__["default"], {
+        listing_per_page: listing_per_page,
+        maximum_bedrooms: maximum_bedrooms,
+        minimum_bedrooms: minimum_bedrooms,
+        maximum_year_built: maximum_year_built,
+        minimum_year_built: minimum_year_built,
+        maximum_square_meters: maximum_square_meters,
+        minimum_square_meters: minimum_square_meters,
+        maximum_bathrooms: maximum_bathrooms,
+        minimum_bathrooms: minimum_bathrooms,
+        maximum_lot_square_meters: maximum_lot_square_meters,
+        minimum_lot_square_meters: minimum_lot_square_meters,
+        maximum_price: maximum_price,
+        minimum_price: minimum_price,
+        property_types: property_types,
+        own_listing: own_listing,
+        show_filter_bar: show_filter_bar,
+        selectedStatuses: listing_statuses
       })]
     });
   },

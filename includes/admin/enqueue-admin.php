@@ -15,12 +15,6 @@ function rch_enqueue_admin_styles()
         wp_enqueue_style('wp-color-picker');
         wp_enqueue_script('wp-color-picker');
         wp_add_inline_script('wp-color-picker', 'jQuery(document).ready(function($){$(".my-color-field").wpColorPicker();});');
-    
-        // Localize the script to pass the API key
-        wp_localize_script('rch-neighborhood-script', 'NeighborhoodData', array(
-            'apiUrl' => admin_url('admin-ajax.php'), // AJAX URL
-            'apiKey' => get_option('rch_rechat_neighborhood_api_key'), // Replace with your actual API key
-        ));
     }
 }
 
