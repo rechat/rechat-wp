@@ -60,8 +60,8 @@ function rch_handle_oauth_callback()
             update_option('rch_rechat_expires_in', $expiry_date);
 
             // Fetch and set primary color using the helper function
-            $primary_color = rch_get_primary_color($brand_id);
-            update_option('_rch_primary_color', $primary_color);
+            rch_get_primary_color_and_logo();
+            
         } else {
             add_settings_error('rechat_oauth', 'oauth_error', 'Access token not found in the response.', 'error');
         }

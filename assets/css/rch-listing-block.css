@@ -416,14 +416,24 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   animation: rch-skeleton-loading 1.5s infinite;
   border-radius: 8px;
 }
-
+.rch-listing-list .house-item picture.rch-fallback-logo-listing {
+  background: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 .rch-listing-list .house-item picture img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   object-position: center;
 }
-
+.rch-listing-list .house-item picture.rch-fallback-logo-listing img {
+  width: 50%;
+  height:auto;
+  object-fit: contain;
+  mix-blend-mode: difference;
+}
 .rch-listing-list .house-item p {
   color: #000;
 }
@@ -1041,6 +1051,7 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   animation: spin 1s linear infinite;
 }
 .rch-map-toggle-btn {
+  display: none;
   padding: 8px 15px;
   background-color: #000;
   color: white;
@@ -1052,7 +1063,7 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   inset-block-end: 17px;
   inset-inline: 0;
   margin: 0 auto;
-  width: 115px;
+  width: 120px;
   z-index: 2;
   padding-block: 11px;
 }
@@ -1221,6 +1232,9 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
 
   #map.rch-map-listing-list {
     transition: height 0.3s ease;
+  }
+  .rch-map-toggle-btn {
+    display: block;
   }
 }
 
