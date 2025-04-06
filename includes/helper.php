@@ -513,8 +513,9 @@ add_action('wp', 'rch_remove_404_for_house_listing');
 /*******************************
  *Helper function to fetch the primary color from a brand or its parent.
  ******************************/
-function rch_get_primary_color($brand_id)
+function rch_get_primary_color_and_logo()
 {
+    $brand_id = get_option('rch_rechat_brand_id');
     // API endpoint to fetch brand settings, including parent brands
     $palette_url = 'https://api.rechat.com/brands/' . $brand_id . '?associations[]=brand.parent&associations[]=brand.settings';
 
@@ -522,24 +523,36 @@ function rch_get_primary_color($brand_id)
     $palette_response = wp_remote_get($palette_url);
     if (is_wp_error($palette_response)) {
         error_log('Error fetching marketing palette: ' . $palette_response->get_error_message());
-        return '#2271b1'; // Return default color on error
+        return array(
+            'primary_color' => '#2271b1', // Default color on error
+            'logo_url' => null // No logo URL on error
+        );
     }
 
     // Parse the response body
     $palette_body = wp_remote_retrieve_body($palette_response);
     $palette_data = json_decode($palette_body, true);
 
+    // Initialize default values
+    $primary_color = '#2271b1';
+    $logo_url = null;
 
-    // Traverse the brand and its parents to find the color
+    // Traverse the brand and its parents to find the color and logo URL
     if (isset($palette_data['data'])) {
         $brand = $palette_data['data'];
-        return rch_find_primary_color($brand);
+        $primary_color = rch_find_primary_color($brand);
+
+        // Check for the logo URL in the brand settings
+        if (isset($brand['settings']['marketing_palette']['container-logo-wide'])) {
+            $logo_url = esc_url($brand['settings']['marketing_palette']['container-logo-wide']);
+            
+            // Save the logo URL as a WordPress option
+            update_option('rch_brand_logo_url', $logo_url);
+        }
     }
-
-    // Return default color if no data is found
-    return '#2271b1';
+    update_option('_rch_primary_color', $primary_color);
 }
-
+add_action('init','rch_get_primary_color_and_logo');
 /*******************************
  *Helper function to find the button color by traversing the brand hierarchy.
  ******************************/

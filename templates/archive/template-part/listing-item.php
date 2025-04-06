@@ -1,8 +1,15 @@
 <div class="house-item">
     <a href="<?php echo esc_url(get_home_url() . '/listing-detail/?listing_id=' . esc_attr($listing['id'])); ?>">
-        <picture>
-            <img src="<?php echo esc_url(!empty($listing['cover_image_url']) ? $listing['cover_image_url'] : RCH_PLUGIN_ASSETS_URL_IMG . 'rechat_logo.jpg'); ?>" alt="House Image">
-        </picture>
+        <picture class="<?php echo empty($listing['cover_image_url']) ? 'rch-fallback-logo-listing' : ''; ?>"
+        >
+        <img 
+    src="<?php 
+        echo !empty($listing['cover_image_url']) 
+            ? esc_url($listing['cover_image_url']) 
+            : esc_url(get_option('rch_brand_logo_url', PMY_THEME_URL . '/assets/img/placeholder.webp')); 
+    ?>" 
+    alt="House Image">    
+    </picture>
         <?php if (!empty($listing['price'])): ?>
             <h3>$ <?php echo esc_html(number_format($listing['price'])); ?></h3>
         <?php endif; ?>
