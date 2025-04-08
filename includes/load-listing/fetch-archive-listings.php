@@ -123,8 +123,8 @@ function rch_fetch_listing_ajax()
                 'lat' => $listing['location']['latitude'],  // All latitudes without pagination
                 'lng' => $listing['location']['longitude'], // All longitudes without pagination
                 'image' => $listing['cover_image_url'],     // All cover images without pagination
-                'price' => $listing['price'],               // All prices without pagination
-                'address' => $listing['address']['street_address'],  // All addresses without pagination
+                'price' => $listing['formatted']['price']['text'],               // All prices without pagination
+                'address' => $listing['formatted']['street_address']['text'],  // All addresses without pagination
             ];
         }
     }
@@ -137,8 +137,8 @@ function rch_fetch_listing_ajax()
                 'lat' => $listing['location']['latitude'],  // All latitudes without pagination
                 'lng' => $listing['location']['longitude'], // All longitudes without pagination
                 'image' => $listing['cover_image_url'],     // All cover images without pagination
-                'price' => $listing['price'],               // All prices without pagination
-                'address' => $listing['address']['street_address'],  // All addresses without pagination
+                'price' => $listing['formatted']['price']['text'],               // All prices without pagination
+                'address' => $listing['formatted']['street_address']['text'],  // All addresses without pagination
                 'id' => $listing['id'],                     // All listing IDs without pagination
             ];
         }
