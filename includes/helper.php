@@ -535,41 +535,50 @@ function rch_get_primary_color_and_logo()
 
     // Initialize default values
     $primary_color = '#2271b1';
-    $logo_url = null;
 
     // Traverse the brand and its parents to find the color and logo URL
     if (isset($palette_data['data'])) {
         $brand = $palette_data['data'];
-        $primary_color = rch_find_primary_color($brand);
 
-        // Check for the logo URL in the brand settings
-        if (isset($brand['settings']['marketing_palette']['container-logo-wide'])) {
-            $logo_url = esc_url($brand['settings']['marketing_palette']['container-logo-wide']);
-            
-            // Save the logo URL as a WordPress option
-            update_option('rch_brand_logo_url', $logo_url);
-        }
+        $primary_color = rch_find_get_setting($brand, 'inverted-container-bg-color' , '#2271b1');
+        $container_logo_wide= rch_find_get_setting($brand, 'container-logo-wide' , 'null');
+        $container_logo_square= rch_find_get_setting($brand, 'container-logo-square' , 'null');
+        $container_team_logo_wide= rch_find_get_setting($brand, 'container-team-logo-wide' , 'null');
+        $container_team_logo_square= rch_find_get_setting($brand, 'container-team-logo-square' , 'null');
+        $inverted_container_logo_wide= rch_find_get_setting($brand, 'inverted-logo-wide' , 'null');
+        $inverted_container_logo_square= rch_find_get_setting($brand, 'inverted-logo-square' , 'null');
+        $inverted_team_logo_wide= rch_find_get_setting($brand, 'inverted-team-logo-wide' , 'null');
+        $inverted_team_logo_square= rch_find_get_setting($brand, 'inverted-team-logo-square' , 'null');
+
     }
     update_option('_rch_primary_color', $primary_color);
+    update_option('rch_container_logo_wide', $container_logo_wide);
+    update_option('rch_container_logo_square', $container_logo_square);
+    update_option('rch_container_team_logo_wide', $container_team_logo_wide);
+    update_option('rch_container_team_logo_square', $container_team_logo_square);
+    update_option('rch_inverted_container_logo_wide', $inverted_container_logo_wide);
+    update_option('rch_inverted_container_logo_square', $inverted_container_logo_square);
+    update_option('rch_inverted_team_logo_wide', $inverted_team_logo_wide);
+    update_option('rch_inverted_team_logo_square', $inverted_team_logo_square);
 }
-add_action('init','rch_get_primary_color_and_logo');
 /*******************************
  *Helper function to find the button color by traversing the brand hierarchy.
  ******************************/
-function rch_find_primary_color($brand)
+function rch_find_get_setting($brand, $key, $default = '#2271b1')
 {
-    $primary_color = null;
+    $value = null;
 
-    // Traverse the brand hierarchy to find the primary color
+    // Traverse the brand hierarchy to find the setting
     do {
-        if (isset($brand['settings']['marketing_palette']['colors'])) {
-            $primary_color = $brand['settings']['marketing_palette']['inverted-container-bg-color'];
+        if (isset($brand['settings']['marketing_palette'][$key])) {
+            $value = $brand['settings']['marketing_palette'][$key];
+            break;
         }
         $brand = isset($brand['parent']) ? $brand['parent'] : null;
-    } while (!$primary_color && $brand);
+    } while ($brand);
 
     // Sanitize the color or return a default color
-    return $primary_color ? sanitize_hex_color($primary_color) : '#2271b1';
+    return $value ? $value : $default;
 }
 /*******************************
  *Helper function to create api for sending data to react

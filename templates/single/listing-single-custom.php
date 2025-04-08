@@ -42,8 +42,8 @@
 
                 <?php
                 // Check if address property exists
-                if (isset($listing_detail['property']['address']['full_address'])) {
-                    $address = $listing_detail['property']['address']['full_address'];
+                if (isset($listing_detail['formatted']['full_address']['text'])) {
+                    $address = $listing_detail['formatted']['full_address']['text'];
                     $full_address = '';
                     echo esc_html($address);
                 } else {
@@ -53,7 +53,7 @@
                 ?>
             </h1>
             <div class="rch-single-price-house">
-                <?php echo '$' . number_format(floatval($listing_detail['price'])); ?>
+                <?php echo sanitize_text_field($listing_detail['formatted']['price']['text']); ?>
             </div>
             <div class="rch-single-house-main-layout">
                 <div class="rch-single-left-main-layout">
@@ -87,23 +87,16 @@
                         <ul>
                             <li>
                                 <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'bedroomsingle.svg'); ?>" alt="Bedroom icon">
-                                <?php echo esc_html($listing_detail['property']['bedroom_count']); ?>
-                                Bedrooms
+                                <?php echo esc_html($listing_detail['formatted']['bedroom_count']['text']); ?>
                             </li>
                             <li>
                                 <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'fbathsingle.svg'); ?>" alt="Fullbath icon">
-                                <?php echo esc_html($listing_detail['property']['full_bathroom_count']); ?>
-                                Full Bathrooms
+                                <?php echo esc_html($listing_detail['formatted']['bathrooms']['text']); ?>
                             </li>
-                            <li>
-                                <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'hbathsingle.svg'); ?>" alt="Halfbath icon">
-                                <?php echo esc_html($listing_detail['property']['half_bathroom_count']); ?>
-                                Half Bathrooms
-                            </li>
+
                             <li>
                                 <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'areasingle.svg'); ?>" alt="Area icon">
-                                <?php echo esc_html($listing_detail['property']['square_meters']); ?>
-                                meter
+                                <?php echo esc_html($listing_detail['formatted']['square_feet']['text']); ?>
                             </li>
                             <li>
                                 <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'yearsingle.svg'); ?>" alt="">
@@ -131,8 +124,7 @@
                             ?>
                             <li>
                                 <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'garagesingle.svg'); ?>" alt="Garage Icon">
-                                <?php echo esc_html($listing_detail['property']['number_of_parking_spaces']); ?>
-                                Parking
+                                <?php echo esc_html($listing_detail['formatted']['parking_spaces']['text']); ?>
                             </li>
                             <li>
                                 <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'outdoor-activity.svg'); ?>" alt="Activity icon">
