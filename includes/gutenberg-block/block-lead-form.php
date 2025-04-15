@@ -143,6 +143,7 @@ function rch_render_leads_form_block($attributes)
                     note: document.getElementById('note')?.value.trim(),
                     tag: <?php echo wp_json_encode($selected_tags); ?>,
                     source_type: 'Website',
+                    referer_url: window.location.href
                 };
 
                 // Show loading spinner and hide success/error alerts

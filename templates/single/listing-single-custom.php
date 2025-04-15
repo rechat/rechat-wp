@@ -274,7 +274,8 @@
             tag: <?php echo wp_json_encode(explode(',', get_option("rch_selected_tags"))); ?>, // Convert comma-separated string to array
             source_type: 'Website',
             mlsid: '<?php echo esc_js($listing_detail['mls_number']) ?>',
-            listing_id: '<?php echo esc_js($listing_detail['id']) ?>'
+            listing_id: '<?php echo esc_js($listing_detail['id']) ?>',
+            referer_url: window.location.href
         };
 
         // Hide success, error alerts, and show loading spinner

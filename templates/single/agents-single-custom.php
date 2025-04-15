@@ -174,13 +174,11 @@ $timezone = get_post_meta($post_id, 'timezone', true);
 
     </main><!-- #main -->
 </div><!-- #primary -->
-
 <?php get_footer(); ?>
 
 <script src="https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.js"></script>
 <script>
     const sdk = new Rechat.Sdk();
-
     const channel = {
         lead_channel: '<?php echo esc_js(get_option("rch_agents_lead_channels")); ?>'
     };
@@ -196,7 +194,9 @@ $timezone = get_post_meta($post_id, 'timezone', true);
             note: document.getElementById('note').value,
             tag: <?php echo wp_json_encode(explode(',', get_option("rch_agents_selected_tags"))); ?>, // Convert comma-separated string to array
             source_type: 'Website',
-            agent_emails:'<?php echo esc_html($email); ?>'
+            agent_emails:'<?php echo esc_html($email); ?>',
+            referer_url: window.location.href
+
         };
 
         // Hide success, error alerts, and show loading spinner
