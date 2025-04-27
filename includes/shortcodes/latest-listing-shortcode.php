@@ -15,6 +15,12 @@ function rch_display_latest_listings_shortcode($atts)
             'pagination_type' => 'bullets',
             'pagination_render_bullet' => '',
             'navigation' => false,
+            'centered_slides' => false, // New attribute
+            'speed' => '', // New attribute
+            'effect' => '', // New attribute
+            'grab_cursor' => false, // New attribute
+            'simulate_touch' => true, // New attribute
+            'autoplay' => '', // New attribute (JSON string for autoplay settings)
         ),
         $atts
     );
@@ -29,12 +35,18 @@ function rch_display_latest_listings_shortcode($atts)
     $pagination_type = esc_js($atts['pagination_type']);
     $pagination_render_bullet = !empty($atts['pagination_render_bullet']) ? $atts['pagination_render_bullet'] : 'null';
     $navigation = filter_var($atts['navigation'], FILTER_VALIDATE_BOOLEAN);
+    $centered_slides = filter_var($atts['centered_slides'], FILTER_VALIDATE_BOOLEAN);
+    $speed = intval($atts['speed']);
+    $effect = esc_js($atts['effect']);
+    $grab_cursor = filter_var($atts['grab_cursor'], FILTER_VALIDATE_BOOLEAN);
+    $simulate_touch = filter_var($atts['simulate_touch'], FILTER_VALIDATE_BOOLEAN);
+    $autoplay = !empty($atts['autoplay']) ? $atts['autoplay'] : null;
 
     ob_start();
 ?>
     <div class="swiper thumbsSwiper trendingSwiper <?php echo esc_attr($template); ?>" thumbsSlider="true">
         <div class="swiper-wrapper" id="rch-listing-list-latest-<?php echo esc_attr($template); ?>"></div>
-        <div id="rch-loading-listing" style="display: none;" class="rch-loader"></div>
+        <div id="rch-loading-listing" style="display: block;" class="rch-loader"></div>
     </div>
 
     <script>
@@ -68,6 +80,30 @@ function rch_display_latest_listings_shortcode($atts)
                     nextEl: ".swiper-button-next",
                     prevEl: ".swiper-button-prev",
                 };
+            <?php endif; ?>
+
+            <?php if ($centered_slides): ?>
+                swiperSettings.centeredSlides = true;
+            <?php endif; ?>
+
+            <?php if ($speed): ?>
+                swiperSettings.speed = <?php echo intval($speed); ?>;
+            <?php endif; ?>
+
+            <?php if (!empty($effect)): ?>
+                swiperSettings.effect = "<?php echo esc_js($effect); ?>";
+            <?php endif; ?>
+
+            <?php if ($grab_cursor): ?>
+                swiperSettings.grabCursor = true;
+            <?php endif; ?>
+
+            <?php if (!$simulate_touch): ?>
+                swiperSettings.simulateTouch = false;
+            <?php endif; ?>
+
+            <?php if (!empty($autoplay)): ?>
+                swiperSettings.autoplay = JSON.parse('<?php echo str_replace('\"', '"', $autoplay); ?>');
             <?php endif; ?>
 
             function updateListingList() {

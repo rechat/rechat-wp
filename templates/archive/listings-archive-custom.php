@@ -9,7 +9,7 @@ if (isset($atts['show_filter_bar']) && $atts['show_filter_bar'] === '1') {
 <div class="rch-container-listing-list">
     <div id="map" class="rch-map-listing-list"></div>
     <div class="rch-under-main-listing">
-        <div id="listing-list" class="rch-listing-list">
+        <div id="listing-list" class="rch-listing-list rch-with-map">
         </div>
 
         <div id="rch-loading-listing" style="display: none;" class="rch-listing-skeleton-loader">
