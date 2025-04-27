@@ -304,7 +304,7 @@ function addMapMarker(listing, map) {
             <a href="${rchData.homeUrl}/listing-detail/?listing_id=${listing.id}" target="_blank">
                 <img src="${listing.image || "https://fakeimg.pl/171x90"}" alt="Listing Image" class="info-window-img"/>
                 <div class="info-window-content">
-                    <p><strong>Price:</strong> ${listing.price.toLocaleString()}</p>
+                    <p><strong>Price:</strong> $${listing.price.toLocaleString()}</p>
                     <p><strong>Location:</strong> ${listing.address}</p>
                 </div>
             </a>

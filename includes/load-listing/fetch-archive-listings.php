@@ -81,7 +81,7 @@ function rch_fetch_listing_ajax()
     $listingData = rch_fetch_listing($filters, $page, $listingPerPage);
 
     // Fetch all listings data (no pagination) to get additional information
-    $allListingData = rch_fetch_listing($filters, 1, 99999);  // Pass large number to get all listings
+    $allListingData = rch_fetch_listing($filters, 1, 200);  // Pass large number to get all listings
 
     // Fetch total listing count
     $totalListingData = rch_fetch_total_listing_count($filters);
@@ -89,7 +89,6 @@ function rch_fetch_listing_ajax()
 
     // Debugging: Capture var_dump output
     ob_start();
-    var_dump($allListingData);
     $debugOutput = ob_get_clean(); // Store the var_dump output in a variable
 
     // Prepare the response
@@ -137,7 +136,7 @@ function rch_fetch_listing_ajax()
                 'lat' => $listing['location']['latitude'],  // All latitudes without pagination
                 'lng' => $listing['location']['longitude'], // All longitudes without pagination
                 'image' => $listing['cover_image_url'],     // All cover images without pagination
-                'price' => $listing['formatted']['price']['text'],               // All prices without pagination
+                'price' => $listing['formatted']['price']['value'],               // All prices without pagination
                 'address' => $listing['formatted']['street_address']['text'],  // All addresses without pagination
                 'id' => $listing['id'],                     // All listing IDs without pagination
             ];

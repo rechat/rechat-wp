@@ -134,6 +134,31 @@
 
                     </div>
                     <hr />
+                    <?php if (!empty($listing_detail['mls_info'])) { ?>
+                        <div class="rch-disclaimer-show">
+                            <h2>
+                                Disclaimer
+                            </h2>
+                            <?php
+                            $currentYear = date('Y'); // Get the current year
+
+                            // Check if mls_info is an array
+                            $mls_info = $listing_detail['mls_info']['disclaimer'];
+
+                            // Replace {{currentYear}} with the actual current year
+                            $mls_info = str_replace('{{currentYear}}', $currentYear, $mls_info);
+
+                            // Safely output the HTML content
+                            ?>
+                            <div class="rch-inside-disclaimer">
+                                <?php echo wp_kses_post($mls_info); ?>
+                            </div>
+
+                            <?php
+                            ?>
+                        </div>
+                    <?php } ?>
+
 
                     <?php
                     // Retrieve the selected features from the settings
@@ -222,7 +247,6 @@
     </main><!-- #main -->
 </div><!-- #primary -->
 <div id="myModal" class="rch-imgs-modal">
-
     <!-- Modal content -->
     <div class="rch-modal-content">
         <span class="rch-img-modal-close">&times;</span>
@@ -256,11 +280,20 @@
 <?php get_footer() ?>
 <script src="https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.js"></script>
 <script>
-    const sdk = new Rechat.Sdk();
+    const sdk = new Rechat.Sdk({
+        tracker: {
+            cookie: {
+                name: 'rechat-sdk-tracker' // default: rechat-sdk-tracker
+            }
+        }
+    })
 
     const channel = {
         lead_channel: '<?php echo esc_js(get_option("rch_lead_channels")); ?>'
     };
+    sdk.Leads.Tracker.capture({
+        listing_id: '<?php echo esc_js($listing_detail['id']) ?>'
+    })
 
     document.getElementById('leadCaptureForm').addEventListener('submit', function(event) {
         event.preventDefault(); // Prevent form from submitting normally
@@ -298,7 +331,6 @@
     });
 </script>
 <script>
-    
     var swiper = new Swiper(".rch-houses-mySwiper", {
         spaceBetween: 10,
         slidesPerView: 8, // Default for desktop

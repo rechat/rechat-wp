@@ -8,7 +8,7 @@ $house_id = isset($_GET['listing_id']) ? sanitize_text_field(wp_unslash($_GET['l
 
 if ($house_id) {
     // Define the brand ID and API endpoint
-    $api_url = 'https://api.rechat.com/listings/' . $house_id;
+    $api_url = 'https://api.rechat.com/listings/' . $house_id . '?associations[]=listing.mls_info';
     $access_token = get_option('rch_rechat_access_token');
     $response = rch_api_request($api_url, $access_token);
 

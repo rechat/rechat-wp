@@ -562,7 +562,7 @@ function rch_get_primary_color_and_logo()
     update_option('rch_inverted_team_logo_square', $inverted_team_logo_square);
 }
 /*******************************
- *Helper function to find the button color by traversing the brand hierarchy.
+ * Helper function to find the button color by traversing the brand hierarchy.
  ******************************/
 function rch_find_get_setting($brand, $key, $default = '#2271b1')
 {
