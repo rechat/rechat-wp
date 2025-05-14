@@ -133,31 +133,7 @@
                         </ul>
 
                     </div>
-                    <hr />
-                    <?php if (!empty($listing_detail['mls_info'])) { ?>
-                        <div class="rch-disclaimer-show">
-                            <h2>
-                                Disclaimer
-                            </h2>
-                            <?php
-                            $currentYear = date('Y'); // Get the current year
 
-                            // Check if mls_info is an array
-                            $mls_info = $listing_detail['mls_info']['disclaimer'];
-
-                            // Replace {{currentYear}} with the actual current year
-                            $mls_info = str_replace('{{currentYear}}', $currentYear, $mls_info);
-
-                            // Safely output the HTML content
-                            ?>
-                            <div class="rch-inside-disclaimer">
-                                <?php echo wp_kses_post($mls_info); ?>
-                            </div>
-
-                            <?php
-                            ?>
-                        </div>
-                    <?php } ?>
 
 
                     <?php
@@ -192,7 +168,31 @@
                         }
                     }
                     ?>
+                    <hr />
+                    <?php if (!empty($listing_detail['mls_info'])) { ?>
+                        <div class="rch-disclaimer-show">
+                            <h2>
+                                Disclaimer
+                            </h2>
+                            <?php
+                            $currentYear = date('Y'); // Get the current year
 
+                            // Check if mls_info is an array
+                            $mls_info = $listing_detail['mls_info']['disclaimer'];
+
+                            // Replace {{currentYear}} with the actual current year
+                            $mls_info = str_replace('{{currentYear}}', $currentYear, $mls_info);
+
+                            // Safely output the HTML content
+                            ?>
+                            <div class="rch-inside-disclaimer">
+                                <?php echo wp_kses_post($mls_info); ?>
+                            </div>
+
+                            <?php
+                            ?>
+                        </div>
+                    <?php } ?>
                 </div>
                 <div class="rch-single-right-main-layout">
                     <div class="rch-listing-form-lead" id="leadCaptureForm">
