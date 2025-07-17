@@ -1071,6 +1071,23 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   width: 15px;
   margin-inline-end: 5px;
 }
+/* Pagination Loading Style */
+.rch-pagination-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 15px;
+    font-size: 16px;
+    color: #666;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { opacity: 0.5; }
+}
 @media screen and (min-width: 1440px) {
   .rch-expanded .rch-listing-list,
   .rch-expanded .rch-listing-skeleton-loader {

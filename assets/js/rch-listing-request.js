@@ -121,9 +121,7 @@ function updateListingList() {
             if (data.data.listings && Array.isArray(data.data.listings) && data.data.listings.length > 0) {
                 const listings = data.data.listings;
                 const allListingsData = data.data.allListingsData;
-                totalListing = data.data.total;
                 listingPerPage = data.data.listingPerPage;
-                totalPages = Math.ceil(totalListing / listingPerPage);
 
                 listingList.innerHTML = ''; // Clear previous content
                 clearMarkers(); // Remove existing markers before adding new ones
@@ -133,7 +131,13 @@ function updateListingList() {
                 });
 
                 processMapMarkers(allListingsData);
-                updatePagination(); // Update pagination UI
+                
+                // Show loading message in pagination area
+                pagination.innerHTML = '<div class="rch-pagination-loading">Loading pagination...</div>';
+                pagination.style.display = 'flex';
+                
+                // Fetch total count in a separate request
+                fetchTotalListingCount();
 
                 return allListingsData;
             } else {
@@ -153,4 +157,34 @@ function updateListingList() {
             listingList.innerHTML = '<p>Error loading listing.</p>';
             return [];
         });
+}
+
+// Function to fetch the total listing count separately
+function fetchTotalListingCount() {
+    const pagination = document.getElementById('pagination');
+    
+    return fetch(rchListingData.ajaxUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+            action: 'rch_fetch_total_listing_count',
+            ...filters,
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            totalListing = data.data.total;
+            totalPages = Math.ceil(totalListing / listingPerPage);
+            updatePagination(); // Now update the pagination with the actual count
+        } else {
+            pagination.innerHTML = '<p>Error loading pagination.</p>';
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching total count:', error);
+        pagination.innerHTML = '<p>Error loading pagination.</p>';
+    });
 }
