@@ -383,6 +383,7 @@ function rch_process_agents_data($access_token, $api_url_base)
                     'email' => $user['email'] ?? '',
                     'timezone' => $user['timezone'] ?? '',
                     'designation' => $user['designation'] ?? '',
+                    'license_number' => $user['agents'][0]['license_number'] ?? '',
                     'api_id' => $api_id,
                     '_rch_agent_regions' => $regions_for_agent,
                     '_rch_agent_offices' => $offices_for_agent,

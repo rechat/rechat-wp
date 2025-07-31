@@ -68,58 +68,6 @@ function rch_rechat_menu_page()
                                 <?php endif; ?>
                             </td>
                         </tr>
-                        <tr valign="top">
-                            <th scope="row"><?php esc_html_e('User Guide:', 'rechat-plugin'); ?></th>
-                            <td>
-                                <p><strong><?php esc_html_e('Overview:', 'rechat-plugin'); ?></strong> <?php esc_html_e('The Rechat Plugin fetches agents, regions, and offices from Rechat and updates your site every 12 hours automatically', 'rechat-plugin'); ?></p>
-                                <p><strong><?php esc_html_e('Manual Update:', 'rechat-plugin'); ?></strong> <?php esc_html_e('Click the "Sync" button to fetch the latest data on demand.', 'rechat-plugin'); ?></p>
-                                <p><strong><?php esc_html_e('Custom Templates:', 'rechat-plugin'); ?></strong>
-                                    <?php esc_html_e('To customize the templates, create a folder named', 'rechat-plugin'); ?> <code>rechat</code> <?php esc_html_e('in your theme or child theme directory. You can add the following files to this folder to overwrite the default templates:', 'rechat-plugin'); ?>
-                                <ul>
-                                    <li><code><?php esc_html_e('agents-archive-custom.php', 'rechat-plugin'); ?></code> <?php esc_html_e('to overwrite the default archive template for agents.', 'rechat-plugin'); ?></li>
-                                    <li><code><?php esc_html_e('agents-single-custom.php', 'rechat-plugin'); ?></code> <?php esc_html_e('to overwrite the default single agent template.', 'rechat-plugin'); ?></li>
-                                    <li><code><?php esc_html_e('regions-archive-custom.php', 'rechat-plugin'); ?></code> <?php esc_html_e('to overwrite the default archive template for regions.', 'rechat-plugin'); ?></li>
-                                    <li><code><?php esc_html_e('regions-single-custom.php', 'rechat-plugin'); ?></code> <?php esc_html_e('to overwrite the default single region template.', 'rechat-plugin'); ?></li>
-                                    <li><code><?php esc_html_e('offices-archive-custom.php', 'rechat-plugin'); ?></code> <?php esc_html_e('to overwrite the default archive template for offices.', 'rechat-plugin'); ?></li>
-                                    <li><code><?php esc_html_e('offices-single-custom.php', 'rechat-plugin'); ?></code> <?php esc_html_e('to overwrite the default single office template.', 'rechat-plugin'); ?></li>
-                                    <li><code><?php esc_html_e('listing-item.php', 'rechat-plugin'); ?></code> <?php esc_html_e('for customizing the listing box.', 'rechat-plugin'); ?></li>
-                                    <li><code><?php esc_html_e('listing-single-custom.php', 'rechat-plugin'); ?></code> <?php esc_html_e('to customize the single listing template.', 'rechat-plugin'); ?></li>
-                                </ul>
-                                <?php esc_html_e('Remember, these files should be placed inside the', 'rechat-plugin'); ?> <code>rechat</code> <?php esc_html_e('folder in your theme or child theme, not in the root directory.', 'rechat-plugin'); ?>
-
-                                <br /><br />
-                                <strong><?php esc_html_e('Important:', 'rechat-plugin'); ?></strong> <?php esc_html_e('The best solution is to copy these files from the templates folder in the plugin and edit them as needed.', 'rechat-plugin'); ?>
-                                </p>
-
-
-
-                                <strong><?php esc_html_e('Shortcode:', 'rechat-plugin'); ?></strong>
-                                <?php esc_html_e('To display listings anywhere on your site, simply use the shortcode', 'rechat-plugin'); ?> <code>[listings]</code>.
-                                <?php esc_html_e('You can also filter the listings data using the following attributes:', 'rechat-plugin'); ?>
-                                <ul>
-                                    <li><code>minimum_price</code></li>
-                                    <li><code>maximum_price</code></li>
-                                    <li><code>minimum_lot_square_meters</code></li>
-                                    <li><code>maximum_lot_square_meters</code></li>
-                                    <li><code>minimum_bathrooms</code></li>
-                                    <li><code>maximum_bathrooms</code></li>
-                                    <li><code>minimum_square_meters</code></li>
-                                    <li><code>maximum_square_meters</code></li>
-                                    <li><code>minimum_year_built</code></li>
-                                    <li><code>maximum_year_built</code></li>
-                                    <li><code>minimum_bedrooms</code></li>
-                                    <li><code>maximum_bedrooms</code></li>
-                                    <li><code>houses_per_page</code></li>
-                                </ul>
-                                <?php esc_html_e('You can combine these attributes to filter the listings as needed.', 'rechat-plugin'); ?>
-                                <br /><br />
-                                <?php esc_html_e('For example, to display listings with a minimum price of $100,000 and a maximum of $500,000, you would use:', 'rechat-plugin'); ?>
-                                <code>[listings minimum_price="100000" maximum_price="500000"]</code>
-                                </p>
-
-
-                            </td>
-                        </tr>
 
 
                     </table>
@@ -199,7 +147,7 @@ function rch_rechat_menu_page()
                                         Permissions
                                     </th>
                                     <td>
-                                        Agents, Regions, Offices
+                                        Agents, Regions, Offices, Listings, Leads, and more.
                                     </td>
                                 </tr>
                             </table>

@@ -42,6 +42,7 @@ function rch_display_latest_listings_shortcode($atts)
     $simulate_touch = filter_var($atts['simulate_touch'], FILTER_VALIDATE_BOOLEAN);
     $autoplay = !empty($atts['autoplay']) ? $atts['autoplay'] : null;
 
+
     ob_start();
 ?>
     <div class="swiper thumbsSwiper trendingSwiper <?php echo esc_attr($template); ?>" thumbsSlider="true">
@@ -119,6 +120,7 @@ function rch_display_latest_listings_shortcode($atts)
                             action: 'rch_fetch_listing',
                             listing_per_page: listingPerPage,
                             template: template,
+                            brand: '<?php echo esc_js(get_option('rch_rechat_brand_id')); ?>'
                             // add any other parameters here
                         }),
                         headers: {
@@ -127,6 +129,7 @@ function rch_display_latest_listings_shortcode($atts)
                     })
                     .then(response => response.json())
                     .then(data => {
+                        console.log('Fetched listing data:', data);
                         loading.style.display = 'none';
                         const listings = data.data.listings;
                         listingList.innerHTML = '';

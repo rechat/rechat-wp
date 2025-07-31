@@ -1,6 +1,6 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) {
-	exit();
+    exit();
 } 
 /*******************************
  * Function to add meta box to the 'agents' post type
@@ -38,6 +38,8 @@ function agents_meta_box_html($post)
     $email = get_post_meta($post->ID, 'email', true);
     $timezone = get_post_meta($post->ID, 'timezone', true);
     $profile_image_url = get_post_meta($post->ID, 'profile_image_url', true);
+    $license_number = get_post_meta($post->ID, 'license_number', true);
+    var_dump($license_number);
 ?>
     <label for="api_id_field">Rechat ID (not available for locally added agents): </label>
     <input type="text" id="api_id_field" name="api_id_field" value="<?php echo esc_attr($api_id); ?>" class="widefat" readonly />
@@ -75,7 +77,9 @@ function agents_meta_box_html($post)
     <label for="agents_phone_number">Phone Number</label>
     <input type="text" id="agents_phone_number" name="agents_phone_number" value="<?php echo esc_attr($phone_number); ?>" class="widefat" />
     <br>
-
+    <label for="agents_license_number">License Number</label>
+    <input type="text" id="agents_license_number" name="agents_license_number" value="<?php echo esc_attr($license_number); ?>" class="widefat" />
+    <br>
     <label for="agents_email">Email</label>
     <input type="text" id="agents_email" name="agents_email" value="<?php echo esc_attr($email); ?>" class="widefat" />
     <label for="agents_designation">Designation</label>
@@ -122,7 +126,8 @@ function save_agents_meta_box($post_id)
         'agents_phone_number' => 'phone_number',
         'agents_email' => 'email',
         'agents_timezone' => 'timezone',
-        'agents_designation'       => 'designation', // Add designation
+        'agents_designation' => 'designation',
+        'agents_license_number' => 'license_number', // Save License Number
     );
 
     foreach ($fields as $input_name => $meta_key) {
