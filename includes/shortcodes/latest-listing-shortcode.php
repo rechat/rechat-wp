@@ -129,7 +129,6 @@ function rch_display_latest_listings_shortcode($atts)
                     })
                     .then(response => response.json())
                     .then(data => {
-                        console.log('Fetched listing data:', data);
                         loading.style.display = 'none';
                         const listings = data.data.listings;
                         listingList.innerHTML = '';

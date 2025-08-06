@@ -190,6 +190,7 @@ ul.rch-archive-agents li .rch-archive-end-line a:first-child {
 .rch-main-layout-single-agent {
   display: flex;
   flex-wrap: wrap;
+  margin-block: 2rem 5rem;
 }
 .rch-main-layout-single-agent .rch-right-main-layout-single-agent {
   flex-basis: 25%;
@@ -581,14 +582,14 @@ ul.rch-neighborhoods-archive
 #neighborhood-property-value-drivers-widget,
 #neighborhood-market-trends-widget,
 #neighborhood-match-widget {
-    width: 100%;
-    margin-block: 20px;
+  width: 100%;
+  margin-block: 20px;
 }
 
 /* Specific styles for height */
 #neighborhood-map-widget,
 #neighborhood-schools-widget {
-    height: 700px;
+  height: 700px;
 }
 /*********************
 END: Neighborhoods page
@@ -688,3 +689,186 @@ ul.rch-rechat-block img {
     flex-direction: row;
   }
 }
+
+/* 
+ * Agent Properties Grid Layout 
+ * This section provides styling for displaying an agent's properties in a responsive grid layout
+ * The grid adjusts automatically based on screen size, with appropriate spacing and formatting
+ */
+.rch-agents-list {
+  position: relative;
+}
+.rch-agents-list-items {
+  margin-block-start: 30px;
+  display: grid;
+  --columns: 4;
+  --gap: 15px;
+  grid-row-gap: 20px;
+  grid-column-gap: var(--gap);
+  grid-template-columns: repeat(
+    var(--columns),
+    calc(
+      100% / var(--columns) - var(--gap) * (var(--columns) - 1) / var(--columns)
+    )
+  );
+  min-height: 200px;
+  position: relative;
+}
+
+.rch-agents-list-items .house-item {
+  border-radius: 10px;
+  border: 1px solid rgba(126, 139, 150, 0.5);
+  background: #fff;
+  padding: 16px;
+}
+
+.rch-agents-list-items .house-item a {
+  text-decoration: none;
+}
+
+.rch-agents-list-items .house-item picture {
+  height: 200px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  margin-block-end: 20px;
+  background: linear-gradient(90deg, #e0e0e0 25%, #f5f5f5 50%, #e0e0e0 75%);
+  background-size: 200% 100%;
+  animation: rch-skeleton-loading 1.5s infinite;
+  border-radius: 8px;
+}
+.rch-agents-list-items .house-item picture.rch-fallback-logo-listing {
+  background: black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.rch-agents-list-items .house-item picture img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+.rch-agents-list-items .house-item picture.rch-fallback-logo-listing img {
+  width: 50%;
+  height: auto;
+  object-fit: contain;
+  mix-blend-mode: difference;
+}
+.rch-agents-list-items .house-item p {
+  color: #000;
+}
+
+.rch-agents-list-items .house-item ul {
+  list-style: none;
+  display: flex;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.rch-agents-list-items .house-item ul li {
+  border-radius: 10px;
+  border: 1px solid var(--rch-primary-color);
+  display: flex;
+  align-items: center;
+  background: #fff;
+  font-size: 11px;
+  color: #555;
+  padding: 5px 6px;
+  margin-block: 3px;
+}
+
+.rch-agents-list-items .house-item ul li:not(:last-child) {
+  margin-inline-end: 8px;
+}
+
+.rch-agents-list-items .house-item ul li b {
+  color: #000;
+  margin-inline-end: 2px;
+}
+
+.rch-agents-list-items .house-item ul li img {
+  margin-inline-end: 5px;
+}
+
+.rch-header-properties {
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Pagination styling for listing and agent properties */
+.rch-listing-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 30px;
+  gap: 8px;
+}
+
+.rch-listing-pagination button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 10px;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #333;
+  font-size: 14px;
+}
+
+.rch-listing-pagination button:hover {
+  background-color: #e9e9e9;
+  border-color: #ccc;
+}
+
+.rch-listing-pagination button.active {
+  background-color: var(--rch-primary-color, #0066cc);
+  color: white;
+  border-color: var(--rch-primary-color, #0066cc);
+}
+
+.rch-listing-pagination span {
+  margin: 0 5px;
+  color: #777;
+}
+
+.rch-listing-pagination .pagination-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.rch-pagination-loading {
+  font-size: 14px;
+  color: #777;
+  padding: 10px;
+}
+
+/* Make sure the agent properties grid looks good */
+.rch-agents-list-items.rch-listing-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+.rch-agents-list-items .no-properties {
+    margin-block: 20px;
+}
+@media (max-width: 768px) {
+  .rch-listing-pagination {
+    flex-wrap: wrap;
+  }
+  
+  .rch-agents-list-items.rch-listing-list {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
+}
+

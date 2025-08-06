@@ -384,6 +384,12 @@ function rch_process_agents_data($access_token, $api_url_base)
                     'timezone' => $user['timezone'] ?? '',
                     'designation' => $user['designation'] ?? '',
                     'license_number' => $user['agents'][0]['license_number'] ?? '',
+                    'agents' => isset($user['agents']) && is_array($user['agents']) ?
+                        array_map(function ($agent) {
+                            return $agent['id'] ?? null;
+                        }, array_filter($user['agents'], function ($agent) {
+                            return isset($agent['id']);
+                        })) : array(),
                     'api_id' => $api_id,
                     '_rch_agent_regions' => $regions_for_agent,
                     '_rch_agent_offices' => $offices_for_agent,
@@ -479,6 +485,15 @@ function rch_get_filters($atts)
                 ];
             }, explode('|', $atts['points'])) // Split points string into array of "lat,lng"
             : null,
+        'agents' => isset($atts['agents']) && $atts['agents'] !== ''
+            ? (is_string($atts['agents']) 
+                ? ((strpos($atts['agents'], '[') === 0)
+                    ? json_decode($atts['agents'], true) // It's a JSON string
+                    : array_map('trim', explode(',', $atts['agents'])) // It's a comma-separated string
+                  )
+                : $atts['agents'] // It's already an array
+              )
+            : null,
     ];
 
     // Apply array_filter to remove null values
@@ -541,16 +556,15 @@ function rch_get_primary_color_and_logo()
     if (isset($palette_data['data'])) {
         $brand = $palette_data['data'];
 
-        $primary_color = rch_find_get_setting($brand, 'inverted-container-bg-color' , '#2271b1');
-        $container_logo_wide= rch_find_get_setting($brand, 'container-logo-wide' , 'null');
-        $container_logo_square= rch_find_get_setting($brand, 'container-logo-square' , 'null');
-        $container_team_logo_wide= rch_find_get_setting($brand, 'container-team-logo-wide' , 'null');
-        $container_team_logo_square= rch_find_get_setting($brand, 'container-team-logo-square' , 'null');
-        $inverted_container_logo_wide= rch_find_get_setting($brand, 'inverted-logo-wide' , 'null');
-        $inverted_container_logo_square= rch_find_get_setting($brand, 'inverted-logo-square' , 'null');
-        $inverted_team_logo_wide= rch_find_get_setting($brand, 'inverted-team-logo-wide' , 'null');
-        $inverted_team_logo_square= rch_find_get_setting($brand, 'inverted-team-logo-square' , 'null');
-
+        $primary_color = rch_find_get_setting($brand, 'inverted-container-bg-color', '#2271b1');
+        $container_logo_wide = rch_find_get_setting($brand, 'container-logo-wide', 'null');
+        $container_logo_square = rch_find_get_setting($brand, 'container-logo-square', 'null');
+        $container_team_logo_wide = rch_find_get_setting($brand, 'container-team-logo-wide', 'null');
+        $container_team_logo_square = rch_find_get_setting($brand, 'container-team-logo-square', 'null');
+        $inverted_container_logo_wide = rch_find_get_setting($brand, 'inverted-logo-wide', 'null');
+        $inverted_container_logo_square = rch_find_get_setting($brand, 'inverted-logo-square', 'null');
+        $inverted_team_logo_wide = rch_find_get_setting($brand, 'inverted-team-logo-wide', 'null');
+        $inverted_team_logo_square = rch_find_get_setting($brand, 'inverted-team-logo-square', 'null');
     }
     update_option('_rch_primary_color', $primary_color);
     update_option('rch_container_logo_wide', $container_logo_wide);
@@ -690,7 +704,7 @@ function get_related_neighborhoods()
                 include($custom_template);
             } else {
                 // Default HTML structure
-                ?>
+?>
                 <li class="blogs--content item">
                     <a href="<?php the_permalink(); ?>" class="related-item item-wrapper">
                         <div class="image-holder">
@@ -707,7 +721,7 @@ function get_related_neighborhoods()
                         </div>
                     </a>
                 </li>
-                <?php
+<?php
             }
         endwhile;
         wp_reset_postdata(); // Reset query
@@ -720,7 +734,8 @@ function get_related_neighborhoods()
 /*******************************
  *Helper function to Register REST API route to render listing templates
  ******************************/
-function rch_register_listing_template_endpoint() {
+function rch_register_listing_template_endpoint()
+{
     register_rest_route('rechat/v1', '/render-listing-template/', array(
         'methods' => 'POST',
         'callback' => 'rch_render_listing_template',
@@ -730,30 +745,31 @@ function rch_register_listing_template_endpoint() {
 add_action('rest_api_init', 'rch_register_listing_template_endpoint');
 
 // Callback function to render the template
-function rch_render_listing_template($request) {
+function rch_render_listing_template($request)
+{
     $listings = $request->get_param('listings');
-    
+
     if (empty($listings) || !is_array($listings)) {
         return new WP_Error('no_listings', 'No listing data provided', array('status' => 400));
     }
-    
+
     // Define paths
     $theme_template_path = 'rechat/listing-item.php';
     $plugin_template_path = RCH_PLUGIN_DIR . '/templates/archive/template-part/listing-item.php';
-    
+
     // Check if theme template exists
     $template_path = locate_template($theme_template_path);
     if (!$template_path) {
         // If not found in theme, use the plugin's template
         $template_path = $plugin_template_path;
     }
-    
+
     ob_start();
     foreach ($listings as $listing) {
         include $template_path;
     }
     $html = ob_get_clean();
-    
+
     return array(
         'html' => $html
     );
