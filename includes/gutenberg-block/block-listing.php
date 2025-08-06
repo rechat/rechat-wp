@@ -45,7 +45,37 @@ add_action('init', 'rch_register_block_assets_listing');
  ******************************/
 function rch_render_listing_block($attributes)
 {
-    // Map block attributes to shortcode parameters
+    // Get URL parameters first (if they exist)
+    // Use the existing function from search_listing_shortcode.php if available
+    if (function_exists('rch_get_url_parameters')) {
+        $url_params = rch_get_url_parameters();
+    } else {
+        // Fallback if the function is not available
+        $url_params = array();
+        $allowed_params = array(
+            'content', 'minimum_price', 'maximum_price',
+            'minimum_lot_square_meters', 'maximum_lot_square_meters',
+            'minimum_bathrooms', 'maximum_bathrooms', 
+            'minimum_square_meters', 'maximum_square_meters',
+            'minimum_year_built', 'maximum_year_built',
+            'minimum_bedrooms', 'maximum_bedrooms',
+            'property_types', 'listing_statuses', 'postal_codes'
+        );
+        
+        // Check for URL parameters and sanitize them
+        foreach ($allowed_params as $param) {
+            if (isset($_GET[$param]) && !empty($_GET[$param])) {
+                $url_params[$param] = sanitize_text_field($_GET[$param]);
+            }
+        }
+    }
+    
+    // Special handling for parameters that need to be properly formatted
+    if (isset($url_params['minimum_bathrooms'])) {
+        $url_params['minimum_bathrooms'] = intval($url_params['minimum_bathrooms']);
+    }
+    
+    // Map block attributes to shortcode parameters (block attributes are the default values)
     $shortcode_params = array(
         'minimum_price' => isset($attributes['minimum_price']) ? $attributes['minimum_price'] : '',
         'maximum_price' => isset($attributes['maximum_price']) ? $attributes['maximum_price'] : '',
@@ -66,6 +96,9 @@ function rch_render_listing_block($attributes)
         'own_listing' => isset($attributes['own_listing']) ? $attributes['own_listing'] : false,
         'property_types' => isset($attributes['property_types']) ?  $attributes['property_types'] : '',
     );
+    
+    // Override default values with URL parameters if they exist
+    $shortcode_params = array_merge($shortcode_params, $url_params);
     // Build shortcode string
     $shortcode = '[listings ';
     foreach ($shortcode_params as $param => $value) {

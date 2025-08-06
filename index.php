@@ -66,6 +66,7 @@ include RCH_PLUGIN_INCLUDES . 'load-listing/fetch-archive-listings.php';
 include RCH_PLUGIN_INCLUDES . 'shortcodes/listing-shortcodes.php';
 include RCH_PLUGIN_INCLUDES . 'shortcodes/lead-capture-shortcode.php';
 include RCH_PLUGIN_INCLUDES . 'shortcodes/latest-listing-shortcode.php';
+include RCH_PLUGIN_INCLUDES . 'shortcodes/search_listing_shortcode.php';
 include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-offices-regions.php';
 include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-agents.php';
 include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-listing.php';
