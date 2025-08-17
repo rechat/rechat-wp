@@ -1,0 +1,47 @@
+/* Google Places Autocomplete Styling */
+.pac-container {
+  z-index: 10000 !important;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  font-family: inherit;
+  margin-top: 2px;
+}
+
+.pac-item {
+  padding: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.pac-item:hover {
+  background-color: #f8f8f8;
+}
+
+.pac-item-selected, 
+.pac-item-selected:hover {
+  background-color: #f1f1f1;
+}
+
+.pac-icon {
+  margin-right: 10px;
+}
+
+.pac-item-query {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  padding-right: 5px;
+}
+
+.pac-matched {
+  font-weight: 700;
+}
+
+/* Style for the search input when autocomplete is active */
+.rch-text-filter:focus {
+  border-color: var(--rch-primary-color);
+  box-shadow: 0 0 0 1px var(--rch-primary-color);
+  outline: none;
+}

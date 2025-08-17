@@ -29,7 +29,7 @@
         
         // Set text search value
         if (urlParams.has('content')) {
-            $('#search-content').val(urlParams.get('content'));
+            $('#content').val(urlParams.get('content'));
         }
     }
     

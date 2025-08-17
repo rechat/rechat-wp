@@ -80,7 +80,8 @@ function rch_update_agents_offices_regions_data()
         'data'    => array(
             'agents'  => "<b>Agents</b></br> added: {$agents_result['agent_add_count']}, updated: {$agents_result['agent_update_count']}",
             'regions' => "<b>Regions</b></br> added: $region_add_count, updated: $region_update_count",
-            'offices' => "<b>Offices</b></br> added: $office_add_count, updated: $office_update_count"
+            'offices' => "<b>Offices</b></br> added: $office_add_count, updated: $office_update_count",
+            'branding' => "<b>Branding</b></br> Updated primary color and logos"
         )
     ));
 }

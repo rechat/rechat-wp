@@ -12,6 +12,7 @@ function rch_enqueue_frontend_styles()
     wp_register_style('rch-swiper', RCH_PLUGIN_ASSETS . 'css/swiper-bundle.min.css', [], RCH_VERSION_SWIPER);
     wp_register_style('rch-rechat-listing', RCH_PLUGIN_ASSETS . 'css/rch-rechat-listing.css', [], RCH_VERSION);
     wp_register_style('rch-rechat-search_listing_shortcode', RCH_PLUGIN_ASSETS . 'css/search_bar_listing_shortcode.css', [], RCH_VERSION);
+    wp_register_style('rch-places-autocomplete', RCH_PLUGIN_ASSETS . 'css/rch-places-autocomplete.css', [], RCH_VERSION);
 
     // Enqueue JavaScript files with version
     wp_enqueue_script('rch-ajax-front', RCH_PLUGIN_ASSETS . 'js/rch-ajax-front.js', ['jquery'], RCH_VERSION, true);
@@ -91,6 +92,24 @@ function rch_enqueue_block_assets()
         null,
         true
     );
+    // Register our custom places autocomplete script that will use the Google Maps API
+    wp_register_script(
+        'rch-places-autocomplete',
+        RCH_PLUGIN_ASSETS . 'js/rch-places-autocomplete.js',
+        ['jquery', 'rch-google-maps-api'],  // Make it dependent on rch-google-maps-api instead
+        RCH_VERSION,
+        true
+    );
+    
+    // Register listing filters places autocomplete script
+    wp_register_script(
+        'rch-listing-places-autocomplete',
+        RCH_PLUGIN_ASSETS . 'js/rch-listing-places-autocomplete.js',
+        ['jquery', 'rch-google-maps-api'],
+        RCH_VERSION,
+        true
+    );
+    
     wp_register_script('rechat-map-toggle',
      RCH_PLUGIN_URL . 'assets/js/rch-map-toggle.js',
      [],
@@ -103,6 +122,8 @@ function rch_enqueue_block_assets()
         wp_enqueue_script('rch-google-maps-api');
         wp_enqueue_script('rechat-map-toggle');
         wp_enqueue_style('rch-listing-block-css');
+        wp_enqueue_style('rch-places-autocomplete');
+        wp_enqueue_script('rch-listing-places-autocomplete');
     }
 }
 add_action('enqueue_block_assets', 'rch_enqueue_block_assets');

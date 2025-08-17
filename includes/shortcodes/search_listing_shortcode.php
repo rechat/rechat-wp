@@ -57,6 +57,11 @@ function rch_search_listing_form_shortcode($atts)
     // Enqueue the necessary scripts and styles
     wp_enqueue_script('rechat-search-form', RCH_PLUGIN_URL . 'assets/js/rch-search-form.js', array('jquery'), RCH_VERSION, true);
     
+    // Enqueue Google Maps API and Places Autocomplete scripts
+    wp_enqueue_script('rch-google-maps-api'); // Use the consolidated Google Maps API script
+    wp_enqueue_script('rch-places-autocomplete');
+    wp_enqueue_style('rch-places-autocomplete');
+    
     return ob_get_clean();
 }
 add_shortcode('rch_search_listing_form', 'rch_search_listing_form_shortcode');

@@ -41,12 +41,12 @@ $agents = get_post_meta($post_id, 'agents', true);
                             <div class="rch-data-agent">
                                 <?php the_title('<h1>', '</h1>') ?>
 
-                                        <?php if ($license_number) : ?>
-                                            <span>
-                                                License Number:
-                                                <?php echo esc_html($license_number); ?>
-                                            </span>
-                                        <?php endif; ?>
+                                <?php if ($timezone) : ?>
+                                    <span>
+                                        Location:
+                                        <?php echo esc_html($timezone); ?>
+                                    </span>
+                                <?php endif; ?>
 
                                 <?php if ($phone_number) : ?>
                                     <span>
@@ -424,14 +424,14 @@ $agents = get_post_meta($post_id, 'agents', true);
                         fetchAgentTotalCount();
                     }
                 } else {
-                    propertiesList.innerHTML = '<div class="no-properties">No properties found for this agent.</div>';
+                    propertiesList.innerHTML = '<li class="no-properties">No properties found for this agent.</li>';
                     paginationElement.style.display = 'none';
                 }
             })
             .catch(error => {
                 console.error('Error fetching agent properties:', error);
                 loadingElement.style.display = 'none';
-                propertiesList.innerHTML = '<div class="no-properties">Error loading properties. Please try again later.</div>';
+                propertiesList.innerHTML = '<li class="no-properties">Error loading properties. Please try again later.</li>';
                 paginationElement.style.display = 'none';
             });
         }

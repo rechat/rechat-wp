@@ -24,6 +24,7 @@ function rch_render_listing_list($atts)
         'minimum_bedrooms' => '',
         'maximum_bedrooms' => '',
         'brand' => '',
+        'content' => '',
         'listing_statuses' => '',
         'show_filter_bar' => true,
         'own_listing' => true,
