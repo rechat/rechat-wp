@@ -8,6 +8,21 @@ const conversionFactor = 0.092903
 function convertToSquareMeters(value) {
     return value * conversionFactor
 }
+
+// Function to get URL parameters and set the content field
+function setContentFromURLParams() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('content')) {
+        const contentValue = urlParams.get('content');
+        const contentInput = document.getElementById('content');
+        if (contentInput) {
+            contentInput.value = contentValue;
+            // Trigger filter application with the loaded value
+            applyFilters();
+        }
+    }
+}
+
 // Select all elements with the specific ID
 const squareMeterInputs = document.querySelectorAll('#minimum_square_meters, #maximum_square_meters')
 const squareLotInputs = document.querySelectorAll('#minimum_lot_square_meters, #maximum_lot_square_meters')
@@ -54,7 +69,7 @@ function handleConversion(event) {
 
 function applyFilters() {
     // Update the filters with user inputs
-    filters.content = document.getElementById('content').value;
+    // filters.content = document.getElementById('content').value;
     filters.property_types = getSelectedRadioCheckboxValue('property_types');
     filters.minimum_price = document.getElementById('minimum_price').value;
     filters.maximum_price = document.getElementById('maximum_price').value;
@@ -173,6 +188,9 @@ setupFilterButtons('.rch-bath-filter-listing', 'minimum_bathrooms', 'rch-baths-t
 setupFilterButtons('.rch-parking-filter-listing', 'minimum_parking_spaces', 'rch-parking-text-filter', 'Parking');
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Call the function to set content from URL parameters
+    setContentFromURLParams();
+    
     // Retrieve default values from the server.
     // (Make sure these PHP variables are defined and output correctly.)
     const defaultMinPrice = defaultFilters.minimum_price

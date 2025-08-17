@@ -4,8 +4,10 @@ function rch_display_latest_listings_shortcode($atts)
     // Set default attributes and override with user-provided attributes
     $atts = shortcode_atts(
         array(
+            'display_type' => 'swiper', // New attribute to select between 'swiper' or 'grid'
             'limit' => 7,
             'template' => '',
+            'content' => '',
             'slides_per_view' => 3.5,
             'space_between' => 16,
             'loop' => true,
@@ -26,6 +28,7 @@ function rch_display_latest_listings_shortcode($atts)
     );
 
     $template = esc_js($atts['template']);
+    $display_type = esc_attr($atts['display_type']);
     $slides_per_view = floatval($atts['slides_per_view']);
     $space_between = intval($atts['space_between']);
     $loop = filter_var($atts['loop'], FILTER_VALIDATE_BOOLEAN);
@@ -45,10 +48,26 @@ function rch_display_latest_listings_shortcode($atts)
 
     ob_start();
 ?>
+    <style>
+       
+    </style>
+    <?php if ($display_type === 'swiper'): ?>
     <div class="swiper thumbsSwiper trendingSwiper <?php echo esc_attr($template); ?>" thumbsSlider="true">
         <div class="swiper-wrapper" id="rch-listing-list-latest-<?php echo esc_attr($template); ?>"></div>
-        <div id="rch-loading-listing" style="display: block;" class="rch-loader"></div>
+        <div id="rch-loading-listing" class="rch-loading-container">
+            <div class="rch-loader"></div>
+            <div class="rch-loader-text">Loading listings...</div>
+        </div>
     </div>
+    <?php else: ?>
+    <div class="rch-grid-container <?php echo esc_attr($template); ?>-grid">
+        <div id="rch-listing-list-latest-<?php echo esc_attr($template); ?>"></div>
+        <div id="rch-loading-listing" class="rch-loading-container">
+            <div class="rch-loader"></div>
+            <div class="rch-loader-text">Loading listings...</div>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -111,8 +130,9 @@ function rch_display_latest_listings_shortcode($atts)
                 const listingList = document.getElementById('rch-listing-list-latest-<?php echo esc_attr($template); ?>');
                 const loading = document.getElementById('rch-loading-listing');
 
+                // Clear the listing container and show loading
                 listingList.innerHTML = '';
-                loading.style.display = 'block';
+                loading.style.display = 'flex';
 
                 fetch(adminAjaxUrl, {
                         method: 'POST', // Ensure method is POST
@@ -120,6 +140,7 @@ function rch_display_latest_listings_shortcode($atts)
                             action: 'rch_fetch_listing',
                             listing_per_page: listingPerPage,
                             template: template,
+                            content: '<?php echo esc_js($atts['content']); ?>', // Pass the content filter
                             brand: '<?php echo esc_js(get_option('rch_rechat_brand_id')); ?>'
                             // add any other parameters here
                         }),
@@ -129,18 +150,34 @@ function rch_display_latest_listings_shortcode($atts)
                     })
                     .then(response => response.json())
                     .then(data => {
+                        // Hide loading indicator
                         loading.style.display = 'none';
+                        
                         const listings = data.data.listings;
                         listingList.innerHTML = '';
 
-                        listings.forEach(listing => {
-                            listingList.innerHTML += listing.content;
-                        });
-                        initializeSwiper(`.${template}`, swiperSettings);
-
+                        if (listings && listings.length > 0) {
+                            listings.forEach(listing => {
+                                listingList.innerHTML += listing.content;
+                            });
+                            
+                            // Only initialize Swiper if display_type is swiper
+                            <?php if ($display_type === 'swiper'): ?>
+                            initializeSwiper(`.${template}`, swiperSettings);
+                            <?php endif; ?>
+                        } else {
+                            // Display a message when no listings are returned
+                            listingList.innerHTML = '<div class="rch-no-listings-message">Nothing to show</div>';
+                        }
                     })
                     .catch(error => {
                         console.error('Error fetching listing:', error);
+                        
+                        // Hide loading indicator even on error
+                        loading.style.display = 'none';
+                        
+                        // Display a message when there's an error
+                        listingList.innerHTML = '<div class="rch-no-listings-message">No listings available.</div>';
                     });
             }
 

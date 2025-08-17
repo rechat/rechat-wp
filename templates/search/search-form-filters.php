@@ -16,7 +16,7 @@ $container_class = $is_compact ? 'rch-search-filters-compact' : 'rch-search-filt
 
 <div class="<?php echo esc_attr($container_class); ?>">
         <div class="rch-search-form-col">
-            <input type="search" class="rch-text-filter" name="content" id="search-content" placeholder="Search by City, ZIP, Address..." />
+            <input type="search" class="rch-text-filter" name="content" id="content" placeholder="Search by City, ZIP, Address..." />
         </div>
     <div class="rch-search-form-col">
         <select name="property_types" id="search-property-types" class="rch-dropdown">

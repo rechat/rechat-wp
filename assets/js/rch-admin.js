@@ -42,7 +42,8 @@ jQuery(document).ready(function ($) {
                     var messageHtml = '<div class="notice notice-success is-dismissible"><p>' +
                         messages.agents + '<br>' +
                         messages.offices + '<br>' +
-                        messages.regions + '</p></div>';
+                        messages.regions + '<br>' +
+                        messages.branding + '</p></div>';
                     statusDiv.html(messageHtml);
                 } else {
                     statusDiv.html('<div class="notice notice-error is-dismissible"><p>' + response.data + '</p></div>');
