@@ -67,6 +67,75 @@ function rch_filter_brands_by_type($brands, $types)
     }
     return $filtered_brands;
 }
+
+/*******************************
+ * Calculate bounding box based on center coordinates and zoom level
+ ******************************/
+function rch_calculate_bounding_box($lat, $lng, $zoom) {
+    // Use a more expansive calculation that matches the JavaScript viewport bounds
+    
+    // Calculate zoom scale factor - the lower the zoom level, the larger the area
+    // This formula creates a similar view to what Google Maps JavaScript API generates
+    $zoomScale = pow(2, 15 - $zoom); // Adjust base value for appropriate coverage
+    
+    // Calculate degree offsets based on zoom scale
+    // These values are calibrated to create viewport bounds similar to Google Maps
+    $latOffset = $zoomScale * 0.08; // latitude offset in degrees
+    $lngOffset = $zoomScale * 0.08 / cos(deg2rad($lat)); // longitude offset adjusted for latitude
+    
+    // Calculate the four corners
+    $north = $lat + $latOffset;
+    $south = $lat - $latOffset;
+    $east = $lng + $lngOffset;
+    $west = $lng - $lngOffset;
+    
+    return [
+        'northeast' => [$north, $east],
+        'southeast' => [$south, $east],
+        'southwest' => [$south, $west],
+        'northwest' => [$north, $west]
+    ];
+}
+
+/*******************************
+ * Generate polygon string from bounding box coordinates
+ ******************************/
+function rch_generate_polygon_string($boundingBox) {
+    // Extract coordinates
+    $north = $boundingBox['northeast'][0]; // North latitude
+    $east = $boundingBox['northeast'][1];  // East longitude
+    $south = $boundingBox['southwest'][0]; // South latitude
+    $west = $boundingBox['southwest'][1];  // West longitude
+    
+    // Create points in exactly the same order as in the JavaScript implementation
+    // The order is: NW -> NE -> SE -> SW -> NW (to close the polygon)
+    $points = [
+        // North-West point
+        [$north, $west],
+        
+        // North-East point
+        [$north, $east],
+        
+        // South-East point
+        [$south, $east],
+        
+        // South-West point
+        [$south, $west],
+        
+        // North-West point again to close the polygon
+        [$north, $west]
+    ];
+    
+    // Format points as "lat,lng|lat,lng|..." exactly as the JavaScript does
+    $polygonString = '';
+    foreach ($points as $point) {
+        $polygonString .= $point[0] . ',' . $point[1] . '|';
+    }
+    
+    // Remove the trailing pipe character
+    return rtrim($polygonString, '|');
+}
+
 /*******************************
  * Function to collect brands recursively
  ******************************/
@@ -617,11 +686,13 @@ function get_custom_options()
     // Retrieve the option stored in WordPress
     $brand_id = get_option('rch_rechat_brand_id');
     $access_token = get_option('rch_rechat_access_token');
+    $google_map_api_key = get_option('rch_rechat_google_map_api_key');
 
     // Return the option as a JSON response
     return new WP_REST_Response(array(
         'rch_rechat_brand_id' => $brand_id,
         'rch_rechat_access_token' => $access_token,
+        'rch_rechat_google_map_api_key' => $google_map_api_key,
     ), 200);
 }
 

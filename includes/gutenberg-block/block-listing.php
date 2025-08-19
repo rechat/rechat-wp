@@ -34,6 +34,9 @@ function rch_register_block_assets_listing()
             'show_filter_bar' => array('type' => 'boolean', 'default' => true), // New attribute
             'own_listing' => array('type' => 'boolean', 'default' => true), // New attribute
             'property_types' => array('type' => 'string', 'default' => ''), // New attribute
+            'map_latitude' => array('type' => 'string', 'default' => ''), // Map location attribute
+            'map_longitude' => array('type' => 'string', 'default' => ''), // Map location attribute
+            'map_zoom' => array('type' => 'string', 'default' => '12'), // Map zoom attribute
         ),
         'render_callback' => 'rch_render_listing_block',
     ));
@@ -95,6 +98,9 @@ function rch_render_listing_block($attributes)
         'show_filter_bar' => isset($attributes['show_filter_bar']) ? $attributes['show_filter_bar'] : '',
         'own_listing' => isset($attributes['own_listing']) ? $attributes['own_listing'] : false,
         'property_types' => isset($attributes['property_types']) ?  $attributes['property_types'] : '',
+        'map_latitude' => isset($attributes['map_latitude']) ? $attributes['map_latitude'] : '',
+        'map_longitude' => isset($attributes['map_longitude']) ? $attributes['map_longitude'] : '',
+        'map_zoom' => isset($attributes['map_zoom']) ? $attributes['map_zoom'] : '12',
     );
     
     // Override default values with URL parameters if they exist
