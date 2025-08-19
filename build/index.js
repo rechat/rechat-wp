@@ -23,46 +23,71 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-const ListingMain = ({
-  listing_per_page,
-  maximum_bedrooms,
-  minimum_bedrooms,
-  maximum_bathrooms,
-  minimum_bathrooms,
-  maximum_year_built,
-  minimum_year_built,
-  maximum_square_meters,
-  minimum_square_meters,
-  maximum_price,
-  minimum_price,
-  property_types,
-  own_listing,
-  show_filter_bar,
-  maximum_lot_square_meters,
-  minimum_lot_square_meters,
-  selectedStatuses
-}) => {
-  const siteUrl = wp.data.select("core").getSite()?.url;
-  const [brandId, setBrandId] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null);
+const ListingMain = props => {
+  // Destructure and convert props to appropriate types
+  const {
+    listing_per_page,
+    maximum_bedrooms,
+    minimum_bedrooms,
+    maximum_bathrooms,
+    minimum_bathrooms,
+    maximum_year_built,
+    minimum_year_built,
+    maximum_square_meters,
+    minimum_square_meters,
+    maximum_price,
+    minimum_price,
+    property_types,
+    own_listing,
+    show_filter_bar,
+    maximum_lot_square_meters,
+    minimum_lot_square_meters,
+    selectedStatuses,
+    brandId: propsBrandId // Accept brandId from props
+  } = props;
+  // Convert string values to appropriate types
+  const parsedListingPerPage = parseInt(listing_per_page) || 10;
+  const parsedOwnListing = own_listing === 'true' || own_listing === true;
+  const parsedShowFilterBar = show_filter_bar === 'true' || show_filter_bar === true;
+
+  // Safely get site URL
+  const siteUrl = typeof wp !== 'undefined' && wp.data && wp.data.select && wp.data.select("core") ? wp.data.select("core").getSite()?.url : window.location.origin;
+
+  // Use brandId from props if available, otherwise start with null and fetch it
+  const [brandId, setBrandId] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(propsBrandId || null);
   const [listings, setListings] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
   const [loading, setLoading] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(true);
   const [mapBounds, setMapBounds] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null);
   const [isFirstMapLoad, setIsFirstMapLoad] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(true);
   const mapRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
-  const fetchBrandId = async () => {
-    try {
-      const brandResponse = await _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_1___default()({
-        path: '/wp/v2/options'
-      });
-      if (brandResponse.rch_rechat_brand_id) {
-        setBrandId(brandResponse.rch_rechat_brand_id);
-      } else {
-        console.error('Brand ID not found in WordPress options.');
-      }
-    } catch (error) {
-      console.error('Error fetching brand ID:', error);
-    }
-  };
+
+  // Log the brand ID from props for debugging
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+    console.log('Brand ID from shortcode:', propsBrandId);
+    console.log('Current brand ID state:', brandId);
+    setBrandId(propsBrandId);
+  }, [propsBrandId, brandId]);
+  console.log('Brand ID from shortcode:', brandId);
+  // const fetchBrandId = async () => {
+  //     // Only fetch if we don't already have a brandId from props
+  //     if (propsBrandId) {
+  //         console.log('Using brand ID from props:', propsBrandId);
+  //         return;
+  //     }
+
+  //     try {
+  //         const brandResponse = await apiFetch({ path: '/wp/v2/options' });
+  //         if (brandResponse.rch_rechat_brand_id) {
+  //             setBrandId(brandResponse.rch_rechat_brand_id);
+  //             console.log('Fetched brand ID from API:', brandResponse.rch_rechat_brand_id);
+  //         } else {
+  //             console.error('Brand ID not found in WordPress options.');
+  //         }
+  //     } catch (error) {
+  //         console.error('Error fetching brand ID:', error);
+  //     }
+  // };
+
   const fetchListings = (bounds = null) => {
     if (!brandId) return;
     const headers = {
@@ -129,9 +154,14 @@ const ListingMain = ({
       setLoading(false);
     });
   };
-  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
-    fetchBrandId();
-  }, []);
+
+  // useEffect(() => {
+  //     // Only fetch brand ID if it's not provided in props
+  //     if (!propsBrandId) {
+  //         fetchBrandId();
+  //     }
+  // }, [propsBrandId]);
+
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
     setMapBounds(null);
     fetchListings();
