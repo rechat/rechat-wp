@@ -6,7 +6,7 @@
     src="<?php 
         echo !empty($listing['cover_image_url']) 
             ? esc_url($listing['cover_image_url']) 
-            : esc_url(get_option('rch_inverted_container_logo_wide', PMY_THEME_URL . '/assets/img/placeholder.webp')); 
+            : esc_url(get_option('rch_inverted_container_logo_wide', get_home_url() . '/assets/img/placeholder.webp')); 
     ?>" 
     alt="House Image">    
     </picture>

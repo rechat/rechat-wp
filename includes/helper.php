@@ -486,13 +486,13 @@ function rch_get_filters($atts)
             }, explode('|', $atts['points'])) // Split points string into array of "lat,lng"
             : null,
         'agents' => isset($atts['agents']) && $atts['agents'] !== ''
-            ? (is_string($atts['agents']) 
+            ? (is_string($atts['agents'])
                 ? ((strpos($atts['agents'], '[') === 0)
                     ? json_decode($atts['agents'], true) // It's a JSON string
                     : array_map('trim', explode(',', $atts['agents'])) // It's a comma-separated string
-                  )
+                )
                 : $atts['agents'] // It's already an array
-              )
+            )
             : null,
     ];
 
@@ -503,7 +503,6 @@ function rch_get_filters($atts)
 
     return $filtered;
 }
-
 /*******************************
  *title for page listing detail
  ******************************/
