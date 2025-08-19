@@ -133,4 +133,10 @@ wp_localize_script('rechat-listings-map', 'rchListingData', array(
         'listing_statuses' => $atts['listing_statuses'],
     )
 ));
+
+// Enqueue Places Autocomplete Script
+wp_enqueue_script('rechat-places-autocomplete', RCH_PLUGIN_URL . 'assets/js/rch-places-autocomplete.js', array('jquery', 'rch-google-maps-api', 'rechat-listings-map'), RCH_VERSION, true);
+
+// Enqueue our new places autocomplete script
+wp_enqueue_script('rechat-places-autocomplete', RCH_PLUGIN_URL . 'assets/js/rch-places-autocomplete.js', array('jquery', 'rechat-listings-map'), RCH_VERSION, true);
 ?>

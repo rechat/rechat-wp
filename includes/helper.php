@@ -76,12 +76,16 @@ function rch_calculate_bounding_box($lat, $lng, $zoom) {
     
     // Calculate zoom scale factor - the lower the zoom level, the larger the area
     // This formula creates a similar view to what Google Maps JavaScript API generates
+    // For zoom levels 10-12 (city level), we want a narrower viewport
     $zoomScale = pow(2, 15 - $zoom); // Adjust base value for appropriate coverage
     
-    // Calculate degree offsets based on zoom scale
+    // For higher zoom levels (>10), use a smaller factor to create a closer view
+    $factor = ($zoom >= 10) ? 0.04 : 0.08;
+    
+    // Calculate degree offsets based on zoom scale and factor
     // These values are calibrated to create viewport bounds similar to Google Maps
-    $latOffset = $zoomScale * 0.08; // latitude offset in degrees
-    $lngOffset = $zoomScale * 0.08 / cos(deg2rad($lat)); // longitude offset adjusted for latitude
+    $latOffset = $zoomScale * $factor; // latitude offset in degrees
+    $lngOffset = $zoomScale * $factor / cos(deg2rad($lat)); // longitude offset adjusted for latitude
     
     // Calculate the four corners
     $north = $lat + $latOffset;
@@ -135,6 +139,36 @@ function rch_generate_polygon_string($boundingBox) {
     // Remove the trailing pipe character
     return rtrim($polygonString, '|');
 }
+
+/**
+ * AJAX handler for calculating polygon from place coordinates
+ */
+function rch_calculate_polygon_from_place() {
+    // Verify if request has required parameters
+    if (!isset($_POST['lat']) || !isset($_POST['lng']) || !isset($_POST['zoom'])) {
+        wp_send_json_error(['message' => 'Missing required parameters']);
+        return;
+    }
+    
+    // Get parameters from request
+    $lat = floatval($_POST['lat']);
+    $lng = floatval($_POST['lng']);
+    $zoom = intval($_POST['zoom']);
+    
+    // Calculate bounding box and polygon string
+    $boundingBox = rch_calculate_bounding_box($lat, $lng, $zoom);
+    $polygonString = rch_generate_polygon_string($boundingBox);
+    
+    // Send response
+    wp_send_json_success([
+        'boundingBox' => $boundingBox,
+        'polygonString' => $polygonString
+    ]);
+}
+
+// Register AJAX handlers
+add_action('wp_ajax_rch_calculate_polygon_from_place', 'rch_calculate_polygon_from_place');
+add_action('wp_ajax_nopriv_rch_calculate_polygon_from_place', 'rch_calculate_polygon_from_place');
 
 /*******************************
  * Function to collect brands recursively
