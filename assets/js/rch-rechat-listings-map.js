@@ -32,13 +32,42 @@ function processMapMarkers(allListingsData) {
  * Function for initialize the map
  */
 function initMap() {
+    // Check if we have predefined coordinates from the shortcode
+    let initialLat = 39.8283; // Default: Center of US
+    let initialLng = -98.5795;
+    let initialZoom = 4;
     
-    // First initialize the map with a default view
+    // Use coordinates from shortcode if available
+    if (typeof rchListingData !== 'undefined' && rchListingData.mapCoordinates) {
+        const coords = rchListingData.mapCoordinates;
+        
+        if (coords.latitude && coords.longitude) {
+            initialLat = parseFloat(coords.latitude);
+            initialLng = parseFloat(coords.longitude);
+        }
+        
+        if (coords.zoom) {
+            initialZoom = parseInt(coords.zoom);
+        }
+    }
+    
+    // Initialize the map with the coordinates from the shortcode
     map = new google.maps.Map(document.getElementById('map'), {
-        center: { lat: 39.8283, lng: -98.5795 }, // Centered on the United States
-        zoom: 4, // Adjusted zoom level for a better view of the US
+        center: { lat: initialLat, lng: initialLng },
+        zoom: initialZoom,
         mapId: 'a1b2c3d4e5f6g7h8' // Add your Map ID here
     });
+    
+    // If we have coordinates from the shortcode, set the query string immediately
+    if (typeof rchListingData !== 'undefined' && rchListingData.mapCoordinates && rchListingData.mapCoordinates.polygonString) {
+        const queryString = rchListingData.mapCoordinates.polygonString;
+        document.getElementById('query-string').value = queryString;
+        
+        // Also update the filters.points for the API requests
+        if (typeof filters !== 'undefined') {
+            filters.points = queryString;
+        }
+    }
     
     // Initialize drawing tools and buttons (these don't trigger AJAX requests)
     initDrawingManager();
@@ -50,11 +79,17 @@ function initMap() {
 
 // New function to fetch data and update the map
 function fetchListingsDataAndUpdateMap() {
+    // Check if we have coordinates from the shortcode - if so, don't auto-fit bounds
+    const hasShortcodeCoordinates = typeof rchListingData !== 'undefined' && 
+                                  rchListingData.mapCoordinates && 
+                                  rchListingData.mapCoordinates.latitude && 
+                                  rchListingData.mapCoordinates.longitude;
     
     // Use the existing updateListingList function
     updateListingList()
         .then(allListingsData => {
-            if (allListingsData && allListingsData.length > 0) {
+            if (allListingsData && allListingsData.length > 0 && !hasShortcodeCoordinates) {
+                // Only auto-fit bounds if we don't have coordinates from the shortcode
                 const bounds = createBoundsFromListings(allListingsData);
                 
                 // Update the existing map
@@ -63,13 +98,16 @@ function fetchListingsDataAndUpdateMap() {
                 
                 // Update filter points for the current view
                 updateFilterPoints();
-                
-                // NOW attach the map event listeners AFTER initial data is loaded
-                attachMapEventListeners();
             } else {
-                // Still attach listeners even if no listings found
-                attachMapEventListeners();
+                // If we have coordinates from the shortcode, we've already set up the map
+                // Or if there are no listings, we still use the default map center
+                
+                // Update filter points for the current view to ensure the query string is set
+                updateFilterPoints();
             }
+            
+            // NOW attach the map event listeners AFTER initial data is loaded
+            attachMapEventListeners();
         })
         .catch(error => {
             console.error('Error fetching listings data:', error);

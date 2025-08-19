@@ -29,6 +29,9 @@ function rch_render_listing_list($atts)
         'show_filter_bar' => true,
         'own_listing' => true,
         'property_types' => '',
+        'map_latitude' => '',
+        'map_longitude' => '',
+        'map_zoom' => '',
     ], $atts);
     // Get sanitized filters
     $filters = rch_get_filters($atts);

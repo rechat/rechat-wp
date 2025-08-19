@@ -5,6 +5,7 @@ import { useEffect, useState } from '@wordpress/element'; // useState and useEff
 import ServerSideRender from '@wordpress/server-side-render';
 import apiFetch from '@wordpress/api-fetch';
 import ListingMain from './listing-main';
+import MapSelector from './map-selector'; // Import the MapSelector component
 //regions block
 registerBlockType('rch-rechat-plugin/regions-block', {
     title: 'Regions Block',
@@ -271,7 +272,10 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         listing_statuses: { type: 'array', default: [] },
         show_filter_bar: { type: 'boolean', default: true }, // New attribute for showing the filter bar
         own_listing: { type: 'boolean', default: true }, // New attribute for showing the filter bar
-        property_types: { type: 'string', default: '' }
+        property_types: { type: 'string', default: '' },
+        map_latitude: { type: 'string', default: '' },
+        map_longitude: { type: 'string', default: '' },
+        map_zoom: { type: 'string', default: '12' }
 
     },
     edit({ attributes, setAttributes }) {
@@ -279,11 +283,13 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             minimum_price, maximum_price, minimum_lot_square_meters, maximum_lot_square_meters,
             minimum_bathrooms, maximum_bathrooms, minimum_square_meters, maximum_square_meters,
             minimum_year_built, maximum_year_built, minimum_bedrooms, maximum_bedrooms,
-            listing_per_page, filterByRegions, filterByOffices, selectedStatuses, show_filter_bar, own_listing, property_types,listing_statuses
+            listing_per_page, filterByRegions, filterByOffices, selectedStatuses, show_filter_bar, own_listing, property_types, listing_statuses,
+            map_latitude, map_longitude, map_zoom
         } = attributes;
 
         const [regions, setRegions] = useState([]);
         const [offices, setOffices] = useState([]);
+        const [googleMapsApiKey, setGoogleMapsApiKey] = useState('');
 
         const statusOptions = [
             { label: 'Active', value: 'Active' },
@@ -307,6 +313,18 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         useEffect(() => {
             fetchData('/wp/v2/regions?per_page=100', setRegions);
             fetchData('/wp/v2/offices?per_page=100', setOffices);
+            
+            // Fetch Google Maps API key
+            apiFetch({ path: '/wp/v2/options' })
+                .then(options => {
+                    console.log(options)
+                    if (options.rch_rechat_google_map_api_key) {
+                        setGoogleMapsApiKey(options.rch_rechat_google_map_api_key);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching Google Maps API key:', error);
+                });
         }, []);
 
         const handleAttributeChange = (attr, value) => {
@@ -328,6 +346,21 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         };
         const handlePropertyTypeChange = (value) => {
             setAttributes({ property_types: value });
+        };
+
+        // Function to handle map location change
+        const handleMapLocationChange = (location) => {
+            if (location && location.lat && location.lng) {
+                setAttributes({
+                    map_latitude: location.lat.toString(),
+                    map_longitude: location.lng.toString(),
+                });
+            }
+        };
+
+        // Function to handle zoom level change
+        const handleZoomChange = (zoom) => {
+            setAttributes({ map_zoom: zoom.toString() });
         };
         return (
             <>
@@ -456,6 +489,40 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                             onChange={(value) => setAttributes({ listing_per_page: value === '' ? '' : value.toString() })}
                         />
                     </PanelBody>
+                    <PanelBody title="Map Settings">
+                        {googleMapsApiKey ? (
+                            <>
+                                <p><strong>Location Selector</strong></p>
+                                <MapSelector
+                                    apiKey={googleMapsApiKey}
+                                    latitude={map_latitude}
+                                    longitude={map_longitude}
+                                    zoom={map_zoom}
+                                    onLocationChange={handleMapLocationChange}
+                                    onZoomChange={handleZoomChange}
+                                />
+                                <TextControl
+                                    label="Latitude"
+                                    value={map_latitude}
+                                    onChange={(value) => setAttributes({ map_latitude: value })}
+                                />
+                                <TextControl
+                                    label="Longitude"
+                                    value={map_longitude}
+                                    onChange={(value) => setAttributes({ map_longitude: value })}
+                                />
+                                <RangeControl
+                                    label="Zoom Level"
+                                    value={parseInt(map_zoom) || 12}
+                                    onChange={handleZoomChange}
+                                    min={1}
+                                    max={20}
+                                />
+                            </>
+                        ) : (
+                            <p>Google Maps API key not found. Please make sure it is configured in the WordPress settings.</p>
+                        )}
+                    </PanelBody>
                 </InspectorControls>
                 {/* <ServerSideRender
                     block="rch-rechat-plugin/listing-block"
@@ -479,7 +546,6 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                     own_listing={own_listing}
                     show_filter_bar={show_filter_bar}
                     selectedStatuses ={listing_statuses}
-
                 />
             </>
         );
@@ -552,8 +618,8 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
         const fetchAccessToken = async () => {
             try {
                 const tokenResponse = await apiFetch({ path: '/wp/v2/options' });
-                if (tokenResponse.rch_rechat_access_token) {
-                    setAccessToken(tokenResponse.rch_rechat_access_token);
+                if (tokenResponse.rch_rechat_google_map_api_key) {
+                    setAccessToken(tokenResponse.rch_rechat_google_map_api_key);
                 } else {
                     console.error('Access token not found in WordPress options.');
                 }
