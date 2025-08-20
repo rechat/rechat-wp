@@ -21,13 +21,20 @@ let defaultFilters = {
     minimum_bedrooms: rchListingData.filters.minimum_bedrooms,
     maximum_bedrooms: rchListingData.filters.maximum_bedrooms,
     listing_statuses: rchListingData.filters.listing_statuses,
-    points: document.getElementById('query-string').value,
     property_types: rchListingData.propertyTypes, // Convert PHP array to JavaScript array
 };
 
 let filters = {
     ...defaultFilters
 };
+
+// Add points to filters only if we have valid coordinates
+if (rchListingData.mapCoordinates && rchListingData.mapCoordinates.hasValidCoordinates) {
+    const queryString = document.getElementById('query-string');
+    if (queryString && queryString.value) {
+        filters.points = queryString.value;
+    }
+}
 
 function fetchListingsData() {
     const loading = document.getElementById('rch-loading-spinner');

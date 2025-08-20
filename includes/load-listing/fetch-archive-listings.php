@@ -20,6 +20,7 @@ function rch_fetch_listing($filters, $page, $listingPerPage)
     $headers = [
         'Content-Type' => 'application/json',
         'X-RECHAT-BRAND' => $brand,
+        'Authorization' => 'Bearer ' . get_option('rch_rechat_access_token')
     ];
     $response = wp_remote_post('https://api.rechat.com/valerts?order_by[]=-price', [
         'method' => 'POST',

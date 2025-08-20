@@ -91,6 +91,14 @@ function rch_enqueue_block_assets()
         true
     );
     
+    // Register Places Autocomplete CSS
+    wp_register_style(
+        'rch-places-autocomplete',
+        RCH_PLUGIN_URL . 'assets/css/rch-places-autocomplete.css',
+        [],
+        RCH_VERSION
+    );
+    
     wp_register_script('rechat-map-toggle',
      RCH_PLUGIN_URL . 'assets/js/rch-map-toggle.js',
      [],

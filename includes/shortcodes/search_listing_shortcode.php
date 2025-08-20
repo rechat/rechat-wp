@@ -59,7 +59,7 @@ function rch_search_listing_form_shortcode($atts)
     
     // Enqueue Google Maps API and Places Autocomplete scripts
     wp_enqueue_script('rch-google-maps-api'); // Use the consolidated Google Maps API script
-    wp_enqueue_script('rch-places-autocomplete');
+    wp_enqueue_script('rechat-search-form-autocomplete', RCH_PLUGIN_URL . 'assets/js/rch-search-form-autocomplete.js', array('jquery', 'rch-google-maps-api'), RCH_VERSION, true);
     wp_enqueue_style('rch-places-autocomplete');
     
     return ob_get_clean();
@@ -87,7 +87,7 @@ function rch_get_url_parameters() {
         'minimum_year_built', 'maximum_year_built',
         'minimum_lot_square_meters', 'maximum_lot_square_meters',
         'property_types', 'listing_statuses',
-        'content', 'postal_codes'
+        'content', 'postal_codes', 'place_coords'
     );
     
     $params = array();
@@ -113,6 +113,35 @@ function rch_get_url_parameters() {
                 case 'minimum_lot_square_meters':
                 case 'maximum_lot_square_meters':
                     $params[$param] = floatval(sanitize_text_field($_GET[$param]));
+                    break;
+                
+                case 'place_coords':
+                    // Extract coordinates from place_coords parameter
+                    $coords = sanitize_text_field($_GET[$param]);
+                    
+                    // If coordinates are present, calculate bounds and generate polygon
+                    if (strpos($coords, ',') !== false) {
+                        list($lat, $lng) = explode(',', $coords, 2);
+                        
+                        // Convert to floats
+                        $lat = floatval($lat);
+                        $lng = floatval($lng);
+                        
+                        // Use a city-level zoom by default
+                        $zoom = 12;
+                        
+                        // Calculate bounding box if the functions are available
+                        if (function_exists('rch_calculate_bounding_box') && function_exists('rch_generate_polygon_string')) {
+                            $boundingBox = rch_calculate_bounding_box($lat, $lng, $zoom);
+                            $polygonString = rch_generate_polygon_string($boundingBox);
+                            
+                            // Add these values to the parameters
+                            $params['map_latitude'] = $lat;
+                            $params['map_longitude'] = $lng;
+                            $params['map_zoom'] = $zoom;
+                            $params['map_points'] = $polygonString;
+                        }
+                    }
                     break;
                 
                 default:
