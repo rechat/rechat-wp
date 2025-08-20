@@ -10,20 +10,26 @@ $latitude = isset($atts['map_latitude']) ? floatval($atts['map_latitude']) : 0;
 $longitude = isset($atts['map_longitude']) ? floatval($atts['map_longitude']) : 0;
 $zoom = isset($atts['map_zoom']) ? intval($atts['map_zoom']) : 10;
 
-// Calculate the bounding box and polygon string using helper functions
-$boundingBox = rch_calculate_bounding_box($latitude, $longitude, $zoom);
-$polygonString = rch_generate_polygon_string($boundingBox);
-
+// Only calculate bounding box and polygon string if we have valid coordinates
+$boundingBox = null;
+$polygonString = '';
+if ($latitude != 0 && $longitude != 0) {
+    // Calculate the bounding box and polygon string using helper functions
+    $boundingBox = rch_calculate_bounding_box($latitude, $longitude, $zoom);
+    $polygonString = rch_generate_polygon_string($boundingBox);
+}
 // For debugging purposes only, you can remove this in production
 /*
 echo '<div style="display:none;">';
 echo 'Map Center: ' . $latitude . ', ' . $longitude . ' (Zoom: ' . $zoom . ')<br>';
-echo 'Bounding Box:<br>';
-echo 'NE: ' . $boundingBox['northeast'][0] . ', ' . $boundingBox['northeast'][1] . '<br>';
-echo 'SE: ' . $boundingBox['southeast'][0] . ', ' . $boundingBox['southeast'][1] . '<br>';
-echo 'SW: ' . $boundingBox['southwest'][0] . ', ' . $boundingBox['southwest'][1] . '<br>';
-echo 'NW: ' . $boundingBox['northwest'][0] . ', ' . $boundingBox['northwest'][1] . '<br>';
-echo 'Polygon String: ' . $polygonString;
+if ($boundingBox) {
+    echo 'Bounding Box:<br>';
+    echo 'NE: ' . $boundingBox['northeast'][0] . ', ' . $boundingBox['northeast'][1] . '<br>';
+    echo 'SE: ' . $boundingBox['southeast'][0] . ', ' . $boundingBox['southeast'][1] . '<br>';
+    echo 'SW: ' . $boundingBox['southwest'][0] . ', ' . $boundingBox['southwest'][1] . '<br>';
+    echo 'NW: ' . $boundingBox['northwest'][0] . ', ' . $boundingBox['northwest'][1] . '<br>';
+    echo 'Polygon String: ' . $polygonString;
+}
 echo '</div>';
 */
 ?>
@@ -81,7 +87,8 @@ wp_localize_script('rechat-listings-request', 'rchListingData', array(
         'longitude' => $longitude,
         'zoom' => $zoom,
         'boundingBox' => $boundingBox,
-        'polygonString' => $polygonString
+        'polygonString' => $polygonString,
+        'hasValidCoordinates' => ($latitude != 0 && $longitude != 0)
     ],
     'filters' => array(
         'brand' => $atts['own_listing'] == 1 ? $atts['brand'] : '',
@@ -114,7 +121,8 @@ wp_localize_script('rechat-listings-map', 'rchListingData', array(
         'longitude' => $longitude,
         'zoom' => $zoom,
         'boundingBox' => $boundingBox,
-        'polygonString' => $polygonString
+        'polygonString' => $polygonString,
+        'hasValidCoordinates' => ($latitude != 0 && $longitude != 0)
     ],
     'filters' => array(
         'brand' => $atts['own_listing'] == 1 ? $atts['brand'] : '',
@@ -134,9 +142,7 @@ wp_localize_script('rechat-listings-map', 'rchListingData', array(
     )
 ));
 
-// Enqueue Places Autocomplete Script
+// Enqueue Places Autocomplete Script and CSS
 wp_enqueue_script('rechat-places-autocomplete', RCH_PLUGIN_URL . 'assets/js/rch-places-autocomplete.js', array('jquery', 'rch-google-maps-api', 'rechat-listings-map'), RCH_VERSION, true);
-
-// Enqueue our new places autocomplete script
-wp_enqueue_script('rechat-places-autocomplete', RCH_PLUGIN_URL . 'assets/js/rch-places-autocomplete.js', array('jquery', 'rechat-listings-map'), RCH_VERSION, true);
+wp_enqueue_style('rch-places-autocomplete');
 ?>

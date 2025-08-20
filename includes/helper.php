@@ -579,15 +579,23 @@ function rch_get_filters($atts)
         'listing_statuses' => isset($atts['listing_statuses']) && $atts['listing_statuses'] !== ''
             ? array_map('trim', explode(',', $atts['listing_statuses'])) // Split and trim each value
             : null,
-        'points' => isset($atts['points']) && $atts['points'] !== ''
+        'points' => isset($atts['map_points']) && $atts['map_points'] !== ''
             ? array_map(function ($point) {
                 $coords = explode(',', $point); // Split lat and lng
                 return [
                     'longitude' => floatval($coords[1]), // Parse longitude
                     'latitude' => floatval($coords[0]), // Parse latitude
                 ];
-            }, explode('|', $atts['points'])) // Split points string into array of "lat,lng"
-            : null,
+            }, explode('|', $atts['map_points'])) // Split points string into array of "lat,lng"
+            : (isset($atts['points']) && $atts['points'] !== ''
+                ? array_map(function ($point) {
+                    $coords = explode(',', $point); // Split lat and lng
+                    return [
+                        'longitude' => floatval($coords[1]), // Parse longitude
+                        'latitude' => floatval($coords[0]), // Parse latitude
+                    ];
+                }, explode('|', $atts['points'])) // Split points string into array of "lat,lng"
+                : null),
         'agents' => isset($atts['agents']) && $atts['agents'] !== ''
             ? (is_string($atts['agents'])
                 ? ((strpos($atts['agents'], '[') === 0)
