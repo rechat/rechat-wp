@@ -8,6 +8,7 @@ function rch_display_latest_listings_shortcode($atts)
             'limit' => 7,
             'template' => '',
             'content' => '',
+            'map_points' => '', // New attribute for the 4 points of the map
             'slides_per_view' => 3.5,
             'space_between' => 16,
             'loop' => true,
@@ -29,6 +30,7 @@ function rch_display_latest_listings_shortcode($atts)
 
     $template = esc_js($atts['template']);
     $display_type = esc_attr($atts['display_type']);
+    $map_points = esc_js($atts['map_points']);
     $slides_per_view = floatval($atts['slides_per_view']);
     $space_between = intval($atts['space_between']);
     $loop = filter_var($atts['loop'], FILTER_VALIDATE_BOOLEAN);
@@ -74,6 +76,7 @@ function rch_display_latest_listings_shortcode($atts)
             const listingPerPage = <?php echo intval($atts['limit']); ?>;
             const template = "<?php echo esc_js($atts['template']); ?>";
             const adminAjaxUrl = "<?php echo esc_url(admin_url('admin-ajax.php')); ?>";
+            const mapPoints = "<?php echo $map_points; ?>";
 
             // Build Swiper settings object conditionally
             const swiperSettings = {
@@ -133,7 +136,8 @@ function rch_display_latest_listings_shortcode($atts)
                 // Clear the listing container and show loading
                 listingList.innerHTML = '';
                 loading.style.display = 'flex';
-
+                const token = '<?php echo get_option('rch_rechat_access_token'); ?>';
+                console.log(mapPoints)
                 fetch(adminAjaxUrl, {
                         method: 'POST', // Ensure method is POST
                         body: new URLSearchParams({
@@ -141,11 +145,13 @@ function rch_display_latest_listings_shortcode($atts)
                             listing_per_page: listingPerPage,
                             template: template,
                             content: '<?php echo esc_js($atts['content']); ?>', // Pass the content filter
-                            brand: '<?php echo esc_js(get_option('rch_rechat_brand_id')); ?>'
+                            brand: '<?php echo esc_js(get_option('rch_rechat_brand_id')); ?>',
+                            points: mapPoints // Pass the map points
                             // add any other parameters here
                         }),
                         headers: {
                             'Content-Type': 'application/x-www-form-urlencoded',
+                            'authorization': 'Bearer ' + token
                         },
                     })
                     .then(response => response.json())
