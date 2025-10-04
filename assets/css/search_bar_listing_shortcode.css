@@ -27,7 +27,9 @@
   border-right: none;
   height: 55px;
 }
-
+.rch-search-listing-form .rch-search-filters input[type="search"] {
+  width: 200px;
+}
 .rch-search-listing-form .rch-search-filters select{
 	cursor: pointer;
 	outline: none !important;

@@ -24,10 +24,10 @@
             <div class="rch-inside-filters rch-for-lease" style="display:flex;">
                 <span>
                     <input type="radio" id="all" name="property_types" value="Residential,Residential Lease,Lots & Acreage,Commercial,Multi-Family" onchange="applyFilters()">
-                    <label for="all" class="ios-radio">All Listing</label>
+                    <label for="all" class="ios-radio">All Listings</label>
                 </span>
                 <span>
-                    <input type="radio" id="sale" name="property_types" value="Residential" onchange="applyFilters()">
+                    <input type="radio" id="sale" name="property_types" value="Residential,Lots & Acreage,Commercial,Multi-Family" onchange="applyFilters()">
                     <label for="sale" class="ios-radio">Sale</label>
                 </span>
                 <span>
@@ -133,7 +133,7 @@
             <div class="rch-inside-filters rch-main-price rch-main-beds" style="display: none;">
                 <div class="rch-button-select">
                     <!-- Buttons to select the number of bathrooms -->
-                    <button type="button" class="filter-btn " data-value="">Any</button>
+                    <button type="button" class="filter-btn default-btn" data-value="">Any</button>
                     <button type="button" class="filter-btn <?php echo (isset($atts['minimum_bathrooms']) && $atts['minimum_bathrooms'] == 1) ? 'active' : ''; ?>" data-value="1">+1</button>
                     <button type="button" class="filter-btn <?php echo (isset($atts['minimum_bathrooms']) && $atts['minimum_bathrooms'] == 2) ? 'active' : ''; ?>" data-value="2">+2</button>
                     <button type="button" class="filter-btn <?php echo (isset($atts['minimum_bathrooms']) && $atts['minimum_bathrooms'] == 3) ? 'active' : ''; ?>" data-value="3">+3</button>
@@ -152,7 +152,7 @@
             </span>
             <div class="rch-other-inside-filters rch-inside-filters rch-main-parking" style="display: none;">
                 <div class="rch-button-select">
-                    <button type="button" class="filter-btn default-btn" data-value="any">Any</button>
+                    <button type="button" class="filter-btn default-btn" data-value="">Any</button>
                     <button type="button" class="filter-btn" data-value="1">+1</button>
                     <button type="button" class="filter-btn" data-value="2">+2</button>
                     <button type="button" class="filter-btn" data-value="3">+3</button>
@@ -242,10 +242,10 @@
             <div class="rch-inside-filters rch-for-lease" style="display: none;">
                 <span>
                     <input type="radio" id="all" name="property_types" data-name="All Listing" value="Residential,Residential Lease,Lots & Acreage,Commercial,Multi-Family" onchange="applyFilters()">
-                    <label for="all" class="ios-radio">All Listing</label>
+                    <label for="all" class="ios-radio">All Listings</label>
                 </span>
                 <span>
-                    <input type="radio" id="sale" name="property_types" data-name="Sale" value="Residential" onchange="applyFilters()">
+                    <input type="radio" id="sale" name="property_types" data-name="Sale" value="Residential,Lots & Acreage,Commercial,Multi-Family" onchange="applyFilters()">
                     <label for="sale" class="ios-radio">Sale</label>
                 </span>
                 <span>

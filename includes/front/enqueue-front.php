@@ -71,7 +71,7 @@ function rch_enqueue_block_assets()
     wp_localize_script('rch-listing-block-script-map', 'rchData', array(
         'primaryColor' => $primary_color,
         'homeUrl' => get_home_url(),
-
+        'invertedLogo' => get_option('rch_inverted_container_logo_wide', get_home_url())
     ));
 
     // Register block style

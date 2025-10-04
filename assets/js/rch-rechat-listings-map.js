@@ -349,10 +349,14 @@ function addMapMarker(listing, map) {
     }
     
     // Info window content
+    const imageHtml = listing.image 
+        ? `<img src="${listing.image}" alt="Listing Image" class="info-window-img"/>`
+        : `<div class="rch-no-listing-image"><img src="${rchData.invertedLogo || rchData.homeUrl}" alt="Logo" class="info-window-logo"/></div>`;
+        
     const infoWindowContent = `
         <div class="custom-info-window">
             <a href="${rchData.homeUrl}/listing-detail/?listing_id=${listing.id}" target="_blank">
-                <img src="${listing.image || "https://fakeimg.pl/171x90"}" alt="Listing Image" class="info-window-img"/>
+                ${imageHtml}
                 <div class="info-window-content">
                     <p><strong>Price:</strong> $${listing.price.toLocaleString()}</p>
                     <p><strong>Location:</strong> ${listing.address}</p>

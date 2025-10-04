@@ -666,7 +666,7 @@ function rch_get_primary_color_and_logo()
     if (isset($palette_data['data'])) {
         $brand = $palette_data['data'];
 
-        $primary_color = rch_find_get_setting($brand, 'inverted-container-bg-color', '#2271b1');
+        $primary_color = rch_find_get_setting($brand, 'inverted-button-bg-color', '#2271b1');
         $container_logo_wide = rch_find_get_setting($brand, 'container-logo-wide', 'null');
         $container_logo_square = rch_find_get_setting($brand, 'container-logo-square', 'null');
         $container_team_logo_wide = rch_find_get_setting($brand, 'container-team-logo-wide', 'null');
