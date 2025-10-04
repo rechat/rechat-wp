@@ -131,6 +131,13 @@ document.querySelectorAll('.rch-filters-mobile .box-filter-listing .toggleMain')
         const parentBox = this.parentElement; // Get the parent box-filter-listing
         const filterContent = parentBox.querySelector('.rch-inside-filters'); // Get the filter content
 
+        // Close all other filters first
+        document.querySelectorAll('.rch-filters-mobile .box-filter-listing .rch-inside-filters').forEach(filter => {
+            if (filter !== filterContent) {
+                filter.style.display = 'none';
+            }
+        });
+
         // Toggle the clicked filter
         if (filterContent.style.display === 'none' || !filterContent.style.display) {
             filterContent.style.display = 'block'; // Open the filter
@@ -190,6 +197,9 @@ setupFilterButtons('.rch-parking-filter-listing', 'minimum_parking_spaces', 'rch
 document.addEventListener('DOMContentLoaded', () => {
     // Call the function to set content from URL parameters
     setContentFromURLParams();
+    
+    // Initialize both mobile and desktop bath/parking filters
+    initFilterButtons();
     
     // Retrieve default values from the server.
     // (Make sure these PHP variables are defined and output correctly.)
@@ -391,6 +401,43 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+
+/**
+ * Initialize filter buttons for both desktop and mobile views
+ */
+function initFilterButtons() {
+    // Mobile bathroom buttons
+    document.querySelectorAll('.rch-filters-mobile .rch-bath-filter-listing .filter-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            const selectedValue = button.dataset.value;
+            filters.minimum_bathrooms = selectedValue;
+            
+            // Update UI
+            const siblings = button.parentElement.querySelectorAll('.filter-btn');
+            siblings.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            
+            // Apply filters
+            applyFilters();
+        });
+    });
+    
+    // Mobile parking buttons
+    document.querySelectorAll('.rch-filters-mobile .rch-parking-filter-listing .filter-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            const selectedValue = button.dataset.value;
+            filters.minimum_parking_spaces = selectedValue;
+            
+            // Update UI
+            const siblings = button.parentElement.querySelectorAll('.filter-btn');
+            siblings.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            
+            // Apply filters
+            applyFilters();
+        });
+    });
+}
 
 //Helper function for setting buttons
 function setupFilterButtons(containerSelector, filterKey, textElementId, prefix = "") {

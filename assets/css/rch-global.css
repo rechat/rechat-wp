@@ -365,7 +365,7 @@ ul.rch-single-agents-social li a img {
   font-size: 20px;
   font-style: normal;
   font-weight: 500;
-  line-height: 150%;
+  line-height: 150%; 
 }
 .rch-single-call {
   display: flex;
@@ -554,17 +554,38 @@ ul.rch-neighborhoods-archive li .content-container {
   -ms-transform: translate(-50%, -50%);
   transform: translate(-50%, -50%);
   max-width: 600px;
-  width: 70%;
+  width: 95%;
 }
 
 ul.rch-neighborhoods-archive li .content-container h3 {
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/*   overflow: hidden;
+  text-overflow: ellipsis; */
   margin-bottom: 1.666rem;
   color: white;
+  width: 100%;
+  text-align: center;
+}
+
+@media screen and (max-width: 992px){	
+	ul.rch-neighborhoods-archive li{
+		width: calc(100% / 2);
+	}
+}
+
+@media screen and (max-width: 768px){
+	ul.rch-neighborhoods-archive li .content-container h3{
+		font-size: var(--text-2xl);
+	}
+}
+
+
+@media screen and (max-width: 576px){
+	ul.rch-neighborhoods-archive li{
+		width: calc(100% / 1);
+	}
 }
 
 ul.rch-neighborhoods-archive li.item .content-container .button-wrapper {

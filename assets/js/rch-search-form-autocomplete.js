@@ -16,7 +16,7 @@ function initSearchFormAutocomplete() {
     if (searchInput && document.getElementById('rch-search-form')) {
         searchFormAutocomplete = new google.maps.places.Autocomplete(searchInput, {
             types: ['(cities)'],
-            fields: ['geometry', 'name', 'formatted_address']
+            fields: ['geometry', 'name', 'formatted_address', 'address_components']
         });
         
         // Add listener for place selection
@@ -51,10 +51,13 @@ function handleSearchFormPlaceSelection(autocomplete) {
     // Store the place data in hidden inputs that will be submitted with the form
     addOrUpdateHiddenInput('place_lat', lat);
     addOrUpdateHiddenInput('place_lng', lng);
-    addOrUpdateHiddenInput('place_name', place.name || place.formatted_address);
     
-    // Keep the original text in the input field (user-friendly display)
-    document.getElementById('content').value = place.name || place.formatted_address;
+    // Use the formatted address if available, otherwise fall back to place name
+    const displayName = place.formatted_address || place.name;
+    addOrUpdateHiddenInput('place_name', displayName);
+    
+    // Update the input field with the formatted address (showing the full selection)
+    document.getElementById('content').value = displayName;
 }
 
 /**
@@ -84,9 +87,9 @@ function handleSearchFormSubmit(event) {
     const contentInput = document.getElementById('content');
     const placeLat = document.querySelector('input[name="place_lat"]');
     const placeLng = document.querySelector('input[name="place_lng"]');
+    const placeName = document.querySelector('input[name="place_name"]');
     
     // If we have place coordinates, add them as separate hidden fields
-    // instead of modifying the content value
     if (placeLat && placeLng && placeLat.value && placeLng.value) {
         // Create separate hidden fields for the coordinates
         const coordsInput = document.createElement('input');
@@ -97,7 +100,10 @@ function handleSearchFormSubmit(event) {
         // Add to the form
         document.getElementById('rch-search-form').appendChild(coordsInput);
         
-        // Leave the content field as is (just the place name)
+        // If we have a place_name, make sure content field has the same value
+        if (placeName && placeName.value) {
+            contentInput.value = placeName.value;
+        }
     }
 }
 
