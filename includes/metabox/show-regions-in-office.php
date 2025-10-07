@@ -181,19 +181,26 @@ function custom_regions_custom_column_in_Offices($column, $post_id)
             $regions = array($regions); // Wrap in an array if it's not already one
         }
 
-        if ($regions && !empty($regions)) {
+        // Only display if regions exist and are not empty
+        if ($regions && !empty($regions) && count(array_filter($regions))) {
             $output = array();
 
             // Loop through the regions and get their titles
             foreach ($regions as $region_id) {
-                $output[] = get_the_title($region_id); // Get the title of each associated region
+                if ($region_id) { // Make sure we have a valid region ID
+                    $region_title = get_the_title($region_id);
+                    if ($region_title) {
+                        $output[] = $region_title; // Get the title of each associated region
+                    }
+                }
             }
 
-            // Display the region titles separated by commas
-            echo implode(', ', array_map('esc_html', $output));
-        } else {
-            echo esc_html(__('No Regions Assigned', 'rechat-plugin'));
+            // Display the region titles separated by commas (only if there are any)
+            if (!empty($output)) {
+                echo implode(', ', array_map('esc_html', $output));
+            }
         }
+        // Don't output anything if there are no regions
     }
 }
 add_action('manage_offices_posts_custom_column', 'custom_regions_custom_column_in_Offices', 10, 2);

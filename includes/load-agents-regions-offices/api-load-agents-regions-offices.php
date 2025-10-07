@@ -23,6 +23,19 @@ function rch_update_agents_offices_regions_data()
     if (!$brands_result['success']) {
         wp_send_json(array('success' => false, 'data' => $brands_result['message']));
     }
+    
+    // Debug log - Log the number of regions and offices found
+    error_log('Rechat Plugin - Found ' . count($brands_result['regions']) . ' regions');
+    error_log('Rechat Plugin - Found ' . count($brands_result['offices']) . ' offices');
+    
+    // Debug log - Log the first few offices to verify structure
+    if (!empty($brands_result['offices'])) {
+        $sample_offices = array_slice($brands_result['offices'], 0, 3);
+        foreach ($sample_offices as $index => $office) {
+            error_log('Rechat Plugin - Office ' . ($index + 1) . ': ' . $office['name'] . ', ID: ' . $office['id'] . 
+                      ', Associated Regions: ' . implode(', ', $office['region_parent_ids']));
+        }
+    }
 
     $regions = $brands_result['regions'];
     $offices = $brands_result['offices'];

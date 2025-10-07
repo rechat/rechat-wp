@@ -189,23 +189,53 @@ function rch_collect_brands($brand, &$regions, &$offices, &$processed_brands)
         // Initialize an array to hold region parent IDs
         $region_parent_ids = [];
 
-        // Check parent brands until a 'Region' is found
-        $current_parent = $brand['parent'] ?? null;
-        while ($current_parent) {
-            if ($current_parent['brand_type'] == 'Region') {
-                // Add the ID of the Region to the region parent IDs
-                $region_parent_ids[] = $current_parent['id'];
+        // Check if parents array is available and contains region IDs
+        if (isset($brand['parents']) && is_array($brand['parents'])) {
+            // Loop through all parents in the hierarchy
+            foreach ($brand['parents'] as $parent_id) {
+                // Check if this parent is already identified as a region
+                foreach ($regions as $region) {
+                    if ($region['id'] === $parent_id) {
+                        $region_parent_ids[] = $parent_id;
+                        break;
+                    }
+                }
             }
+        }
 
-            // Move up the hierarchy to the next parent
-            $current_parent = $current_parent['parent'] ?? null;
+        // If no regions found in parents array or parents array doesn't exist,
+        // fall back to checking direct parent hierarchy
+        if (empty($region_parent_ids)) {
+            $current_parent = $brand['parent'] ?? null;
+            while ($current_parent) {
+                if ($current_parent['brand_type'] == 'Region') {
+                    // Add the ID of the Region to the region parent IDs
+                    $region_parent_ids[] = $current_parent['id'];
+                }
+                
+                // Also check if this parent has parents array
+                if (isset($current_parent['parents']) && is_array($current_parent['parents'])) {
+                    foreach ($current_parent['parents'] as $grandparent_id) {
+                        // Check if this grandparent is identified as a region
+                        foreach ($regions as $region) {
+                            if ($region['id'] === $grandparent_id) {
+                                $region_parent_ids[] = $grandparent_id;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Move up the hierarchy to the next parent
+                $current_parent = $current_parent['parent'] ?? null;
+            }
         }
 
         // Add office data along with the collected region parent IDs
         $offices[] = [
             'id' => $brand['id'],
-            'name' => $brand['name'], // Adjust this according to the structure of your brand
-            'region_parent_ids' => $region_parent_ids, // Add the region parent IDs here
+            'name' => $brand['name'], 
+            'region_parent_ids' => $region_parent_ids,
         ];
     }
 }
@@ -340,6 +370,7 @@ function rch_fetch_and_process_brands($api_url_base, $access_token)
     $regions = [];
     $offices = [];
     $processed_brands = [];
+    $all_brands = []; // Store all brands for reference
     $limit = 100; // Adjust the limit as needed
     $offset = 0;
 
@@ -352,10 +383,48 @@ function rch_fetch_and_process_brands($api_url_base, $access_token)
         $data = $response['data'];
 
         if (isset($data['data'])) {
+            // First pass: collect all brands
             foreach ($data['data'] as $user_data) {
                 if (isset($user_data['brands'])) {
                     foreach ($user_data['brands'] as $brand) {
-                        rch_collect_brands($brand, $regions, $offices, $processed_brands);
+                        if (!isset($all_brands[$brand['id']])) {
+                            $all_brands[$brand['id']] = $brand;
+                        }
+                        
+                        // Add all parent brands to our collection for processing
+                        $current_parent = $brand['parent'] ?? null;
+                        while ($current_parent) {
+                            if (!isset($all_brands[$current_parent['id']])) {
+                                $all_brands[$current_parent['id']] = $current_parent;
+                            }
+                            $current_parent = $current_parent['parent'] ?? null;
+                        }
+                    }
+                }
+            }
+            
+            // First identify all regions
+            foreach ($all_brands as $brand) {
+                if ($brand['brand_type'] == 'Region') {
+                    $regions[] = $brand;
+                    $processed_brands[] = $brand['id'];
+                }
+            }
+            
+            // Then process all offices
+            foreach ($all_brands as $brand) {
+                if ($brand['brand_type'] == 'Office' && !in_array($brand['id'], $processed_brands)) {
+                    rch_collect_brands($brand, $regions, $offices, $processed_brands);
+                }
+            }
+            
+            // Process any remaining brands
+            foreach ($data['data'] as $user_data) {
+                if (isset($user_data['brands'])) {
+                    foreach ($user_data['brands'] as $brand) {
+                        if (!in_array($brand['id'], $processed_brands)) {
+                            rch_collect_brands($brand, $regions, $offices, $processed_brands);
+                        }
                     }
                 }
             }
