@@ -2,7 +2,7 @@
 /*
 Plugin Name: Rechat Plugin
 Description: Fetches and manages agent, offices, regions, and Listing data from Rechat.
-Version: 5.0.1
+Version: 5.0.2
 Author URI: https://rechat.com/
 Text Domain: rechat-plugin
 GitHub Plugin URI: https://github.com/rechat/rechat-wp
