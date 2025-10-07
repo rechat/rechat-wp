@@ -5,6 +5,8 @@ Description: Fetches and manages agent, offices, regions, and Listing data from 
 Version: 5.0.2
 Author URI: https://rechat.com/
 Text Domain: rechat-plugin
+License: GPL-2.0-or-later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 GitHub Plugin URI: https://github.com/rechat/rechat-wp
 GitHub Branch: master
 */
