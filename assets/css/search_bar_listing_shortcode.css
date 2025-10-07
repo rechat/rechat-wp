@@ -27,30 +27,10 @@
   border-right: none;
   height: 55px;
 }
-.rch-search-listing-form .rch-search-filters input[type="search"] {
-  width: 200px;
-}
-.rch-search-listing-form .rch-search-filters select{
-	cursor: pointer;
-	outline: none !important;
-}
 
-
-
-@media screen and (max-width: 992px){
-	.rch-search-listing-form .rch-search-form-widget{
-		flex-direction: column;
-		row-gap: 0.75rem;
-	}
-	
-	.rch-search-listing-form .rch-search-filters{
-		flex-wrap: wrap;
-	}
-	
-	.rch-search-listing-form .rch-search-filters .rch-search-form-col:first-child{
-		width: 100%;
-		margin-block-end: 0.75rem
-	}
+.rch-search-listing-form .rch-search-filters input[type="search"]{
+	min-width: 215px;
+    width: 100%;
 }
 
 @media screen and (max-width: 768px) {
@@ -58,47 +38,18 @@
         flex-direction: column;
         align-items: stretch;
     }
-
-  .rch-search-listing-form .rch-search-form-col,
-  .rch-search-listing-form .rch-search-filters #search-maximum_price{
-    width: 33.33%;
+  .rch-search-listing-form .rch-search-filters {
+    flex-direction: column;
+    width: 100%;
   }
-
-	.rch-search-listing-form .rch-search-filters select{
-		width: 100%;
-	}
-	
+  .rch-search-listing-form .rch-search-form-col {
+    width: 100%;
+  }
+  .rch-search-listing-form .rch-search-filters select,
   .rch-search-listing-form .rch-search-filters input[type="search"] {
+    width: 100%;
+    margin-bottom: 10px;
     border-right: solid 1px #d0d0d0;
-  }  
-}
-
-@media screen and (max-width: 425px){
-	.hero--title {
-        font-size: var(--text-3xl);
-    }
-	
-	.hero .swiper-slide .slide--content p{
-		margin-block: 0;
-	}
-	
-	.rch-search-listing-form{
-		margin-block: 0 !important;
-	}
-	
-  .rch-search-listing-form .rch-search-form-col,
-  .rch-search-listing-form .rch-search-filters #search-maximum_price{
-    width: 50%;
   }
-	
-	.rch-search-form-submit button[type=submit]{
-		padding:0.75rem 1rem;
-		font-size: 14px;
-	}
-	
-	.rch-search-listing-form .rch-search-filters select, 
-	.rch-search-listing-form .rch-search-filters input[type="search"]{
-		padding: 6px 8px;
-		height: 40px;
-	}
+    
 }
