@@ -23,17 +23,17 @@ function rch_update_agents_offices_regions_data()
     if (!$brands_result['success']) {
         wp_send_json(array('success' => false, 'data' => $brands_result['message']));
     }
-    
+
     // Debug log - Log the number of regions and offices found
     error_log('Rechat Plugin - Found ' . count($brands_result['regions']) . ' regions');
     error_log('Rechat Plugin - Found ' . count($brands_result['offices']) . ' offices');
-    
+
     // Debug log - Log the first few offices to verify structure
     if (!empty($brands_result['offices'])) {
         $sample_offices = array_slice($brands_result['offices'], 0, 3);
         foreach ($sample_offices as $index => $office) {
-            error_log('Rechat Plugin - Office ' . ($index + 1) . ': ' . $office['name'] . ', ID: ' . $office['id'] . 
-                      ', Associated Regions: ' . implode(', ', $office['region_parent_ids']));
+            error_log('Rechat Plugin - Office ' . ($index + 1) . ': ' . $office['name'] . ', ID: ' . $office['id'] .
+                ', Associated Regions: ' . implode(', ', $office['region_parent_ids']));
         }
     }
 
@@ -59,13 +59,13 @@ function rch_update_agents_offices_regions_data()
     foreach ($offices as $office) {
         // Insert or update the office post with regions
         $result = rch_insert_or_update_post('offices', $office['name'], $office['id'], 'office_id', $office['region_parent_ids']);
-        
+
         if ($result === 'added') {
             $office_add_count++;
         } elseif ($result === 'updated') {
             $office_update_count++;
         }
-    
+
         // Store the office ID for later use
         $current_office_ids[] = $office['id'];
     }

@@ -204,4 +204,3 @@ function custom_regions_custom_column_in_Offices($column, $post_id)
     }
 }
 add_action('manage_offices_posts_custom_column', 'custom_regions_custom_column_in_Offices', 10, 2);
-

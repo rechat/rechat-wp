@@ -90,7 +90,7 @@ function rch_enqueue_block_assets()
         null,
         true
     );
-    
+
     // Register Places Autocomplete CSS
     wp_register_style(
         'rch-places-autocomplete',
@@ -98,12 +98,14 @@ function rch_enqueue_block_assets()
         [],
         RCH_VERSION
     );
-    
-    wp_register_script('rechat-map-toggle',
-     RCH_PLUGIN_URL . 'assets/js/rch-map-toggle.js',
-     [],
-      RCH_VERSION,
-      true);
+
+    wp_register_script(
+        'rechat-map-toggle',
+        RCH_PLUGIN_URL . 'assets/js/rch-map-toggle.js',
+        [],
+        RCH_VERSION,
+        true
+    );
     // Automatically enqueue script/style only when block is present
     if (has_block('rch-rechat-plugin/listing-block')) {
         wp_enqueue_script('rch-listing-block-script-filter');

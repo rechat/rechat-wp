@@ -1,6 +1,6 @@
 <?php
-if ( ! defined( 'ABSPATH' ) ) {
-	exit();
+if (! defined('ABSPATH')) {
+    exit();
 }
 /*******************************
  * Add meta box for the 'offices' post type
@@ -36,7 +36,8 @@ function display_office_meta_box($post)
 /*******************************
  * Add a custom column to the 'offices' post type list table
  ******************************/
-function add_office_id_column($columns) {
+function add_office_id_column($columns)
+{
     // Add a new column for Office ID
     $columns['office_id'] = 'Office ID';
     return $columns;
@@ -46,7 +47,8 @@ add_filter('manage_offices_posts_columns', 'add_office_id_column');
 /*******************************
  * Display the content of the custom column
  ******************************/
-function show_office_id_column_content($column, $post_id) {
+function show_office_id_column_content($column, $post_id)
+{
     if ($column === 'office_id') {
         // Retrieve the 'office_id' meta value
         $office_id = get_post_meta($post_id, 'office_id', true);
@@ -58,7 +60,8 @@ add_action('manage_offices_posts_custom_column', 'show_office_id_column_content'
 /*******************************
  * Make the 'Office ID' column sortable
  ******************************/
-function make_office_id_column_sortable($columns) {
+function make_office_id_column_sortable($columns)
+{
     $columns['office_id'] = 'office_id';
     return $columns;
 }
@@ -67,7 +70,8 @@ add_filter('manage_edit-offices_sortable_columns', 'make_office_id_column_sortab
 /*******************************
  * Handle sorting by 'Office ID' column
  ******************************/
-function sort_office_id_column($query) {
+function sort_office_id_column($query)
+{
     if (!is_admin()) {
         return;
     }
@@ -83,13 +87,14 @@ add_action('pre_get_posts', 'sort_office_id_column');
 /*******************************
  * Register the 'region_id' meta field for the 'regions' post type
  ******************************/
-function register_office_id_meta() {
+function register_office_id_meta()
+{
     register_meta('post', 'office_id', array(
         'type'         => 'string', // Specify the data type of the meta value
         'description'  => 'Office ID', // Description of the meta field
         'single'       => true, // Whether the meta value is a single entry or an array
         'show_in_rest' => true, // Make it accessible via the REST API
-        'auth_callback' => function() {
+        'auth_callback' => function () {
             return current_user_can('edit_posts'); // Authentication callback
         }
     ));

@@ -138,11 +138,11 @@ function updateListingList() {
                 });
 
                 processMapMarkers(allListingsData);
-                
+
                 // Show loading message in pagination area
                 pagination.innerHTML = '<div class="rch-pagination-loading">Loading pagination...</div>';
                 pagination.style.display = 'flex';
-                
+
                 // Fetch total count in a separate request
                 fetchTotalListingCount();
 
@@ -169,7 +169,7 @@ function updateListingList() {
 // Function to fetch the total listing count separately
 function fetchTotalListingCount() {
     const pagination = document.getElementById('pagination');
-    
+
     return fetch(rchListingData.ajaxUrl, {
         method: 'POST',
         headers: {
@@ -180,18 +180,18 @@ function fetchTotalListingCount() {
             ...filters,
         })
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            totalListing = data.data.total;
-            totalPages = Math.ceil(totalListing / listingPerPage);
-            updatePagination(); // Now update the pagination with the actual count
-        } else {
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                totalListing = data.data.total;
+                totalPages = Math.ceil(totalListing / listingPerPage);
+                updatePagination(); // Now update the pagination with the actual count
+            } else {
+                pagination.innerHTML = '<p>Error loading pagination.</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching total count:', error);
             pagination.innerHTML = '<p>Error loading pagination.</p>';
-        }
-    })
-    .catch(error => {
-        console.error('Error fetching total count:', error);
-        pagination.innerHTML = '<p>Error loading pagination.</p>';
-    });
+        });
 }

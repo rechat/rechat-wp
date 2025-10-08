@@ -1,4 +1,4 @@
-jQuery(document).ready(function($) {
+jQuery(document).ready(function ($) {
     /*******************************
      * this script for agent gutenberg ajax pagination
      ******************************/
@@ -25,13 +25,13 @@ jQuery(document).ready(function($) {
                 posts_per_page: postsPerPage,
                 region_bg_color: regionBgColor,
                 text_color: textColor,
-                filter_by_Regions:filterRegion,
-                filter_by_offices:filterOffice,
-                sort_by:sortBy,
-                sort_order:sortOrder,
+                filter_by_Regions: filterRegion,
+                filter_by_offices: filterOffice,
+                sort_by: sortBy,
+                sort_order: sortOrder,
                 nonce: nonce
             },
-            success: function(response) {
+            success: function (response) {
                 if (response.success) {
                     $('.rch-archive-agents').html(response.data.html);
                     $('#pagination-info').text('Page ' + page + ' of ' + totalPages);
@@ -49,13 +49,13 @@ jQuery(document).ready(function($) {
     }
 
     // Event handlers for pagination buttons
-    $('#next-page').on('click', function() {
+    $('#next-page').on('click', function () {
         var currentPage = $(this).data('page');
         var nextPage = currentPage + 1;
         loadAgents(nextPage);
     });
 
-    $('#prev-page').on('click', function() {
+    $('#prev-page').on('click', function () {
         var currentPage = $(this).data('page');
         var prevPage = currentPage - 1;
         loadAgents(prevPage);

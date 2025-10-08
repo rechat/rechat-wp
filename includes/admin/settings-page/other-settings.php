@@ -371,7 +371,7 @@ function rch_update_all_data()
 
     // Get primary color and logo
     rch_get_primary_color_and_logo();
-    
+
     // Call the function to fetch and update data
     $result = rch_update_agents_offices_regions_data();
     // Return the result

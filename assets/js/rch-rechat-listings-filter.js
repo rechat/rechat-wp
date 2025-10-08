@@ -80,8 +80,8 @@ function applyFilters() {
     filters.maximum_square_meters = document.getElementById('maximum_square_meters').value;
     filters.minimum_year_built = document.getElementById('minimum_year_built').value;
     filters.maximum_year_built = document.getElementById('maximum_year_built').value;
-    filters.points= document.getElementById('query-string').value,
-    currentPage = 1; // Reset to the first page after applying filters
+    filters.points = document.getElementById('query-string').value,
+        currentPage = 1; // Reset to the first page after applying filters
     updateActiveClass()
     updateListingList(); // Fetch filtered listings
 
@@ -197,10 +197,10 @@ setupFilterButtons('.rch-parking-filter-listing', 'minimum_parking_spaces', 'rch
 document.addEventListener('DOMContentLoaded', () => {
     // Call the function to set content from URL parameters
     setContentFromURLParams();
-    
+
     // Initialize both mobile and desktop bath/parking filters
     initFilterButtons();
-    
+
     // Retrieve default values from the server.
     // (Make sure these PHP variables are defined and output correctly.)
     const defaultMinPrice = defaultFilters.minimum_price
@@ -411,28 +411,28 @@ function initFilterButtons() {
         button.addEventListener('click', () => {
             const selectedValue = button.dataset.value;
             filters.minimum_bathrooms = selectedValue;
-            
+
             // Update UI
             const siblings = button.parentElement.querySelectorAll('.filter-btn');
             siblings.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
-            
+
             // Apply filters
             applyFilters();
         });
     });
-    
+
     // Mobile parking buttons
     document.querySelectorAll('.rch-filters-mobile .rch-parking-filter-listing .filter-btn').forEach(button => {
         button.addEventListener('click', () => {
             const selectedValue = button.dataset.value;
             filters.minimum_parking_spaces = selectedValue;
-            
+
             // Update UI
             const siblings = button.parentElement.querySelectorAll('.filter-btn');
             siblings.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
-            
+
             // Apply filters
             applyFilters();
         });

@@ -1,23 +1,22 @@
 <div class="house-item">
     <a href="<?php echo esc_url(get_home_url() . '/listing-detail/?listing_id=' . esc_attr($listing['id'])); ?>">
-        <picture class="<?php echo empty($listing['cover_image_url']) ? 'rch-fallback-logo-listing' : ''; ?>"
-        >
-        <img 
-    src="<?php 
-        echo !empty($listing['cover_image_url']) 
-            ? esc_url($listing['cover_image_url']) 
-            : esc_url(get_option('rch_inverted_container_logo_wide', get_home_url() . '/assets/img/placeholder.webp')); 
-    ?>" 
-    alt="House Image">    
-    </picture>
+        <picture class="<?php echo empty($listing['cover_image_url']) ? 'rch-fallback-logo-listing' : ''; ?>">
+            <img
+                src="<?php
+                        echo !empty($listing['cover_image_url'])
+                            ? esc_url($listing['cover_image_url'])
+                            : esc_url(get_option('rch_inverted_container_logo_wide', get_home_url() . '/assets/img/placeholder.webp'));
+                        ?>"
+                alt="House Image">
+        </picture>
         <?php if (!empty($listing['formatted']['price'])): ?>
             <h3><?php echo sanitize_textarea_field($listing['formatted']['price']['text']); ?></h3>
         <?php endif; ?>
 
-        <?php if (!empty($listing['formatted']['street_address']['text']) ): ?>
+        <?php if (!empty($listing['formatted']['street_address']['text'])): ?>
             <p>
-                <?php 
-                echo sanitize_textarea_field($listing['formatted']['street_address']['text']) . ' ' . sanitize_textarea_field($listing['formatted']['address_line_2']['text']); 
+                <?php
+                echo sanitize_textarea_field($listing['formatted']['street_address']['text']) . ' ' . sanitize_textarea_field($listing['formatted']['address_line_2']['text']);
                 ?>
             </p>
         <?php endif; ?>

@@ -64,7 +64,7 @@ echo '</div>';
     <button id="rch-map-toggle-mobile" class="rch-map-toggle-btn">
         <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG . 'map-view.svg'; ?>" alt="Map Icon">
         <span>
-        View Map
+            View Map
         </span>
     </button>
 </div>

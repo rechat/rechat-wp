@@ -47,7 +47,7 @@ function rch_enqueue_custom_gutenberg_assets()
     if (!is_admin()) {
         return;
     }
-    $version = '1.0.0'; 
+    $version = '1.0.0';
     wp_enqueue_style('rch-editor-css', RCH_PLUGIN_URL . 'assets/css/rch-editor.css', [], $version);
 }
 

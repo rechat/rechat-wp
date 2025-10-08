@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     var mapElement = document.getElementById('map');
     var mapButton = document.getElementById('rch-map-toggle-mobile');
     var mapButtonSpan = mapButton.querySelector('span');
@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Add click event to the button
-    mapButton.addEventListener('click', function() {
+    mapButton.addEventListener('click', function () {
         if (mapElement.style.zIndex == -1) {
             // If map is hidden, slide it down and change button text
             mapElement.style.zIndex = 1;
@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Handle window resize to reset map visibility on desktop
-    window.addEventListener('resize', function() {
+    window.addEventListener('resize', function () {
         if (window.innerWidth >= 768) {
             mapElement.style.zIndex = 1;
             mapButtonSpan.textContent = 'Close Map';

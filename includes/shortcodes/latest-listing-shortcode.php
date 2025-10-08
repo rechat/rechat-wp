@@ -51,24 +51,24 @@ function rch_display_latest_listings_shortcode($atts)
     ob_start();
 ?>
     <style>
-       
+
     </style>
     <?php if ($display_type === 'swiper'): ?>
-    <div class="swiper thumbsSwiper trendingSwiper <?php echo esc_attr($template); ?>" thumbsSlider="true">
-        <div class="swiper-wrapper" id="rch-listing-list-latest-<?php echo esc_attr($template); ?>"></div>
-        <div id="rch-loading-listing" class="rch-loading-container">
-            <div class="rch-loader"></div>
-            <div class="rch-loader-text">Loading listings...</div>
+        <div class="swiper thumbsSwiper trendingSwiper <?php echo esc_attr($template); ?>" thumbsSlider="true">
+            <div class="swiper-wrapper" id="rch-listing-list-latest-<?php echo esc_attr($template); ?>"></div>
+            <div id="rch-loading-listing" class="rch-loading-container">
+                <div class="rch-loader"></div>
+                <div class="rch-loader-text">Loading listings...</div>
+            </div>
         </div>
-    </div>
     <?php else: ?>
-    <div class="rch-grid-container <?php echo esc_attr($template); ?>-grid">
-        <div id="rch-listing-list-latest-<?php echo esc_attr($template); ?>"></div>
-        <div id="rch-loading-listing" class="rch-loading-container">
-            <div class="rch-loader"></div>
-            <div class="rch-loader-text">Loading listings...</div>
+        <div class="rch-grid-container <?php echo esc_attr($template); ?>-grid">
+            <div id="rch-listing-list-latest-<?php echo esc_attr($template); ?>"></div>
+            <div id="rch-loading-listing" class="rch-loading-container">
+                <div class="rch-loader"></div>
+                <div class="rch-loader-text">Loading listings...</div>
+            </div>
         </div>
-    </div>
     <?php endif; ?>
 
     <script>
@@ -158,7 +158,7 @@ function rch_display_latest_listings_shortcode($atts)
                     .then(data => {
                         // Hide loading indicator
                         loading.style.display = 'none';
-                        
+
                         const listings = data.data.listings;
                         listingList.innerHTML = '';
 
@@ -166,10 +166,10 @@ function rch_display_latest_listings_shortcode($atts)
                             listings.forEach(listing => {
                                 listingList.innerHTML += listing.content;
                             });
-                            
+
                             // Only initialize Swiper if display_type is swiper
                             <?php if ($display_type === 'swiper'): ?>
-                            initializeSwiper(`.${template}`, swiperSettings);
+                                initializeSwiper(`.${template}`, swiperSettings);
                             <?php endif; ?>
                         } else {
                             // Display a message when no listings are returned
@@ -178,10 +178,10 @@ function rch_display_latest_listings_shortcode($atts)
                     })
                     .catch(error => {
                         console.error('Error fetching listing:', error);
-                        
+
                         // Hide loading indicator even on error
                         loading.style.display = 'none';
-                        
+
                         // Display a message when there's an error
                         listingList.innerHTML = '<div class="rch-no-listings-message">No listings available.</div>';
                     });
