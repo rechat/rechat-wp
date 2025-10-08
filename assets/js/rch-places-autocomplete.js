@@ -14,26 +14,26 @@ function initPlacesAutocomplete() {
     // Get references to both search input fields
     const mobileSearchInput = document.getElementById('content');
     const desktopSearchInput = document.querySelector('.rch-filters .rch-text-filter#content');
-    
+
     // Only initialize if the elements exist
     if (mobileSearchInput) {
         mobileAutocomplete = new google.maps.places.Autocomplete(mobileSearchInput, {
             types: ['(cities)'],
             fields: ['geometry', 'name', 'formatted_address']
         });
-        
+
         // Add listener for place selection
         mobileAutocomplete.addListener('place_changed', () => {
             handlePlaceSelection(mobileAutocomplete);
         });
     }
-    
+
     if (desktopSearchInput) {
         desktopAutocomplete = new google.maps.places.Autocomplete(desktopSearchInput, {
             types: ['(cities)'],
             fields: ['geometry', 'name', 'formatted_address']
         });
-        
+
         // Add listener for place selection
         desktopAutocomplete.addListener('place_changed', () => {
             handlePlaceSelection(desktopAutocomplete);
@@ -47,23 +47,23 @@ function initPlacesAutocomplete() {
  */
 function handlePlaceSelection(autocomplete) {
     const place = autocomplete.getPlace();
-    
+
     if (!place.geometry || !place.geometry.location) {
         console.error('No details available for place selection');
         return;
     }
-    
+
     // Get the latitude and longitude
     const lat = place.geometry.location.lat();
     const lng = place.geometry.location.lng();
-    
+
     // Use a closer zoom level for cities/places (zoom level 12 is good for cities)
     const zoom = 10;
-    
+
     // Update the map center and zoom immediately
     map.setCenter(place.geometry.location);
     map.setZoom(zoom);
-    
+
     // Call PHP functions through AJAX to calculate bounding box and polygon
     calculatePolygonFromPlace(lat, lng, zoom);
 }
@@ -84,26 +84,26 @@ function calculatePolygonFromPlace(lat, lng, zoom) {
             lng: lng,
             zoom: zoom
         },
-        success: function(response) {
+        success: function (response) {
             if (response.success) {
                 // Update the hidden input with the new polygon string
                 document.getElementById('query-string').value = response.data.polygonString;
-                
+
                 // Update the map viewport using the bounding box
                 updateMapFromBoundingBox(response.data.boundingBox);
-                
+
                 // Update filters for API requests
                 if (typeof filters !== 'undefined') {
                     filters.points = response.data.polygonString;
                 }
-                
+
                 // Fetch new listings with the updated polygon
                 updateListingList();
             } else {
                 console.error('Error calculating polygon:', response.data.message);
             }
         },
-        error: function(xhr, status, error) {
+        error: function (xhr, status, error) {
             console.error('AJAX error:', error);
         }
     });
@@ -118,15 +118,15 @@ function updateMapFromBoundingBox(boundingBox) {
         new google.maps.LatLng(boundingBox.southwest[0], boundingBox.southwest[1]),
         new google.maps.LatLng(boundingBox.northeast[0], boundingBox.northeast[1])
     );
-    
+
     // Store the current zoom level before fitting bounds
     const currentZoom = map.getZoom();
-    
+
     // Fit bounds to update the viewport
     map.fitBounds(bounds);
-    
+
     // After fitting bounds, set a minimum zoom level to ensure we're close enough
-    google.maps.event.addListenerOnce(map, 'bounds_changed', function() {
+    google.maps.event.addListenerOnce(map, 'bounds_changed', function () {
         // If the new zoom is too far out, enforce a closer zoom
         if (map.getZoom() < 12) {
             map.setZoom(12);
@@ -135,22 +135,22 @@ function updateMapFromBoundingBox(boundingBox) {
 }
 
 // Add initialization to the window load event
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Check if Google Maps API is already loaded
-    if (typeof google !== 'undefined' && typeof google.maps !== 'undefined' && 
+    if (typeof google !== 'undefined' && typeof google.maps !== 'undefined' &&
         typeof google.maps.places !== 'undefined') {
         initPlacesAutocomplete();
     } else {
         // If Google Maps API is loaded with callback=initMap, we need to wait for that
         // Original initMap function from rch-rechat-listings-map.js will be called first
         const originalInitMap = window.initMap;
-        
-        window.initMap = function() {
+
+        window.initMap = function () {
             // Call the original initMap function first
             if (typeof originalInitMap === 'function') {
                 originalInitMap();
             }
-            
+
             // Then initialize Places Autocomplete
             initPlacesAutocomplete();
         };

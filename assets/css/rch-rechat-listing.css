@@ -232,7 +232,6 @@ h1.rch-single-address {
 .rch-disclaimer-show {
   padding-block-end: 40px;
   margin-block-start: 40px;
-
 }
 .rch-disclaimer-show .rch-inside-disclaimer {
   color: #444;
@@ -287,7 +286,6 @@ h1.rch-single-address {
   flex-grow: 2;
 }
 
-
 /* Keyframes for rotation */
 @keyframes spin {
   0% {
@@ -338,5 +336,3 @@ h1.rch-single-address {
 /* Extra small screens */
 @media (max-width: 530px) {
 }
-
-

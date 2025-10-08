@@ -20,24 +20,24 @@ $query = new WP_Query($args);
 <div id="primary" class="content-area rch-primary-content">
     <main id="main" class="site-main rch-agents-rechat content-container site-container">
         <ul class="rch-neighborhoods-archive">
-        <?php if ($query->have_posts()) : while ($query->have_posts()) : $query->the_post();
+            <?php if ($query->have_posts()) : while ($query->have_posts()) : $query->the_post();
             ?>
-            <li class="rch-items-neighbor item">
-                <a href="<?php the_permalink(); ?>" class="item-wrapper">
-                    <div class="image-holder">
-                        <?php the_post_thumbnail('full'); // Display the featured image 
-                        ?>
-                    </div>
-                    <div class="overlay"></div>
-                    <div class="content-container">
-                        <h3 class="lp-h3 neighborhood-name"><?php the_title(); ?></h3>
-                        <div class="button-wrapper">
-                            <span class="btn">Learn More</span>
-                        </div>
-                    </div>
-                </a>
-            </li>
-            <?php endwhile;
+                    <li class="rch-items-neighbor item">
+                        <a href="<?php the_permalink(); ?>" class="item-wrapper">
+                            <div class="image-holder">
+                                <?php the_post_thumbnail('full'); // Display the featured image 
+                                ?>
+                            </div>
+                            <div class="overlay"></div>
+                            <div class="content-container">
+                                <h3 class="lp-h3 neighborhood-name"><?php the_title(); ?></h3>
+                                <div class="button-wrapper">
+                                    <span class="btn">Learn More</span>
+                                </div>
+                            </div>
+                        </a>
+                    </li>
+                <?php endwhile;
             else : ?>
                 <div class='notfound'><?php esc_html_e('Sorry. There Is Nothing.', 'rechat-plugin'); ?></div>
             <?php endif; ?>

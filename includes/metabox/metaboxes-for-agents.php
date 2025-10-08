@@ -1,7 +1,7 @@
 <?php
-if ( ! defined( 'ABSPATH' ) ) {
+if (! defined('ABSPATH')) {
     exit();
-} 
+}
 /*******************************
  * Function to add meta box to the 'agents' post type
  ******************************/
@@ -83,8 +83,8 @@ function agents_meta_box_html($post)
     <label for="agents_email">Email</label>
     <input type="text" id="agents_email" name="agents_email" value="<?php echo esc_attr($email); ?>" class="widefat" />
     <label for="agents_designation">Designation</label>
-<input type="text" id="agents_designation" name="agents_designation" value="<?php echo esc_attr(get_post_meta($post->ID, 'designation', true)); ?>" class="widefat" />
-<br>
+    <input type="text" id="agents_designation" name="agents_designation" value="<?php echo esc_attr(get_post_meta($post->ID, 'designation', true)); ?>" class="widefat" />
+    <br>
 <?php
 }
 
@@ -144,7 +144,8 @@ add_action('save_post', 'save_agents_meta_box');
 /*******************************
  * Function to show api id column in custom post type
  ******************************/
-function add_api_id_columns($columns) {
+function add_api_id_columns($columns)
+{
     // Add a new column for API ID
     $columns['api_id'] = 'Rechat ID (not available for locally added agents)';
     return $columns;
@@ -152,7 +153,8 @@ function add_api_id_columns($columns) {
 add_filter('manage_agents_posts_columns', 'add_api_id_columns');
 
 
-function show_api_id_column_data($column, $post_id) {
+function show_api_id_column_data($column, $post_id)
+{
     if ($column === 'api_id') {
         $api_id = get_post_meta($post_id, 'api_id', true);
         echo esc_html($api_id);

@@ -71,28 +71,29 @@ function rch_filter_brands_by_type($brands, $types)
 /*******************************
  * Calculate bounding box based on center coordinates and zoom level
  ******************************/
-function rch_calculate_bounding_box($lat, $lng, $zoom) {
+function rch_calculate_bounding_box($lat, $lng, $zoom)
+{
     // Use a more expansive calculation that matches the JavaScript viewport bounds
-    
+
     // Calculate zoom scale factor - the lower the zoom level, the larger the area
     // This formula creates a similar view to what Google Maps JavaScript API generates
     // For zoom levels 10-12 (city level), we want a narrower viewport
     $zoomScale = pow(2, 15 - $zoom); // Adjust base value for appropriate coverage
-    
+
     // For higher zoom levels (>10), use a smaller factor to create a closer view
     $factor = ($zoom >= 10) ? 0.04 : 0.08;
-    
+
     // Calculate degree offsets based on zoom scale and factor
     // These values are calibrated to create viewport bounds similar to Google Maps
     $latOffset = $zoomScale * $factor; // latitude offset in degrees
     $lngOffset = $zoomScale * $factor / cos(deg2rad($lat)); // longitude offset adjusted for latitude
-    
+
     // Calculate the four corners
     $north = $lat + $latOffset;
     $south = $lat - $latOffset;
     $east = $lng + $lngOffset;
     $west = $lng - $lngOffset;
-    
+
     return [
         'northeast' => [$north, $east],
         'southeast' => [$south, $east],
@@ -104,38 +105,39 @@ function rch_calculate_bounding_box($lat, $lng, $zoom) {
 /*******************************
  * Generate polygon string from bounding box coordinates
  ******************************/
-function rch_generate_polygon_string($boundingBox) {
+function rch_generate_polygon_string($boundingBox)
+{
     // Extract coordinates
     $north = $boundingBox['northeast'][0]; // North latitude
     $east = $boundingBox['northeast'][1];  // East longitude
     $south = $boundingBox['southwest'][0]; // South latitude
     $west = $boundingBox['southwest'][1];  // West longitude
-    
+
     // Create points in exactly the same order as in the JavaScript implementation
     // The order is: NW -> NE -> SE -> SW -> NW (to close the polygon)
     $points = [
         // North-West point
         [$north, $west],
-        
+
         // North-East point
         [$north, $east],
-        
+
         // South-East point
         [$south, $east],
-        
+
         // South-West point
         [$south, $west],
-        
+
         // North-West point again to close the polygon
         [$north, $west]
     ];
-    
+
     // Format points as "lat,lng|lat,lng|..." exactly as the JavaScript does
     $polygonString = '';
     foreach ($points as $point) {
         $polygonString .= $point[0] . ',' . $point[1] . '|';
     }
-    
+
     // Remove the trailing pipe character
     return rtrim($polygonString, '|');
 }
@@ -143,22 +145,23 @@ function rch_generate_polygon_string($boundingBox) {
 /**
  * AJAX handler for calculating polygon from place coordinates
  */
-function rch_calculate_polygon_from_place() {
+function rch_calculate_polygon_from_place()
+{
     // Verify if request has required parameters
     if (!isset($_POST['lat']) || !isset($_POST['lng']) || !isset($_POST['zoom'])) {
         wp_send_json_error(['message' => 'Missing required parameters']);
         return;
     }
-    
+
     // Get parameters from request
     $lat = floatval($_POST['lat']);
     $lng = floatval($_POST['lng']);
     $zoom = intval($_POST['zoom']);
-    
+
     // Calculate bounding box and polygon string
     $boundingBox = rch_calculate_bounding_box($lat, $lng, $zoom);
     $polygonString = rch_generate_polygon_string($boundingBox);
-    
+
     // Send response
     wp_send_json_success([
         'boundingBox' => $boundingBox,
@@ -212,7 +215,7 @@ function rch_collect_brands($brand, &$regions, &$offices, &$processed_brands)
                     // Add the ID of the Region to the region parent IDs
                     $region_parent_ids[] = $current_parent['id'];
                 }
-                
+
                 // Also check if this parent has parents array
                 if (isset($current_parent['parents']) && is_array($current_parent['parents'])) {
                     foreach ($current_parent['parents'] as $grandparent_id) {
@@ -234,7 +237,7 @@ function rch_collect_brands($brand, &$regions, &$offices, &$processed_brands)
         // Add office data along with the collected region parent IDs
         $offices[] = [
             'id' => $brand['id'],
-            'name' => $brand['name'], 
+            'name' => $brand['name'],
             'region_parent_ids' => $region_parent_ids,
         ];
     }
@@ -390,7 +393,7 @@ function rch_fetch_and_process_brands($api_url_base, $access_token)
                         if (!isset($all_brands[$brand['id']])) {
                             $all_brands[$brand['id']] = $brand;
                         }
-                        
+
                         // Add all parent brands to our collection for processing
                         $current_parent = $brand['parent'] ?? null;
                         while ($current_parent) {
@@ -402,7 +405,7 @@ function rch_fetch_and_process_brands($api_url_base, $access_token)
                     }
                 }
             }
-            
+
             // First identify all regions
             foreach ($all_brands as $brand) {
                 if ($brand['brand_type'] == 'Region') {
@@ -410,14 +413,14 @@ function rch_fetch_and_process_brands($api_url_base, $access_token)
                     $processed_brands[] = $brand['id'];
                 }
             }
-            
+
             // Then process all offices
             foreach ($all_brands as $brand) {
                 if ($brand['brand_type'] == 'Office' && !in_array($brand['id'], $processed_brands)) {
                     rch_collect_brands($brand, $regions, $offices, $processed_brands);
                 }
             }
-            
+
             // Process any remaining brands
             foreach ($data['data'] as $user_data) {
                 if (isset($user_data['brands'])) {

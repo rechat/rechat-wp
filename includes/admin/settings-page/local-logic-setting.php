@@ -27,9 +27,9 @@ function rch_rechat_register_local_logic_settings()
 
     // Add a section for the settings
     add_settings_section(
-        'rch_rechat_local_logic_section', 
-        __('Listing Page Settings', 'rechat-plugin'), 
-        'rch_rechat_local_logic_section_description', 
+        'rch_rechat_local_logic_section',
+        __('Listing Page Settings', 'rechat-plugin'),
+        'rch_rechat_local_logic_section_description',
         'local_logic_settings'
     );
 
@@ -42,28 +42,28 @@ function rch_rechat_register_local_logic_settings()
 
     // Add the Local Logic API Key field
     add_settings_field(
-        'rch_rechat_local_logic_api_key', 
-        __('Local Logic API Key', 'rechat-plugin'), 
-        'rch_rechat_render_api_key_field', 
-        'local_logic_settings', 
+        'rch_rechat_local_logic_api_key',
+        __('Local Logic API Key', 'rechat-plugin'),
+        'rch_rechat_render_api_key_field',
+        'local_logic_settings',
         'rch_rechat_local_logic_section'
     );
 
     // Add the Google Map API Key field
     add_settings_field(
-        'rch_rechat_google_map_api_key', 
-        __('Google Map API Key', 'rechat-plugin'), 
-        'rch_rechat_render_google_map_api_key_field', 
-        'local_logic_settings', 
+        'rch_rechat_google_map_api_key',
+        __('Google Map API Key', 'rechat-plugin'),
+        'rch_rechat_render_google_map_api_key_field',
+        'local_logic_settings',
         'rch_rechat_local_logic_section'
     );
 
     // Add the checkboxes for features
     add_settings_field(
-        'rch_rechat_local_logic_features', 
-        __('Features', 'rechat-plugin'), 
-        'rch_rechat_render_features_checkboxes', 
-        'local_logic_settings', 
+        'rch_rechat_local_logic_features',
+        __('Features', 'rechat-plugin'),
+        'rch_rechat_render_features_checkboxes',
+        'local_logic_settings',
         'rch_rechat_local_logic_section'
     );
 

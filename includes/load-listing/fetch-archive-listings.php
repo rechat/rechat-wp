@@ -161,19 +161,20 @@ add_action('wp_ajax_nopriv_rch_fetch_listing', 'rch_fetch_listing_ajax');
 /**
  * AJAX handler for fetching only the total listing count for pagination
  */
-function rch_fetch_total_listing_count_ajax() {
+function rch_fetch_total_listing_count_ajax()
+{
     // Get request parameters
     $filters = rch_get_filters($_POST);
-    
+
     // Fetch total listing count
     $totalListingData = rch_fetch_total_listing_count($filters);
     $totalListing = $totalListingData['info']['total'] ?? 0;
-    
+
     // Send the response
     wp_send_json_success([
         'total' => $totalListing
     ]);
-    
+
     wp_die();
 }
 add_action('wp_ajax_rch_fetch_total_listing_count', 'rch_fetch_total_listing_count_ajax');

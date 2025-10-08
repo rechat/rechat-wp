@@ -191,10 +191,8 @@ function custom_agents_custom_column($column, $post_id)
                 $output[] = get_the_title($region_id); // This gets the title of each associated region.
             }
             echo implode(', ', array_map('esc_html', $output));
-
         } else {
             echo esc_html(__('No Regions Assigned', 'rechat-plugin'));
-
         }
     }
 }

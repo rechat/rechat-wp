@@ -36,47 +36,47 @@ function initMap() {
     let initialLat = 39.8283; // Default: Center of US
     let initialLng = -98.5795;
     let initialZoom = 4;
-    
+
     // Use coordinates from shortcode if available
     if (typeof rchListingData !== 'undefined' && rchListingData.mapCoordinates) {
         const coords = rchListingData.mapCoordinates;
-        
+
         if (coords.latitude && coords.longitude) {
             initialLat = parseFloat(coords.latitude);
             initialLng = parseFloat(coords.longitude);
         }
-        
+
         if (coords.zoom) {
             initialZoom = parseInt(coords.zoom);
         }
     }
-    
+
     // Initialize the map with the coordinates from the shortcode
     map = new google.maps.Map(document.getElementById('map'), {
         center: { lat: initialLat, lng: initialLng },
         zoom: initialZoom,
         mapId: 'a1b2c3d4e5f6g7h8' // Add your Map ID here
     });
-    
+
     // If we have valid coordinates from the shortcode, set the query string immediately
-    if (typeof rchListingData !== 'undefined' && 
-        rchListingData.mapCoordinates && 
-        rchListingData.mapCoordinates.hasValidCoordinates && 
+    if (typeof rchListingData !== 'undefined' &&
+        rchListingData.mapCoordinates &&
+        rchListingData.mapCoordinates.hasValidCoordinates &&
         rchListingData.mapCoordinates.polygonString) {
-        
+
         const queryString = rchListingData.mapCoordinates.polygonString;
         document.getElementById('query-string').value = queryString;
-        
+
         // Also update the filters.points for the API requests
         if (typeof filters !== 'undefined') {
             filters.points = queryString;
         }
     }
-    
+
     // Initialize drawing tools and buttons (these don't trigger AJAX requests)
     initDrawingManager();
     addDrawAreaButton();
-    
+
     // Now that the map exists, fetch listings data, but DON'T attach event listeners yet
     fetchListingsDataAndUpdateMap();
 }
@@ -84,32 +84,32 @@ function initMap() {
 // New function to fetch data and update the map
 function fetchListingsDataAndUpdateMap() {
     // Check if we have coordinates from the shortcode - if so, don't auto-fit bounds
-    const hasShortcodeCoordinates = typeof rchListingData !== 'undefined' && 
-                                  rchListingData.mapCoordinates && 
-                                  rchListingData.mapCoordinates.latitude && 
-                                  rchListingData.mapCoordinates.longitude;
-    
+    const hasShortcodeCoordinates = typeof rchListingData !== 'undefined' &&
+        rchListingData.mapCoordinates &&
+        rchListingData.mapCoordinates.latitude &&
+        rchListingData.mapCoordinates.longitude;
+
     // Use the existing updateListingList function
     updateListingList()
         .then(allListingsData => {
             if (allListingsData && allListingsData.length > 0 && !hasShortcodeCoordinates) {
                 // Only auto-fit bounds if we don't have coordinates from the shortcode
                 const bounds = createBoundsFromListings(allListingsData);
-                
+
                 // Update the existing map
                 map.fitBounds(bounds);
                 map.setCenter(bounds.getCenter());
-                
+
                 // Update filter points for the current view
                 updateFilterPoints();
             } else {
                 // If we have coordinates from the shortcode, we've already set up the map
                 // Or if there are no listings, we still use the default map center
-                
+
                 // Update filter points for the current view to ensure the query string is set
                 updateFilterPoints();
             }
-            
+
             // NOW attach the map event listeners AFTER initial data is loaded
             attachMapEventListeners();
         })
@@ -287,7 +287,7 @@ function updateFilterPoints() {
     // (not just the default center of the map)
     const center = map.getCenter();
     if (center && (
-        Math.abs(center.lat() - 39.8283) > 0.001 || 
+        Math.abs(center.lat() - 39.8283) > 0.001 ||
         Math.abs(center.lng() - (-98.5795)) > 0.001
     )) {
         filters.points = queryString;
@@ -306,10 +306,10 @@ function addMapMarker(listing, map) {
         lat: listing.lat,
         lng: listing.lng
     };
-    
+
     const formattedPrice = formatPrice(listing.price);
     let marker;
-    
+
     // Check if Advanced Marker API is available
     if (google.maps.marker && google.maps.marker.AdvancedMarkerElement) {
         // Create price pin element for advanced marker
@@ -325,7 +325,7 @@ function addMapMarker(listing, map) {
         pinElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
         pinElement.style.textAlign = 'center';
         pinElement.innerText = formattedPrice;
-        
+
         // Create advanced marker
         marker = new google.maps.marker.AdvancedMarkerElement({
             map,
@@ -347,12 +347,12 @@ function addMapMarker(listing, map) {
             title: listing.price.toLocaleString()
         });
     }
-    
+
     // Info window content
-    const imageHtml = listing.image 
+    const imageHtml = listing.image
         ? `<img src="${listing.image}" alt="Listing Image" class="info-window-img"/>`
         : `<div class="rch-no-listing-image"><img src="${rchData.invertedLogo || rchData.homeUrl}" alt="Logo" class="info-window-logo"/></div>`;
-        
+
     const infoWindowContent = `
         <div class="custom-info-window">
             <a href="${rchData.homeUrl}/listing-detail/?listing_id=${listing.id}" target="_blank">
@@ -364,15 +364,15 @@ function addMapMarker(listing, map) {
             </a>
         </div>
     `;
-    
+
     // Create info window
     const infoWindow = new google.maps.InfoWindow({
         content: infoWindowContent,
         disableAutoPan: true
     });
-    
+
     let isClicked = false;
-    
+
     // Add event listeners - compatible with both marker types
     marker.addListener('click', () => {
         isClicked = true;
@@ -381,7 +381,7 @@ function addMapMarker(listing, map) {
             map
         });
     });
-    
+
     // Handle mouseover/mouseout for advanced markers
     if (google.maps.marker && google.maps.marker.AdvancedMarkerElement) {
         marker.content.addEventListener('mouseover', () => {
@@ -392,7 +392,7 @@ function addMapMarker(listing, map) {
                 });
             }
         });
-        
+
         marker.content.addEventListener('mouseout', () => {
             if (!isClicked) {
                 infoWindow.close();
@@ -408,20 +408,20 @@ function addMapMarker(listing, map) {
                 });
             }
         });
-        
+
         marker.addListener('mouseout', () => {
             if (!isClicked) {
                 infoWindow.close();
             }
         });
     }
-    
+
     // Close info window when clicking elsewhere on the map
     google.maps.event.addListener(map, 'click', () => {
         isClicked = false;
         infoWindow.close();
     });
-    
+
     // Add marker to the array for future management
     mapMarkers.push(marker);
 }
@@ -432,7 +432,7 @@ function addMapMarker(listing, map) {
 function clearMarkers() {
     mapMarkers.forEach(marker => {
         if (marker.map) {
-            if (google.maps.marker && google.maps.marker.AdvancedMarkerElement && 
+            if (google.maps.marker && google.maps.marker.AdvancedMarkerElement &&
                 marker instanceof google.maps.marker.AdvancedMarkerElement) {
                 marker.map = null;
             } else {

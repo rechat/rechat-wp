@@ -1,7 +1,7 @@
 <?php
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit();
+if (! defined('ABSPATH')) {
+    exit();
 }
 /*******************************
  * Renders the listing as a shortcode.
