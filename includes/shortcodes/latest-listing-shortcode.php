@@ -9,6 +9,7 @@ function rch_display_latest_listings_shortcode($atts)
             'template' => '',
             'content' => '',
             'map_points' => '', // New attribute for the 4 points of the map
+            'listing_statuses' => '', // New attribute for listing statuses
             'slides_per_view' => 3.5,
             'space_between' => 16,
             'loop' => true,
@@ -31,6 +32,37 @@ function rch_display_latest_listings_shortcode($atts)
     $template = esc_js($atts['template']);
     $display_type = esc_attr($atts['display_type']);
     $map_points = esc_js($atts['map_points']);
+    
+    // Map listing_statuses based on user input
+    $listing_statuses_raw = trim($atts['listing_statuses']);
+    $listing_statuses = '';
+    
+    if (!empty($listing_statuses_raw)) {
+        switch ($listing_statuses_raw) {
+            case 'All Listings':
+                $listing_statuses = 'Residential,Residential Lease,Lots & Acreage,Commercial,Multi-Family';
+                break;
+            case 'Sale':
+                $listing_statuses = 'Residential,Lots & Acreage,Commercial,Multi-Family';
+                break;
+            case 'Lease':
+                $listing_statuses = 'Residential Lease';
+                break;
+            case 'Lots & Acreage':
+                $listing_statuses = 'Lots & Acreage';
+                break;
+            case 'Commercial':
+                $listing_statuses = 'Commercial';
+                break;
+            default:
+                // If it doesn't match any predefined values, use it as-is
+                $listing_statuses = $listing_statuses_raw;
+                break;
+        }
+    }
+    // Use sanitize_text_field instead of esc_js to preserve special characters
+    $listing_statuses = sanitize_text_field($listing_statuses);
+    
     $slides_per_view = floatval($atts['slides_per_view']);
     $space_between = intval($atts['space_between']);
     $loop = filter_var($atts['loop'], FILTER_VALIDATE_BOOLEAN);
@@ -77,6 +109,7 @@ function rch_display_latest_listings_shortcode($atts)
             const template = "<?php echo esc_js($atts['template']); ?>";
             const adminAjaxUrl = "<?php echo esc_url(admin_url('admin-ajax.php')); ?>";
             const mapPoints = "<?php echo $map_points; ?>";
+            const listingStatuses = <?php echo json_encode($listing_statuses); ?>;
 
             // Build Swiper settings object conditionally
             const swiperSettings = {
@@ -137,7 +170,6 @@ function rch_display_latest_listings_shortcode($atts)
                 listingList.innerHTML = '';
                 loading.style.display = 'flex';
                 const token = '<?php echo get_option('rch_rechat_access_token'); ?>';
-                console.log(mapPoints)
                 fetch(adminAjaxUrl, {
                         method: 'POST', // Ensure method is POST
                         body: new URLSearchParams({
@@ -146,7 +178,8 @@ function rch_display_latest_listings_shortcode($atts)
                             template: template,
                             content: '<?php echo esc_js($atts['content']); ?>', // Pass the content filter
                             brand: '<?php echo esc_js(get_option('rch_rechat_brand_id')); ?>',
-                            points: mapPoints // Pass the map points
+                            points: mapPoints, // Pass the map points
+                            listing_statuses: listingStatuses // Pass the listing statuses
                             // add any other parameters here
                         }),
                         headers: {
