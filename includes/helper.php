@@ -234,11 +234,47 @@ function rch_collect_brands($brand, &$regions, &$offices, &$processed_brands)
             }
         }
 
-        // Add office data along with the collected region parent IDs
+        // Extract address from brand or parent hierarchy
+        $office_address = '';
+        
+        // Check if address exists in current brand
+        if (isset($brand['address']) && !empty($brand['address'])) {
+            $office_address = $brand['address'];
+        } else {
+            // If not, traverse parent hierarchy to find address
+            $current_parent = $brand['parent'] ?? null;
+            while ($current_parent && empty($office_address)) {
+                // Check if current parent has an address
+                if (isset($current_parent['address']) && !empty($current_parent['address'])) {
+                    $office_address = $current_parent['address'];
+                    break;
+                }
+                
+                // Also check if this parent has parents array
+                if (empty($office_address) && isset($current_parent['parents']) && is_array($current_parent['parents'])) {
+                    // Check all brands to find parents with addresses
+                    foreach ($current_parent['parents'] as $grandparent_id) {
+                        // Look for this grandparent in all_brands (if available) or regions
+                        foreach ($regions as $region) {
+                            if ($region['id'] === $grandparent_id && isset($region['address']) && !empty($region['address'])) {
+                                $office_address = $region['address'];
+                                break 2; // Break out of both foreach loops
+                            }
+                        }
+                    }
+                }
+                
+                // Move up the hierarchy to the next parent
+                $current_parent = $current_parent['parent'] ?? null;
+            }
+        }
+
+        // Add office data along with the collected region parent IDs and address
         $offices[] = [
             'id' => $brand['id'],
             'name' => $brand['name'],
             'region_parent_ids' => $region_parent_ids,
+            'address' => $office_address,
         ];
     }
 }
@@ -265,7 +301,7 @@ function rch_api_request($url, $token, $brand = null)
 /*******************************
  * Function to insert or update posts and save meta data
  ******************************/
-function rch_insert_or_update_post($post_type, $brand_name, $brand_id, $meta_key, $associated_regions = null)
+function rch_insert_or_update_post($post_type, $brand_name, $brand_id, $meta_key, $associated_regions = null, $address = null)
 {
     $existing_posts = get_posts(array(
         'post_type'   => $post_type,
@@ -300,6 +336,11 @@ function rch_insert_or_update_post($post_type, $brand_name, $brand_id, $meta_key
             }
         }
 
+        // Update office address if provided and post type is offices
+        if ($post_type === 'offices' && !empty($address)) {
+            update_post_meta($post_id, 'office_address', sanitize_text_field($address));
+        }
+
         return 'updated';
     } else {
         // Insert new post
@@ -326,6 +367,11 @@ function rch_insert_or_update_post($post_type, $brand_name, $brand_id, $meta_key
             if (!empty($region_post_ids)) {
                 update_post_meta($post_id, 'rch_associated_regions_to_office', $region_post_ids);
             }
+        }
+
+        // Insert office address if provided and post type is offices
+        if ($post_type === 'offices' && !empty($address)) {
+            update_post_meta($post_id, 'office_address', sanitize_text_field($address));
         }
 
         return 'added';
