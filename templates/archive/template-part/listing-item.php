@@ -1,5 +1,13 @@
+<?php // Create the URL
+$listing_url = esc_url(
+    get_home_url() 
+    . '/listing-detail/' 
+    . str_replace(' ', '-', $listing['formatted']['street_address']['text']) 
+    . '/?listing_id=' 
+    . esc_attr($listing['id'])
+); ?>
 <div class="house-item">
-    <a href="<?php echo esc_url(get_home_url() . '/listing-detail/?listing_id=' . esc_attr($listing['id'])); ?>">
+    <a href="<?php echo $listing_url; ?>">
         <picture class="<?php echo empty($listing['cover_image_url']) ? 'rch-fallback-logo-listing' : ''; ?>">
             <img
                 src="<?php

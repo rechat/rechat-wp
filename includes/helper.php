@@ -237,16 +237,16 @@ function rch_collect_brands($brand, &$regions, &$offices, &$processed_brands)
         // Extract address from brand or parent hierarchy
         $office_address = '';
         
-        // Check if address exists in current brand
-        if (isset($brand['address']) && !empty($brand['address'])) {
-            $office_address = $brand['address'];
+        // Check if address.full exists in current brand settings
+        if (isset($brand['settings']['marketing_palette']['address']['full']) && !empty($brand['settings']['marketing_palette']['address']['full'])) {
+            $office_address = $brand['settings']['marketing_palette']['address']['full'];
         } else {
-            // If not, traverse parent hierarchy to find address
+            // If not, traverse parent hierarchy to find address.full
             $current_parent = $brand['parent'] ?? null;
             while ($current_parent && empty($office_address)) {
-                // Check if current parent has an address
-                if (isset($current_parent['address']) && !empty($current_parent['address'])) {
-                    $office_address = $current_parent['address'];
+                // Check if current parent has an address.full in settings
+                if (isset($current_parent['settings']['marketing_palette']['address']['full']) && !empty($current_parent['settings']['marketing_palette']['address']['full'])) {
+                    $office_address = $current_parent['settings']['marketing_palette']['address']['full'];
                     break;
                 }
                 
@@ -256,8 +256,8 @@ function rch_collect_brands($brand, &$regions, &$offices, &$processed_brands)
                     foreach ($current_parent['parents'] as $grandparent_id) {
                         // Look for this grandparent in all_brands (if available) or regions
                         foreach ($regions as $region) {
-                            if ($region['id'] === $grandparent_id && isset($region['address']) && !empty($region['address'])) {
-                                $office_address = $region['address'];
+                            if ($region['id'] === $grandparent_id && isset($region['settings']['marketing_palette']['address']['full']) && !empty($region['settings']['marketing_palette']['address']['full'])) {
+                                $office_address = $region['settings']['marketing_palette']['address']['full'];
                                 break 2; // Break out of both foreach loops
                             }
                         }
