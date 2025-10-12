@@ -409,10 +409,14 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   border: 1px solid rgba(126, 139, 150, 0.5);
   background: #fff;
   padding: 16px;
+  height: 100%;
 }
 
 .rch-listing-list .house-item a {
   text-decoration: none;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .rch-listing-list .house-item picture {
@@ -461,6 +465,7 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   padding: 0;
   width: 100%;
   flex-wrap: wrap;
+  margin-top: auto;
 }
 
 .rch-listing-list .house-item ul li {

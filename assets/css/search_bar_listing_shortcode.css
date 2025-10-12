@@ -41,6 +41,18 @@
   outline: none !important;
 }
 
+@media screen and (min-width: 1920px) {
+  .rch-search-listing-form .rch-search-filters input[type="search"] {
+    min-width: 350px;
+  }
+}
+
+@media screen and (min-width: 1440px) and (max-width: 1919px) {
+  .rch-search-listing-form .rch-search-filters input[type="search"] {
+    min-width: 320px;
+  }
+}
+
 @media screen and (max-width: 1200px) {
   .rch-search-listing-form .rch-search-form-widget {
     flex-direction: column;
