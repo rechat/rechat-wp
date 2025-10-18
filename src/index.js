@@ -587,6 +587,7 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
             const checkUserLogin = async () => {
                 try {
                     const response = await apiFetch({ path: '/wp/v2/users/me' });
+                    
                     if (response && response.id) {
                         setIsLoggedIn(true);
                         fetchBrandId();
@@ -605,6 +606,7 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
         const fetchBrandId = async () => {
             try {
                 const brandResponse = await apiFetch({ path: '/wp/v2/options' });
+                console.log('User info response:', brandResponse);
                 if (brandResponse.rch_rechat_brand_id) {
                     setBrandId(brandResponse.rch_rechat_brand_id);
                 } else {
@@ -614,12 +616,11 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
                 console.error('Error fetching brand ID:', error);
             }
         };
-
         const fetchAccessToken = async () => {
             try {
                 const tokenResponse = await apiFetch({ path: '/wp/v2/options' });
                 if (tokenResponse.rch_rechat_google_map_api_key) {
-                    setAccessToken(tokenResponse.rch_rechat_google_map_api_key);
+                    setAccessToken(tokenResponse.rch_rechat_access_token);
                 } else {
                     console.error('Access token not found in WordPress options.');
                 }
@@ -627,7 +628,6 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
                 console.error('Error fetching access token:', error);
             }
         };
-
         useEffect(() => {
             if (isLoggedIn && brandId && accessToken) {
                 const fetchLeadChannels = async () => {

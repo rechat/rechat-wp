@@ -1580,6 +1580,7 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
         const brandResponse = await _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2___default()({
           path: '/wp/v2/options'
         });
+        console.log('User info response:', brandResponse);
         if (brandResponse.rch_rechat_brand_id) {
           setBrandId(brandResponse.rch_rechat_brand_id);
         } else {
@@ -1595,7 +1596,7 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
           path: '/wp/v2/options'
         });
         if (tokenResponse.rch_rechat_google_map_api_key) {
-          setAccessToken(tokenResponse.rch_rechat_google_map_api_key);
+          setAccessToken(tokenResponse.rch_rechat_access_token);
         } else {
           console.error('Access token not found in WordPress options.');
         }

@@ -69,14 +69,16 @@
                                 Location on the Map
                             </a>
                         </div>
-                        <div class="main-des-single-house" id="rch-overview">
-                            <h2>
-                                Property Description
-                            </h2>
-                            <p>
-                                <?php echo esc_html($listing_detail['property']['description']); ?>
-                            </p>
-                        </div>
+                        <?php if (!empty($listing_detail['property']['description'])): ?>
+                            <div class="main-des-single-house" id="rch-overview">
+                                <h2>
+                                    Property Description
+                                </h2>
+                                <p>
+                                    <?php echo wp_kses_post($listing_detail['property']['description']); ?>
+                                </p>
+                            </div>
+                        <?php endif; ?>
                     </div>
 
                     <hr />
@@ -136,38 +138,40 @@
 
 
 
-                    <?php
-                    // Retrieve the selected features from the settings
-                    $selected_features = get_option('rch_rechat_local_logic_features', []);
-                    $google_map_api = get_option('rch_rechat_google_map_api_key');
-                    // Define the available template parts corresponding to each feature
-                    $feature_templates = [
-                        // 'Hero' => 'hero', // Template part for Hero feature
-                        // 'Map' => 'map', // Template part for Map feature
-                        // 'Highlights' => 'highlights', // Template part for Highlights feature
-                        // 'Characteristics' => 'characteristics', // Template part for Characteristics feature
-                        // 'Schools' => 'schools', // Template part for Schools feature
-                        // 'Demographics' => 'demographics', // Template part for Demographics feature
-                        // 'PropertyValueDrivers' => 'property-value-drivers', // Template part for PropertyValueDrivers feature
-                        // 'MarketTrends' => 'market-trends', // Template part for MarketTrends feature
-                        // 'Match' => 'match', // Template part for Match feature
-                        'LocalContent' => 'widgets/local-content', // Template part for Match feature
-                    ];
+                    <div class=rch_local_logic id="rch-location">
+                        <?php
+                        // Retrieve the selected features from the settings
+                        $selected_features = get_option('rch_rechat_local_logic_features', []);
+                        $google_map_api = get_option('rch_rechat_google_map_api_key');
+                        // Define the available template parts corresponding to each feature
+                        $feature_templates = [
+                            // 'Hero' => 'hero', // Template part for Hero feature
+                            // 'Map' => 'map', // Template part for Map feature
+                            // 'Highlights' => 'highlights', // Template part for Highlights feature
+                            // 'Characteristics' => 'characteristics', // Template part for Characteristics feature
+                            // 'Schools' => 'schools', // Template part for Schools feature
+                            // 'Demographics' => 'demographics', // Template part for Demographics feature
+                            // 'PropertyValueDrivers' => 'property-value-drivers', // Template part for PropertyValueDrivers feature
+                            // 'MarketTrends' => 'market-trends', // Template part for MarketTrends feature
+                            // 'Match' => 'match', // Template part for Match feature
+                            'LocalContent' => 'widgets/local-content', // Template part for Match feature
+                        ];
 
-                    // Loop through the selected features and include the corresponding template part from the plugin
-                    foreach ($selected_features as $feature) {
-                        if (array_key_exists($feature, $feature_templates)) {
-                            // Get the plugin directory path
-                            $plugin_dir = RCH_PLUGIN_INCLUDES; // Adjust if your plugin files are in a subfolder
+                        // Loop through the selected features and include the corresponding template part from the plugin
+                        foreach ($selected_features as $feature) {
+                            if (array_key_exists($feature, $feature_templates)) {
+                                // Get the plugin directory path
+                                $plugin_dir = RCH_PLUGIN_INCLUDES; // Adjust if your plugin files are in a subfolder
 
-                            // Construct the template part file path
-                            $template_part_path = $plugin_dir . 'local-logic/' . $feature_templates[$feature] . '.php';                            // Check if the template part file exists, then include it
-                            if (file_exists($template_part_path)) {
-                                include $template_part_path;
+                                // Construct the template part file path
+                                $template_part_path = $plugin_dir . 'local-logic/' . $feature_templates[$feature] . '.php';                            // Check if the template part file exists, then include it
+                                if (file_exists($template_part_path)) {
+                                    include $template_part_path;
+                                }
                             }
                         }
-                    }
-                    ?>
+                        ?>
+                    </div>
                     <hr />
                     <?php if (!empty($listing_detail['mls_info'])) { ?>
                         <div class="rch-disclaimer-show">
