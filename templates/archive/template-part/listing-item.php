@@ -1,11 +1,20 @@
-<?php // Create the URL
+<?php
+// Get and sanitize address parts
+$street = str_replace([',', ' '], ['', '-'], trim($listing['formatted']['street_address']['text']));
+$address_line2 = str_replace([',', ' '], ['', '-'], trim($listing['formatted']['address_line_2']['text']));
+
+// Combine address parts
+$address_slug = $street . '-' . $address_line2;
+
+// Build the final URL
 $listing_url = esc_url(
     get_home_url() 
     . '/listing-detail/' 
-    . str_replace(' ', '-', $listing['formatted']['street_address']['text']) 
+    . $address_slug 
     . '/?listing_id=' 
     . esc_attr($listing['id'])
-); ?>
+);
+?>
 <div class="house-item">
     <a href="<?php echo $listing_url; ?>">
         <picture class="<?php echo empty($listing['cover_image_url']) ? 'rch-fallback-logo-listing' : ''; ?>">
