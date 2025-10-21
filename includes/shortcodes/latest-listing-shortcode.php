@@ -10,6 +10,8 @@ function rch_display_latest_listings_shortcode($atts)
             'content' => '',
             'map_points' => '', // New attribute for the 4 points of the map
             'listing_statuses' => '', // New attribute for listing statuses
+            'own_listing' => true, // New attribute for own listing filter
+            'property_types' => '', // New attribute for property types
             'slides_per_view' => 3.5,
             'space_between' => 16,
             'loop' => true,
@@ -33,26 +35,50 @@ function rch_display_latest_listings_shortcode($atts)
     $display_type = esc_attr($atts['display_type']);
     $map_points = esc_js($atts['map_points']);
     
-    // Map listing_statuses based on user input
-    $listing_statuses_raw = trim($atts['listing_statuses']);
-    $listing_statuses = '';
+    // Map property_types based on user input (property types: Residential, Commercial, etc.)
+    $property_types_raw = trim($atts['property_types']);
+    $property_types = '';
     
-    if (!empty($listing_statuses_raw)) {
-        switch ($listing_statuses_raw) {
+    if (!empty($property_types_raw)) {
+        switch ($property_types_raw) {
             case 'All Listings':
-                $listing_statuses = 'Residential,Residential Lease,Lots & Acreage,Commercial,Multi-Family';
+                $property_types = 'Residential,Residential Lease,Lots & Acreage,Commercial,Multi-Family';
                 break;
             case 'Sale':
-                $listing_statuses = 'Residential,Lots & Acreage,Commercial,Multi-Family';
+                $property_types = 'Residential,Lots & Acreage,Commercial,Multi-Family';
                 break;
             case 'Lease':
-                $listing_statuses = 'Residential Lease';
+                $property_types = 'Residential Lease';
                 break;
             case 'Lots & Acreage':
-                $listing_statuses = 'Lots & Acreage';
+                $property_types = 'Lots & Acreage';
                 break;
             case 'Commercial':
-                $listing_statuses = 'Commercial';
+                $property_types = 'Commercial';
+                break;
+            default:
+                // If it doesn't match any predefined values, use it as-is
+                $property_types = $property_types_raw;
+                break;
+        }
+    }
+    // Use sanitize_text_field instead of esc_js to preserve special characters
+    $property_types = sanitize_text_field($property_types);
+    
+    // Process listing_statuses attribute (listing statuses: Active, Closed, Archived)
+    $listing_statuses_raw = trim($atts['listing_statuses']);
+    $listing_statuses = '';
+    var_dump($atts['listing_statuses']);
+    if (!empty($listing_statuses_raw)) {
+        switch ($listing_statuses_raw) {
+            case 'Active':
+                $listing_statuses = 'Active,Incoming,Coming Soon,Pending';
+                break;
+            case 'Closed':
+                $listing_statuses = 'Sold,Leased';
+                break;
+            case 'Archived':
+                $listing_statuses = 'Withdrawn,Expired';
                 break;
             default:
                 // If it doesn't match any predefined values, use it as-is
@@ -60,8 +86,10 @@ function rch_display_latest_listings_shortcode($atts)
                 break;
         }
     }
-    // Use sanitize_text_field instead of esc_js to preserve special characters
     $listing_statuses = sanitize_text_field($listing_statuses);
+    
+    // Process own_listing attribute
+    $own_listing = filter_var($atts['own_listing'], FILTER_VALIDATE_BOOLEAN);
     
     $slides_per_view = floatval($atts['slides_per_view']);
     $space_between = intval($atts['space_between']);
@@ -109,7 +137,9 @@ function rch_display_latest_listings_shortcode($atts)
             const template = "<?php echo esc_js($atts['template']); ?>";
             const adminAjaxUrl = "<?php echo esc_url(admin_url('admin-ajax.php')); ?>";
             const mapPoints = "<?php echo $map_points; ?>";
+            const propertyTypes = <?php echo json_encode($property_types); ?>;
             const listingStatuses = <?php echo json_encode($listing_statuses); ?>;
+            const ownListing = <?php echo $own_listing ? 'true' : 'false'; ?>;
 
             // Build Swiper settings object conditionally
             const swiperSettings = {
@@ -170,6 +200,7 @@ function rch_display_latest_listings_shortcode($atts)
                 listingList.innerHTML = '';
                 loading.style.display = 'flex';
                 const token = '<?php echo get_option('rch_rechat_access_token'); ?>';
+                const brandId = '<?php echo esc_js(get_option('rch_rechat_brand_id')); ?>';
                 fetch(adminAjaxUrl, {
                         method: 'POST', // Ensure method is POST
                         body: new URLSearchParams({
@@ -177,9 +208,10 @@ function rch_display_latest_listings_shortcode($atts)
                             listing_per_page: listingPerPage,
                             template: template,
                             content: '<?php echo esc_js($atts['content']); ?>', // Pass the content filter
-                            brand: '<?php echo esc_js(get_option('rch_rechat_brand_id')); ?>',
+                            brand: ownListing ? brandId : '', // Pass brand only if own_listing is true
                             points: mapPoints, // Pass the map points
-                            listing_statuses: listingStatuses // Pass the listing statuses
+                            property_types: propertyTypes, // Pass the property types
+                            listing_statuses: listingStatuses, // Pass the listing statuses
                             // add any other parameters here
                         }),
                         headers: {

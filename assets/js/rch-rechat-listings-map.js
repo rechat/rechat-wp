@@ -77,8 +77,12 @@ function initMap() {
     initDrawingManager();
     addDrawAreaButton();
 
-    // Now that the map exists, fetch listings data, but DON'T attach event listeners yet
-    fetchListingsDataAndUpdateMap();
+    // Wait for the map to be fully loaded before fetching data
+    // This ensures bounds and other map properties are properly initialized
+    google.maps.event.addListenerOnce(map, 'idle', function() {
+        // Now that the map is fully loaded, fetch listings data
+        fetchListingsDataAndUpdateMap();
+    });
 }
 
 // New function to fetch data and update the map
@@ -92,22 +96,62 @@ function fetchListingsDataAndUpdateMap() {
     // Use the existing updateListingList function
     updateListingList()
         .then(allListingsData => {
-            if (allListingsData && allListingsData.length > 0 && !hasShortcodeCoordinates) {
-                // Only auto-fit bounds if we don't have coordinates from the shortcode
-                const bounds = createBoundsFromListings(allListingsData);
+            if (allListingsData && allListingsData.length > 0) {
+                if (!hasShortcodeCoordinates) {
+                    // Only auto-fit bounds if we don't have coordinates from the shortcode
+                    const bounds = createBoundsFromListings(allListingsData);
 
-                // Update the existing map
-                map.fitBounds(bounds);
-                map.setCenter(bounds.getCenter());
+                    // Update the existing map
+                    map.fitBounds(bounds);
+                    map.setCenter(bounds.getCenter());
 
-                // Update filter points for the current view
-                updateFilterPoints();
+                    // Update filter points for the current view
+                    updateFilterPoints();
+                } else {
+                    // We have coordinates from the shortcode, but we need to ensure
+                    // the map viewport shows the listings properly
+                    
+                    // Wait a bit for the map to fully initialize
+                    setTimeout(() => {
+                        // Get the current bounds
+                        const currentBounds = map.getBounds();
+                        
+                        // Check if listings are within the current bounds
+                        let hasVisibleListings = false;
+                        if (currentBounds) {
+                            hasVisibleListings = allListingsData.some(listing => {
+                                if (listing.lat && listing.lng) {
+                                    const latLng = new google.maps.LatLng(listing.lat, listing.lng);
+                                    return currentBounds.contains(latLng);
+                                }
+                                return false;
+                            });
+                        }
+                        
+                        // If no listings are visible in the current viewport, fit bounds to show them
+                        if (!hasVisibleListings && allListingsData.length > 0) {
+                            const bounds = createBoundsFromListings(allListingsData);
+                            map.fitBounds(bounds);
+                            
+                            // Update filter points after adjusting the view
+                            setTimeout(() => {
+                                updateFilterPoints();
+                            }, 300);
+                        } else {
+                            // Listings are visible, just ensure the filter points are set
+                            updateFilterPoints();
+                        }
+                    }, 500);
+                }
             } else {
-                // If we have coordinates from the shortcode, we've already set up the map
-                // Or if there are no listings, we still use the default map center
-
-                // Update filter points for the current view to ensure the query string is set
-                updateFilterPoints();
+                // No listings found
+                if (!hasShortcodeCoordinates) {
+                    // If no coordinates from shortcode, keep default center
+                    updateFilterPoints();
+                } else {
+                    // If we have coordinates but no listings, keep the initial view
+                    updateFilterPoints();
+                }
             }
 
             // NOW attach the map event listeners AFTER initial data is loaded
