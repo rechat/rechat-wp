@@ -28,7 +28,7 @@ $agents = get_post_meta($post_id, 'agents', true);
                 <div class="rch-left-main-layout-single-agent">
                     <div class="rch-top-single-agent">
                         <div class="rch-left-top-single-agent">
-                            <?php if ($timezone) : ?>
+                            <?php if ($profile_image_url) : ?>
                                 <div class="rch-image-container">
                                     <picture>
                                         <a href="<?php the_permalink() ?>">
@@ -40,13 +40,6 @@ $agents = get_post_meta($post_id, 'agents', true);
                             <?php endif; ?>
                             <div class="rch-data-agent">
                                 <?php the_title('<h1>', '</h1>') ?>
-
-                                <?php if ($timezone) : ?>
-                                    <span>
-                                        Location:
-                                        <?php echo esc_html($timezone); ?>
-                                    </span>
-                                <?php endif; ?>
 
                                 <?php if ($phone_number) : ?>
                                     <span>
