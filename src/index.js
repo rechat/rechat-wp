@@ -524,11 +524,11 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                         )}
                     </PanelBody>
                 </InspectorControls>
-                {/* <ServerSideRender
+                <ServerSideRender
                     block="rch-rechat-plugin/listing-block"
                     attributes={attributes}
-                /> */}
-                <ListingMain
+                />
+                {/* <ListingMain
                     listing_per_page={listing_per_page}
                     maximum_bedrooms={maximum_bedrooms}
                     minimum_bedrooms={minimum_bedrooms}
@@ -546,7 +546,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                     own_listing={own_listing}
                     show_filter_bar={show_filter_bar}
                     selectedStatuses ={listing_statuses}
-                />
+                /> */}
             </>
         );
     },

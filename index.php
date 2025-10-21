@@ -10,7 +10,7 @@ License URI: https://www.gnu.org/licenses/gpl-2.0.html
 GitHub Plugin URI: https://github.com/rechat/rechat-wp
 GitHub Branch: master
 */
-// Exit if accessed directlys
+// Exit if accessed directly
 if (! defined('ABSPATH')) {
     http_response_code(404);
     exit();

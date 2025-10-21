@@ -111,7 +111,44 @@ function rch_render_listing_block($attributes)
         'map_longitude' => isset($attributes['map_longitude']) ? $attributes['map_longitude'] : '',
         'map_zoom' => isset($attributes['map_zoom']) ? $attributes['map_zoom'] : '12',
     );
+        $is_editor = defined('REST_REQUEST') && REST_REQUEST && isset($_GET['context']) && $_GET['context'] === 'edit';
 
+ if ($is_editor): ?>
+  <link rel="stylesheet" href="https://sdk.rechat.com/examples/dist/rechat.min.css">
+  <script src="https://sdk.rechat.com/examples/dist/rechat.min.js"></script>
+   <rechat-root 
+    brand_id=""
+    map_zoom="12"
+    map_api_key="AIzaSyAmoXvf2jBk2sfGKcbc-Zmg_ye3sXlLITs"
+    map_default_center="32.7767, -96.797"
+    filter_address="" 
+    disable_price="true"
+    filter_minimum_price="200000" 
+    filter_minimum_bathrooms="2" 
+    filter_minimum_bedrooms="2"
+    filter_maximum_bedrooms="8"
+    filter_maximum_year_built="2020"
+    filter_listing_statuses="Active, Pending"
+  >
+    <div class="container">
+      <div class="filters">
+        <rechat-listing-filters></rechat-listing-filters>
+      </div>
+
+      <div class="wrapper">
+        <div class="map">
+          <rechat-map></rechat-map>
+        </div>
+
+        <div class="listings">
+          <rechat-listings-grid></rechat-listings-grid>
+        </div>
+      </div>
+    </div>
+  </rechat-root>
+   <?php 
+   return ob_get_clean();
+endif; 
     // Override default values with URL parameters if they exist
     $shortcode_params = array_merge($shortcode_params, $url_params);
     // Build shortcode string
@@ -123,5 +160,76 @@ function rch_render_listing_block($attributes)
     }
     $shortcode .= ']';
     // Execute the shortcode and return the output
-    return do_shortcode($shortcode);
+    // return do_shortcode($shortcode);
+    ?>
+      <link rel="stylesheet" href="https://sdk.rechat.com/examples/dist/rechat.min.css">
+  <script src="https://sdk.rechat.com/examples/dist/rechat.min.js"></script>
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      height: 100vh;
+      overflow: hidden; 
+    }
+
+    .filters {
+      padding: 16px;
+    }
+
+    .wrapper {
+      display: flex;
+      gap: 16px;
+      flex-grow: 1;
+      min-height: 0;
+    }
+
+    .map {
+      flex: 7;
+    }
+
+    .listings {
+      flex: 7;
+      min-height: 0;
+      overflow: auto;
+    }
+  </style>
+  <rechat-root 
+    brand_id=""
+    map_zoom="12"
+    map_api_key="AIzaSyAmoXvf2jBk2sfGKcbc-Zmg_ye3sXlLITs"
+    map_default_center="32.7767, -96.797"
+    filter_address="" 
+    disable_price="true"
+    filter_minimum_price="200000" 
+    filter_minimum_bathrooms="2" 
+    filter_minimum_bedrooms="2"
+    filter_maximum_bedrooms="8"
+    filter_maximum_year_built="2020"
+    filter_listing_statuses="Active, Pending"
+  >
+    <div class="container">
+      <div class="filters">
+        <rechat-listing-filters></rechat-listing-filters>
+      </div>
+
+      <div class="wrapper">
+        <div class="map">
+          <rechat-map></rechat-map>
+        </div>
+
+        <div class="listings">
+          <rechat-listings-grid></rechat-listings-grid>
+        </div>
+      </div>
+    </div>
+  </rechat-root>
+   <?php 
+   return ob_get_clean();
 }
