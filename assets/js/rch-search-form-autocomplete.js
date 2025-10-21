@@ -16,7 +16,8 @@ function initSearchFormAutocomplete() {
     if (searchInput && document.getElementById('rch-search-form')) {
         searchFormAutocomplete = new google.maps.places.Autocomplete(searchInput, {
             types: ['(cities)'],
-            fields: ['geometry', 'name', 'formatted_address', 'address_components']
+            fields: ['geometry', 'name', 'formatted_address', 'address_components'],
+            componentRestrictions: { country: 'us' }
         });
 
         // Add listener for place selection

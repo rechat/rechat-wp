@@ -8,10 +8,10 @@ function rch_display_latest_listings_shortcode($atts)
             'limit' => 7,
             'template' => '',
             'content' => '',
-            'map_points' => '', // New attribute for the 4 points of the map
-            'listing_statuses' => '', // New attribute for listing statuses
-            'own_listing' => true, // New attribute for own listing filter
-            'property_types' => '', // New attribute for property types
+            'map_points' => '',
+            'listing_statuses' => '',
+            'own_listing' => true,
+            'property_types' => '',
             'slides_per_view' => 3.5,
             'space_between' => 16,
             'loop' => true,
