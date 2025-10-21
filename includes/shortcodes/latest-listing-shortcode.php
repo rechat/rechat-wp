@@ -68,7 +68,6 @@ function rch_display_latest_listings_shortcode($atts)
     // Process listing_statuses attribute (listing statuses: Active, Closed, Archived)
     $listing_statuses_raw = trim($atts['listing_statuses']);
     $listing_statuses = '';
-    var_dump($atts['listing_statuses']);
     if (!empty($listing_statuses_raw)) {
         switch ($listing_statuses_raw) {
             case 'Active':
