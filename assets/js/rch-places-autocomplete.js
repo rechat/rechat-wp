@@ -19,7 +19,8 @@ function initPlacesAutocomplete() {
     if (mobileSearchInput) {
         mobileAutocomplete = new google.maps.places.Autocomplete(mobileSearchInput, {
             types: ['(cities)'],
-            fields: ['geometry', 'name', 'formatted_address']
+            fields: ['geometry', 'name', 'formatted_address'],
+            componentRestrictions: { country: 'us' }
         });
 
         // Add listener for place selection
@@ -31,7 +32,8 @@ function initPlacesAutocomplete() {
     if (desktopSearchInput) {
         desktopAutocomplete = new google.maps.places.Autocomplete(desktopSearchInput, {
             types: ['(cities)'],
-            fields: ['geometry', 'name', 'formatted_address']
+            fields: ['geometry', 'name', 'formatted_address'],
+            componentRestrictions: { country: 'us' }
         });
 
         // Add listener for place selection
