@@ -52,27 +52,6 @@ function rch_enqueue_block_assets()
 {
     $primary_color = get_option('_rch_primary_color', '#2271b1'); // Default to red if not set
 
-    // Register block script
-    wp_register_script(
-        'rch-listing-block-script-filter',
-        RCH_PLUGIN_ASSETS . '/js/rch-rechat-listings-filter.js',
-        ['wp-blocks', 'wp-element', 'rechat-listings-request'],
-        RCH_VERSION,
-        true
-    );
-    // Register block script For Map
-    wp_register_script(
-        'rch-listing-block-script-map',
-        RCH_PLUGIN_ASSETS . '/js/rch-rechat-listings-map.js',
-        ['wp-blocks', 'wp-element', 'rechat-listings-request'],
-        RCH_VERSION,
-        true
-    );
-    wp_localize_script('rch-listing-block-script-map', 'rchData', array(
-        'primaryColor' => $primary_color,
-        'homeUrl' => get_home_url(),
-        'invertedLogo' => get_option('rch_inverted_container_logo_wide', get_home_url())
-    ));
 
     // Register block style
     wp_register_style(
@@ -80,15 +59,6 @@ function rch_enqueue_block_assets()
         RCH_PLUGIN_ASSETS . '/css/rch-listing-block.css',
         [],
         RCH_VERSION
-    );
-    // Enqueue Google Maps API script
-    $google_maps_api_key = get_option('rch_rechat_google_map_api_key');
-    wp_register_script(
-        'rch-google-maps-api',
-        'https://maps.googleapis.com/maps/api/js?key=' . $google_maps_api_key . '&libraries=drawing,places,geometry,marker&callback=initMap',
-        [],
-        null,
-        true
     );
 
     // Register Places Autocomplete CSS
@@ -99,20 +69,27 @@ function rch_enqueue_block_assets()
         RCH_VERSION
     );
 
-    wp_register_script(
-        'rechat-map-toggle',
-        RCH_PLUGIN_URL . 'assets/js/rch-map-toggle.js',
+    // Register Rechat SDK CSS and JS
+    wp_register_style(
+        'rechat-sdk-css',
+        'https://sdk.rechat.com/examples/dist/rechat.min.css',
         [],
-        RCH_VERSION,
-        true
+        null
     );
+
+    wp_register_script(
+        'rechat-sdk-js',
+        'https://sdk.rechat.com/examples/dist/rechat.min.js',
+        [],
+        null,
+        false
+    );
+
     // Automatically enqueue script/style only when block is present
     if (has_block('rch-rechat-plugin/listing-block')) {
-        wp_enqueue_script('rch-listing-block-script-filter');
-        wp_enqueue_script('rch-listing-block-script-map');
-        wp_enqueue_script('rch-google-maps-api');
-        wp_enqueue_script('rechat-map-toggle');
         wp_enqueue_style('rch-listing-block-css');
+        wp_enqueue_style('rechat-sdk-css');
+        wp_enqueue_script('rechat-sdk-js');
     }
 }
 add_action('enqueue_block_assets', 'rch_enqueue_block_assets');
