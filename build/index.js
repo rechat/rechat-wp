@@ -1212,7 +1212,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
           value: ''
         }, ...data.map(item => ({
           label: item.title.rendered,
-          value: item.meta.region_id || item.meta.office_id
+          value: item.meta?.region_id || item.meta?.office_id || item.id
         }))]);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -1227,7 +1227,6 @@ registerBlockType('rch-rechat-plugin/listing-block', {
       _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2___default()({
         path: '/wp/v2/options'
       }).then(options => {
-        console.log(options);
         if (options.rch_rechat_google_map_api_key) {
           setGoogleMapsApiKey(options.rch_rechat_google_map_api_key);
         }
@@ -1565,7 +1564,6 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
         const brandResponse = await _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2___default()({
           path: '/wp/v2/options'
         });
-        console.log('User info response:', brandResponse);
         if (brandResponse.rch_rechat_brand_id) {
           setBrandId(brandResponse.rch_rechat_brand_id);
         } else {

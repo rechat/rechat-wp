@@ -302,7 +302,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                 const data = await apiFetch({ path });
                 setState([{ label: 'None', value: '' }, ...data.map(item => ({
                     label: item.title.rendered,
-                    value: item.meta.region_id || item.meta.office_id
+                    value: item.meta?.region_id || item.meta?.office_id || item.id
                 }))]);
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -317,7 +317,6 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             // Fetch Google Maps API key
             apiFetch({ path: '/wp/v2/options' })
                 .then(options => {
-                    console.log(options)
                     if (options.rch_rechat_google_map_api_key) {
                         setGoogleMapsApiKey(options.rch_rechat_google_map_api_key);
                     }
@@ -528,25 +527,6 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                     block="rch-rechat-plugin/listing-block"
                     attributes={attributes}
                 />
-                {/* <ListingMain
-                    listing_per_page={listing_per_page}
-                    maximum_bedrooms={maximum_bedrooms}
-                    minimum_bedrooms={minimum_bedrooms}
-                    maximum_year_built={maximum_year_built}
-                    minimum_year_built={minimum_year_built}
-                    maximum_square_meters={maximum_square_meters}
-                    minimum_square_meters={minimum_square_meters}
-                    maximum_bathrooms={maximum_bathrooms}
-                    minimum_bathrooms={minimum_bathrooms}
-                    maximum_lot_square_meters={maximum_lot_square_meters}
-                    minimum_lot_square_meters= {minimum_lot_square_meters}
-                    maximum_price={maximum_price}
-                    minimum_price={minimum_price}
-                    property_types ={property_types}
-                    own_listing={own_listing}
-                    show_filter_bar={show_filter_bar}
-                    selectedStatuses ={listing_statuses}
-                /> */}
             </>
         );
     },
@@ -606,7 +586,6 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
         const fetchBrandId = async () => {
             try {
                 const brandResponse = await apiFetch({ path: '/wp/v2/options' });
-                console.log('User info response:', brandResponse);
                 if (brandResponse.rch_rechat_brand_id) {
                     setBrandId(brandResponse.rch_rechat_brand_id);
                 } else {
