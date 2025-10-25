@@ -19,6 +19,14 @@ function rch_search_listing_form_shortcode($atts)
         'title' => 'Find Your Perfect Home', // Optional title
         'show_title' => true, // Whether to show the title
         'compact' => false, // Whether to use a compact layout
+        // Field visibility controls
+        'show_search' => true, // City search field
+        'show_property_type' => true, // Property type dropdown
+        'show_bathrooms' => true, // Min bathrooms dropdown
+        'show_min_bedrooms' => true, // Min bedrooms dropdown
+        'show_max_bedrooms' => true, // Max bedrooms dropdown
+        'show_min_price' => true, // Min price dropdown
+        'show_max_price' => true, // Max price dropdown
     ], $atts);
 
     // Sanitize attributes
@@ -26,6 +34,15 @@ function rch_search_listing_form_shortcode($atts)
     $title = sanitize_text_field($atts['title']);
     $show_title = filter_var($atts['show_title'], FILTER_VALIDATE_BOOLEAN);
     $compact = filter_var($atts['compact'], FILTER_VALIDATE_BOOLEAN);
+    
+    // Sanitize field visibility controls
+    $show_search = filter_var($atts['show_search'], FILTER_VALIDATE_BOOLEAN);
+    $show_property_type = filter_var($atts['show_property_type'], FILTER_VALIDATE_BOOLEAN);
+    $show_bathrooms = filter_var($atts['show_bathrooms'], FILTER_VALIDATE_BOOLEAN);
+    $show_min_bedrooms = filter_var($atts['show_min_bedrooms'], FILTER_VALIDATE_BOOLEAN);
+    $show_max_bedrooms = filter_var($atts['show_max_bedrooms'], FILTER_VALIDATE_BOOLEAN);
+    $show_min_price = filter_var($atts['show_min_price'], FILTER_VALIDATE_BOOLEAN);
+    $show_max_price = filter_var($atts['show_max_price'], FILTER_VALIDATE_BOOLEAN);
 
     // Start output buffering
     ob_start();
@@ -43,7 +60,7 @@ function rch_search_listing_form_shortcode($atts)
             // Set a flag to indicate we're rendering the search form, not the main filters
             $is_search_form = true;
 
-            // Include the filters template with our custom flag
+            // Include the filters template with our custom flag and field visibility controls
             include RCH_PLUGIN_DIR . 'templates/search/search-form-filters.php';
             ?>
 
