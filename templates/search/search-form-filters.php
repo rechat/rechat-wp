@@ -12,12 +12,25 @@ $is_search_form = isset($is_search_form) && $is_search_form;
 // Define compact mode for the search form
 $is_compact = isset($compact) && $compact;
 $container_class = $is_compact ? 'rch-search-filters-compact' : 'rch-search-filters';
+
+// Field visibility controls (default to true if not set)
+$show_search = isset($show_search) ? $show_search : true;
+$show_property_type = isset($show_property_type) ? $show_property_type : true;
+$show_bathrooms = isset($show_bathrooms) ? $show_bathrooms : true;
+$show_min_bedrooms = isset($show_min_bedrooms) ? $show_min_bedrooms : true;
+$show_max_bedrooms = isset($show_max_bedrooms) ? $show_max_bedrooms : true;
+$show_min_price = isset($show_min_price) ? $show_min_price : true;
+$show_max_price = isset($show_max_price) ? $show_max_price : true;
 ?>
 
 <div class="<?php echo esc_attr($container_class); ?>">
+    <?php if ($show_search): ?>
     <div class="rch-search-form-col">
         <input type="search" class="rch-text-filter" name="content" id="content" placeholder="Search by City..." />
     </div>
+    <?php endif; ?>
+    
+    <?php if ($show_property_type): ?>
     <div class="rch-search-form-col">
         <select name="property_types" id="search-property-types" class="rch-dropdown">
             <option value="">Property Type</option>
@@ -28,7 +41,9 @@ $container_class = $is_compact ? 'rch-search-filters-compact' : 'rch-search-filt
             <option value="Commercial">Commercial</option>
         </select>
     </div>
+    <?php endif; ?>
 
+    <?php if ($show_bathrooms): ?>
     <div class="rch-search-form-col">
         <select name="minimum_bathrooms" id="search-minimum_bathrooms" class="rch-dropdown">
             <option value="">Min Bathrooms</option>
@@ -39,7 +54,9 @@ $container_class = $is_compact ? 'rch-search-filters-compact' : 'rch-search-filt
             <option value="5">5+ Bath</option>
         </select>
     </div>
+    <?php endif; ?>
 
+    <?php if ($show_min_bedrooms): ?>
     <div class="rch-search-form-col">
         <select id="search-minimum_bedrooms" name="minimum_bedrooms" class="rch-dropdown">
             <option value="">Min Beds</option>
@@ -51,7 +68,9 @@ $container_class = $is_compact ? 'rch-search-filters-compact' : 'rch-search-filt
             <option value="6">6+</option>
         </select>
     </div>
+    <?php endif; ?>
 
+    <?php if ($show_max_bedrooms): ?>
     <div class="rch-search-form-col">
         <select id="search-maximum_bedrooms" name="maximum_bedrooms" class="rch-dropdown">
             <option value="">Max Beds</option>
@@ -63,6 +82,9 @@ $container_class = $is_compact ? 'rch-search-filters-compact' : 'rch-search-filt
             <option value="6">6+</option>
         </select>
     </div>
+    <?php endif; ?>
+    
+    <?php if ($show_min_price): ?>
     <div class="rch-search-form-col">
         <select id="search-minimum_price" name="minimum_price" class="rch-dropdown">
             <option value="">Min Price</option>
@@ -88,6 +110,9 @@ $container_class = $is_compact ? 'rch-search-filters-compact' : 'rch-search-filt
             <option value="10000000">$10M</option>
         </select>
     </div>
+    <?php endif; ?>
+    
+    <?php if ($show_max_price): ?>
     <select id="search-maximum_price" name="maximum_price" class="rch-dropdown">
         <option value="">Max Price</option>
         <option value="50000">$50,000</option>
@@ -111,4 +136,5 @@ $container_class = $is_compact ? 'rch-search-filters-compact' : 'rch-search-filt
         <option value="5000000">$5M</option>
         <option value="10000000">$10M</option>
     </select>
+    <?php endif; ?>
 </div>
