@@ -238,7 +238,7 @@ $agents = get_post_meta($post_id, 'agents', true);
         const paginationElement = document.getElementById('agent-pagination');
         const adminAjaxUrl = "<?php echo esc_url(admin_url('admin-ajax.php')); ?>";
         const brandId = "<?php echo esc_js(get_option('rch_rechat_brand_id')); ?>";
-        
+        console.log('Agent Matrix IDs:', agentMatrixIds);
         if (!agentMatrixIds || agentMatrixIds.length === 0) {
             // No agent IDs available
             propertiesList.innerHTML = '<li class="no-properties">No properties found for this agent.</li>';
