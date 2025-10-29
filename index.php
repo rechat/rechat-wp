@@ -23,7 +23,38 @@ define('RCH_VERSION_SWIPER', '11.2.5');
 const RCH_PLUGIN_INCLUDES = RCH_PLUGIN_DIR . 'includes/';
 const RCH_PLUGIN_ASSETS = RCH_PLUGIN_URL . 'assets/';
 const RCH_PLUGIN_ASSETS_URL_IMG = RCH_PLUGIN_URL . 'assets/images/';
+// OAuth2 Configuration Constants
+const RCH_OAUTH_CLIENT_ID = '65230631-97a6-4fb5-bf32-54aafb1e1b54';
+const RCH_OAUTH_CLIENT_SECRET = 'secret';
+const RCH_OAUTH_AUTH_URL = 'https://app.rechat.com/oauth2/auth';
+const RCH_OAUTH_TOKEN_URL = 'https://api.rechat.com/oauth2/token';
+const RCH_TOKEN_REFRESH_HOOK = 'rch_refresh_token_event';
+// Constants for cron configuration
+const RCH_CRON_HOOK = 'rch_data_sync_hook';
+const RCH_CRON_INTERVAL = 'rch_every_12_hours';
+const RCH_CRON_INTERVAL_SECONDS = 12 * HOUR_IN_SECONDS;
+// Constants for settings group
+const RCH_APPEARANCE_SETTINGS_GROUP = 'appearance_settings';
+// Constants for settings group
+const RCH_LOCAL_LOGIC_SETTINGS_GROUP = 'local_logic_settings';
 
+// Available features for listing page
+const RCH_LOCAL_LOGIC_FEATURES = [
+    'LocalContent' => 'Local Content',
+];
+
+// Available features for neighborhood page
+const RCH_NEIGHBORHOOD_FEATURES = [
+    'Hero' => 'Neighborhood Hero',
+    'Map' => 'Neighborhood Map',
+    'Highlights' => 'Neighborhood Highlights',
+    'Characteristics' => 'Neighborhood Characteristics',
+    'Schools' => 'Neighborhood Schools',
+    'Demographics' => 'Neighborhood Demographics',
+    'PropertyValueDrivers' => 'Neighborhood Property Value Drivers',
+    'MarketTrends' => 'Neighborhood Market Trends',
+    'Match' => 'Neighborhood Match',
+];
 
 // Add a "Settings" link to the plugin actions
 function rch_plugin_action_links($links)
