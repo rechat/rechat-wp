@@ -1,86 +1,119 @@
 <?php
+// Exit if accessed directly
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+
+
+/*******************************
+ * Sanitization callbacks
+ ******************************/
+function rch_sanitize_lead_channel($input)
+{
+    return sanitize_text_field($input);
+}
+
+function rch_sanitize_tags($input)
+{
+    if (!is_string($input)) {
+        return '[]';
+    }
+    
+    $tags = json_decode($input, true);
+    if (!is_array($tags)) {
+        return '[]';
+    }
+    
+    $sanitized_tags = array_map('sanitize_text_field', $tags);
+    return wp_json_encode($sanitized_tags);
+}
 
 /*******************************
  * Define the setting fields
  ******************************/
 function rch_appearance_setting()
 {
-    // Existing primary color setting
-    $args = array(
+    // Primary color setting
+    register_setting(RCH_APPEARANCE_SETTINGS_GROUP, '_rch_primary_color', [
         'type' => 'string',
         'sanitize_callback' => 'sanitize_hex_color',
         'default' => '#2271b1',
-    );
-    register_setting('appearance_settings', '_rch_primary_color', $args);
+    ]);
 
-    // New posts per page setting
-    $posts_per_page_args = array(
+    // Posts per page setting
+    register_setting(RCH_APPEARANCE_SETTINGS_GROUP, '_rch_posts_per_page', [
         'type' => 'integer',
         'sanitize_callback' => 'absint',
         'default' => 10,
-    );
-    register_setting('appearance_settings', '_rch_posts_per_page', $posts_per_page_args);
+    ]);
 
-    // Register new settings for Lead Channel and Tags
-    function sanitize_lead_channel($input)
-    {
-        return sanitize_text_field($input); // Ensure the input is an integer (the ID of the lead channel)
-    }
+    // Lead channel for listing page
+    register_setting(RCH_APPEARANCE_SETTINGS_GROUP, 'rch_lead_channels', [
+        'type' => 'string',
+        'sanitize_callback' => 'rch_sanitize_lead_channel',
+        'default' => '',
+    ]);
 
-    function sanitize_tags($input)
-    {
-        return array_map('sanitize_text_field', $input); // Sanitizes each tag
-    }
+    // Lead channel for agent page
+    register_setting(RCH_APPEARANCE_SETTINGS_GROUP, 'rch_agents_lead_channels', [
+        'type' => 'string',
+        'sanitize_callback' => 'rch_sanitize_lead_channel',
+        'default' => '',
+    ]);
 
-    // Register the 'rch_lead_channel' setting
-    register_setting('appearance_settings', 'rch_lead_channels', array(
-        'sanitize_callback' => 'sanitize_lead_channel',
-    ));
+    // Tags for listing page
+    register_setting(RCH_APPEARANCE_SETTINGS_GROUP, 'rch_selected_tags', [
+        'type' => 'string',
+        'sanitize_callback' => 'rch_sanitize_tags',
+        'default' => '[]',
+    ]);
 
-    // Register for Agent's Lead Channels
-    register_setting('appearance_settings', 'rch_agents_lead_channels', array(
-        'sanitize_callback' => 'sanitize_lead_channel',
-    ));
+    // Tags for agent page
+    register_setting(RCH_APPEARANCE_SETTINGS_GROUP, 'rch_agents_selected_tags', [
+        'type' => 'string',
+        'sanitize_callback' => 'rch_sanitize_tags',
+        'default' => '[]',
+    ]);
 
-    // Register the 'rch_selected_tags' setting
-    register_setting('appearance_settings', 'rch_selected_tags');
-
-    // Register for Agent's Tags
-    register_setting('appearance_settings', 'rch_agents_selected_tags');
-
+    // Section for listing page lead capture
     add_settings_section(
         'rch_theme_appearance_setting',
         __('Listing Page Lead Capture', 'rechat-plugin'),
         null,
         'appearance_setting'
     );
-    // Add the field for posts per page
-    //     add_settings_field(
-    //         'rch_posts_per_page',
-    //         __('Posts Per Page', 'rechat-plugin'),
-    //         'rch_render_posts_per_page_field',
-    //         'appearance_setting',
-    //         'rch_theme_appearance_setting'
-    //     );
-    // Add a section heading for 'Lead Channels and Tags' for the first set
+
+    // Lead source field for listing page
     add_settings_field(
         'rch_lead_channels',
         __('Lead Source', 'rechat-plugin'),
-        'rch_render_lead_channel',
+        'rch_render_lead_capture_field',
         'appearance_setting',
-        'rch_theme_appearance_setting'
+        'rch_theme_appearance_setting',
+        [
+            'option_name' => 'rch_lead_channels',
+            'field_type' => 'lead_channel',
+        ]
     );
 
-    // Add Tags for first lead
+    // Tags field for listing page
     add_settings_field(
         'rch_select_tag',
         __('Tags', 'rechat-plugin'),
-        'rch_render_select_tag',
+        'rch_render_lead_capture_field',
         'appearance_setting',
-        'rch_theme_appearance_setting'
+        'rch_theme_appearance_setting',
+        [
+            'option_name' => 'rch_selected_tags',
+            'field_type' => 'tags',
+            'select_id' => 'tag-select',
+            'container_id' => 'selected-tags-container',
+            'hidden_input_id' => 'rch_selected_tags_input',
+        ]
     );
 
-    // Add a new section heading for Agent's Lead Channels and Tags
+    // Section for agent page lead capture
     add_settings_section(
         'rch_agents_section',
         __('Agent Page Lead Capture', 'rechat-plugin'),
@@ -88,292 +121,276 @@ function rch_appearance_setting()
         'appearance_setting'
     );
 
-    // Add Lead Channels for agents
+    // Lead source field for agent page
     add_settings_field(
         'rch_agents_lead_channels',
         __('Lead Source', 'rechat-plugin'),
-        'rch_render_agents_lead_channel',
+        'rch_render_lead_capture_field',
         'appearance_setting',
-        'rch_agents_section'
+        'rch_agents_section',
+        [
+            'option_name' => 'rch_agents_lead_channels',
+            'field_type' => 'lead_channel',
+        ]
     );
 
-    // Add Tags for agents
+    // Tags field for agent page
     add_settings_field(
         'rch_agents_select_tag',
         __('Tags', 'rechat-plugin'),
-        'rch_render_agents_select_tag',
+        'rch_render_lead_capture_field',
         'appearance_setting',
-        'rch_agents_section'
+        'rch_agents_section',
+        [
+            'option_name' => 'rch_agents_selected_tags',
+            'field_type' => 'tags',
+            'select_id' => 'agent-tag-select',
+            'container_id' => 'agent-selected-tags-container',
+            'hidden_input_id' => 'rch_agents_selected_tags_input',
+        ]
     );
 }
-
 add_action('admin_init', 'rch_appearance_setting');
 
 /*******************************
- * Render the Posts Per Page input field.
+ * Helper function to fetch API data
  ******************************/
-// function rch_render_posts_per_page_field()
-// {
-//     $posts_per_page = get_option('_rch_posts_per_page', 12); // Default to 10
-//     echo '<input type="number" id="rch_posts_per_page" name="_rch_posts_per_page" value="' . esc_attr($posts_per_page) . '" min="1" />';
-// }
-/*******************************
- * Render the lead channel input field for the first lead
- ******************************/
-function rch_render_lead_channel()
+function rch_fetch_lead_channels()
 {
     $brand_id = get_option('rch_rechat_brand_id');
+    if (empty($brand_id)) {
+        return ['success' => false, 'message' => __('Brand ID not configured.', 'rechat-plugin')];
+    }
+    
     $api_url = "https://api.rechat.com/brands/{$brand_id}/leads/channels";
     $access_token = get_option('rch_rechat_access_token');
-    $response = rch_api_request($api_url, $access_token);
-
-    if (!$response['success']) {
-        echo esc_html($response['message']);
-        return;
-    }
-
-    $data = $response['data'];
-    if (empty($data['data'])) {
-        echo 'No channels available';
-        return;
-    }
-
-    $selected_channel = get_option('rch_lead_channels', '');
-    $options = '<option value="">Select Lead Channel</option>';
-    foreach ($data['data'] as $channel) {
-        $id = esc_attr($channel['id']);
-        $title = !empty($channel['title']) ? esc_html($channel['title']) : 'Unnamed';
-        $selected = selected($id, $selected_channel, false);
-        $options .= "<option value='{$id}' {$selected}>{$title}</option>";
-    }
-
-    // Output the <select> element with the options
-    echo '<select id="' . esc_attr('rch_lead_channels') . '" name="' . esc_attr('rch_lead_channels') . '">' . $options . '</select>';
+    
+    return rch_api_request($api_url, $access_token);
 }
 
-/*******************************
- * Render the tags input field for the first lead
- ******************************/
-function rch_render_select_tag()
+function rch_fetch_tags()
 {
     $api_url = "https://api.rechat.com/contacts/tags";
     $access_token = get_option('rch_rechat_access_token');
     $brand_id = get_option('rch_rechat_brand_id');
-    $response = rch_api_request($api_url, $access_token, $brand_id);
-
-    if (!$response['success']) {
-        echo esc_html($response['message']);
-        return;
+    
+    if (empty($brand_id)) {
+        return ['success' => false, 'message' => __('Brand ID not configured.', 'rechat-plugin')];
     }
-
-    $data = $response['data'];
-    if (empty($data['data'])) {
-        echo 'No tags available';
-        return;
-    }
-
-    $selected_tags = get_option('rch_selected_tags', '[]');
-    $selected_tags = json_decode($selected_tags, true);
-
-    if (!is_array($selected_tags)) {
-        $selected_tags = [];
-    }
-
-    echo "<select id='tag-select' style='width:100%; margin-bottom:10px;'>";
-    echo "<option value='' disabled selected>Please select a tag</option>";
-    foreach ($data['data'] as $tag) {
-        $name = !empty($tag['tag']) ? esc_html($tag['tag']) : 'Unnamed';
-        $selected = in_array($name, $selected_tags) ? 'selected' : '';
-        echo "<option value='" . esc_attr($name) . "' " . esc_html($selected) . ">" . esc_html($name) . "</option>";
-    }
-    echo "</select>";
-
-    echo "<div id='selected-tags-container' style='margin-bottom:10px;'></div>";
-    echo "<input type='hidden' name='rch_selected_tags' id='rch_selected_tags_input' value='" . esc_attr(wp_json_encode($selected_tags)) . "'>";
-
-    echo "
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                const selectBox = document.getElementById('tag-select');
-                const selectedTagsContainer = document.getElementById('selected-tags-container');
-                const hiddenInput = document.getElementById('rch_selected_tags_input');
-                let selectedTagNames = hiddenInput.value ? JSON.parse(hiddenInput.value) : [];
-
-                function renderChips() {
-                    selectedTagsContainer.innerHTML = '';
-                    selectedTagNames.forEach(function(tagName) {
-                        const chip = document.createElement('span');
-                        chip.textContent = tagName;
-                        chip.className = 'tag-chip';
-                        chip.style.cssText = 'display: inline-block; margin: 0 5px 5px 0; padding: 5px; background-color: #ddd; border-radius: 3px;';
-                        const closeBtn = document.createElement('span');
-                        closeBtn.textContent = ' ×';
-                        closeBtn.style.cssText = 'margin-left: 5px; cursor: pointer;';
-                        closeBtn.onclick = function() {
-                            selectedTagNames = selectedTagNames.filter(tag => tag !== tagName);
-                            updateHiddenInput();
-                            renderChips();
-                        };
-                        chip.appendChild(closeBtn);
-                        selectedTagsContainer.appendChild(chip);
-                    });
-                }
-
-                function updateHiddenInput() {
-                    hiddenInput.value = JSON.stringify(selectedTagNames);
-                }
-
-                selectBox.addEventListener('change', function() {
-                    const selectedTagName = selectBox.value;
-                    if (selectedTagName && !selectedTagNames.includes(selectedTagName)) {
-                        selectedTagNames.push(selectedTagName);
-                        updateHiddenInput();
-                        renderChips();
-                    }
-                    selectBox.value = '';
-                });
-
-                renderChips();
-            });
-        </script>
-    ";
+    
+    return rch_api_request($api_url, $access_token, $brand_id);
 }
 
 /*******************************
- * Render the lead channel input field for Agent's Lead Channel
+ * Unified field render callback
  ******************************/
-function rch_render_agents_lead_channel()
+function rch_render_lead_capture_field($args)
 {
-    $brand_id = get_option('rch_rechat_brand_id');
-    $api_url = "https://api.rechat.com/brands/{$brand_id}/leads/channels";
-    $access_token = get_option('rch_rechat_access_token');
-    $response = rch_api_request($api_url, $access_token);
-
-    if (!$response['success']) {
-        echo esc_html($response['message']);
+    $option_name = isset($args['option_name']) ? $args['option_name'] : '';
+    $field_type = isset($args['field_type']) ? $args['field_type'] : '';
+    
+    if (empty($option_name) || empty($field_type)) {
         return;
     }
+    
+    if ($field_type === 'lead_channel') {
+        rch_render_lead_channel_select($option_name);
+    } elseif ($field_type === 'tags') {
+        $select_id = isset($args['select_id']) ? $args['select_id'] : 'tag-select';
+        $container_id = isset($args['container_id']) ? $args['container_id'] : 'selected-tags-container';
+        $hidden_input_id = isset($args['hidden_input_id']) ? $args['hidden_input_id'] : 'rch_selected_tags_input';
+        
+        rch_render_tags_select($option_name, $select_id, $container_id, $hidden_input_id);
+    }
+}
 
+/*******************************
+ * Render lead channel select field
+ ******************************/
+function rch_render_lead_channel_select($option_name)
+{
+    $response = rch_fetch_lead_channels();
+    
+    if (!$response['success']) {
+        echo '<p class="description error">' . esc_html($response['message']) . '</p>';
+        return;
+    }
+    
     $data = $response['data'];
     if (empty($data['data'])) {
-        echo 'No channels available';
+        echo '<p class="description">' . esc_html__('No channels available', 'rechat-plugin') . '</p>';
         return;
     }
-
-    $selected_channel = get_option('rch_agents_lead_channels', '');
-    $options = '<option value="">Select Lead Channel</option>';
+    
+    $selected_channel = get_option($option_name, '');
+    $field_id = esc_attr($option_name);
+    
+    printf('<select id="%s" name="%s">', $field_id, $field_id);
+    printf('<option value="">%s</option>', esc_html__('Select Lead Channel', 'rechat-plugin'));
+    
     foreach ($data['data'] as $channel) {
         $id = esc_attr($channel['id']);
-        $title = !empty($channel['title']) ? esc_html($channel['title']) : 'Unnamed';
-        $selected = selected($id, $selected_channel, false);
-        $options .= "<option value='{$id}' {$selected}>{$title}</option>";
+        $title = !empty($channel['title']) ? esc_html($channel['title']) : esc_html__('Unnamed', 'rechat-plugin');
+        
+        printf(
+            '<option value="%s"%s>%s</option>',
+            $id,
+            selected($id, $selected_channel, false),
+            $title
+        );
     }
-
-    // Output the <select> element with the options
-    echo "<select id='" . esc_attr('rch_agents_lead_channels') . "' name='" . esc_attr('rch_agents_lead_channels') . "'>{$options}</select>";
+    
+    echo '</select>';
 }
 
-
 /*******************************
- * Render the tags input field for Agent's Tags
+ * Render tags select field with chips
  ******************************/
-function rch_render_agents_select_tag()
+function rch_render_tags_select($option_name, $select_id, $container_id, $hidden_input_id)
 {
-    $api_url = "https://api.rechat.com/contacts/tags";
-    $access_token = get_option('rch_rechat_access_token');
-    $brand_id = get_option('rch_rechat_brand_id');
-    $response = rch_api_request($api_url, $access_token, $brand_id);
-
+    $response = rch_fetch_tags();
+    
     if (!$response['success']) {
-        echo esc_html($response['message']);
+        echo '<p class="description error">' . esc_html($response['message']) . '</p>';
         return;
     }
-
+    
     $data = $response['data'];
     if (empty($data['data'])) {
-        echo 'No tags available';
+        echo '<p class="description">' . esc_html__('No tags available', 'rechat-plugin') . '</p>';
         return;
     }
-
-    $selected_tags = get_option('rch_agents_selected_tags', '[]');
-    $selected_tags = json_decode($selected_tags, true);
-
+    
+    $selected_tags_json = get_option($option_name, '[]');
+    $selected_tags = json_decode($selected_tags_json, true);
+    
     if (!is_array($selected_tags)) {
         $selected_tags = [];
     }
-
-    echo "<select id='agent-tag-select' style='width:100%; margin-bottom:10px;'>";
-    echo "<option value='' disabled selected>Please select a tag</option>";
+    
+    // Render select dropdown
+    printf('<select id="%s" style="width:100%%; margin-bottom:10px;">', esc_attr($select_id));
+    printf('<option value="" disabled selected>%s</option>', esc_html__('Please select a tag', 'rechat-plugin'));
+    
     foreach ($data['data'] as $tag) {
-        $name = !empty($tag['tag']) ? esc_html($tag['tag']) : 'Unnamed';
-        $selected = in_array($name, $selected_tags) ? 'selected' : '';
-        echo "<option value='" . esc_attr($name) . "' " . esc_attr($selected) . ">" . esc_html($name) . "</option>";
+        $name = !empty($tag['tag']) ? esc_html($tag['tag']) : esc_html__('Unnamed', 'rechat-plugin');
+        printf('<option value="%s">%s</option>', esc_attr($name), $name);
     }
-    echo "</select>";
+    
+    echo '</select>';
+    
+    // Container for selected tags chips
+    printf('<div id="%s" style="margin-bottom:10px;"></div>', esc_attr($container_id));
+    
+    // Hidden input to store selected tags
+    printf(
+        '<input type="hidden" name="%s" id="%s" value="%s">',
+        esc_attr($option_name),
+        esc_attr($hidden_input_id),
+        esc_attr(wp_json_encode($selected_tags))
+    );
+    
+    // Enqueue inline JavaScript for tag chips functionality
+    rch_render_tags_script($select_id, $container_id, $hidden_input_id);
+}
 
-    echo "<div id='agent-selected-tags-container' style='margin-bottom:10px;'></div>";
-    echo "<input type='hidden' name='rch_agents_selected_tags' id='rch_agents_selected_tags_input' value='" . esc_attr(wp_json_encode($selected_tags)) . "'>";
-
-    echo "
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                const selectBox = document.getElementById('agent-tag-select');
-                const selectedTagsContainer = document.getElementById('agent-selected-tags-container');
-                const hiddenInput = document.getElementById('rch_agents_selected_tags_input');
-                let selectedTagNames = hiddenInput.value ? JSON.parse(hiddenInput.value) : [];
-
-                function renderChips() {
-                    selectedTagsContainer.innerHTML = '';
-                    selectedTagNames.forEach(function(tagName) {
-                        const chip = document.createElement('span');
-                        chip.textContent = tagName;
-                        chip.className = 'tag-chip';
-                        chip.style.cssText = 'display: inline-block; margin: 0 5px 5px 0; padding: 5px; background-color: #ddd; border-radius: 3px;';
-                        const closeBtn = document.createElement('span');
-                        closeBtn.textContent = ' ×';
-                        closeBtn.style.cssText = 'margin-left: 5px; cursor: pointer;';
-                        closeBtn.onclick = function() {
-                            selectedTagNames = selectedTagNames.filter(tag => tag !== tagName);
-                            updateHiddenInput();
-                            renderChips();
-                        };
-                        chip.appendChild(closeBtn);
-                        selectedTagsContainer.appendChild(chip);
-                    });
-                }
-
-                function updateHiddenInput() {
-                    hiddenInput.value = JSON.stringify(selectedTagNames);
-                }
-
-                selectBox.addEventListener('change', function() {
-                    const selectedTagName = selectBox.value;
-                    if (selectedTagName && !selectedTagNames.includes(selectedTagName)) {
-                        selectedTagNames.push(selectedTagName);
+/*******************************
+ * Render JavaScript for tag chips
+ ******************************/
+function rch_render_tags_script($select_id, $container_id, $hidden_input_id)
+{
+    ?>
+    <script>
+    (function() {
+        'use strict';
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectBox = document.getElementById(<?php echo wp_json_encode($select_id); ?>);
+            const selectedTagsContainer = document.getElementById(<?php echo wp_json_encode($container_id); ?>);
+            const hiddenInput = document.getElementById(<?php echo wp_json_encode($hidden_input_id); ?>);
+            
+            if (!selectBox || !selectedTagsContainer || !hiddenInput) {
+                return;
+            }
+            
+            let selectedTagNames = [];
+            
+            try {
+                selectedTagNames = hiddenInput.value ? JSON.parse(hiddenInput.value) : [];
+            } catch (e) {
+                selectedTagNames = [];
+            }
+            
+            function renderChips() {
+                selectedTagsContainer.innerHTML = '';
+                
+                selectedTagNames.forEach(function(tagName) {
+                    const chip = document.createElement('span');
+                    chip.textContent = tagName;
+                    chip.className = 'tag-chip';
+                    chip.style.cssText = 'display: inline-block; margin: 0 5px 5px 0; padding: 5px 10px; background-color: #ddd; border-radius: 3px; cursor: default;';
+                    
+                    const closeBtn = document.createElement('span');
+                    closeBtn.textContent = ' ×';
+                    closeBtn.style.cssText = 'margin-left: 5px; cursor: pointer; font-weight: bold;';
+                    closeBtn.setAttribute('aria-label', 'Remove tag');
+                    closeBtn.onclick = function() {
+                        selectedTagNames = selectedTagNames.filter(tag => tag !== tagName);
                         updateHiddenInput();
                         renderChips();
-                    }
-                    selectBox.value = '';
+                    };
+                    
+                    chip.appendChild(closeBtn);
+                    selectedTagsContainer.appendChild(chip);
                 });
-
-                renderChips();
+            }
+            
+            function updateHiddenInput() {
+                hiddenInput.value = JSON.stringify(selectedTagNames);
+            }
+            
+            selectBox.addEventListener('change', function() {
+                const selectedTagName = selectBox.value;
+                
+                if (selectedTagName && selectedTagNames.indexOf(selectedTagName) === -1) {
+                    selectedTagNames.push(selectedTagName);
+                    updateHiddenInput();
+                    renderChips();
+                }
+                
+                selectBox.value = '';
             });
-        </script>
-    ";
+            
+            renderChips();
+        });
+    })();
+    </script>
+    <?php
 }
+
 /*******************************
  * AJAX handler for updating all data
  ******************************/
 function rch_update_all_data()
 {
     // Verify nonce for security
-    check_ajax_referer('rch_ajax_nonce', 'nonce');
+    if (!check_ajax_referer('rch_ajax_nonce', 'nonce', false)) {
+        wp_send_json_error(__('Security check failed.', 'rechat-plugin'));
+        return;
+    }
+    
+    // Verify user capabilities
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(__('Insufficient permissions.', 'rechat-plugin'));
+        return;
+    }
 
     // Get primary color and logo
     rch_get_primary_color_and_logo();
 
     // Call the function to fetch and update data
     $result = rch_update_agents_offices_regions_data();
+    
     // Return the result
     if ($result['success']) {
         wp_send_json_success($result['message']);

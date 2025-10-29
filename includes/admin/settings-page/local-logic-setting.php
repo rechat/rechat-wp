@@ -1,43 +1,63 @@
 <?php
+// Exit if accessed directly
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 /*******************************
- * register local Logic setting
+ * Register local Logic settings
  ******************************/
-// Register settings and fields for the 'local-logic' tab
 function rch_rechat_register_local_logic_settings()
 {
-    // Register the Local Logic API Key field
-    register_setting('local_logic_settings', 'rch_rechat_local_logic_api_key'); // API Key field
+    // Register the Local Logic API Key field with sanitization
+    register_setting(RCH_LOCAL_LOGIC_SETTINGS_GROUP, 'rch_rechat_local_logic_api_key', [
+        'type' => 'string',
+        'sanitize_callback' => 'rch_sanitize_api_key',
+        'default' => '',
+    ]);
 
-    // Register the Google Map API Key field
-    register_setting('local_logic_settings', 'rch_rechat_google_map_api_key'); // Google Map API Key field
+    // Register the Google Map API Key field with sanitization
+    register_setting(RCH_LOCAL_LOGIC_SETTINGS_GROUP, 'rch_rechat_google_map_api_key', [
+        'type' => 'string',
+        'sanitize_callback' => 'rch_sanitize_api_key',
+        'default' => '',
+    ]);
 
     // Register the checkboxes field (as an array to store multiple values)
-    register_setting('local_logic_settings', 'rch_rechat_local_logic_features', [
-        'default' => [] // Default value is an empty array
+    register_setting(RCH_LOCAL_LOGIC_SETTINGS_GROUP, 'rch_rechat_local_logic_features', [
+        'type' => 'array',
+        'sanitize_callback' => 'rch_sanitize_features',
+        'default' => [],
     ]);
 
-    // Register Neighborhood API Key field
-    register_setting('local_logic_settings', 'rch_rechat_neighborhood_api_key');
-
-    // Register the neighborhood checkboxes field
-    register_setting('local_logic_settings', 'rch_rechat_neighborhood_features', [
-        'default' => []
+    // Register Neighborhood API Key field with sanitization
+    register_setting(RCH_LOCAL_LOGIC_SETTINGS_GROUP, 'rch_rechat_neighborhood_api_key', [
+        'type' => 'string',
+        'sanitize_callback' => 'rch_sanitize_api_key',
+        'default' => '',
     ]);
 
-    // Add a section for the settings
+    // Register the neighborhood checkboxes field with sanitization
+    register_setting(RCH_LOCAL_LOGIC_SETTINGS_GROUP, 'rch_rechat_neighborhood_features', [
+        'type' => 'array',
+        'sanitize_callback' => 'rch_sanitize_neighborhood_features',
+        'default' => [],
+    ]);
+
+    // Add a section for the listing page settings
     add_settings_section(
         'rch_rechat_local_logic_section',
         __('Listing Page Settings', 'rechat-plugin'),
         'rch_rechat_local_logic_section_description',
-        'local_logic_settings'
+        RCH_LOCAL_LOGIC_SETTINGS_GROUP
     );
 
+    // Add a section for the neighborhood page settings
     add_settings_section(
         'rch_rechat_neighborhood_section',
         __('Neighborhood Page Settings', 'rechat-plugin'),
         'rch_rechat_neighborhood_section_description',
-        'local_logic_settings'
+        RCH_LOCAL_LOGIC_SETTINGS_GROUP
     );
 
     // Add the Local Logic API Key field
@@ -45,17 +65,25 @@ function rch_rechat_register_local_logic_settings()
         'rch_rechat_local_logic_api_key',
         __('Local Logic API Key', 'rechat-plugin'),
         'rch_rechat_render_api_key_field',
-        'local_logic_settings',
-        'rch_rechat_local_logic_section'
+        RCH_LOCAL_LOGIC_SETTINGS_GROUP,
+        'rch_rechat_local_logic_section',
+        [
+            'option_name' => 'rch_rechat_local_logic_api_key',
+            'description' => __('Enter your Local Logic API key for listing page integration.', 'rechat-plugin'),
+        ]
     );
 
     // Add the Google Map API Key field
     add_settings_field(
         'rch_rechat_google_map_api_key',
         __('Google Map API Key', 'rechat-plugin'),
-        'rch_rechat_render_google_map_api_key_field',
-        'local_logic_settings',
-        'rch_rechat_local_logic_section'
+        'rch_rechat_render_api_key_field',
+        RCH_LOCAL_LOGIC_SETTINGS_GROUP,
+        'rch_rechat_local_logic_section',
+        [
+            'option_name' => 'rch_rechat_google_map_api_key',
+            'description' => __('Enter your Google Maps API key for map functionality.', 'rechat-plugin'),
+        ]
     );
 
     // Add the checkboxes for features
@@ -63,32 +91,76 @@ function rch_rechat_register_local_logic_settings()
         'rch_rechat_local_logic_features',
         __('Features', 'rechat-plugin'),
         'rch_rechat_render_features_checkboxes',
-        'local_logic_settings',
-        'rch_rechat_local_logic_section'
+        RCH_LOCAL_LOGIC_SETTINGS_GROUP,
+        'rch_rechat_local_logic_section',
+        [
+            'option_name' => 'rch_rechat_local_logic_features',
+            'features' => RCH_LOCAL_LOGIC_FEATURES,
+        ]
     );
 
     // Add the Neighborhood API Key field
     add_settings_field(
         'rch_rechat_neighborhood_api_key',
         __('Local Logic API Key', 'rechat-plugin'),
-        'rch_rechat_render_neighborhood_api_key_field',
-        'local_logic_settings',
-        'rch_rechat_neighborhood_section'
+        'rch_rechat_render_api_key_field',
+        RCH_LOCAL_LOGIC_SETTINGS_GROUP,
+        'rch_rechat_neighborhood_section',
+        [
+            'option_name' => 'rch_rechat_neighborhood_api_key',
+            'description' => __('Enter your Local Logic API key for neighborhood page integration.', 'rechat-plugin'),
+        ]
     );
 
     // Add the neighborhood checkboxes
     add_settings_field(
         'rch_rechat_neighborhood_features',
         __('Neighborhood Features', 'rechat-plugin'),
-        'rch_rechat_render_neighborhood_features_checkboxes',
-        'local_logic_settings',
-        'rch_rechat_neighborhood_section'
+        'rch_rechat_render_features_checkboxes',
+        RCH_LOCAL_LOGIC_SETTINGS_GROUP,
+        'rch_rechat_neighborhood_section',
+        [
+            'option_name' => 'rch_rechat_neighborhood_features',
+            'features' => RCH_NEIGHBORHOOD_FEATURES,
+        ]
     );
 }
 add_action('admin_init', 'rch_rechat_register_local_logic_settings');
 
 /*******************************
- * Render the local logic settings
+ * Sanitization callbacks
+ ******************************/
+function rch_sanitize_api_key($input)
+{
+    return sanitize_text_field(trim($input));
+}
+
+function rch_sanitize_features($input)
+{
+    if (!is_array($input)) {
+        return [];
+    }
+    
+    $allowed_features = array_keys(RCH_LOCAL_LOGIC_FEATURES);
+    return array_filter($input, function ($value) use ($allowed_features) {
+        return in_array($value, $allowed_features, true);
+    });
+}
+
+function rch_sanitize_neighborhood_features($input)
+{
+    if (!is_array($input)) {
+        return [];
+    }
+    
+    $allowed_features = array_keys(RCH_NEIGHBORHOOD_FEATURES);
+    return array_filter($input, function ($value) use ($allowed_features) {
+        return in_array($value, $allowed_features, true);
+    });
+}
+
+/*******************************
+ * Section descriptions
  ******************************/
 function rch_rechat_local_logic_section_description()
 {
@@ -100,65 +172,54 @@ function rch_rechat_neighborhood_section_description()
     echo '<p>' . esc_html__('Configure the settings for the Neighborhood Page.', 'rechat-plugin') . '</p>';
 }
 
-// Render the Local Logic API Key field
-function rch_rechat_render_api_key_field()
-{
-    $value = get_option('rch_rechat_local_logic_api_key', '');
-    echo '<input type="text" name="rch_rechat_local_logic_api_key" value="' . esc_attr($value) . '" class="regular-text" />';
-}
-
-// Render the Google Map API Key field
-function rch_rechat_render_google_map_api_key_field()
-{
-    $value = get_option('rch_rechat_google_map_api_key', '');
-    echo '<input type="text" name="rch_rechat_google_map_api_key" value="' . esc_attr($value) . '" class="regular-text" />';
-}
-
-// Render the Neighborhood API Key field
-function rch_rechat_render_neighborhood_api_key_field()
-{
-    $value = get_option('rch_rechat_neighborhood_api_key', '');
-    echo '<input type="text" name="rch_rechat_neighborhood_api_key" value="' . esc_attr($value) . '" class="regular-text" />';
-}
-
 /*******************************
- * Render the checkboxes for features
+ * Field render callbacks
  ******************************/
-function rch_rechat_render_features_checkboxes()
+function rch_rechat_render_api_key_field($args)
 {
-    $selected_features = get_option('rch_rechat_local_logic_features', []);
-    $features = [
-        'LocalContent' => __('Local Content', 'rechat-plugin'),
-    ];
-    foreach ($features as $key => $label) {
-        $checked = in_array($key, (array) $selected_features) ? 'checked' : '';
-        echo '<label>';
-        echo '<input type="checkbox" name="rch_rechat_local_logic_features[]" value="' . esc_attr($key) . '" ' . esc_attr($checked) . ' />';
-        echo ' ' . esc_html($label);
-        echo '</label><br>';
+    $option_name = isset($args['option_name']) ? $args['option_name'] : '';
+    $description = isset($args['description']) ? $args['description'] : '';
+    
+    if (empty($option_name)) {
+        return;
+    }
+    
+    $value = get_option($option_name, '');
+    $field_id = esc_attr($option_name);
+    
+    printf(
+        '<input type="password" id="%1$s" name="%1$s" value="%2$s" class="regular-text" autocomplete="off" />',
+        $field_id,
+        esc_attr($value)
+    );
+    
+    if (!empty($description)) {
+        printf('<p class="description">%s</p>', esc_html($description));
     }
 }
 
-// Render the checkboxes for neighborhood features
-function rch_rechat_render_neighborhood_features_checkboxes()
+function rch_rechat_render_features_checkboxes($args)
 {
-    $selected_features = get_option('rch_rechat_neighborhood_features', []);
-    $features = [
-        'Hero' => __('Neighborhood Hero', 'rechat-plugin'),
-        'Map' => __('Neighborhood Map', 'rechat-plugin'),
-        'Highlights' => __('Neighborhood Highlights', 'rechat-plugin'),
-        'Characteristics' => __('Neighborhood Characteristics', 'rechat-plugin'),
-        'Schools' => __('Neighborhood Schools', 'rechat-plugin'),
-        'Demographics' => __('Neighborhood Demographics', 'rechat-plugin'),
-        'PropertyValueDrivers' => __('Neighborhood Property Value Drivers', 'rechat-plugin'),
-        'MarketTrends' => __('Neighborhood Market Trends', 'rechat-plugin'),
-        'Match' => __('Neighborhood Match', 'rechat-plugin'),
-    ];
+    $option_name = isset($args['option_name']) ? $args['option_name'] : '';
+    $features = isset($args['features']) ? $args['features'] : [];
+    
+    if (empty($option_name) || empty($features)) {
+        return;
+    }
+    
+    $selected_features = get_option($option_name, []);
+    
     foreach ($features as $key => $label) {
-        $checked = in_array($key, (array) $selected_features) ? 'checked' : '';
-        echo '<label>';
-        echo '<input type="checkbox" name="rch_rechat_neighborhood_features[]" value="' . esc_attr($key) . '" ' . esc_attr($checked) . ' />';
-        echo ' ' . esc_html($label);
-        echo '</label><br>';
+        $checked = in_array($key, (array) $selected_features, true);
+        $field_id = esc_attr($option_name . '_' . $key);
+        
+        printf(
+            '<label for="%1$s"><input type="checkbox" id="%1$s" name="%2$s[]" value="%3$s"%4$s /> %5$s</label><br />',
+            $field_id,
+            esc_attr($option_name),
+            esc_attr($key),
+            checked($checked, true, false),
+            esc_html__($label, 'rechat-plugin')
+        );
     }
 }

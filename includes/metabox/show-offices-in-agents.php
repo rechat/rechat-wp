@@ -1,220 +1,425 @@
 <?php
-if (! defined('ABSPATH')) {
-    exit();
+/**
+ * Agent-Office Association Metabox
+ * 
+ * Handles linking agents to offices with searchable checkboxes
+ * and displays office associations in admin columns
+ *
+ * @package RechatPlugin
+ */
+
+// Exit if accessed directly
+if (!defined('ABSPATH')) {
+    exit;
 }
+
 /*******************************
- * Create Custom MetaBox For Show Offices In Agents
+ * Add offices meta box to agents post type
  ******************************/
-function custom_add_offices_meta_box()
+function rch_add_agent_offices_meta_box()
 {
     add_meta_box(
-        'agents_offices_meta_box', // ID
-        __('Rechat-Offices', 'rechat-plugin'), // Title
-        'rch_custom_offices_meta_box_callback', // Callback
-        'agents', // Screen (post type)
-        'side', // Context
-        'default' // Priority
+        'rch_agents_offices_meta_box',
+        __('Rechat Offices', 'rechat-plugin'),
+        'rch_agent_offices_meta_box_callback',
+        'agents',
+        'side',
+        'default'
     );
 }
-add_action('add_meta_boxes', 'custom_add_offices_meta_box');
+add_action('add_meta_boxes', 'rch_add_agent_offices_meta_box');
 
-function rch_custom_offices_meta_box_callback($post)
+
+/*******************************
+ * Display offices meta box with searchable checkboxes
+ ******************************/
+function rch_agent_offices_meta_box_callback($post)
 {
-    // Nonce field for security
-    wp_nonce_field('custom_save_offices_meta_box_data', 'custom_offices_meta_box_nonce');
+    // Add nonce for security
+    wp_nonce_field('rch_save_agent_offices', 'rch_agent_offices_nonce');
 
-    // Get the current offices associated with the agent
+    // Get selected offices
     $selected_offices = get_post_meta($post->ID, '_rch_agent_offices', true);
+    $selected_offices = is_array($selected_offices) ? $selected_offices : [];
 
-    // Search input
-    echo '<input type="text" id="office-search" class="rch-input-search" placeholder="Search for offices...">';
+    // Add inline styles
+    rch_add_agent_offices_metabox_styles();
 
-    // Container for displaying search results
-    echo '<div id="office-results" class="rch-rechat-meta-scroll">';
+    // Render search input
+    rch_render_office_search_input();
 
-    // Query all offices
-    $args = array(
-        'post_type' => 'offices',
-        'posts_per_page' => -1,
-        'post_status' => 'publish',
-    );
-    $offices = get_posts($args);
+    // Render office checkboxes
+    rch_render_office_checkboxes($selected_offices);
+}
 
-    // Display all offices with checkboxes
-    if ($offices) {
+/*******************************
+ * Add inline styles for office metabox
+ ******************************/
+function rch_add_agent_offices_metabox_styles()
+{
+    ?>
+    <style>
+        #rch_agents_offices_meta_box .rch-office-search {
+            box-sizing: border-box !important;
+            width: 100% !important;
+            padding: 5px 8px !important;
+            margin-bottom: 10px !important;
+            border: 1px solid #8c8f94 !important;
+            border-radius: 4px !important;
+            font-size: 13px !important;
+            background-color: #fff !important;
+        }
+        
+        #rch_agents_offices_meta_box .rch-office-search:focus {
+            border-color: #2271b1 !important;
+            box-shadow: 0 0 0 1px #2271b1 !important;
+            outline: 2px solid transparent !important;
+        }
+        
+        #rch_agents_offices_meta_box .rch-office-results {
+            max-height: 200px !important;
+            overflow-y: auto !important;
+            border: 1px solid #dcdcde !important;
+            padding: 8px !important;
+            background-color: #fff !important;
+        }
+        
+        #rch_agents_offices_meta_box .rch-office-results label {
+            display: block !important;
+            padding: 4px 0 !important;
+            margin: 0 !important;
+            cursor: pointer !important;
+            font-size: 13px !important;
+        }
+        
+        #rch_agents_offices_meta_box .rch-office-results label:hover {
+            background-color: #f6f7f7 !important;
+        }
+        
+        #rch_agents_offices_meta_box .rch-office-results input[type="checkbox"] {
+            margin-right: 5px !important;
+        }
+        
+        #rch_agents_offices_meta_box .rch-no-offices {
+            color: #646970 !important;
+            font-style: italic !important;
+            padding: 10px !important;
+        }
+    </style>
+    <?php
+}
+
+/*******************************
+ * Render office search input
+ ******************************/
+function rch_render_office_search_input()
+{
+    ?>
+    <input 
+        type="text" 
+        id="rch-office-search" 
+        class="rch-office-search" 
+        placeholder="<?php esc_attr_e('Search for offices...', 'rechat-plugin'); ?>"
+    />
+    <?php
+}
+
+/*******************************
+ * Render office checkboxes
+ ******************************/
+function rch_render_office_checkboxes($selected_offices)
+{
+    echo '<div id="rch-office-results" class="rch-office-results">';
+
+    $offices = rch_get_all_offices();
+
+    if (!empty($offices)) {
         foreach ($offices as $office) {
-            $checked = in_array($office->ID, (array) $selected_offices) ? 'checked="checked"' : '';
-            echo '<label><input type="checkbox" name="agent_offices[]" value="' . esc_attr($office->ID) . '" ' . esc_attr($checked) . '> ' . esc_html($office->post_title) . '</label><br>';
+            $checked = in_array($office->ID, $selected_offices, true) ? 'checked="checked"' : '';
+            ?>
+            <label>
+                <input 
+                    type="checkbox" 
+                    name="rch_agent_offices[]" 
+                    value="<?php echo esc_attr($office->ID); ?>" 
+                    <?php echo $checked; ?>
+                />
+                <?php echo esc_html($office->post_title); ?>
+            </label>
+            <?php
         }
     } else {
-        echo '<p>No offices available.</p>';
+        echo '<p class="rch-no-offices">' . esc_html__('No offices available.', 'rechat-plugin') . '</p>';
     }
+
     echo '</div>';
 }
 
+/*******************************
+ * Get all published offices
+ ******************************/
+function rch_get_all_offices()
+{
+    $args = [
+        'post_type' => 'offices',
+        'posts_per_page' => -1,
+        'post_status' => 'publish',
+        'orderby' => 'title',
+        'order' => 'ASC',
+    ];
+
+    return get_posts($args);
+}
+
+
 
 /*******************************
- * Add AJAX Script for Search
+ * Enqueue AJAX search script for offices
  ******************************/
-function rch_ajax_offices_admin_scripts()
+function rch_agent_offices_ajax_script()
 {
     global $post_type;
-    if ($post_type == 'agents') {
-?>
-        <script type="text/javascript">
-            jQuery(document).ready(function($) {
-                $('#office-search').on('input', function() {
-                    var searchQuery = $(this).val();
-                    var selectedOffices = $('#selected-offices').val().split(',');
-
-                    $.ajax({
-                        url: ajaxurl,
-                        type: 'POST',
-                        data: {
-                            action: 'search_offices',
-                            search: searchQuery,
-                            selected_offices: selectedOffices
-                        },
-                        success: function(response) {
-                            $('#office-results').html(response);
+    
+    if ($post_type !== 'agents') {
+        return;
+    }
+    ?>
+    <script type="text/javascript">
+    (function($) {
+        'use strict';
+        
+        $(document).ready(function() {
+            var $searchInput = $('#rch-office-search');
+            var $resultsContainer = $('#rch-office-results');
+            
+            // Handle search input
+            $searchInput.on('input', function() {
+                var searchQuery = $(this).val();
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'rch_search_offices',
+                        search: searchQuery,
+                        nonce: '<?php echo wp_create_nonce('rch_search_offices_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            $resultsContainer.html(response.data);
                         }
-                    });
-                });
-
-                // Handle adding selected offices to the hidden field
-                $(document).on('change', '#office-results input[type="checkbox"]', function() {
-                    var selectedOffices = $('#selected-offices').val().split(',');
-                    if ($(this).is(':checked')) {
-                        selectedOffices.push($(this).val());
-                    } else {
-                        selectedOffices = selectedOffices.filter(function(value) {
-                            return value !== $(this).val();
-                        }.bind(this));
+                    },
+                    error: function() {
+                        $resultsContainer.html('<p class="rch-no-offices"><?php esc_html_e('Error loading offices.', 'rechat-plugin'); ?></p>');
                     }
-                    $('#selected-offices').val(selectedOffices.join(','));
                 });
             });
-        </script>
-<?php
-    }
+        });
+    })(jQuery);
+    </script>
+    <?php
 }
-add_action('admin_footer', 'rch_ajax_offices_admin_scripts');
+add_action('admin_footer', 'rch_agent_offices_ajax_script');
+
 
 /*******************************
- * Handle the AJAX Request in PHP
+ * Handle AJAX office search
  ******************************/
-function rch_ajax_search_offices_function()
+function rch_ajax_search_offices()
 {
-    $search_query = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
-    $selected_offices = isset($_POST['selected_offices']) ? array_map('intval', $_POST['selected_offices']) : array();
+    // Verify nonce
+    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'rch_search_offices_nonce')) {
+        wp_send_json_error(__('Security check failed.', 'rechat-plugin'));
+    }
 
-    $args = array(
+    $search_query = isset($_POST['search']) ? sanitize_text_field(wp_unslash($_POST['search'])) : '';
+
+    $args = [
         'post_type' => 'offices',
         'posts_per_page' => -1,
         'post_status' => 'publish',
         's' => $search_query,
-    );
+        'orderby' => 'title',
+        'order' => 'ASC',
+    ];
 
     $offices = new WP_Query($args);
 
+    ob_start();
+
     if ($offices->have_posts()) {
-        while ($offices->have_posts()) : $offices->the_post();
-            $checked = in_array(get_the_ID(), $selected_offices) ? 'checked="checked"' : '';
-            echo '<label><input type="checkbox" name="agent_offices[]" value="' . esc_attr(get_the_ID()) . '" ' . esc_attr($checked) . '> ' . esc_html(get_the_title()) . '</label><br>';
-        endwhile;
+        while ($offices->have_posts()) {
+            $offices->the_post();
+            ?>
+            <label>
+                <input 
+                    type="checkbox" 
+                    name="rch_agent_offices[]" 
+                    value="<?php echo esc_attr(get_the_ID()); ?>"
+                />
+                <?php echo esc_html(get_the_title()); ?>
+            </label>
+            <?php
+        }
+        wp_reset_postdata();
     } else {
-        echo '<p>No offices found.</p>';
+        echo '<p class="rch-no-offices">' . esc_html__('No offices found.', 'rechat-plugin') . '</p>';
     }
 
-    wp_die();
+    $html = ob_get_clean();
+    wp_send_json_success($html);
 }
-add_action('wp_ajax_search_offices', 'rch_ajax_search_offices_function');
+add_action('wp_ajax_rch_search_offices', 'rch_ajax_search_offices');
+
 
 
 /*******************************
- * Save the Selected Offices
+ * Save selected offices for agent
  ******************************/
-function rch_save_offices_meta_box_data($post_id)
+function rch_save_agent_offices_meta($post_id)
 {
-    // Check if nonce is set and valid
-    if (!isset($_POST['custom_offices_meta_box_nonce']) || !wp_verify_nonce($_POST['custom_offices_meta_box_nonce'], 'custom_save_offices_meta_box_data')) {
+    // Verify nonce
+    if (!isset($_POST['rch_agent_offices_nonce'])) {
         return;
     }
 
-    // Check if the user has permission to save the data
+    if (!wp_verify_nonce($_POST['rch_agent_offices_nonce'], 'rch_save_agent_offices')) {
+        return;
+    }
+
+    // Check autosave
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+        return;
+    }
+
+    // Check user permissions
     if (!current_user_can('edit_post', $post_id)) {
         return;
     }
 
-    // Save the selected offices
-    if (isset($_POST['agent_offices'])) {
-        $offices = array_map('intval', $_POST['agent_offices']); // Map to ensure IDs are integers
+    // Save or delete offices
+    if (isset($_POST['rch_agent_offices']) && is_array($_POST['rch_agent_offices'])) {
+        $offices = array_map('intval', $_POST['rch_agent_offices']);
         update_post_meta($post_id, '_rch_agent_offices', $offices);
     } else {
-        delete_post_meta($post_id, '_rch_agent_offices'); // If no offices selected, delete the meta
+        delete_post_meta($post_id, '_rch_agent_offices');
     }
 }
+add_action('save_post_agents', 'rch_save_agent_offices_meta');
 
-add_action('save_post', 'rch_save_offices_meta_box_data');
 
 
 /*******************************
- * Show Custom Column in Admin In Agents (regions and offices)
+ * Add offices and regions columns to agents list
  ******************************/
-function custom_agents_columns($columns)
+function rch_add_agent_association_columns($columns)
 {
-    $columns['offices'] = __('Offices', 'rechat-plugin');
-    $columns['regions'] = __('Regions', 'rechat-plugin');
-    return $columns;
-}
-add_filter('manage_agents_posts_columns', 'custom_agents_columns');
-
-function custom_agents_custom_column($column, $post_id)
-{
-    if ($column === 'offices') {
-        $offices = get_post_meta($post_id, '_rch_agent_offices', true);
-        if ($offices && is_array($offices)) {
-            $output = array();
-            foreach ($offices as $office_id) {
-                $output[] = get_the_title($office_id);
-            }
-            echo implode(', ', array_map('esc_html', $output));
-        } else {
-            echo esc_html(__('No Offices Assigned', 'rechat-plugin'));
-        }
-    } elseif ($column === 'regions') {
-        $regions = get_post_meta($post_id, '_rch_agent_regions', true);
-        if ($regions && is_array($regions)) {
-            $output = array();
-
-            foreach ($regions as $region_id) {
-                $output[] = get_the_title($region_id); // This gets the title of each associated region.
-            }
-            echo implode(', ', array_map('esc_html', $output));
-        } else {
-            echo esc_html(__('No Regions Assigned', 'rechat-plugin'));
+    // Insert after title
+    $new_columns = [];
+    foreach ($columns as $key => $value) {
+        $new_columns[$key] = $value;
+        
+        if ($key === 'title') {
+            $new_columns['rch_offices'] = __('Offices', 'rechat-plugin');
+            $new_columns['rch_regions'] = __('Regions', 'rechat-plugin');
         }
     }
+    
+    return $new_columns;
 }
-add_action('manage_agents_posts_custom_column', 'custom_agents_custom_column', 10, 2);
+add_filter('manage_agents_posts_columns', 'rch_add_agent_association_columns');
 
 /*******************************
- * Display Offices on the Front-End
+ * Display offices and regions column data
  ******************************/
-// function custom_display_offices($post_id) {
-//     $offices = get_post_meta($post_id, '_rch_agent_offices', true);
+function rch_show_agent_association_columns($column, $post_id)
+{
+    if ($column === 'rch_offices') {
+        rch_display_agent_offices_column($post_id);
+    } elseif ($column === 'rch_regions') {
+        rch_display_agent_regions_column($post_id);
+    }
+}
+add_action('manage_agents_posts_custom_column', 'rch_show_agent_association_columns', 10, 2);
 
-//     if ($offices && is_array($offices)) {
-//         echo '<h2>Associated Offices</h2>';
-//         echo '<ul>';
-//         foreach ($offices as $office_id) {
-//             echo '<li><a href="' . get_permalink($office_id) . '">' . get_the_title($office_id) . '</a></li>';
-//         }
-//         echo '</ul>';
-//     }
-// }
+/*******************************
+ * Display offices column data
+ ******************************/
+function rch_display_agent_offices_column($post_id)
+{
+    $offices = get_post_meta($post_id, '_rch_agent_offices', true);
+    
+    if (!empty($offices) && is_array($offices)) {
+        $office_titles = [];
+        foreach ($offices as $office_id) {
+            $title = get_the_title($office_id);
+            if ($title) {
+                $office_titles[] = $title;
+            }
+        }
+        
+        if (!empty($office_titles)) {
+            echo esc_html(implode(', ', $office_titles));
+        } else {
+            echo '<em>' . esc_html__('No Offices Assigned', 'rechat-plugin') . '</em>';
+        }
+    } else {
+        echo '<em>' . esc_html__('No Offices Assigned', 'rechat-plugin') . '</em>';
+    }
+}
 
-// // Example usage in a template file (e.g., single-agents.php)
-// if (is_singular('agents')) {
-//     custom_display_offices(get_the_ID());
-// }
+/*******************************
+ * Display regions column data
+ ******************************/
+function rch_display_agent_regions_column($post_id)
+{
+    $regions = get_post_meta($post_id, '_rch_agent_regions', true);
+    
+    if (!empty($regions) && is_array($regions)) {
+        $region_titles = [];
+        foreach ($regions as $region_id) {
+            $title = get_the_title($region_id);
+            if ($title) {
+                $region_titles[] = $title;
+            }
+        }
+        
+        if (!empty($region_titles)) {
+            echo esc_html(implode(', ', $region_titles));
+        } else {
+            echo '<em>' . esc_html__('No Regions Assigned', 'rechat-plugin') . '</em>';
+        }
+    } else {
+        echo '<em>' . esc_html__('No Regions Assigned', 'rechat-plugin') . '</em>';
+    }
+}
+
+
+/*******************************
+ * Example: Display offices on front-end (helper function)
+ * Uncomment to use in template files (e.g., single-agents.php)
+ ******************************/
+/*
+function rch_display_agent_offices($post_id) {
+    $offices = get_post_meta($post_id, '_rch_agent_offices', true);
+
+    if (!empty($offices) && is_array($offices)) {
+        echo '<h2>' . esc_html__('Associated Offices', 'rechat-plugin') . '</h2>';
+        echo '<ul>';
+        foreach ($offices as $office_id) {
+            $title = get_the_title($office_id);
+            $permalink = get_permalink($office_id);
+            if ($title && $permalink) {
+                echo '<li><a href="' . esc_url($permalink) . '">' . esc_html($title) . '</a></li>';
+            }
+        }
+        echo '</ul>';
+    }
+}
+
+// Usage in template file:
+if (is_singular('agents')) {
+    rch_display_agent_offices(get_the_ID());
+}
+*/
+

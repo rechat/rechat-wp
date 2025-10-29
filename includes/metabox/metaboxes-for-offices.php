@@ -1,109 +1,238 @@
 <?php
-if (! defined('ABSPATH')) {
-    exit();
+/**
+ * Office Metabox Management
+ * 
+ * Handles custom fields for the 'offices' post type including
+ * office ID and address information
+ *
+ * @package RechatPlugin
+ */
+
+// Exit if accessed directly
+if (!defined('ABSPATH')) {
+    exit;
 }
+
 /*******************************
  * Add meta box for the 'offices' post type
  ******************************/
-function add_office_meta_box()
+function rch_add_office_meta_box()
 {
     add_meta_box(
-        'office_meta_box', // Meta box ID
-        'Office Details', // Meta box title
-        'display_office_meta_box', // Callback function to display the meta box
-        'offices', // Custom post type
-        'normal', // Context (placement)
-        'high'    // Priority
+        'rch_office_meta_box',
+        __('Office Details', 'rechat-plugin'),
+        'rch_display_office_meta_box',
+        'offices',
+        'normal',
+        'high'
     );
 }
-add_action('add_meta_boxes', 'add_office_meta_box');
+add_action('add_meta_boxes', 'rch_add_office_meta_box');
+
 
 /*******************************
- * Function to display the meta box for 'offices' post type
+ * Display the meta box for 'offices' post type
  ******************************/
-function display_office_meta_box($post)
+function rch_display_office_meta_box($post)
 {
-    // Retrieve the 'office_id' meta value
+    // Add nonce for security
+    wp_nonce_field('rch_office_meta_box', 'rch_office_meta_box_nonce');
+
+    // Get office meta fields
     $office_id = get_post_meta($post->ID, 'office_id', true);
-?>
-    <p>
-        <label for="office_id">Office ID (not available for locally added offices):</label>
-        <input type="text" id="office_id" name="office_id" value="<?php echo esc_attr($office_id); ?>" readonly>
-    </p>
-    <?php
-    // Single address field
     $office_address = get_post_meta($post->ID, 'office_address', true);
 
-    // Nonce for security
-    wp_nonce_field('office_address_meta_nonce', 'office_address_meta_nonce_field');
+    // Add inline styles to override theme styles
+    rch_add_office_metabox_inline_styles();
+
+    // Render fields
+    rch_render_office_id_field($office_id);
+    rch_render_office_address_field($office_address);
+}
+
+/*******************************
+ * Add inline styles to ensure WordPress default input styling
+ ******************************/
+function rch_add_office_metabox_inline_styles()
+{
     ?>
+    <style>
+        #rch_office_meta_box .rch-office-field {
+            box-sizing: border-box !important;
+            margin: 0 !important;
+            padding: 3px 5px !important;
+            line-height: 2 !important;
+            min-height: 30px !important;
+            max-width: 100% !important;
+            width: 100% !important;
+            box-shadow: 0 0 0 transparent !important;
+            border-radius: 4px !important;
+            border: 1px solid #8c8f94 !important;
+            background-color: #fff !important;
+            color: #2c3338 !important;
+            font-size: 14px !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif !important;
+        }
+        
+        #rch_office_meta_box .rch-office-field:focus {
+            border-color: #2271b1 !important;
+            box-shadow: 0 0 0 1px #2271b1 !important;
+            outline: 2px solid transparent !important;
+        }
+        
+        #rch_office_meta_box .rch-office-field[readonly] {
+            background-color: #f6f7f7 !important;
+            cursor: default !important;
+        }
+        
+        #rch_office_meta_box .rch-field-wrapper {
+            margin-bottom: 15px !important;
+        }
+        
+        #rch_office_meta_box .rch-field-label {
+            display: block !important;
+            margin-bottom: 5px !important;
+            font-weight: 600 !important;
+            color: #1d2327 !important;
+            font-size: 14px !important;
+        }
+        
+        #rch_office_meta_box .rch-field-label em {
+            font-weight: normal !important;
+            color: #646970 !important;
+        }
+        
+        #rch_office_meta_box h4 {
+            margin-top: 20px !important;
+            margin-bottom: 10px !important;
+            border-bottom: 1px solid #dcdcde !important;
+            padding-bottom: 5px !important;
+        }
+    </style>
+    <?php
+}
 
+/*******************************
+ * Render office ID field (readonly)
+ ******************************/
+function rch_render_office_id_field($office_id)
+{
+    ?>
+    <div class="rch-field-wrapper">
+        <label for="rch_office_id" class="rch-field-label">
+            <strong><?php esc_html_e('Office ID', 'rechat-plugin'); ?></strong>
+            <em><?php esc_html_e('(not available for locally added offices)', 'rechat-plugin'); ?></em>
+        </label>
+        <input 
+            type="text" 
+            id="rch_office_id" 
+            name="rch_office_id" 
+            value="<?php echo esc_attr($office_id); ?>" 
+            class="rch-office-field" 
+            readonly 
+        />
+    </div>
+    <?php
+}
+
+/*******************************
+ * Render office address field
+ ******************************/
+function rch_render_office_address_field($office_address)
+{
+    ?>
     <h4><?php esc_html_e('Address', 'rechat-plugin'); ?></h4>
-    <p>
-        <label for="office_address"><?php esc_html_e('Full Address', 'rechat-plugin'); ?>:</label><br>
-        <input type="text" id="office_address" name="office_address" value="<?php echo esc_attr($office_address); ?>" style="width:100%;">
-    </p>
-<?php
+    <div class="rch-field-wrapper">
+        <label for="rch_office_address" class="rch-field-label">
+            <strong><?php esc_html_e('Full Address', 'rechat-plugin'); ?></strong>
+        </label>
+        <input 
+            type="text" 
+            id="rch_office_address" 
+            name="rch_office_address" 
+            value="<?php echo esc_attr($office_address); ?>" 
+            class="rch-office-field" 
+        />
+    </div>
+    <?php
 }
 
-/*******************************
- * Add a custom column to the 'offices' post type list table
- ******************************/
-function add_office_id_column($columns)
-{
-    // Add a new column for Office ID
-    $columns['office_id'] = 'Office ID';
-    return $columns;
-}
-add_filter('manage_offices_posts_columns', 'add_office_id_column');
 
 /*******************************
- * Display the content of the custom column
+ * Add Office ID column to offices post list
  ******************************/
-function show_office_id_column_content($column, $post_id)
+function rch_add_office_id_column($columns)
 {
-    if ($column === 'office_id') {
-        // Retrieve the 'office_id' meta value
+    // Insert Office ID column after title
+    $new_columns = [];
+    foreach ($columns as $key => $value) {
+        $new_columns[$key] = $value;
+        
+        if ($key === 'title') {
+            $new_columns['rch_office_id'] = __('Office ID', 'rechat-plugin');
+        }
+    }
+    
+    return $new_columns;
+}
+add_filter('manage_offices_posts_columns', 'rch_add_office_id_column');
+
+/*******************************
+ * Display Office ID column data
+ ******************************/
+function rch_show_office_id_column($column, $post_id)
+{
+    if ($column === 'rch_office_id') {
         $office_id = get_post_meta($post_id, 'office_id', true);
-        echo esc_html($office_id);
+        
+        if (!empty($office_id)) {
+            echo esc_html($office_id);
+        } else {
+            echo '<em>' . esc_html__('Local Office', 'rechat-plugin') . '</em>';
+        }
     }
 }
-add_action('manage_offices_posts_custom_column', 'show_office_id_column_content', 10, 2);
+add_action('manage_offices_posts_custom_column', 'rch_show_office_id_column', 10, 2);
 
 /*******************************
- * Make the 'Office ID' column sortable
+ * Make Office ID column sortable
  ******************************/
-function make_office_id_column_sortable($columns)
+function rch_make_office_id_sortable($columns)
 {
-    $columns['office_id'] = 'office_id';
+    $columns['rch_office_id'] = 'office_id';
     return $columns;
 }
-add_filter('manage_edit-offices_sortable_columns', 'make_office_id_column_sortable');
+add_filter('manage_edit-offices_sortable_columns', 'rch_make_office_id_sortable');
 
 /*******************************
- * Handle sorting by 'Office ID' column
+ * Handle sorting by Office ID
  ******************************/
-function sort_office_id_column($query)
+function rch_offices_orderby($query)
 {
-    if (!is_admin()) {
+    if (!is_admin() || !$query->is_main_query()) {
         return;
     }
 
     $orderby = $query->get('orderby');
-
+    
     if ($orderby === 'office_id') {
         $query->set('meta_key', 'office_id');
         $query->set('orderby', 'meta_value');
     }
 }
-add_action('pre_get_posts', 'sort_office_id_column');
-/**
- * Save office address meta when post is saved
- */
-function save_office_address_meta($post_id)
+add_action('pre_get_posts', 'rch_offices_orderby');
+
+/*******************************
+ * Save office meta box data
+ ******************************/
+function rch_save_office_meta_box($post_id)
 {
     // Verify nonce
-    if (!isset($_POST['office_address_meta_nonce_field']) || !wp_verify_nonce(sanitize_text_field($_POST['office_address_meta_nonce_field']), 'office_address_meta_nonce')) {
+    if (!isset($_POST['rch_office_meta_box_nonce'])) {
+        return;
+    }
+
+    if (!wp_verify_nonce($_POST['rch_office_meta_box_nonce'], 'rch_office_meta_box')) {
         return;
     }
 
@@ -117,36 +246,38 @@ function save_office_address_meta($post_id)
         return;
     }
 
-    // Sanitize and save fields
-    if (isset($_POST['office_address'])) {
-        update_post_meta($post_id, 'office_address', sanitize_text_field($_POST['office_address']));
+    // Save office address
+    if (isset($_POST['rch_office_address'])) {
+        $office_address = sanitize_text_field(wp_unslash($_POST['rch_office_address']));
+        update_post_meta($post_id, 'office_address', $office_address);
     }
 }
-add_action('save_post_offices', 'save_office_address_meta');
-/*******************************
- * Register the 'region_id' meta field for the 'regions' post type
- ******************************/
-function register_office_id_meta()
-{
-    register_meta('post', 'office_id', array(
-        'type'         => 'string', // Specify the data type of the meta value
-        'description'  => 'Office ID', // Description of the meta field
-        'single'       => true, // Whether the meta value is a single entry or an array
-        'show_in_rest' => true, // Make it accessible via the REST API
-        'auth_callback' => function () {
-            return current_user_can('edit_posts'); // Authentication callback
-        }
-    ));
+add_action('save_post_offices', 'rch_save_office_meta_box');
 
-    // Register single office address meta field
-    register_meta('post', 'office_address', array(
+/*******************************
+ * Register office meta fields
+ ******************************/
+function rch_register_office_meta()
+{
+    register_meta('post', 'office_id', [
         'type' => 'string',
-        'description' => 'Office full address',
+        'description' => __('Office ID from Rechat API', 'rechat-plugin'),
         'single' => true,
         'show_in_rest' => true,
         'auth_callback' => function () {
             return current_user_can('edit_posts');
-        }
-    ));
+        },
+    ]);
+
+    register_meta('post', 'office_address', [
+        'type' => 'string',
+        'description' => __('Office full address', 'rechat-plugin'),
+        'single' => true,
+        'show_in_rest' => true,
+        'auth_callback' => function () {
+            return current_user_can('edit_posts');
+        },
+    ]);
 }
-add_action('init', 'register_office_id_meta');
+add_action('init', 'rch_register_office_meta');
+
