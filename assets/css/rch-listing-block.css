@@ -1,4 +1,4 @@
-.container_sdk {
+.container_listing_sdk {
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -27,29 +27,74 @@
   overflow: auto;
 }
 
-@media screen and (min-width: 1440px) {
+/* Agent Card Styles */
+.agent-container {
+  height: 200px;
+  display: flex;
+  margin-bottom: 32px;
+  padding: 8px 16px;
+  gap: 32px;
+  background: linear-gradient(to bottom, #f5f5f5, transparent);
+  border-radius: 0 8px 8px 0;
+}
 
+.agent-container img {
+  height: auto;
+  border-radius: 16px 16px 0 16px;
+}
+
+.agent-container__heading {
+  display: flex;
+  gap: 4px;
+  flex-direction: column;
+}
+
+.agent-container__heading .title {
+  font-size: 32px;
+  font-weight: 800;
+}
+
+.agent-container__heading span {
+  font-size: 24px;
+  color: gray;
+}
+
+.agent-container__contact {
+  display: flex;
+  gap: 8px;
+  flex-direction: column;
+  margin-top: 32px;
+}
+
+.agent-container__contact .contact-item {
+  font-weight: 500;
+  font-size: 18px;
+  color: #1a1a1a;
+}
+
+.agent-container__contact .contact-item.address {
+  color: gray;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+@media screen and (min-width: 1440px) {
 }
 
 @media screen and (max-width: 992px) {
-
 }
 
 /* For larger screens, ensure at least two columns */
 @media (min-width: 768px) and (max-width: 991px) {
-
-
 }
 
 @media (max-width: 768px) {
-
 }
 
 @media screen and (max-width: 576px) {
 }
 
 @media screen and (min-width: 426px) and (max-width: 576px) {
- 
 }
 
 @media screen and (max-width: 375px) {

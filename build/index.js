@@ -2,374 +2,1467 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ "./src/listing-main.js":
-/*!*****************************!*\
-  !*** ./src/listing-main.js ***!
-  \*****************************/
+/***/ "./src/blocks/agents-block.js":
+/*!************************************!*\
+  !*** ./src/blocks/agents-block.js ***!
+  \************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "react");
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/api-fetch */ "@wordpress/api-fetch");
-/* harmony import */ var _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _listings_filters__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./listings-filters */ "./src/listings-filters.js");
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/server-side-render */ "@wordpress/server-side-render");
+/* harmony import */ var _wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _utils_api_helpers__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../utils/api-helpers */ "./src/utils/api-helpers.js");
 /* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
 /* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__);
+const {
+  registerBlockType
+} = wp.blocks;
+const {
+  InspectorControls,
+  ColorPalette
+} = wp.blockEditor || wp.editor;
+const {
+  PanelBody,
+  RangeControl,
+  SelectControl
+} = wp.components;
 
 
 
 
-const ListingMain = ({
-  listing_per_page,
-  maximum_bedrooms,
-  minimum_bedrooms,
-  maximum_bathrooms,
-  minimum_bathrooms,
-  maximum_year_built,
-  minimum_year_built,
-  maximum_square_meters,
-  minimum_square_meters,
-  maximum_price,
-  minimum_price,
-  property_types,
-  own_listing,
-  show_filter_bar,
-  maximum_lot_square_meters,
-  minimum_lot_square_meters,
-  selectedStatuses
-}) => {
-  const siteUrl = wp.data.select("core").getSite()?.url;
-  const [brandId, setBrandId] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null);
-  const [listings, setListings] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
-  const [loading, setLoading] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(true);
-  const [mapBounds, setMapBounds] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null);
-  const [isFirstMapLoad, setIsFirstMapLoad] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(true);
-  const mapRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
-  const fetchBrandId = async () => {
-    try {
-      const brandResponse = await _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_1___default()({
-        path: '/wp/v2/options'
-      });
-      if (brandResponse.rch_rechat_brand_id) {
-        setBrandId(brandResponse.rch_rechat_brand_id);
-      } else {
-        console.error('Brand ID not found in WordPress options.');
-      }
-    } catch (error) {
-      console.error('Error fetching brand ID:', error);
+registerBlockType('rch-rechat-plugin/agents-block', {
+  title: 'Agents Block',
+  description: 'Block for showing Agents',
+  icon: 'businessperson',
+  category: 'widgets',
+  attributes: {
+    postsPerPage: {
+      type: 'number',
+      default: 5
+    },
+    regionBgColor: {
+      type: 'string',
+      default: '#edf1f5'
+    },
+    textColor: {
+      type: 'string',
+      default: '#000'
+    },
+    filterByRegions: {
+      type: 'string',
+      default: ''
+    },
+    filterByOffices: {
+      type: 'string',
+      default: ''
+    },
+    sortBy: {
+      type: 'string',
+      default: 'date'
+    },
+    sortOrder: {
+      type: 'string',
+      default: 'desc'
     }
-  };
-  const fetchListings = (bounds = null) => {
-    if (!brandId) return;
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-RECHAT-BRAND': brandId
-    };
-    const bodyObject = {
-      limit: Number(listing_per_page),
-      maximum_bedrooms: maximum_bedrooms ? Number(maximum_bedrooms) : '',
-      minimum_bedrooms: minimum_bedrooms ? Number(minimum_bedrooms) : '',
-      maximum_bathrooms: maximum_bathrooms ? Number(maximum_bathrooms) : '',
-      minimum_bathrooms: minimum_bathrooms ? Number(minimum_bathrooms) : '',
-      maximum_year_built: maximum_year_built ? Number(maximum_year_built) : '',
-      minimum_year_built: minimum_year_built ? Number(minimum_year_built) : '',
-      maximum_square_meters: maximum_square_meters ? Number(maximum_square_meters) : '',
-      minimum_square_meters: minimum_square_meters ? Number(minimum_square_meters) : '',
-      minimum_price: minimum_price ? Number(minimum_price) : '',
-      maximum_price: maximum_price ? Number(maximum_price) : '',
-      minimum_lot_square_meters: minimum_lot_square_meters ? Number(minimum_lot_square_meters) : '',
-      maximum_lot_square_meters: maximum_lot_square_meters ? Number(maximum_lot_square_meters) : '',
-      property_types: property_types ? property_types.split(",").map(type => type.trim()) : [],
-      listing_statuses: selectedStatuses?.length ? selectedStatuses : "",
-      ...(own_listing && {
-        brand: brandId
-      })
-    };
-    if (bounds) {
-      bodyObject.points = [{
-        latitude: bounds.getNorthEast().lat(),
-        longitude: bounds.getNorthEast().lng()
-      }, {
-        latitude: bounds.getNorthEast().lat(),
-        longitude: bounds.getSouthWest().lng()
-      }, {
-        latitude: bounds.getSouthWest().lat(),
-        longitude: bounds.getSouthWest().lng()
-      }, {
-        latitude: bounds.getSouthWest().lat(),
-        longitude: bounds.getNorthEast().lng()
-      }];
-    }
-    const filteredBody = Object.fromEntries(Object.entries(bodyObject).filter(([_, value]) => value !== undefined && value !== null && value !== ""));
-    let body = null;
-    if (Object.keys(filteredBody).length > 0) {
-      body = JSON.stringify(filteredBody);
-    }
-    setLoading(true);
-    fetch('https://api.rechat.com/valerts?order_by[]=-price', {
-      method: 'POST',
-      headers: headers,
-      body: body
-    }).then(res => res.json()).then(data => {
-      setListings(data.data);
-      renderServerTemplates(data.data);
-      if (isFirstMapLoad) {
-        initGoogleMap(data.data);
-        setIsFirstMapLoad(false);
-      } else {
-        updateMapMarkers(data.data);
-      }
-      setLoading(false);
-    }).catch(error => {
-      console.error('Error:', error);
-      setLoading(false);
-    });
-  };
-  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
-    fetchBrandId();
-  }, []);
-  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
-    setMapBounds(null);
-    fetchListings();
-  }, [brandId, listing_per_page, maximum_bedrooms, minimum_bedrooms, maximum_bathrooms, minimum_bathrooms, maximum_year_built, minimum_year_built, maximum_square_meters, minimum_square_meters, maximum_price, minimum_price, property_types, own_listing, maximum_lot_square_meters, minimum_lot_square_meters, property_types, selectedStatuses]);
-  const renderServerTemplates = listings => {
-    if (!listings || listings.length === 0) return;
-    _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_1___default()({
-      path: '/rechat/v1/render-listing-template/',
-      method: 'POST',
-      data: {
-        listings
-      }
-    }).then(response => {
-      const listingContainer = document.getElementById('listing-list');
-      if (listingContainer) {
-        listingContainer.innerHTML = response.html;
-      }
-    }).catch(error => {
-      console.error('Error rendering templates:', error);
-    });
-  };
-  const initGoogleMap = listings => {
-    if (!listings || listings.length === 0 || !window.google) return;
-    const mapContainer = document.getElementById('rch-google-map');
-    if (!mapContainer) return;
-    const map = new google.maps.Map(mapContainer, {
-      zoom: 10,
-      mapTypeControl: true,
-      streetViewControl: true,
-      fullscreenControl: true
-    });
-    mapRef.current = map;
-    const bounds = new google.maps.LatLngBounds();
-    const markers = addMarkersToMap(map, listings, bounds);
-    if (markers.length > 0) {
-      map.fitBounds(bounds);
-    }
-    let boundsChangeTimeout;
-    map.addListener('bounds_changed', () => {
-      clearTimeout(boundsChangeTimeout);
-      boundsChangeTimeout = setTimeout(() => {
-        const newBounds = map.getBounds();
-        if (newBounds && !isFirstMapLoad) {
-          setMapBounds(newBounds);
-          fetchListings(newBounds);
-        }
-      }, 800);
-    });
-    return map;
-  };
-  const addMarkersToMap = (map, listings, bounds = null) => {
-    return listings.map(listing => {
-      if (listing.property && listing.property.latitude && listing.property.longitude) {
-        const position = {
-          lat: parseFloat(listing.property.latitude),
-          lng: parseFloat(listing.property.longitude)
-        };
-        if (bounds) bounds.extend(position);
-        const marker = new google.maps.Marker({
-          position: position,
-          map: map,
-          title: listing.property.address.full_address
-        });
-        const price = listing.price ? `$${new Intl.NumberFormat().format(listing.price)}` : 'Price not available';
-        const infoContent = `
-                    <div class="rch-map-info-window">
-                        <h4>${price}</h4>
-                        <p>${listing.property.address.full_address}</p>
-                        <p>${listing.property.bedrooms || 0} beds, ${listing.property.bathrooms || 0} baths</p>
-                    </div>
-                `;
-        const infoWindow = new google.maps.InfoWindow({
-          content: infoContent
-        });
-        marker.addListener('click', () => {
-          infoWindow.open(map, marker);
-        });
-        return marker;
-      }
-      return null;
-    }).filter(Boolean);
-  };
-  const updateMapMarkers = listings => {
-    if (!mapRef.current || !listings) return;
-    addMarkersToMap(mapRef.current, listings);
-  };
-  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
-    children: [show_filter_bar && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(_listings_filters__WEBPACK_IMPORTED_MODULE_2__["default"], {}), loading ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
-      id: "rch-loading-listing",
-      className: "rch-listing-skeleton-loader",
-      children: [...Array(6)].map((_, i) => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
-        className: "rch-listing-item-skeleton",
-        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
-          className: "rch-skeleton-image"
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("h3", {
-          className: "rch-skeleton-text rch-skeleton-price"
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("p", {
-          className: "rch-skeleton-text rch-skeleton-address"
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("ul", {
-          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("li", {
-            className: "rch-skeleton-text rch-skeleton-list-item"
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("li", {
-            className: "rch-skeleton-text rch-skeleton-list-item"
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("li", {
-            className: "rch-skeleton-text rch-skeleton-list-item"
+  },
+  edit({
+    attributes,
+    setAttributes
+  }) {
+    const {
+      postsPerPage,
+      regionBgColor,
+      textColor,
+      filterByRegions,
+      filterByOffices,
+      sortBy,
+      sortOrder
+    } = attributes;
+    const [regions, setRegions] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
+    const [offices, setOffices] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
+    (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+      (0,_utils_api_helpers__WEBPACK_IMPORTED_MODULE_2__.fetchData)('/wp/v2/regions?per_page=100', setRegions);
+      (0,_utils_api_helpers__WEBPACK_IMPORTED_MODULE_2__.fetchData)('/wp/v2/offices?per_page=100', setOffices);
+    }, []);
+    return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.Fragment, {
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(InspectorControls, {
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(PanelBody, {
+          title: "Settings",
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(RangeControl, {
+            label: "Posts Per Page",
+            value: postsPerPage,
+            onChange: value => setAttributes({
+              postsPerPage: value
+            }),
+            min: 1,
+            max: 20
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(SelectControl, {
+            label: "Select a Region",
+            value: filterByRegions,
+            options: regions.length ? regions : [{
+              label: 'Loading regions...',
+              value: ''
+            }],
+            onChange: selectedRegion => setAttributes({
+              filterByRegions: selectedRegion
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(SelectControl, {
+            label: "Select an Office",
+            value: filterByOffices,
+            options: offices.length ? offices : [{
+              label: 'Loading offices...',
+              value: ''
+            }],
+            onChange: selectedOffice => setAttributes({
+              filterByOffices: selectedOffice
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(SelectControl, {
+            label: "Sort By",
+            value: sortBy,
+            options: [{
+              label: 'Date',
+              value: 'date'
+            }, {
+              label: 'Name',
+              value: 'name'
+            }],
+            onChange: selectedSort => setAttributes({
+              sortBy: selectedSort
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(SelectControl, {
+            label: "Sort Order",
+            value: sortOrder,
+            options: [{
+              label: 'Ascending',
+              value: 'asc'
+            }, {
+              label: 'Descending',
+              value: 'desc'
+            }],
+            onChange: selectedOrder => setAttributes({
+              sortOrder: selectedOrder
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("p", {
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("strong", {
+              children: "Select your background color"
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(ColorPalette, {
+            value: regionBgColor,
+            onChange: color => setAttributes({
+              regionBgColor: color
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("p", {
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("strong", {
+              children: "Select your text color"
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(ColorPalette, {
+            value: textColor,
+            onChange: color => setAttributes({
+              textColor: color
+            })
           })]
-        })]
-      }, i))
-    }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
-      className: "rch-container-listing-list",
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
-        id: "rch-google-map",
-        className: "rch-map-listing-list"
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
-        className: "rch-under-main-listing",
-        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
-          id: "listing-list",
-          className: "rch-listing-list",
-          children: Array.isArray(listings) && listings.length === 0 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
-            children: "No Listing Found"
-          })
         })
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)((_wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1___default()), {
+        block: "rch-rechat-plugin/agents-block",
+        attributes: attributes
       })]
-    })]
-  });
-};
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (ListingMain);
+    });
+  },
+  save() {
+    return null;
+  }
+});
 
 /***/ }),
 
-/***/ "./src/listings-filters.js":
-/*!*********************************!*\
-  !*** ./src/listings-filters.js ***!
-  \*********************************/
+/***/ "./src/blocks/leads-form-block.js":
+/*!****************************************!*\
+  !*** ./src/blocks/leads-form-block.js ***!
+  \****************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/server-side-render */ "@wordpress/server-side-render");
+/* harmony import */ var _wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/api-fetch */ "@wordpress/api-fetch");
+/* harmony import */ var _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__);
+const {
+  registerBlockType
+} = wp.blocks;
+const {
+  InspectorControls
+} = wp.blockEditor || wp.editor;
+const {
+  PanelBody,
+  SelectControl,
+  TextControl,
+  ToggleControl
+} = wp.components;
+
+
+
+
+registerBlockType('rch-rechat-plugin/leads-form-block', {
+  title: 'Leads Form Block',
+  description: 'Block for lead form submission',
+  icon: 'admin-users',
+  category: 'widgets',
+  attributes: {
+    formTitle: {
+      type: 'string',
+      default: 'Lead Form'
+    },
+    leadChannel: {
+      type: 'string',
+      default: ''
+    },
+    showFirstName: {
+      type: 'boolean',
+      default: true
+    },
+    showLastName: {
+      type: 'boolean',
+      default: true
+    },
+    showPhoneNumber: {
+      type: 'boolean',
+      default: true
+    },
+    showEmail: {
+      type: 'boolean',
+      default: true
+    },
+    showNote: {
+      type: 'boolean',
+      default: true
+    },
+    selectedTagsFrom: {
+      type: 'array',
+      default: []
+    },
+    emailForGetLead: {
+      type: 'string',
+      default: ''
+    }
+  },
+  edit({
+    attributes,
+    setAttributes
+  }) {
+    const {
+      formTitle,
+      leadChannel,
+      showFirstName,
+      showLastName,
+      showPhoneNumber,
+      showEmail,
+      showNote,
+      selectedTagsFrom,
+      emailForGetLead
+    } = attributes;
+    const [leadChannels, setLeadChannels] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)();
+    const [tags, setTags] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
+    const [loadingChannels, setLoadingChannels] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(true);
+    const [loadingTags, setLoadingTags] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(true);
+    const [isLoggedIn, setIsLoggedIn] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(null);
+    const [brandId, setBrandId] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(null);
+    const [accessToken, setAccessToken] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(null);
+    (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+      const checkUserLogin = async () => {
+        try {
+          const response = await _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2___default()({
+            path: '/wp/v2/users/me'
+          });
+          if (response && response.id) {
+            setIsLoggedIn(true);
+            fetchBrandId();
+            fetchAccessToken();
+          } else {
+            setIsLoggedIn(false);
+          }
+        } catch (error) {
+          setIsLoggedIn(false);
+          console.error('Error checking user login:', error);
+        }
+      };
+      checkUserLogin();
+    }, []);
+    const fetchBrandId = async () => {
+      try {
+        const brandResponse = await _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2___default()({
+          path: '/wp/v2/options'
+        });
+        if (brandResponse.rch_rechat_brand_id) {
+          setBrandId(brandResponse.rch_rechat_brand_id);
+        } else {
+          console.error('Brand ID not found in WordPress options.');
+        }
+      } catch (error) {
+        console.error('Error fetching brand ID:', error);
+      }
+    };
+    const fetchAccessToken = async () => {
+      try {
+        const tokenResponse = await _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2___default()({
+          path: '/wp/v2/options'
+        });
+        if (tokenResponse.rch_rechat_google_map_api_key) {
+          setAccessToken(tokenResponse.rch_rechat_access_token);
+        } else {
+          console.error('Access token not found in WordPress options.');
+        }
+      } catch (error) {
+        console.error('Error fetching access token:', error);
+      }
+    };
+    (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+      if (isLoggedIn && brandId && accessToken) {
+        const fetchLeadChannels = async () => {
+          try {
+            const channelResponse = await fetch(`https://api.rechat.com/brands/${brandId}/leads/channels`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${accessToken}`
+              }
+            });
+            const channelData = await channelResponse.json();
+            const options = channelData.data.map(channel => ({
+              label: channel.title ? channel.title : 'Unnamed',
+              value: channel.id
+            }));
+            options.unshift({
+              label: 'Select your channel',
+              value: ''
+            });
+            setLeadChannels(options);
+          } catch (error) {
+            console.error('Error fetching lead channels:', error);
+          } finally {
+            setLoadingChannels(false);
+          }
+        };
+        fetchLeadChannels();
+        const fetchTags = async () => {
+          try {
+            const tagsResponse = await fetch('https://api.rechat.com/contacts/tags', {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'X-RECHAT-BRAND': brandId
+              }
+            });
+            const tagsData = await tagsResponse.json();
+            const tagOptions = tagsData.data.map(tag => ({
+              label: tag.tag,
+              value: tag.tag
+            }));
+            setTags(tagOptions);
+          } catch (error) {
+            console.error('Error fetching tags:', error);
+          } finally {
+            setLoadingTags(false);
+          }
+        };
+        fetchTags();
+      }
+    }, [isLoggedIn, brandId, accessToken]);
+    if (isLoggedIn === false) {
+      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("p", {
+        children: "Please log in to view and manage the lead channels and tags."
+      });
+    }
+    if (isLoggedIn === null) {
+      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("p", {
+        children: "Loading..."
+      });
+    }
+    const handleTagChange = tagId => {
+      const newSelectedTagsFrom = selectedTagsFrom.includes(tagId) ? selectedTagsFrom.filter(id => id !== tagId) : [...selectedTagsFrom, tagId];
+      setAttributes({
+        selectedTagsFrom: newSelectedTagsFrom
+      });
+    };
+    return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.Fragment, {
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(InspectorControls, {
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(PanelBody, {
+          title: "Lead Form Settings",
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(TextControl, {
+            label: "Form Title",
+            value: formTitle,
+            onChange: value => setAttributes({
+              formTitle: value
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(SelectControl, {
+            label: "Lead Channel",
+            value: leadChannel,
+            options: loadingChannels ? [{
+              label: 'Loading channels...',
+              value: ''
+            }] : leadChannels,
+            onChange: selectedChannel => setAttributes({
+              leadChannel: selectedChannel
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(TextControl, {
+            label: "Email for Get This Lead In you Inbox",
+            value: emailForGetLead,
+            placeholder: "Enter the email to receive leads",
+            onChange: value => setAttributes({
+              emailForGetLead: value
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(ToggleControl, {
+            label: "Show First Name Field",
+            checked: showFirstName,
+            onChange: value => setAttributes({
+              showFirstName: value
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(ToggleControl, {
+            label: "Show Last Name Field",
+            checked: showLastName,
+            onChange: value => setAttributes({
+              showLastName: value
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(ToggleControl, {
+            label: "Show Phone Number Field",
+            checked: showPhoneNumber,
+            onChange: value => setAttributes({
+              showPhoneNumber: value
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(ToggleControl, {
+            label: "Show Email Field",
+            checked: showEmail,
+            onChange: value => setAttributes({
+              showEmail: value
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(ToggleControl, {
+            label: "Show Note Field",
+            checked: showNote,
+            onChange: value => setAttributes({
+              showNote: value
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+            style: {
+              maxHeight: '200px',
+              overflowY: 'auto'
+            },
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("fieldset", {
+              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("legend", {
+                children: "Tags"
+              }), loadingTags ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("p", {
+                children: "Loading tags..."
+              }) : tags.map(tag => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+                style: {
+                  marginBottom: '8px'
+                },
+                children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("label", {
+                  children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("input", {
+                    type: "checkbox",
+                    value: tag.value,
+                    checked: selectedTagsFrom.includes(tag.value),
+                    onChange: () => handleTagChange(tag.value)
+                  }), tag.label]
+                })
+              }, tag.value))]
+            })
+          })]
+        })
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)((_wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1___default()), {
+        block: "rch-rechat-plugin/leads-form-block",
+        attributes: attributes
+      })]
+    });
+  },
+  save() {
+    return null;
+  }
+});
+
+/***/ }),
+
+/***/ "./src/blocks/listing-block.js":
+/*!*************************************!*\
+  !*** ./src/blocks/listing-block.js ***!
+  \*************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/server-side-render */ "@wordpress/server-side-render");
+/* harmony import */ var _wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/api-fetch */ "@wordpress/api-fetch");
+/* harmony import */ var _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _utils_map_selector__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../utils/map-selector */ "./src/utils/map-selector.js");
+/* harmony import */ var _utils_api_helpers__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../utils/api-helpers */ "./src/utils/api-helpers.js");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__);
+const {
+  registerBlockType
+} = wp.blocks;
+const {
+  InspectorControls,
+  MediaUpload,
+  MediaUploadCheck
+} = wp.blockEditor || wp.editor;
+const {
+  PanelBody,
+  RangeControl,
+  SelectControl,
+  TextControl,
+  CheckboxControl,
+  RadioControl,
+  Button
+} = wp.components;
+
+
+
+
+
+
+registerBlockType('rch-rechat-plugin/listing-block', {
+  title: 'Listing Block',
+  description: 'Block for showing property listings',
+  icon: 'building',
+  category: 'widgets',
+  attributes: {
+    minimum_price: {
+      type: 'string',
+      default: ''
+    },
+    maximum_price: {
+      type: 'string',
+      default: ''
+    },
+    minimum_lot_square_meters: {
+      type: 'string',
+      default: ''
+    },
+    maximum_lot_square_meters: {
+      type: 'string',
+      default: ''
+    },
+    minimum_bathrooms: {
+      type: 'string',
+      default: ''
+    },
+    maximum_bathrooms: {
+      type: 'string',
+      default: ''
+    },
+    minimum_square_meters: {
+      type: 'string',
+      default: ''
+    },
+    maximum_square_meters: {
+      type: 'string',
+      default: ''
+    },
+    minimum_year_built: {
+      type: 'string',
+      default: ''
+    },
+    maximum_year_built: {
+      type: 'string',
+      default: ''
+    },
+    minimum_bedrooms: {
+      type: 'string',
+      default: ''
+    },
+    maximum_bedrooms: {
+      type: 'string',
+      default: ''
+    },
+    listing_per_page: {
+      type: 'string',
+      default: '5'
+    },
+    filterByRegions: {
+      type: 'string',
+      default: ''
+    },
+    filterByOffices: {
+      type: 'string',
+      default: ''
+    },
+    selectedStatuses: {
+      type: 'array',
+      default: []
+    },
+    listing_statuses: {
+      type: 'array',
+      default: []
+    },
+    disable_filter_address: {
+      type: 'boolean',
+      default: false
+    },
+    disable_filter_price: {
+      type: 'boolean',
+      default: false
+    },
+    disable_filter_beds: {
+      type: 'boolean',
+      default: false
+    },
+    disable_filter_baths: {
+      type: 'boolean',
+      default: false
+    },
+    disable_filter_property_types: {
+      type: 'boolean',
+      default: false
+    },
+    disable_filter_advanced: {
+      type: 'boolean',
+      default: false
+    },
+    layout_style: {
+      type: 'string',
+      default: 'default'
+    },
+    show_agent_card: {
+      type: 'boolean',
+      default: false
+    },
+    agent_image: {
+      type: 'string',
+      default: ''
+    },
+    agent_name: {
+      type: 'string',
+      default: ''
+    },
+    agent_title: {
+      type: 'string',
+      default: ''
+    },
+    agent_phone: {
+      type: 'string',
+      default: ''
+    },
+    agent_email: {
+      type: 'string',
+      default: ''
+    },
+    agent_address: {
+      type: 'string',
+      default: ''
+    },
+    own_listing: {
+      type: 'boolean',
+      default: true
+    },
+    property_types: {
+      type: 'string',
+      default: ''
+    },
+    map_latitude: {
+      type: 'string',
+      default: ''
+    },
+    map_longitude: {
+      type: 'string',
+      default: ''
+    },
+    map_zoom: {
+      type: 'string',
+      default: '12'
+    }
+  },
+  edit({
+    attributes,
+    setAttributes
+  }) {
+    const {
+      minimum_price,
+      maximum_price,
+      minimum_lot_square_meters,
+      maximum_lot_square_meters,
+      minimum_bathrooms,
+      maximum_bathrooms,
+      minimum_square_meters,
+      maximum_square_meters,
+      minimum_year_built,
+      maximum_year_built,
+      minimum_bedrooms,
+      maximum_bedrooms,
+      listing_per_page,
+      filterByRegions,
+      filterByOffices,
+      selectedStatuses,
+      disable_filter_address,
+      disable_filter_price,
+      disable_filter_beds,
+      disable_filter_baths,
+      disable_filter_property_types,
+      disable_filter_advanced,
+      layout_style,
+      show_agent_card,
+      agent_image,
+      agent_name,
+      agent_title,
+      agent_phone,
+      agent_email,
+      agent_address,
+      own_listing,
+      property_types,
+      listing_statuses,
+      map_latitude,
+      map_longitude,
+      map_zoom
+    } = attributes;
+    const [regions, setRegions] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
+    const [offices, setOffices] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
+    const [googleMapsApiKey, setGoogleMapsApiKey] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)('');
+    const statusOptions = [{
+      label: 'Active',
+      value: 'Active'
+    }, {
+      label: 'Closed',
+      value: 'Closed'
+    }, {
+      label: 'Archived',
+      value: 'Archived'
+    }];
+    (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+      (0,_utils_api_helpers__WEBPACK_IMPORTED_MODULE_4__.fetchDataWithMeta)('/wp/v2/regions?per_page=100', setRegions);
+      (0,_utils_api_helpers__WEBPACK_IMPORTED_MODULE_4__.fetchDataWithMeta)('/wp/v2/offices?per_page=100', setOffices);
+
+      // Fetch Google Maps API key
+      _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2___default()({
+        path: '/wp/v2/options'
+      }).then(options => {
+        if (options.rch_rechat_google_map_api_key) {
+          setGoogleMapsApiKey(options.rch_rechat_google_map_api_key);
+        }
+      }).catch(error => {
+        console.error('Error fetching Google Maps API key:', error);
+      });
+    }, []);
+    const handleAttributeChange = (attr, value) => {
+      setAttributes({
+        [attr]: value
+      });
+    };
+    const handleStatusChange = status => {
+      const updatedStatuses = selectedStatuses.includes(status) ? selectedStatuses.filter(s => s !== status) : [...selectedStatuses, status];
+      const listingStatuses = updatedStatuses.flatMap(status => ({
+        Active: ['Active', 'Incoming', 'Coming Soon', 'Pending'],
+        Closed: ['Sold', 'Leased'],
+        Archived: ['Withdrawn', 'Expired']
+      })[status] || []);
+      setAttributes({
+        selectedStatuses: updatedStatuses,
+        listing_statuses: listingStatuses
+      });
+    };
+    const handlePropertyTypeChange = value => {
+      setAttributes({
+        property_types: value
+      });
+    };
+    const handleMapLocationChange = location => {
+      if (location && location.lat && location.lng) {
+        setAttributes({
+          map_latitude: location.lat.toString(),
+          map_longitude: location.lng.toString()
+        });
+      }
+    };
+    const handleZoomChange = zoom => {
+      setAttributes({
+        map_zoom: zoom.toString()
+      });
+    };
+    return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.Fragment, {
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(InspectorControls, {
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(PanelBody, {
+          title: "Listing Settings",
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(SelectControl, {
+            label: "Layout Style",
+            value: layout_style,
+            options: [{
+              label: 'Default Layout',
+              value: 'default'
+            }, {
+              label: 'Layout 2 (Listings Left, Map Right)',
+              value: 'layout2'
+            }, {
+              label: 'Layout 3 (Map Wider)',
+              value: 'layout3'
+            }],
+            onChange: value => setAttributes({
+              layout_style: value
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(CheckboxControl, {
+            label: "Only our own listings",
+            checked: own_listing,
+            onChange: () => setAttributes({
+              own_listing: !own_listing
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(SelectControl, {
+            label: "Select a Region",
+            value: filterByRegions,
+            options: regions,
+            onChange: value => handleAttributeChange('filterByRegions', value)
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(SelectControl, {
+            label: "Select an Office",
+            value: filterByOffices,
+            options: offices,
+            onChange: value => handleAttributeChange('filterByOffices', value)
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("p", {
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("strong", {
+              children: "Select Statuses"
+            })
+          }), statusOptions.map(option => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(CheckboxControl, {
+            label: option.label,
+            checked: selectedStatuses.includes(option.value),
+            onChange: () => handleStatusChange(option.value)
+          }, option.value)), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("p", {
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("strong", {
+              children: "Property Type"
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(RadioControl, {
+            label: "Select Property Type",
+            selected: property_types,
+            options: [{
+              label: 'All Listings',
+              value: 'Residential, Residential Lease, Lots & Acreage, Commercial, Multi-Family'
+            }, {
+              label: 'Sale',
+              value: 'Residential'
+            }, {
+              label: 'Lease',
+              value: 'Residential Lease'
+            }, {
+              label: 'Lots & Acreage',
+              value: 'Lots & Acreage'
+            }, {
+              label: 'Commercial',
+              value: 'Commercial'
+            }],
+            onChange: handlePropertyTypeChange
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Minimum Price",
+            value: minimum_price,
+            type: "number",
+            onChange: value => setAttributes({
+              minimum_price: value === '' ? '' : value.toString()
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Maximum Price",
+            value: maximum_price,
+            type: "number",
+            onChange: value => setAttributes({
+              maximum_price: value === '' ? '' : value.toString()
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Minimum Lot Size (m\xB2)",
+            value: minimum_lot_square_meters,
+            type: "number",
+            onChange: value => setAttributes({
+              minimum_lot_square_meters: value === '' ? '' : value.toString()
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Maximum Lot Size (m\xB2)",
+            value: maximum_lot_square_meters,
+            type: "number",
+            onChange: value => setAttributes({
+              maximum_lot_square_meters: value === '' ? '' : value.toString()
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Minimum Bathrooms",
+            value: minimum_bathrooms,
+            type: "number",
+            onChange: value => setAttributes({
+              minimum_bathrooms: value === '' ? '' : value.toString()
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Maximum Bathrooms",
+            value: maximum_bathrooms,
+            type: "number",
+            onChange: value => setAttributes({
+              maximum_bathrooms: value === '' ? '' : value.toString()
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Minimum Square Meters",
+            value: minimum_square_meters,
+            type: "number",
+            onChange: value => setAttributes({
+              minimum_square_meters: value === '' ? '' : value.toString()
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Maximum Square Meters",
+            value: maximum_square_meters,
+            type: "number",
+            onChange: value => setAttributes({
+              maximum_square_meters: value === '' ? '' : value.toString()
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Minimum Year Built",
+            value: minimum_year_built,
+            type: "number",
+            onChange: value => setAttributes({
+              minimum_year_built: value === '' ? '' : value.toString()
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Maximum Year Built",
+            value: maximum_year_built,
+            type: "number",
+            onChange: value => setAttributes({
+              maximum_year_built: value === '' ? '' : value.toString()
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Minimum Bedrooms",
+            value: minimum_bedrooms,
+            type: "number",
+            onChange: value => setAttributes({
+              minimum_bedrooms: value === '' ? '' : value.toString()
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Maximum Bedrooms",
+            value: maximum_bedrooms,
+            type: "number",
+            onChange: value => setAttributes({
+              maximum_bedrooms: value === '' ? '' : value.toString()
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Listing Per Page",
+            value: listing_per_page,
+            type: "number",
+            onChange: value => setAttributes({
+              listing_per_page: value === '' ? '' : value.toString()
+            })
+          })]
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(PanelBody, {
+          title: "Filter Visibility Settings",
+          initialOpen: false,
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("p", {
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("strong", {
+              children: "Disable Filters (check to hide)"
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(CheckboxControl, {
+            label: "Disable Address Filter",
+            checked: disable_filter_address,
+            onChange: () => setAttributes({
+              disable_filter_address: !disable_filter_address
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(CheckboxControl, {
+            label: "Disable Price Filter",
+            checked: disable_filter_price,
+            onChange: () => setAttributes({
+              disable_filter_price: !disable_filter_price
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(CheckboxControl, {
+            label: "Disable Beds Filter",
+            checked: disable_filter_beds,
+            onChange: () => setAttributes({
+              disable_filter_beds: !disable_filter_beds
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(CheckboxControl, {
+            label: "Disable Baths Filter",
+            checked: disable_filter_baths,
+            onChange: () => setAttributes({
+              disable_filter_baths: !disable_filter_baths
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(CheckboxControl, {
+            label: "Disable Property Types Filter",
+            checked: disable_filter_property_types,
+            onChange: () => setAttributes({
+              disable_filter_property_types: !disable_filter_property_types
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(CheckboxControl, {
+            label: "Disable Advanced Filter",
+            checked: disable_filter_advanced,
+            onChange: () => setAttributes({
+              disable_filter_advanced: !disable_filter_advanced
+            })
+          })]
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(PanelBody, {
+          title: "Agent Card Settings",
+          initialOpen: false,
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(CheckboxControl, {
+            label: "Show Agent Card",
+            checked: show_agent_card,
+            onChange: () => setAttributes({
+              show_agent_card: !show_agent_card
+            })
+          }), show_agent_card && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.Fragment, {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(MediaUploadCheck, {
+              children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(MediaUpload, {
+                onSelect: media => setAttributes({
+                  agent_image: media.url
+                }),
+                allowedTypes: ['image'],
+                value: agent_image,
+                render: ({
+                  open
+                }) => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)("div", {
+                  style: {
+                    marginBottom: '16px'
+                  },
+                  children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("label", {
+                    style: {
+                      display: 'block',
+                      marginBottom: '8px',
+                      fontWeight: '600'
+                    },
+                    children: "Agent Image"
+                  }), agent_image && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("div", {
+                    style: {
+                      marginBottom: '8px'
+                    },
+                    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("img", {
+                      src: agent_image,
+                      alt: "Agent preview",
+                      style: {
+                        maxWidth: '200px',
+                        height: 'auto',
+                        borderRadius: '8px',
+                        display: 'block'
+                      }
+                    })
+                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)("div", {
+                    style: {
+                      display: 'flex',
+                      gap: '8px'
+                    },
+                    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(Button, {
+                      onClick: open,
+                      variant: "primary",
+                      children: agent_image ? 'Change Image' : 'Upload Image'
+                    }), agent_image && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(Button, {
+                      onClick: () => setAttributes({
+                        agent_image: ''
+                      }),
+                      variant: "secondary",
+                      isDestructive: true,
+                      children: "Remove"
+                    })]
+                  })]
+                })
+              })
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+              label: "Agent Name",
+              value: agent_name,
+              onChange: value => setAttributes({
+                agent_name: value
+              }),
+              placeholder: "Brett Singleton"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+              label: "Agent Title",
+              value: agent_title,
+              onChange: value => setAttributes({
+                agent_title: value
+              }),
+              placeholder: "Dallas Real Estate Agent"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+              label: "Agent Phone",
+              value: agent_phone,
+              onChange: value => setAttributes({
+                agent_phone: value
+              }),
+              placeholder: "+1 424 152 1609"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+              label: "Agent Email",
+              value: agent_email,
+              onChange: value => setAttributes({
+                agent_email: value
+              }),
+              placeholder: "brett@dallasrealestate.com"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+              label: "Agent Address",
+              value: agent_address,
+              onChange: value => setAttributes({
+                agent_address: value
+              }),
+              placeholder: "12200 Ford Rd #434, Dallas, TX"
+            })]
+          })]
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(PanelBody, {
+          title: "Map Settings",
+          children: googleMapsApiKey ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.Fragment, {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("p", {
+              children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("strong", {
+                children: "Location Selector"
+              })
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_utils_map_selector__WEBPACK_IMPORTED_MODULE_3__["default"], {
+              apiKey: googleMapsApiKey,
+              latitude: map_latitude,
+              longitude: map_longitude,
+              zoom: map_zoom,
+              onLocationChange: handleMapLocationChange,
+              onZoomChange: handleZoomChange
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+              label: "Latitude",
+              value: map_latitude,
+              onChange: value => setAttributes({
+                map_latitude: value
+              })
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+              label: "Longitude",
+              value: map_longitude,
+              onChange: value => setAttributes({
+                map_longitude: value
+              })
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(RangeControl, {
+              label: "Zoom Level",
+              value: parseInt(map_zoom) || 12,
+              onChange: handleZoomChange,
+              min: 1,
+              max: 20
+            })]
+          }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("p", {
+            children: "Google Maps API key not found. Please make sure it is configured in the WordPress settings."
+          })
+        })]
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)((_wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1___default()), {
+        block: "rch-rechat-plugin/listing-block",
+        attributes: attributes
+      })]
+    });
+  },
+  save() {
+    return null;
+  }
+});
+
+/***/ }),
+
+/***/ "./src/blocks/offices-block.js":
+/*!*************************************!*\
+  !*** ./src/blocks/offices-block.js ***!
+  \*************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/server-side-render */ "@wordpress/server-side-render");
+/* harmony import */ var _wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/api-fetch */ "@wordpress/api-fetch");
+/* harmony import */ var _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__);
+const {
+  registerBlockType
+} = wp.blocks;
+const {
+  InspectorControls,
+  ColorPalette
+} = wp.blockEditor || wp.editor;
+const {
+  PanelBody,
+  RangeControl,
+  SelectControl
+} = wp.components;
+
+
+
+
+registerBlockType('rch-rechat-plugin/offices-block', {
+  title: 'Offices Block',
+  description: 'Block for showing Offices',
+  icon: 'building',
+  category: 'widgets',
+  attributes: {
+    postsPerPage: {
+      type: 'number',
+      default: 5
+    },
+    regionBgColor: {
+      type: 'string',
+      default: '#edf1f5'
+    },
+    textColor: {
+      type: 'string',
+      default: '#000'
+    },
+    filterByRegions: {
+      type: 'string',
+      default: ''
+    }
+  },
+  edit({
+    attributes,
+    setAttributes
+  }) {
+    const {
+      postsPerPage,
+      regionBgColor,
+      textColor,
+      filterByRegions
+    } = attributes;
+    const [regions, setRegions] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
+
+    // Fetch the custom post type 'regions'
+    (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+      _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2___default()({
+        path: '/wp/v2/regions?per_page=100'
+      }).then(data => {
+        const options = data.map(region => ({
+          label: region.title.rendered,
+          value: region.id
+        }));
+        options.unshift({
+          label: 'None',
+          value: ''
+        });
+        setRegions(options);
+      }).catch(error => console.error('Error fetching regions:', error));
+    }, []);
+    return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.Fragment, {
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(InspectorControls, {
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(PanelBody, {
+          title: "Settings",
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(RangeControl, {
+            label: "Posts Per Page",
+            value: postsPerPage,
+            onChange: value => setAttributes({
+              postsPerPage: value
+            }),
+            min: 1,
+            max: 20
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(SelectControl, {
+            label: "Select a Region",
+            value: filterByRegions,
+            options: regions.length ? regions : [{
+              label: 'Loading regions...',
+              value: ''
+            }],
+            onChange: selectedRegion => setAttributes({
+              filterByRegions: selectedRegion
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("p", {
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("strong", {
+              children: "Select your background color"
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(ColorPalette, {
+            value: regionBgColor,
+            onChange: color => setAttributes({
+              regionBgColor: color
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("p", {
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("strong", {
+              children: "Select your text color"
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(ColorPalette, {
+            value: textColor,
+            onChange: color => setAttributes({
+              textColor: color
+            })
+          })]
+        })
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)((_wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1___default()), {
+        block: "rch-rechat-plugin/offices-block",
+        attributes: attributes
+      })]
+    });
+  },
+  save() {
+    return null;
+  }
+});
+
+/***/ }),
+
+/***/ "./src/blocks/regions-block.js":
+/*!*************************************!*\
+  !*** ./src/blocks/regions-block.js ***!
+  \*************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/server-side-render */ "@wordpress/server-side-render");
+/* harmony import */ var _wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__);
+const {
+  registerBlockType
+} = wp.blocks;
+const {
+  InspectorControls,
+  ColorPalette
+} = wp.blockEditor || wp.editor;
+const {
+  PanelBody,
+  RangeControl
+} = wp.components;
+
+
+registerBlockType('rch-rechat-plugin/regions-block', {
+  title: 'Regions Block',
+  description: 'Block for showing Regions',
+  icon: 'admin-site',
+  category: 'widgets',
+  attributes: {
+    postsPerPage: {
+      type: 'number',
+      default: 5
+    },
+    regionBgColor: {
+      type: 'string',
+      default: '#edf1f5'
+    },
+    textColor: {
+      type: 'string',
+      default: '#000'
+    }
+  },
+  edit({
+    attributes,
+    setAttributes
+  }) {
+    const {
+      postsPerPage,
+      regionBgColor,
+      textColor
+    } = attributes;
+    function updatePostPerPage(value) {
+      setAttributes({
+        postsPerPage: value
+      });
+    }
+    function regionBackgroundSelect(newColor) {
+      setAttributes({
+        regionBgColor: newColor
+      });
+    }
+    function textColorSelect(newTextColor) {
+      setAttributes({
+        textColor: newTextColor
+      });
+    }
+    return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.Fragment, {
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)(InspectorControls, {
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsxs)(PanelBody, {
+          title: 'Setting',
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)(RangeControl, {
+            label: "Posts Per Page",
+            value: postsPerPage,
+            onChange: updatePostPerPage,
+            min: 1,
+            max: 20
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("p", {
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("strong", {
+              children: "Select your background color"
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)(ColorPalette, {
+            value: regionBgColor,
+            onChange: regionBackgroundSelect
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("p", {
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("strong", {
+              children: "Select your text color"
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)(ColorPalette, {
+            value: textColor,
+            onChange: textColorSelect
+          })]
+        })
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)((_wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_0___default()), {
+        block: "rch-rechat-plugin/regions-block",
+        attributes: attributes
+      })]
+    });
+  },
+  save() {
+    return null;
+  }
+});
+
+/***/ }),
+
+/***/ "./src/utils/api-helpers.js":
+/*!**********************************!*\
+  !*** ./src/utils/api-helpers.js ***!
+  \**********************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */   fetchData: () => (/* binding */ fetchData),
+/* harmony export */   fetchDataWithMeta: () => (/* binding */ fetchDataWithMeta),
+/* harmony export */   fetchWPOption: () => (/* binding */ fetchWPOption)
 /* harmony export */ });
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "react");
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
-/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/api-fetch */ "@wordpress/api-fetch");
+/* harmony import */ var _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_0__);
 
 
-const ListingFilters = () => {
-  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsxs)("div", {
-    className: "rch-filters",
-    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("div", {
-      className: "box-filter-listing-text",
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("input", {
-        type: "search",
-        className: "rch-text-filter",
-        id: "content",
-        placeholder: "Search by City ..."
-      })
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsxs)("div", {
-      className: "box-filter-listing",
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("span", {
-        className: "toggleMain",
-        id: "rch-property-type-text",
-        children: "Property Type"
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("div", {
-        className: "rch-inside-filters rch-for-lease",
-        style: {
-          display: "none"
-        }
-      })]
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsxs)("div", {
-      className: "box-filter-listing rch-price-filter-listing",
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("span", {
-        className: "toggleMain",
-        id: "rch-price-text-filter",
-        children: "Price"
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("div", {
-        className: "rch-inside-filters rch-main-price",
-        style: {
-          display: "none"
-        }
-      })]
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsxs)("div", {
-      className: "box-filter-listing rch-price-filter-listing rch-beds-filter-listing",
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("span", {
-        id: "rch-beds-text-filter",
-        className: "toggleMain",
-        children: "Beds"
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("div", {
-        className: "rch-inside-filters rch-main-price",
-        style: {
-          display: "none"
-        }
-      })]
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsxs)("div", {
-      className: "box-filter-listing rch-price-filter-listing rch-bath-filter-listing",
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("span", {
-        id: "rch-baths-text-filter",
-        className: "toggleMain",
-        children: "Bath"
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("div", {
-        className: "rch-inside-filters rch-main-price rch-main-beds",
-        style: {
-          display: "none"
-        }
-      })]
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsxs)("div", {
-      className: "box-filter-listing",
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsxs)("span", {
-        className: "toggleMain more-filter-text",
-        children: ["More Filters", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("span", {
-          id: "filter-badge",
-          className: "rch-filter-badge",
-          style: {
-            display: "none"
-          },
-          children: "0"
-        })]
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("div", {
-        className: "rch-inside-filters rch-other-filter-listing",
-        style: {
-          display: "none"
-        }
-      })]
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("button", {
-      type: "button",
-      className: "reset-btn-all",
-      children: "Reset"
-    })]
-  });
+/**
+ * Fetch data from WordPress REST API
+ * @param {string} endpoint - API endpoint path
+ * @param {Function} setState - State setter function
+ */
+const fetchData = async (endpoint, setState) => {
+  try {
+    const data = await _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_0___default()({
+      path: endpoint
+    });
+    const options = data.map(item => ({
+      label: item.title.rendered,
+      value: item.id
+    }));
+    options.unshift({
+      label: 'None',
+      value: ''
+    });
+    setState(options);
+  } catch (error) {
+    console.error('Error fetching data:', error);
+  }
 };
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (ListingFilters);
+
+/**
+ * Fetch data with custom value mapping
+ * @param {string} path - API endpoint path
+ * @param {Function} setState - State setter function
+ */
+const fetchDataWithMeta = async (path, setState) => {
+  try {
+    const data = await _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_0___default()({
+      path
+    });
+    setState([{
+      label: 'None',
+      value: ''
+    }, ...data.map(item => ({
+      label: item.title.rendered,
+      value: item.meta?.region_id || item.meta?.office_id || item.id
+    }))]);
+  } catch (error) {
+    console.error('Error fetching data:', error);
+  }
+};
+
+/**
+ * Fetch WordPress options
+ * @param {string} optionKey - The option key to retrieve
+ * @returns {Promise<any>} The option value
+ */
+const fetchWPOption = async optionKey => {
+  try {
+    const options = await _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_0___default()({
+      path: '/wp/v2/options'
+    });
+    return options[optionKey] || null;
+  } catch (error) {
+    console.error(`Error fetching option ${optionKey}:`, error);
+    return null;
+  }
+};
 
 /***/ }),
 
-/***/ "./src/map-selector.js":
-/*!*****************************!*\
-  !*** ./src/map-selector.js ***!
-  \*****************************/
+/***/ "./src/utils/map-selector.js":
+/*!***********************************!*\
+  !*** ./src/utils/map-selector.js ***!
+  \***********************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -554,16 +1647,6 @@ const MapSelector = ({
 
 /***/ }),
 
-/***/ "react":
-/*!************************!*\
-  !*** external "React" ***!
-  \************************/
-/***/ ((module) => {
-
-module.exports = window["React"];
-
-/***/ }),
-
 /***/ "react/jsx-runtime":
 /*!**********************************!*\
   !*** external "ReactJSXRuntime" ***!
@@ -679,1077 +1762,24 @@ var __webpack_exports__ = {};
   !*** ./src/index.js ***!
   \**********************/
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
-/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/server-side-render */ "@wordpress/server-side-render");
-/* harmony import */ var _wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/api-fetch */ "@wordpress/api-fetch");
-/* harmony import */ var _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2__);
-/* harmony import */ var _listing_main__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./listing-main */ "./src/listing-main.js");
-/* harmony import */ var _map_selector__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./map-selector */ "./src/map-selector.js");
-/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
-/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__);
-const {
-  registerBlockType
-} = wp.blocks;
-const {
-  InspectorControls,
-  ColorPalette
-} = wp.blockEditor || wp.editor;
-const {
-  PanelBody,
-  RangeControl,
-  SelectControl,
-  TextControl,
-  MultiSelectControl,
-  CheckboxControl,
-  ToggleControl,
-  RadioControl
-} = wp.components;
- // useState and useEffect hooks
+/* harmony import */ var _blocks_regions_block__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./blocks/regions-block */ "./src/blocks/regions-block.js");
+/* harmony import */ var _blocks_offices_block__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./blocks/offices-block */ "./src/blocks/offices-block.js");
+/* harmony import */ var _blocks_agents_block__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./blocks/agents-block */ "./src/blocks/agents-block.js");
+/* harmony import */ var _blocks_listing_block__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./blocks/listing-block */ "./src/blocks/listing-block.js");
+/* harmony import */ var _blocks_leads_form_block__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./blocks/leads-form-block */ "./src/blocks/leads-form-block.js");
+/**
+ * Main entry point for Rechat Plugin Gutenberg Blocks
+ * 
+ * This file imports and registers all custom blocks for the plugin.
+ * Each block is organized in its own file for better maintainability.
+ */
+
+// Import all block components
 
 
 
- // Import the MapSelector component
-//regions block
 
-registerBlockType('rch-rechat-plugin/regions-block', {
-  title: 'Regions Block',
-  description: 'Block for showing Regions',
-  icon: 'admin-site',
-  category: 'widgets',
-  attributes: {
-    postsPerPage: {
-      type: 'number',
-      default: 5
-    },
-    regionBgColor: {
-      type: 'string',
-      default: '#edf1f5'
-    },
-    textColor: {
-      type: 'string',
-      default: '#000'
-    }
-  },
-  edit({
-    attributes,
-    setAttributes
-  }) {
-    const {
-      postsPerPage,
-      regionBgColor,
-      textColor
-    } = attributes;
-    function updatePostPerPage(value) {
-      setAttributes({
-        postsPerPage: value
-      });
-    }
-    function regionBackgroundSelect(newColor) {
-      setAttributes({
-        regionBgColor: newColor
-      });
-    }
-    function textColorSelect(newTextColor) {
-      setAttributes({
-        textColor: newTextColor
-      });
-    }
-    return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.Fragment, {
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(InspectorControls, {
-        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(PanelBody, {
-          title: 'Setting',
-          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(RangeControl, {
-            label: "Posts Per Page",
-            value: postsPerPage,
-            onChange: updatePostPerPage,
-            min: 1,
-            max: 20
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("p", {
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("strong", {
-              children: "Select your background color"
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(ColorPalette, {
-            value: regionBgColor,
-            onChange: regionBackgroundSelect
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("p", {
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("strong", {
-              children: "Select your text color"
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(ColorPalette, {
-            value: textColor,
-            onChange: textColorSelect
-          })]
-        })
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)((_wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1___default()), {
-        block: "rch-rechat-plugin/regions-block",
-        attributes: attributes
-      })]
-    });
-  },
-  save() {
-    return null;
-  }
-});
-//offices block
 
-registerBlockType('rch-rechat-plugin/offices-block', {
-  title: 'Offices Block',
-  description: 'Block for showing Offices',
-  icon: 'building',
-  category: 'widgets',
-  attributes: {
-    postsPerPage: {
-      type: 'number',
-      default: 5
-    },
-    regionBgColor: {
-      type: 'string',
-      default: '#edf1f5'
-    },
-    textColor: {
-      type: 'string',
-      default: '#000'
-    },
-    filterByRegions: {
-      type: 'string',
-      default: ''
-    }
-  },
-  edit({
-    attributes,
-    setAttributes
-  }) {
-    const {
-      postsPerPage,
-      regionBgColor,
-      textColor,
-      filterByRegions
-    } = attributes;
-    const [regions, setRegions] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]); // State to store fetched regions
-
-    // Fetch the custom post type 'regions'
-    (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
-      _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2___default()({
-        path: '/wp/v2/regions?per_page=100'
-      }).then(data => {
-        const options = data.map(region => ({
-          label: region.title.rendered,
-          value: region.id
-        }));
-        options.unshift({
-          label: 'None',
-          value: ''
-        });
-        setRegions(options);
-      }).catch(error => console.error('Error fetching regions:', error));
-    }, []);
-    return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.Fragment, {
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(InspectorControls, {
-        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(PanelBody, {
-          title: "Settings",
-          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(RangeControl, {
-            label: "Posts Per Page",
-            value: postsPerPage,
-            onChange: value => setAttributes({
-              postsPerPage: value
-            }),
-            min: 1,
-            max: 20
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(SelectControl, {
-            label: "Select a Region",
-            value: filterByRegions,
-            options: regions.length ? regions : [{
-              label: 'Loading regions...',
-              value: ''
-            }],
-            onChange: selectedRegion => setAttributes({
-              filterByRegions: selectedRegion
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("p", {
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("strong", {
-              children: "Select your background color"
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(ColorPalette, {
-            value: regionBgColor,
-            onChange: color => setAttributes({
-              regionBgColor: color
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("p", {
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("strong", {
-              children: "Select your text color"
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(ColorPalette, {
-            value: textColor,
-            onChange: color => setAttributes({
-              textColor: color
-            })
-          })]
-        })
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)((_wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1___default()), {
-        block: "rch-rechat-plugin/offices-block",
-        attributes: attributes
-      })]
-    });
-  },
-  save() {
-    return null; // Dynamic block, content will be rendered by the server
-  }
-});
-
-// Agents block
-registerBlockType('rch-rechat-plugin/agents-block', {
-  title: 'Agents Block',
-  description: 'Block for showing Agents',
-  icon: 'businessperson',
-  category: 'widgets',
-  attributes: {
-    postsPerPage: {
-      type: 'number',
-      default: 5
-    },
-    regionBgColor: {
-      type: 'string',
-      default: '#edf1f5'
-    },
-    textColor: {
-      type: 'string',
-      default: '#000'
-    },
-    filterByRegions: {
-      type: 'string',
-      default: ''
-    },
-    filterByOffices: {
-      type: 'string',
-      default: ''
-    },
-    sortBy: {
-      type: 'string',
-      default: 'date'
-    },
-    sortOrder: {
-      type: 'string',
-      default: 'desc'
-    }
-  },
-  edit({
-    attributes,
-    setAttributes
-  }) {
-    const {
-      postsPerPage,
-      regionBgColor,
-      textColor,
-      filterByRegions,
-      filterByOffices,
-      sortBy,
-      sortOrder
-    } = attributes;
-    const [regions, setRegions] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
-    const [offices, setOffices] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
-    const fetchData = async (endpoint, setState) => {
-      try {
-        const data = await _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2___default()({
-          path: endpoint
-        });
-        const options = data.map(item => ({
-          label: item.title.rendered,
-          value: item.id
-        }));
-        options.unshift({
-          label: 'None',
-          value: ''
-        });
-        setState(options);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-    (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
-      fetchData('/wp/v2/regions?per_page=100', setRegions);
-      fetchData('/wp/v2/offices?per_page=100', setOffices);
-    }, []);
-    return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.Fragment, {
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(InspectorControls, {
-        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(PanelBody, {
-          title: "Settings",
-          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(RangeControl, {
-            label: "Posts Per Page",
-            value: postsPerPage,
-            onChange: value => setAttributes({
-              postsPerPage: value
-            }),
-            min: 1,
-            max: 20
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(SelectControl, {
-            label: "Select a Region",
-            value: filterByRegions,
-            options: regions.length ? regions : [{
-              label: 'Loading regions...',
-              value: ''
-            }],
-            onChange: selectedRegion => setAttributes({
-              filterByRegions: selectedRegion
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(SelectControl, {
-            label: "Select an Office",
-            value: filterByOffices,
-            options: offices.length ? offices : [{
-              label: 'Loading offices...',
-              value: ''
-            }],
-            onChange: selectedOffice => setAttributes({
-              filterByOffices: selectedOffice
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(SelectControl, {
-            label: "Sort By",
-            value: sortBy,
-            options: [{
-              label: 'Date',
-              value: 'date'
-            }, {
-              label: 'Name',
-              value: 'name'
-            }],
-            onChange: selectedSort => setAttributes({
-              sortBy: selectedSort
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(SelectControl, {
-            label: "Sort Order",
-            value: sortOrder,
-            options: [{
-              label: 'Ascending',
-              value: 'asc'
-            }, {
-              label: 'Descending',
-              value: 'desc'
-            }],
-            onChange: selectedOrder => setAttributes({
-              sortOrder: selectedOrder
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("p", {
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("strong", {
-              children: "Select your background color"
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(ColorPalette, {
-            value: regionBgColor,
-            onChange: color => setAttributes({
-              regionBgColor: color
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("p", {
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("strong", {
-              children: "Select your text color"
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(ColorPalette, {
-            value: textColor,
-            onChange: color => setAttributes({
-              textColor: color
-            })
-          })]
-        })
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)((_wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1___default()), {
-        block: "rch-rechat-plugin/agents-block",
-        attributes: attributes
-      })]
-    });
-  },
-  save() {
-    return null; // Dynamic block, content will be generated by PHP
-  }
-});
-registerBlockType('rch-rechat-plugin/listing-block', {
-  title: 'Listing Block',
-  description: 'Block for showing property listings',
-  icon: 'building',
-  category: 'widgets',
-  attributes: {
-    minimum_price: {
-      type: 'string',
-      default: ''
-    },
-    maximum_price: {
-      type: 'string',
-      default: ''
-    },
-    minimum_lot_square_meters: {
-      type: 'string',
-      default: ''
-    },
-    maximum_lot_square_meters: {
-      type: 'string',
-      default: ''
-    },
-    minimum_bathrooms: {
-      type: 'string',
-      default: ''
-    },
-    maximum_bathrooms: {
-      type: 'string',
-      default: ''
-    },
-    minimum_square_meters: {
-      type: 'string',
-      default: ''
-    },
-    maximum_square_meters: {
-      type: 'string',
-      default: ''
-    },
-    minimum_year_built: {
-      type: 'string',
-      default: ''
-    },
-    maximum_year_built: {
-      type: 'string',
-      default: ''
-    },
-    minimum_bedrooms: {
-      type: 'string',
-      default: ''
-    },
-    maximum_bedrooms: {
-      type: 'string',
-      default: ''
-    },
-    listing_per_page: {
-      type: 'string',
-      default: '5'
-    },
-    filterByRegions: {
-      type: 'string',
-      default: ''
-    },
-    filterByOffices: {
-      type: 'string',
-      default: ''
-    },
-    selectedStatuses: {
-      type: 'array',
-      default: []
-    },
-    listing_statuses: {
-      type: 'array',
-      default: []
-    },
-    show_filter_bar: {
-      type: 'boolean',
-      default: true
-    },
-    // New attribute for showing the filter bar
-    own_listing: {
-      type: 'boolean',
-      default: true
-    },
-    // New attribute for showing the filter bar
-    property_types: {
-      type: 'string',
-      default: ''
-    },
-    map_latitude: {
-      type: 'string',
-      default: ''
-    },
-    map_longitude: {
-      type: 'string',
-      default: ''
-    },
-    map_zoom: {
-      type: 'string',
-      default: '12'
-    }
-  },
-  edit({
-    attributes,
-    setAttributes
-  }) {
-    const {
-      minimum_price,
-      maximum_price,
-      minimum_lot_square_meters,
-      maximum_lot_square_meters,
-      minimum_bathrooms,
-      maximum_bathrooms,
-      minimum_square_meters,
-      maximum_square_meters,
-      minimum_year_built,
-      maximum_year_built,
-      minimum_bedrooms,
-      maximum_bedrooms,
-      listing_per_page,
-      filterByRegions,
-      filterByOffices,
-      selectedStatuses,
-      show_filter_bar,
-      own_listing,
-      property_types,
-      listing_statuses,
-      map_latitude,
-      map_longitude,
-      map_zoom
-    } = attributes;
-    const [regions, setRegions] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
-    const [offices, setOffices] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
-    const [googleMapsApiKey, setGoogleMapsApiKey] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)('');
-    const statusOptions = [{
-      label: 'Active',
-      value: 'Active'
-    }, {
-      label: 'Closed',
-      value: 'Closed'
-    }, {
-      label: 'Archived',
-      value: 'Archived'
-    }];
-    const fetchData = async (path, setState) => {
-      try {
-        const data = await _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2___default()({
-          path
-        });
-        setState([{
-          label: 'None',
-          value: ''
-        }, ...data.map(item => ({
-          label: item.title.rendered,
-          value: item.meta?.region_id || item.meta?.office_id || item.id
-        }))]);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-    const [iframeUrl, setIframeUrl] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)('');
-    (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
-      fetchData('/wp/v2/regions?per_page=100', setRegions);
-      fetchData('/wp/v2/offices?per_page=100', setOffices);
-
-      // Fetch Google Maps API key
-      _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2___default()({
-        path: '/wp/v2/options'
-      }).then(options => {
-        if (options.rch_rechat_google_map_api_key) {
-          setGoogleMapsApiKey(options.rch_rechat_google_map_api_key);
-        }
-      }).catch(error => {
-        console.error('Error fetching Google Maps API key:', error);
-      });
-    }, []);
-    const handleAttributeChange = (attr, value) => {
-      setAttributes({
-        [attr]: value
-      });
-    };
-    const handleStatusChange = status => {
-      const updatedStatuses = selectedStatuses.includes(status) ? selectedStatuses.filter(s => s !== status) : [...selectedStatuses, status];
-      const listingStatuses = updatedStatuses.flatMap(status => ({
-        Active: ['Active', 'Incoming', 'Coming Soon', 'Pending'],
-        Closed: ['Sold', 'Leased'],
-        Archived: ['Withdrawn', 'Expired']
-      })[status] || []);
-      setAttributes({
-        selectedStatuses: updatedStatuses,
-        listing_statuses: listingStatuses
-      });
-    };
-    const handlePropertyTypeChange = value => {
-      setAttributes({
-        property_types: value
-      });
-    };
-
-    // Function to handle map location change
-    const handleMapLocationChange = location => {
-      if (location && location.lat && location.lng) {
-        setAttributes({
-          map_latitude: location.lat.toString(),
-          map_longitude: location.lng.toString()
-        });
-      }
-    };
-
-    // Function to handle zoom level change
-    const handleZoomChange = zoom => {
-      setAttributes({
-        map_zoom: zoom.toString()
-      });
-    };
-    return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.Fragment, {
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(InspectorControls, {
-        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(PanelBody, {
-          title: "Listing Settings",
-          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(CheckboxControl, {
-            label: "Show Filter Bar",
-            checked: show_filter_bar,
-            onChange: () => setAttributes({
-              show_filter_bar: !show_filter_bar
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(CheckboxControl, {
-            label: "Only our own listings",
-            checked: own_listing,
-            onChange: () => setAttributes({
-              own_listing: !own_listing
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(SelectControl, {
-            label: "Select a Region",
-            value: filterByRegions,
-            options: regions,
-            onChange: value => handleAttributeChange('filterByRegions', value)
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(SelectControl, {
-            label: "Select an Office",
-            value: filterByOffices,
-            options: offices,
-            onChange: value => handleAttributeChange('filterByOffices', value)
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("p", {
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("strong", {
-              children: "Select Statuses"
-            })
-          }), statusOptions.map(option => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(CheckboxControl, {
-            label: option.label,
-            checked: selectedStatuses.includes(option.value),
-            onChange: () => handleStatusChange(option.value)
-          }, option.value)), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("p", {
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("strong", {
-              children: "Property Type"
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(RadioControl, {
-            label: "Select Property Type",
-            selected: property_types,
-            options: [{
-              label: 'All Listings',
-              value: 'Residential, Residential Lease, Lots & Acreage, Commercial, Multi-Family'
-            }, {
-              label: 'Sale',
-              value: 'Residential'
-            }, {
-              label: 'Lease',
-              value: 'Residential Lease'
-            }, {
-              label: 'Lots & Acreage',
-              value: 'Lots & Acreage'
-            }, {
-              label: 'Commercial',
-              value: 'Commercial'
-            }],
-            onChange: handlePropertyTypeChange
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
-            label: "Minimum Price",
-            value: minimum_price,
-            type: "number",
-            onChange: value => setAttributes({
-              minimum_price: value === '' ? '' : value.toString()
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
-            label: "Maximum Price",
-            value: maximum_price,
-            type: "number",
-            onChange: value => setAttributes({
-              maximum_price: value === '' ? '' : value.toString()
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
-            label: "Minimum Lot Size (m\xB2)",
-            value: minimum_lot_square_meters,
-            type: "number",
-            onChange: value => setAttributes({
-              minimum_lot_square_meters: value === '' ? '' : value.toString()
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
-            label: "Maximum Lot Size (m\xB2)",
-            value: maximum_lot_square_meters,
-            type: "number",
-            onChange: value => setAttributes({
-              maximum_lot_square_meters: value === '' ? '' : value.toString()
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
-            label: "Minimum Bathrooms",
-            value: minimum_bathrooms,
-            type: "number",
-            onChange: value => setAttributes({
-              minimum_bathrooms: value === '' ? '' : value.toString()
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
-            label: "Maximum Bathrooms",
-            value: maximum_bathrooms,
-            type: "number",
-            onChange: value => setAttributes({
-              maximum_bathrooms: value === '' ? '' : value.toString()
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
-            label: "Minimum Square Meters",
-            value: minimum_square_meters,
-            type: "number",
-            onChange: value => setAttributes({
-              minimum_square_meters: value === '' ? '' : value.toString()
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
-            label: "Maximum Square Meters",
-            value: maximum_square_meters,
-            type: "number",
-            onChange: value => setAttributes({
-              maximum_square_meters: value === '' ? '' : value.toString()
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
-            label: "Minimum Year Built",
-            value: minimum_year_built,
-            type: "number",
-            onChange: value => setAttributes({
-              minimum_year_built: value === '' ? '' : value.toString()
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
-            label: "Maximum Year Built",
-            value: maximum_year_built,
-            type: "number",
-            onChange: value => setAttributes({
-              maximum_year_built: value === '' ? '' : value.toString()
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
-            label: "Minimum Bedrooms",
-            value: minimum_bedrooms,
-            type: "number",
-            onChange: value => setAttributes({
-              minimum_bedrooms: value === '' ? '' : value.toString()
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
-            label: "Maximum Bedrooms",
-            value: maximum_bedrooms,
-            type: "number",
-            onChange: value => setAttributes({
-              maximum_bedrooms: value === '' ? '' : value.toString()
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
-            label: "Listing Per Page",
-            value: listing_per_page,
-            type: "number",
-            onChange: value => setAttributes({
-              listing_per_page: value === '' ? '' : value.toString()
-            })
-          })]
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(PanelBody, {
-          title: "Map Settings",
-          children: googleMapsApiKey ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.Fragment, {
-            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("p", {
-              children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("strong", {
-                children: "Location Selector"
-              })
-            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_map_selector__WEBPACK_IMPORTED_MODULE_4__["default"], {
-              apiKey: googleMapsApiKey,
-              latitude: map_latitude,
-              longitude: map_longitude,
-              zoom: map_zoom,
-              onLocationChange: handleMapLocationChange,
-              onZoomChange: handleZoomChange
-            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
-              label: "Latitude",
-              value: map_latitude,
-              onChange: value => setAttributes({
-                map_latitude: value
-              })
-            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
-              label: "Longitude",
-              value: map_longitude,
-              onChange: value => setAttributes({
-                map_longitude: value
-              })
-            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(RangeControl, {
-              label: "Zoom Level",
-              value: parseInt(map_zoom) || 12,
-              onChange: handleZoomChange,
-              min: 1,
-              max: 20
-            })]
-          }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("p", {
-            children: "Google Maps API key not found. Please make sure it is configured in the WordPress settings."
-          })
-        })]
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)((_wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1___default()), {
-        block: "rch-rechat-plugin/listing-block",
-        attributes: attributes
-      })]
-    });
-  },
-  save() {
-    return null; // Dynamic block, content will be generated by PHP
-  }
-});
-
-//register contact lead channel block
-registerBlockType('rch-rechat-plugin/leads-form-block', {
-  title: 'Leads Form Block',
-  description: 'Block for lead form submission',
-  icon: 'admin-users',
-  category: 'widgets',
-  attributes: {
-    formTitle: {
-      type: 'string',
-      default: 'Lead Form'
-    },
-    // New attribute for form title
-    leadChannel: {
-      type: 'string',
-      default: ''
-    },
-    showFirstName: {
-      type: 'boolean',
-      default: true
-    },
-    showLastName: {
-      type: 'boolean',
-      default: true
-    },
-    showPhoneNumber: {
-      type: 'boolean',
-      default: true
-    },
-    showEmail: {
-      type: 'boolean',
-      default: true
-    },
-    showNote: {
-      type: 'boolean',
-      default: true
-    },
-    selectedTagsFrom: {
-      type: 'array',
-      default: []
-    },
-    // Array to hold selected tags
-    emailForGetLead: {
-      type: 'string',
-      default: ''
-    }
-  },
-  edit({
-    attributes,
-    setAttributes
-  }) {
-    const {
-      formTitle,
-      leadChannel,
-      showFirstName,
-      showLastName,
-      showPhoneNumber,
-      showEmail,
-      showNote,
-      selectedTagsFrom,
-      emailForGetLead
-    } = attributes;
-    const [leadChannels, setLeadChannels] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)();
-    const [tags, setTags] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
-    const [loadingChannels, setLoadingChannels] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(true);
-    const [loadingTags, setLoadingTags] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(true);
-    const [isLoggedIn, setIsLoggedIn] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(null);
-    const [brandId, setBrandId] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(null);
-    const [accessToken, setAccessToken] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(null);
-    (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
-      const checkUserLogin = async () => {
-        try {
-          const response = await _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2___default()({
-            path: '/wp/v2/users/me'
-          });
-          if (response && response.id) {
-            setIsLoggedIn(true);
-            fetchBrandId();
-            fetchAccessToken();
-          } else {
-            setIsLoggedIn(false);
-          }
-        } catch (error) {
-          setIsLoggedIn(false);
-          console.error('Error checking user login:', error);
-        }
-      };
-      checkUserLogin();
-    }, []);
-    const fetchBrandId = async () => {
-      try {
-        const brandResponse = await _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2___default()({
-          path: '/wp/v2/options'
-        });
-        if (brandResponse.rch_rechat_brand_id) {
-          setBrandId(brandResponse.rch_rechat_brand_id);
-        } else {
-          console.error('Brand ID not found in WordPress options.');
-        }
-      } catch (error) {
-        console.error('Error fetching brand ID:', error);
-      }
-    };
-    const fetchAccessToken = async () => {
-      try {
-        const tokenResponse = await _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2___default()({
-          path: '/wp/v2/options'
-        });
-        if (tokenResponse.rch_rechat_google_map_api_key) {
-          setAccessToken(tokenResponse.rch_rechat_access_token);
-        } else {
-          console.error('Access token not found in WordPress options.');
-        }
-      } catch (error) {
-        console.error('Error fetching access token:', error);
-      }
-    };
-    (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
-      if (isLoggedIn && brandId && accessToken) {
-        const fetchLeadChannels = async () => {
-          try {
-            const channelResponse = await fetch(`https://api.rechat.com/brands/${brandId}/leads/channels`, {
-              method: 'GET',
-              headers: {
-                'Authorization': `Bearer ${accessToken}`
-              }
-            });
-            const channelData = await channelResponse.json();
-            const options = channelData.data.map(channel => ({
-              label: channel.title ? channel.title : 'Unnamed',
-              value: channel.id
-            }));
-            // Add "Select your channel" option
-            options.unshift({
-              label: 'Select your channel',
-              value: '' // Empty value to represent "nothing selected"
-            });
-            setLeadChannels(options);
-          } catch (error) {
-            console.error('Error fetching lead channels:', error);
-          } finally {
-            setLoadingChannels(false);
-          }
-        };
-        fetchLeadChannels();
-
-        // Fetch tags from the API
-        const fetchTags = async () => {
-          try {
-            const tagsResponse = await fetch('https://api.rechat.com/contacts/tags', {
-              method: 'GET',
-              headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'X-RECHAT-BRAND': brandId
-              }
-            });
-            const tagsData = await tagsResponse.json();
-            const tagOptions = tagsData.data.map(tag => ({
-              label: tag.tag,
-              value: tag.tag
-            }));
-            setTags(tagOptions);
-          } catch (error) {
-            console.error('Error fetching tags:', error);
-          } finally {
-            setLoadingTags(false);
-          }
-        };
-        fetchTags();
-      }
-    }, [isLoggedIn, brandId, accessToken]);
-    if (isLoggedIn === false) {
-      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("p", {
-        children: "Please log in to view and manage the lead channels and tags."
-      });
-    }
-    if (isLoggedIn === null) {
-      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("p", {
-        children: "Loading..."
-      });
-    }
-    const handleTagChange = tagId => {
-      const newSelectedTagsFrom = selectedTagsFrom.includes(tagId) ? selectedTagsFrom.filter(id => id !== tagId) : [...selectedTagsFrom, tagId];
-      setAttributes({
-        selectedTagsFrom: newSelectedTagsFrom
-      });
-    };
-    return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.Fragment, {
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(InspectorControls, {
-        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(PanelBody, {
-          title: "Lead Form Settings",
-          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
-            label: "Form Title",
-            value: formTitle,
-            onChange: value => setAttributes({
-              formTitle: value
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(SelectControl, {
-            label: "Lead Channel",
-            value: leadChannel,
-            options: loadingChannels ? [{
-              label: 'Loading channels...',
-              value: ''
-            }] : leadChannels,
-            onChange: selectedChannel => setAttributes({
-              leadChannel: selectedChannel
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
-            label: "Email for Get This Lead In you Inbox",
-            value: emailForGetLead,
-            placeholder: "Enter the email to receive leads",
-            onChange: value => setAttributes({
-              emailForGetLead: value
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(ToggleControl, {
-            label: "Show First Name Field",
-            checked: showFirstName,
-            onChange: value => setAttributes({
-              showFirstName: value
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(ToggleControl, {
-            label: "Show Last Name Field",
-            checked: showLastName,
-            onChange: value => setAttributes({
-              showLastName: value
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(ToggleControl, {
-            label: "Show Phone Number Field",
-            checked: showPhoneNumber,
-            onChange: value => setAttributes({
-              showPhoneNumber: value
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(ToggleControl, {
-            label: "Show Email Field",
-            checked: showEmail,
-            onChange: value => setAttributes({
-              showEmail: value
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(ToggleControl, {
-            label: "Show Note Field",
-            checked: showNote,
-            onChange: value => setAttributes({
-              showNote: value
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("div", {
-            style: {
-              maxHeight: '200px',
-              overflowY: 'auto'
-            },
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)("fieldset", {
-              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("legend", {
-                children: "Tags"
-              }), loadingTags ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("p", {
-                children: "Loading tags..."
-              }) : tags.map(tag => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("div", {
-                style: {
-                  marginBottom: '8px'
-                },
-                children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)("label", {
-                  children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("input", {
-                    type: "checkbox",
-                    value: tag.value,
-                    checked: selectedTagsFrom.includes(tag.value),
-                    onChange: () => handleTagChange(tag.value)
-                  }), tag.label]
-                })
-              }, tag.value))]
-            })
-          })]
-        })
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)((_wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1___default()), {
-        block: "rch-rechat-plugin/leads-form-block",
-        attributes: attributes
-      })]
-    });
-  },
-  save() {
-    return null; // Server-rendered block
-  }
-});
 })();
 
 /******/ })()

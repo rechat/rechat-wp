@@ -49,6 +49,32 @@ function rch_enqueue_custom_gutenberg_assets()
     }
     $version = '1.0.0';
     wp_enqueue_style('rch-editor-css', RCH_PLUGIN_URL . 'assets/css/rch-editor.css', [], $version);
+    //add style for rechat sdk in gutenberg editor
+    wp_enqueue_style(
+        'rechat-sdk-css',
+        'https://sdk.rechat.com/examples/dist/rechat.min.css',
+        [],
+        null
+    );
+    wp_enqueue_style(
+        'rch-listing-block-css',
+        RCH_PLUGIN_ASSETS . '/css/rch-listing-block.css',
+        [],
+        null
+    );
+    wp_enqueue_style(
+        'rechat-sdk-css',
+        'https://sdk.rechat.com/examples/dist/rechat.min.css',
+        [],
+        null
+    );
+    wp_enqueue_script(
+        'rechat-sdk-js',
+        'https://sdk.rechat.com/examples/dist/rechat.min.js',
+        [],
+        null,
+        false
+    );
 }
 
 add_action('enqueue_block_editor_assets', 'rch_enqueue_custom_gutenberg_assets');
