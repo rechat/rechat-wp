@@ -31,7 +31,20 @@ function rch_register_block_assets_listing()
             'brand' => array('type' => 'string', 'default' => get_option('rch_rechat_brand_id')),
             'selectedStatuses' => array('type' => 'array', 'default' => []), // New attribute
             'listing_statuses' => array('type' => 'array', 'default' => []), // New attribute
-            'show_filter_bar' => array('type' => 'boolean', 'default' => true), // New attribute
+            'disable_filter_address' => array('type' => 'boolean', 'default' => false), // New attribute
+            'disable_filter_price' => array('type' => 'boolean', 'default' => false), // New attribute
+            'disable_filter_beds' => array('type' => 'boolean', 'default' => false), // New attribute
+            'disable_filter_baths' => array('type' => 'boolean', 'default' => false), // New attribute
+            'disable_filter_property_types' => array('type' => 'boolean', 'default' => false), // New attribute
+            'disable_filter_advanced' => array('type' => 'boolean', 'default' => false), // New attribute
+            'layout_style' => array('type' => 'string', 'default' => 'default'), // New attribute
+            'show_agent_card' => array('type' => 'boolean', 'default' => false), // New attribute
+            'agent_image' => array('type' => 'string', 'default' => ''), // New attribute
+            'agent_name' => array('type' => 'string', 'default' => ''), // New attribute
+            'agent_title' => array('type' => 'string', 'default' => ''), // New attribute
+            'agent_phone' => array('type' => 'string', 'default' => ''), // New attribute
+            'agent_email' => array('type' => 'string', 'default' => ''), // New attribute
+            'agent_address' => array('type' => 'string', 'default' => ''), // New attribute
             'own_listing' => array('type' => 'boolean', 'default' => true), // New attribute
             'property_types' => array('type' => 'string', 'default' => ''), // New attribute
             'map_latitude' => array('type' => 'string', 'default' => ''), // Map location attribute
@@ -156,9 +169,48 @@ function rch_render_listing_block($attributes)
         }
     }
      ob_start();
+     
+    // Get layout style
+    $layout_style = isset($attributes['layout_style']) ? sanitize_text_field($attributes['layout_style']) : 'default';
+    
+    // Get agent card settings
+    $show_agent_card = isset($attributes['show_agent_card']) && filter_var($attributes['show_agent_card'], FILTER_VALIDATE_BOOLEAN);
+    $agent_image = isset($attributes['agent_image']) ? esc_url($attributes['agent_image']) : '';
+    $agent_name = isset($attributes['agent_name']) ? sanitize_text_field($attributes['agent_name']) : '';
+    $agent_title = isset($attributes['agent_title']) ? sanitize_text_field($attributes['agent_title']) : '';
+    $agent_phone = isset($attributes['agent_phone']) ? sanitize_text_field($attributes['agent_phone']) : '';
+    $agent_email = isset($attributes['agent_email']) ? sanitize_email($attributes['agent_email']) : '';
+    $agent_address = isset($attributes['agent_address']) ? sanitize_text_field($attributes['agent_address']) : '';
 ?>
-    <rechat-root
-        brand_id="<?php echo esc_attr($attributes['brand']); ?>"
+
+<?php if ($layout_style === 'layout2' || $layout_style === 'layout3'): ?>
+<style>
+    <?php if ($layout_style === 'layout2'): ?>
+    .map {
+        flex: 3;
+    }
+    .listings {
+        flex: 7;
+        min-height: 0;
+        overflow: auto;
+    }
+    <?php elseif ($layout_style === 'layout3'): ?>
+    .map {
+        flex: 9;
+    }
+    .listings {
+        flex: 3;
+        min-height: 0;
+        overflow: auto;
+    }
+    <?php endif; ?>
+</style>
+<?php endif; ?>
+
+            <rechat-root 
+                <?php if (!empty($attributes['own_listing']) && filter_var($attributes['own_listing'], FILTER_VALIDATE_BOOLEAN)): ?>
+                brand_id="<?php echo esc_attr($attributes['brand']); ?>"
+                <?php endif; ?>
         map_zoom="<?php echo esc_attr($attributes['map_zoom']); ?>"
         map_api_key="<?php echo esc_attr(get_option('rch_rechat_google_map_api_key')); ?>"
         map_default_center="<?php echo esc_attr($default_center); ?>"
@@ -169,23 +221,96 @@ function rch_render_listing_block($attributes)
         filter_minimum_bedrooms="<?php echo esc_attr($attributes['minimum_bedrooms']); ?>"
         filter_maximum_bedrooms="<?php echo esc_attr($attributes['maximum_bedrooms']); ?>"
         filter_maximum_year_built="<?php echo esc_attr($attributes['maximum_year_built']); ?>"
-        >
-        <div class="container_sdk">
-            <div class="filters">
-                <rechat-listing-filters></rechat-listing-filters>
-            </div>
+        filter_listing_statuses="<?php echo esc_attr($listing_statuses_str); ?>"
+        disable_filter_address="<?php echo filter_var($attributes['disable_filter_address'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false'; ?>"
+        disable_filter_price="<?php echo filter_var($attributes['disable_filter_price'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false'; ?>"
+        disable_filter_beds="<?php echo filter_var($attributes['disable_filter_beds'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false'; ?>"
+        disable_filter_baths="<?php echo filter_var($attributes['disable_filter_baths'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false'; ?>"
+        disable_filter_property_types="<?php echo filter_var($attributes['disable_filter_property_types'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false'; ?>"
+        disable_filter_advanced="<?php echo filter_var($attributes['disable_filter_advanced'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false'; ?>"
+  >
+    <div class="container_listing_sdk">
+      <div class="filters">
+        <rechat-listing-filters></rechat-listing-filters>
+      </div>
 
-            <div class="wrapper">
-                <div class="map">
-                    <rechat-map></rechat-map>
-                </div>
-
-                <div class="listings">
-                    <rechat-listings-grid></rechat-listings-grid>
-                </div>
-            </div>
+      <?php if ($layout_style === 'layout2'): ?>
+      <div class="wrapper">
+        <div class="listings">
+          <rechat-listings-grid></rechat-listings-grid>
         </div>
-    </rechat-root>
+
+        <div class="map">
+          <?php if ($show_agent_card): ?>
+          <div class="agent-container">
+            <?php if (!empty($agent_image)): ?>
+            <img src="<?php echo esc_url($agent_image); ?>" alt="<?php echo esc_attr($agent_name); ?>" />
+            <?php endif; ?>
+
+            <div>
+              <div class="agent-container__heading">
+                <div class="title"><?php echo esc_html($agent_name); ?></div> 
+                <span><?php echo esc_html($agent_title); ?></span>
+              </div>
+
+              <div class="agent-container__contact">
+                <?php if (!empty($agent_phone)): ?>
+                <div class="contact-item"><?php echo esc_html($agent_phone); ?></div>
+                <?php endif; ?>
+                <?php if (!empty($agent_email)): ?>
+                <div class="contact-item"><?php echo esc_html($agent_email); ?></div>
+                <?php endif; ?>
+                <?php if (!empty($agent_address)): ?>
+                <div class="contact-item address"><?php echo esc_html($agent_address); ?></div>
+                <?php endif; ?>
+              </div>
+            </div>
+          </div>
+          <?php endif; ?>
+
+          <rechat-map></rechat-map>
+        </div>
+      </div>
+      <?php else: ?>
+      <div class="wrapper">
+        <div class="map">
+          <?php if ($show_agent_card): ?>
+          <div class="agent-container">
+            <?php if (!empty($agent_image)): ?>
+            <img src="<?php echo esc_url($agent_image); ?>" alt="<?php echo esc_attr($agent_name); ?>" />
+            <?php endif; ?>
+
+            <div>
+              <div class="agent-container__heading">
+                <div class="title"><?php echo esc_html($agent_name); ?></div> 
+                <span><?php echo esc_html($agent_title); ?></span>
+              </div>
+
+              <div class="agent-container__contact">
+                <?php if (!empty($agent_phone)): ?>
+                <div class="contact-item"><?php echo esc_html($agent_phone); ?></div>
+                <?php endif; ?>
+                <?php if (!empty($agent_email)): ?>
+                <div class="contact-item"><?php echo esc_html($agent_email); ?></div>
+                <?php endif; ?>
+                <?php if (!empty($agent_address)): ?>
+                <div class="contact-item address"><?php echo esc_html($agent_address); ?></div>
+                <?php endif; ?>
+              </div>
+            </div>
+          </div>
+          <?php endif; ?>
+
+          <rechat-map></rechat-map>
+        </div>
+
+        <div class="listings">
+          <rechat-listings-grid></rechat-listings-grid>
+        </div>
+      </div>
+      <?php endif; ?>
+    </div>
+  </rechat-root>
 <?php
     return ob_get_clean();
 }
