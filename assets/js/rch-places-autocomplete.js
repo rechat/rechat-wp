@@ -18,9 +18,13 @@ function initPlacesAutocomplete() {
     // Only initialize if the elements exist
     if (mobileSearchInput) {
         mobileAutocomplete = new google.maps.places.Autocomplete(mobileSearchInput, {
-            types: ['(cities)'],
-            fields: ['geometry', 'name', 'formatted_address']
+            types: ['(regions)'], // Changed from (cities) to (regions) to include cities, states, and postal codes
+            fields: ['geometry', 'name', 'formatted_address', 'address_components', 'types'],
+            componentRestrictions: { country: 'us' }
         });
+
+        // Filter out neighborhoods - only allow cities, states, and postal codes
+        mobileAutocomplete.setTypes(['locality', 'administrative_area_level_1', 'postal_code']);
 
         // Add listener for place selection
         mobileAutocomplete.addListener('place_changed', () => {
@@ -30,9 +34,13 @@ function initPlacesAutocomplete() {
 
     if (desktopSearchInput) {
         desktopAutocomplete = new google.maps.places.Autocomplete(desktopSearchInput, {
-            types: ['(cities)'],
-            fields: ['geometry', 'name', 'formatted_address']
+            types: ['(regions)'], // Changed from (cities) to (regions) to include cities, states, and postal codes
+            fields: ['geometry', 'name', 'formatted_address', 'address_components', 'types'],
+            componentRestrictions: { country: 'us' }
         });
+
+        // Filter out neighborhoods - only allow cities, states, and postal codes
+        desktopAutocomplete.setTypes(['locality', 'administrative_area_level_1', 'postal_code']);
 
         // Add listener for place selection
         desktopAutocomplete.addListener('place_changed', () => {
