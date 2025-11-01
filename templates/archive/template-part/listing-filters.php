@@ -1,7 +1,7 @@
 <?php if (wp_is_mobile()) { ?>
     <div class="rch-under-filter-in-mobile">
         <div class="box-filter-listing-text">
-            <input type="search" class="rch-text-filter" id="content" placeholder="Search by City..." />
+            <input type="search" class="rch-text-filter" id="content" placeholder="Search by MLS, City ..." />
 
         </div>
         <button class="filter-toggle-btn button-filter-for-mobile" onclick="toggleFilters()">Show Filters</button>
@@ -234,7 +234,7 @@
 } else { ?>
     <div class="rch-filters">
         <div class="box-filter-listing-text">
-            <input type="search" class="rch-text-filter" id="content" placeholder="Search by City..." />
+            <input type="search" class="rch-text-filter" id="content" placeholder="Search by MLS, City ..." />
 
         </div>
         <div class="box-filter-listing">
