@@ -15,10 +15,13 @@ function initSearchFormAutocomplete() {
     // Only initialize if the element exists and we're on the search form page
     if (searchInput && document.getElementById('rch-search-form')) {
         searchFormAutocomplete = new google.maps.places.Autocomplete(searchInput, {
-            types: ['(cities)'],
-            fields: ['geometry', 'name', 'formatted_address', 'address_components'],
+            types: ['(regions)'], // Changed from (cities) to (regions) to include cities, states, and postal codes
+            fields: ['geometry', 'name', 'formatted_address', 'address_components', 'types'],
             componentRestrictions: { country: 'us' }
         });
+
+        // Filter out neighborhoods - only allow cities, states, and postal codes
+        searchFormAutocomplete.setTypes(['locality', 'administrative_area_level_1', 'postal_code']);
 
         // Add listener for place selection
         searchFormAutocomplete.addListener('place_changed', () => {
