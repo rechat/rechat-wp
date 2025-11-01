@@ -329,6 +329,7 @@ h1.rch-single-address {
     transform: rotate(360deg);
   }
 }
+ /* single listing page */
 .rch-left-top-slider .Active,
 .rch-left-top-slider .Pendding,
 .rch-left-top-slider .Sold,
@@ -341,6 +342,8 @@ h1.rch-single-address {
     padding-inline-start: 1.25rem;
     border-radius: 100px;
     font-weight: 500;
+    font-size: 14px;
+    text-transform: uppercase;
 }
 
 .rch-left-top-slider .Active:before,
@@ -349,8 +352,8 @@ h1.rch-single-address {
 .rch-left-top-slider span:before{
     position: absolute;
     content: ' ';
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
     left: 0.5rem;
     top: 50%;
     transform: translatey(-50%);
@@ -371,6 +374,18 @@ h1.rch-single-address {
 
 .rch-left-top-slider span:before{
    background-color: #949598;
+}
+.listing-card__status{
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    background: var(--baseLight-color);
+    padding: 0.25rem 0.5rem;
+    border-radius: 100px;
+    font-weight: 500;
+    border-radius: 2px;
+    font-size: 14px;
+    text-transform: uppercase;
 }
 /* Medium screens */
 @media (max-width: 1200px) {
