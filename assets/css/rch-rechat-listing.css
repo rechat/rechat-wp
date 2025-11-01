@@ -331,20 +331,22 @@ h1.rch-single-address {
 }
 .rch-left-top-slider .Active,
 .rch-left-top-slider .Pendding,
-.rch-left-top-slider .Sold{
+.rch-left-top-slider .Sold,
+.rch-left-top-slider span{
     position: absolute;
     left: 1rem;
     top: 1rem;
     background: var(--baseLight-color);
-    padding: 0.5rem;
-    padding-inline-start: 1.5rem;
+    padding: 0.25rem 0.5rem;
+    padding-inline-start: 1.25rem;
     border-radius: 100px;
     font-weight: 500;
 }
 
 .rch-left-top-slider .Active:before,
 .rch-left-top-slider .Pendding:before,
-.rch-left-top-slider .Sold:before{
+.rch-left-top-slider .Sold:before,
+.rch-left-top-slider span:before{
     position: absolute;
     content: ' ';
     width: 8px;
@@ -356,15 +358,19 @@ h1.rch-single-address {
 }
 
 .rch-left-top-slider .Active:before{
-   background-color: rgb(50, 184, 109);
+   background-color: #22C55E;
 }
 
 .rch-left-top-slider .Pendding:before{
-   background-color: rgb(255, 183, 77);
+   background-color: #FACC15;
 }
 
 .rch-left-top-slider .Sold:before{
-   background-color: rgb(244, 67, 54);
+   background-color: #EF4444;
+}
+
+.rch-left-top-slider span:before{
+   background-color: #949598;
 }
 /* Medium screens */
 @media (max-width: 1200px) {
