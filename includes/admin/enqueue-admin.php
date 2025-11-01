@@ -49,6 +49,11 @@ function rch_enqueue_custom_gutenberg_assets()
     }
     $version = '1.0.0';
     wp_enqueue_style('rch-editor-css', RCH_PLUGIN_URL . 'assets/css/rch-editor.css', [], $version);
-}
+    wp_enqueue_style(
+        'rch-listing-block-css',
+        RCH_PLUGIN_ASSETS . '/css/rch-listing-block.css',
+        [],
+        RCH_VERSION
+    );}
 
 add_action('enqueue_block_editor_assets', 'rch_enqueue_custom_gutenberg_assets');
