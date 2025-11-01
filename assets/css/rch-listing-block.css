@@ -431,6 +431,8 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   background-size: 200% 100%;
   animation: rch-skeleton-loading 1.5s infinite;
   border-radius: 8px;
+      position: relative;
+
 }
 
 .rch-listing-list .house-item picture.rch-fallback-logo-listing {
@@ -1125,7 +1127,7 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
     background: var(--baseLight-color);
     padding: 0.25rem 0.5rem;
     border-radius: 100px;
-    font-weight: 500;
+    font-weight: bold;
     border-radius: 2px;
     font-size: 14px;
     text-transform: uppercase;
