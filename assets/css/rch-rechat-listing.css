@@ -375,18 +375,7 @@ h1.rch-single-address {
 .rch-left-top-slider span:before{
    background-color: #949598;
 }
-.listing-card__status{
-    position: absolute;
-    top: 0.5rem;
-    left: 0.5rem;
-    background: var(--baseLight-color);
-    padding: 0.25rem 0.5rem;
-    border-radius: 100px;
-    font-weight: 500;
-    border-radius: 2px;
-    font-size: 14px;
-    text-transform: uppercase;
-}
+
 /* Medium screens */
 @media (max-width: 1200px) {
 }

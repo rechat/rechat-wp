@@ -1118,7 +1118,18 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   width: 15px;
   margin-inline-end: 5px;
 }
-
+.listing-card__status{
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    background: var(--baseLight-color);
+    padding: 0.25rem 0.5rem;
+    border-radius: 100px;
+    font-weight: 500;
+    border-radius: 2px;
+    font-size: 14px;
+    text-transform: uppercase;
+}
 @media screen and (min-width: 1440px) {
   .rch-expanded .rch-listing-list,
   .rch-expanded .rch-listing-skeleton-loader {
