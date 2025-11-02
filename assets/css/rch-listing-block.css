@@ -1132,6 +1132,23 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
     font-size: 14px;
     text-transform: uppercase;
 }
+.container-map{
+    width: 95%;
+    margin-inline: auto;
+    margin-block-start: 5rem;
+}
+@media screen and (min-width: 2560px){
+    .rch-listing-list,
+    .rch-listing-list~.rch-listing-skeleton-loader {
+        --columns: 4;
+    }
+}
+@media screen and (min-width: 1920px) and (max-width: 2559px){
+    .rch-listing-list,
+    .rch-listing-list~.rch-listing-skeleton-loader {
+        --columns: 3;
+    }
+}
 @media screen and (min-width: 1440px) {
   .rch-expanded .rch-listing-list,
   .rch-expanded .rch-listing-skeleton-loader {

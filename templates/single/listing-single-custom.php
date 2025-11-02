@@ -1,255 +1,321 @@
 <?php get_header() ?>
-<div id="primary" class="content-area rch-primary-content">
-    <main id="main" class="site-main content-container site-container">
-        <div id="rch-house-detail" class="rch-house-main-details">
-            <div class="rch-top-img-slider">
-                <div class="rch-left-top-slider">
-                    <?php if (is_array($listing_detail['gallery_image_urls']) && !empty($listing_detail['gallery_image_urls'])) { ?>
-                        <picture data-slider="0" id="myBtn">
-                            <img src="<?php echo esc_url($listing_detail['cover_image_url']); ?>" alt="Image of House">
-                        </picture>
-                        <button id="myBtn" data-slider="0" class="rch-load-images">
-                            <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'gallery.svg'); ?>" alt=" gallery icon">
-
-                            View all Photos
-                        </button>
-                    <?php
-                    }
-                    ?>
-                </div>
-                <div class="rch-right-top-slider">
-                    <?php
-                    // Ensure the gallery_image_urls is an array and has values
-                    if (is_array($listing_detail['gallery_image_urls']) && !empty($listing_detail['gallery_image_urls'])) {
-                        // Loop through the first 4 images
-                        $i = 1;
-                        foreach (array_slice($listing_detail['gallery_image_urls'], 1, 4) as $image_url) {
-                    ?>
-                            <picture data-slider="<?php echo esc_attr($i); ?>" id="myBtn">
-                                <img src="<?php echo esc_url($image_url); ?>" alt="Gallery of House">
+<div class="container">
+    <div id="primary" class="content-area rch-primary-content">
+        <main id="main" class="site-main content-container site-container">
+            <div id="rch-house-detail" class="rch-house-main-details">
+                <div class="rch-top-img-slider">
+                    <div class="rch-left-top-slider">
+                        <?php if (is_array($listing_detail['gallery_image_urls']) && !empty($listing_detail['gallery_image_urls'])) { ?>
+                            <picture data-slider="0" id="myBtn">
+                                <img src="<?php echo esc_url($listing_detail['cover_image_url']); ?>" alt="Image of House">
                             </picture>
-                    <?php
-                            $i++;
-                        }
-                    } else {
-                        // Fallback message if no images are available
-                        echo '';
-                    }
-                    ?>
-                </div>
-            </div>
-            <h1 class="rch-single-address">
+                            <button id="myBtn" data-slider="0" class="rch-load-images">
+                                <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'gallery.svg'); ?>" alt=" gallery icon">
 
-                <?php
-                // Check if address property exists
-                if (isset($listing_detail['formatted']['full_address']['text'])) {
-                    $address = $listing_detail['formatted']['full_address']['text'];
-                    $full_address = '';
-                    echo esc_html($address);
-                } else {
-                    // Fallback message if address is not set
-                    echo '<p>Address information not available.</p>';
-                }
-                ?>
-            </h1>
-            <div class="rch-single-price-house">
-                <?php echo sanitize_text_field($listing_detail['formatted']['price']['text']); ?>
-            </div>
-            <div class="rch-single-house-main-layout">
-                <div class="rch-single-left-main-layout">
-                    <div class="rch-top-main-nav-layout">
-                        <div class="rch-house-menu">
-                            <a href="#rch-overview">
-                                Overview
-                            </a>
-                            <a href="#rch-facilities">
-                                Facilities and Features
-                            </a>
-                            <a href="#rch-location">
-                                Location on the Map
-                            </a>
-                        </div>
-                        <?php if (!empty($listing_detail['property']['description'])): ?>
-                            <div class="main-des-single-house" id="rch-overview">
-                                <h2>
-                                    Property Description
-                                </h2>
-                                <p>
-                                    <?php echo wp_kses_post($listing_detail['property']['description']); ?>
-                                </p>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-
-                    <hr />
-                    <div class="facilities-in-single-houses" id="rch-facilities">
-                        <h2>
-                            Facilities and Features
-                        </h2>
-                        <ul>
-                            <li>
-                                <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'bedroomsingle.svg'); ?>" alt="Bedroom icon">
-                                <?php echo esc_html($listing_detail['formatted']['bedroom_count']['text']); ?>
-                            </li>
-                            <li>
-                                <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'fbathsingle.svg'); ?>" alt="Fullbath icon">
-                                <?php echo esc_html($listing_detail['formatted']['bathrooms']['text']); ?>
-                            </li>
-
-                            <li>
-                                <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'areasingle.svg'); ?>" alt="Area icon">
-                                <?php echo esc_html($listing_detail['formatted']['square_feet']['text']); ?>
-                            </li>
-                            <li>
-                                <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'yearsingle.svg'); ?>" alt="">
-                                <?php echo esc_html($listing_detail['property']['year_built']); ?>
-                                Year Built
-                            </li>
-
-                            <?php
-                            if (!empty($listing_detail['property']['pool_features'])) { ?>
-                                <li>
-                                    <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'poolsingle.svg'); ?>" alt=" Pool icon">
-                                    Pool
-                                </li>
-                            <?php
-                            }
-                            ?>
-                            <?php
-                            if (!empty($listing_detail['property']['security_features'])) { ?>
-                                <li>
-                                    <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'securitysingle.svg'); ?>" alt="Security Icon">
-                                    Security
-                                </li>
-                            <?php
-                            }
-                            ?>
-                            <li>
-                                <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'garagesingle.svg'); ?>" alt="Garage Icon">
-                                <?php echo esc_html($listing_detail['formatted']['parking_spaces']['text']); ?>
-                            </li>
-                            <li>
-                                <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'outdoor-activity.svg'); ?>" alt="Activity icon">
-                                <?php echo esc_html($listing_detail['property']['construction_materials']); ?>
-                            </li>
-                        </ul>
-
-                    </div>
-
-
-
-                    <div class=rch_local_logic id="rch-location">
+                                View all Photos
+                            </button>
+                            <span class="<?php echo $listing_detail['status']; ?>"><?php echo $listing_detail['status']; ?></span>
                         <?php
-                        // Retrieve the selected features from the settings
-                        $selected_features = get_option('rch_rechat_local_logic_features', []);
-                        $google_map_api = get_option('rch_rechat_google_map_api_key');
-                        // Define the available template parts corresponding to each feature
-                        $feature_templates = [
-                            // 'Hero' => 'hero', // Template part for Hero feature
-                            // 'Map' => 'map', // Template part for Map feature
-                            // 'Highlights' => 'highlights', // Template part for Highlights feature
-                            // 'Characteristics' => 'characteristics', // Template part for Characteristics feature
-                            // 'Schools' => 'schools', // Template part for Schools feature
-                            // 'Demographics' => 'demographics', // Template part for Demographics feature
-                            // 'PropertyValueDrivers' => 'property-value-drivers', // Template part for PropertyValueDrivers feature
-                            // 'MarketTrends' => 'market-trends', // Template part for MarketTrends feature
-                            // 'Match' => 'match', // Template part for Match feature
-                            'LocalContent' => 'widgets/local-content', // Template part for Match feature
-                        ];
-
-                        // Loop through the selected features and include the corresponding template part from the plugin
-                        foreach ($selected_features as $feature) {
-                            if (array_key_exists($feature, $feature_templates)) {
-                                // Get the plugin directory path
-                                $plugin_dir = RCH_PLUGIN_INCLUDES; // Adjust if your plugin files are in a subfolder
-
-                                // Construct the template part file path
-                                $template_part_path = $plugin_dir . 'local-logic/' . $feature_templates[$feature] . '.php';                            // Check if the template part file exists, then include it
-                                if (file_exists($template_part_path)) {
-                                    include $template_part_path;
-                                }
-                            }
                         }
                         ?>
                     </div>
-                    <hr />
-                    <?php if (!empty($listing_detail['mls_info'])) { ?>
-                        <div class="rch-disclaimer-show">
-                            <h2>
-                                Disclaimer
-                            </h2>
-                            <?php
-                            $currentYear = date('Y'); // Get the current year
-
-                            // Check if mls_info is an array
-                            $mls_info = $listing_detail['mls_info']['disclaimer'];
-
-                            // Replace {{currentYear}} with the actual current year
-                            $mls_info = str_replace('{{currentYear}}', $currentYear, $mls_info);
-
-                            // Safely output the HTML content
-                            ?>
-                            <div class="rch-inside-disclaimer">
-                                <?php echo wp_kses_post($mls_info); ?>
-                            </div>
-
-                            <?php
-                            ?>
-                        </div>
-                    <?php } ?>
-                </div>
-                <div class="rch-single-right-main-layout">
-                    <div class="rch-listing-form-lead" id="leadCaptureForm">
-
-                        <form action="" method="post">
-                            <h2>Inquire About This Property</h2>
-                            <!-- First Name -->
-                            <div class="form-group">
-                                <label for="first_name">First Name</label>
-                                <input type="text" id="first_name" name="first_name" placeholder="Enter your first name" required>
-                            </div>
-
-                            <!-- Last Name -->
-                            <div class="form-group">
-                                <label for="last_name">Last Name</label>
-                                <input type="text" id="last_name" name="last_name" placeholder="Enter your last name" required>
-                            </div>
-
-                            <!-- Phone Number -->
-                            <div class="form-group">
-                                <label for="phone_number">Phone Number</label>
-                                <input type="tel" id="phone_number" name="phone_number" placeholder="Enter your phone number" required>
-                            </div>
-
-                            <!-- Email Address -->
-                            <div class="form-group">
-                                <label for="email">Email Address</label>
-                                <input type="email" id="email" name="email" placeholder="Enter your email address" required>
-                            </div>
-
-                            <!-- Note -->
-                            <div class="form-group">
-                                <label for="note">Note</label>
-                                <textarea id="note" name="note" placeholder="Write your note here" required></textarea>
-                            </div>
-
-                            <!-- Submit Button -->
-                            <button type="submit">Submit Request</button>
-                            <div id="loading-spinner" class="rch-loading-spinner-form" style="display: none;"></div>
-                            <div id="rch-listing-success-sdk" class="rch-success-box-listing">
-                                Thank you! Your data has been successfully sent.
-                            </div>
-                            <div id="rch-listing-cancel-sdk" class="rch-error-box-listing">
-                                Something went wrong. Please try again.
-                            </div>
-                        </form>
+                    <div class="rch-right-top-slider">
+                        <?php
+                        // Ensure the gallery_image_urls is an array and has values
+                        if (is_array($listing_detail['gallery_image_urls']) && !empty($listing_detail['gallery_image_urls'])) {
+                            // Loop through the first 4 images
+                            $i = 1;
+                            foreach (array_slice($listing_detail['gallery_image_urls'], 1, 4) as $image_url) {
+                        ?>
+                                <picture data-slider="<?php echo esc_attr($i); ?>" id="myBtn">
+                                    <img src="<?php echo esc_url($image_url); ?>" alt="Gallery of House">
+                                </picture>
+                        <?php
+                                $i++;
+                            }
+                        } else {
+                            // Fallback message if no images are available
+                            echo '';
+                        }
+                        ?>
                     </div>
                 </div>
+                <div class="rch-single-price-house">
+                    <?php echo sanitize_text_field($listing_detail['formatted']['price']['text']); ?>
+                </div>
+                <h1 class="rch-single-address">
 
+                    <?php
+                    // Check if address property exists
+                    if (isset($listing_detail['formatted']['full_address']['text'])) {
+                        $address = $listing_detail['formatted']['full_address']['text'];
+                        $full_address = '';
+                        echo esc_html($address);
+                    } else {
+                        // Fallback message if address is not set
+                        echo '<p>Address information not available.</p>';
+                    }
+                    ?>
+                </h1>
+
+                <div class="rch-single-house-main-layout">
+                    <div class="rch-single-left-main-layout">
+                        <div class="rch-formatted-data-summary">
+                            <ul>
+                                <?php // Bedroom count
+                                if (isset($listing_detail['formatted']['bedroom_count']['text_no_label']) && strlen(trim((string) $listing_detail['formatted']['bedroom_count']['text_no_label'])) > 0) : ?>
+                                    <li>
+                                        <b>
+                                            <?php echo esc_html($listing_detail['formatted']['bedroom_count']['text_no_label']); ?>
+                                        </b>
+                                        <span>Total Bedrooms</span>
+                                    </li>
+                                <?php endif; ?>
+
+                                <?php // Bathroom count
+                                if (isset($listing_detail['formatted']['total_bathroom_count']['text_no_label']) && strlen(trim((string) $listing_detail['formatted']['total_bathroom_count']['text_no_label'])) > 0) : ?>
+                                    <li>
+                                        <b>
+                                            <?php echo esc_html($listing_detail['formatted']['total_bathroom_count']['text_no_label']); ?>
+                                        </b>
+                                        <span>Total Bathrooms</span>
+                                    </li>
+                                <?php endif; ?>
+
+                                <?php // Year built (allow 0 but treat empty/null as missing)
+                                if (isset($listing_detail['property']['year_built']) && strlen(trim((string) $listing_detail['property']['year_built'])) > 0) : ?>
+                                    <li>
+                                        <b>
+                                            <?php echo esc_html($listing_detail['property']['year_built']); ?>
+                                        </b>
+                                        <span>Year Built</span>
+                                    </li>
+                                <?php endif; ?>
+
+                                <?php // Lot size
+                                if (isset($listing_detail['formatted']['lot_size_square_feet']['text_no_label']) && strlen(trim((string) $listing_detail['formatted']['lot_size_square_feet']['text_no_label'])) > 0) : ?>
+                                    <li>
+                                        <b>
+                                            <?php echo esc_html($listing_detail['formatted']['lot_size_square_feet']['text_no_label']); ?>
+                                        </b>
+                                        <span>Lot size/SQ.FT</span>
+                                    </li>
+                                <?php endif; ?>
+
+                                <?php // Parking spaces
+                                if (isset($listing_detail['formatted']['parking_spaces']['text_no_label']) && strlen(trim((string) $listing_detail['formatted']['parking_spaces']['text_no_label'])) > 0) : ?>
+                                    <li>
+                                        <b>
+                                            <?php echo esc_html($listing_detail['formatted']['parking_spaces']['text_no_label']); ?>
+                                        </b>
+                                        <span>Parking Spaces</span>
+                                    </li>
+                                <?php endif; ?>
+
+                            </ul>
+                        </div>
+                        <div class="rch-main-description-single-house">
+
+                            <?php if (!empty($listing_detail['property']['description'])): ?>
+                                <div class="main-des-single-house" id="rch-overview">
+                                    <h2>
+                                        About the Property
+                                    </h2>
+                                    <div class="rch-main-description-listing" id="rch-description-text">
+                                        <?php echo wp_kses_post($listing_detail['property']['description']); ?>
+                                    </div>
+                                    <button class="rch-show-more-btn" id="rch-show-more-btn" style="display: none;">Show More</button>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+
+                        <div class="facilities-in-single-houses" id="rch-facilities">
+                            <h2>
+                                Facilities and Features
+                            </h2>
+                            <ul>
+                                <?php // Bedrooms
+                                if (isset($listing_detail['formatted']['bedroom_count']['text']) && strlen(trim((string) $listing_detail['formatted']['bedroom_count']['text'])) > 0) : ?>
+                                    <li>
+                                        <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'bedroomsingle.svg'); ?>" alt="Bedroom icon">
+                                        <?php echo esc_html($listing_detail['formatted']['bedroom_count']['text']); ?>
+                                    </li>
+                                <?php endif; ?>
+
+                                <?php // Bathrooms
+                                if (isset($listing_detail['formatted']['bathrooms']['text']) && strlen(trim((string) $listing_detail['formatted']['bathrooms']['text'])) > 0) : ?>
+                                    <li>
+                                        <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'fbathsingle.svg'); ?>" alt="Fullbath icon">
+                                        <?php echo esc_html($listing_detail['formatted']['bathrooms']['text']); ?>
+                                    </li>
+                                <?php endif; ?>
+
+                                <?php // Area / square feet
+                                if (isset($listing_detail['formatted']['square_feet']['text']) && strlen(trim((string) $listing_detail['formatted']['square_feet']['text'])) > 0) : ?>
+                                    <li>
+                                        <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'areasingle.svg'); ?>" alt="Area icon">
+                                        <?php echo esc_html($listing_detail['formatted']['square_feet']['text']); ?>
+                                    </li>
+                                <?php endif; ?>
+
+                                <?php // Year built
+                                if (isset($listing_detail['property']['year_built']) && strlen(trim((string) $listing_detail['property']['year_built'])) > 0) : ?>
+                                    <li>
+                                        <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'yearsingle.svg'); ?>" alt="">
+                                        <?php echo esc_html($listing_detail['property']['year_built']); ?>
+                                        Year Built
+                                    </li>
+                                <?php endif; ?>
+
+                                <?php // Pool features
+                                if (!empty($listing_detail['property']['pool_features'])) : ?>
+                                    <li>
+                                        <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'poolsingle.svg'); ?>" alt=" Pool icon">
+                                        Pool
+                                    </li>
+                                <?php endif; ?>
+
+                                <?php // Security features
+                                if (!empty($listing_detail['property']['security_features'])) : ?>
+                                    <li>
+                                        <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'securitysingle.svg'); ?>" alt="Security Icon">
+                                        Security
+                                    </li>
+                                <?php endif; ?>
+
+                                <?php // Parking spaces
+                                if (isset($listing_detail['formatted']['parking_spaces']['text']) && strlen(trim((string) $listing_detail['formatted']['parking_spaces']['text'])) > 0) : ?>
+                                    <li>
+                                        <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'garagesingle.svg'); ?>" alt="Garage Icon">
+                                        <?php echo esc_html($listing_detail['formatted']['parking_spaces']['text']); ?>
+                                    </li>
+                                <?php endif; ?>
+
+                                <?php // Construction materials
+                                if (isset($listing_detail['property']['construction_materials']) && strlen(trim((string) $listing_detail['property']['construction_materials'])) > 0) : ?>
+                                    <li>
+                                        <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'outdoor-activity.svg'); ?>" alt="Activity icon">
+                                        <?php echo esc_html($listing_detail['property']['construction_materials']); ?>
+                                    </li>
+                                <?php endif; ?>
+                            </ul>
+
+                        </div>
+
+
+
+                        <div class=rch_local_logic id="rch-location">
+                            <?php
+                            // Retrieve the selected features from the settings
+                            $selected_features = get_option('rch_rechat_local_logic_features', []);
+                            $google_map_api = get_option('rch_rechat_google_map_api_key');
+                            // Define the available template parts corresponding to each feature
+                            $feature_templates = [
+                                // 'Hero' => 'hero', // Template part for Hero feature
+                                // 'Map' => 'map', // Template part for Map feature
+                                // 'Highlights' => 'highlights', // Template part for Highlights feature
+                                // 'Characteristics' => 'characteristics', // Template part for Characteristics feature
+                                // 'Schools' => 'schools', // Template part for Schools feature
+                                // 'Demographics' => 'demographics', // Template part for Demographics feature
+                                // 'PropertyValueDrivers' => 'property-value-drivers', // Template part for PropertyValueDrivers feature
+                                // 'MarketTrends' => 'market-trends', // Template part for MarketTrends feature
+                                // 'Match' => 'match', // Template part for Match feature
+                                'LocalContent' => 'widgets/local-content', // Template part for Match feature
+                            ];
+
+                            // Loop through the selected features and include the corresponding template part from the plugin
+                            foreach ($selected_features as $feature) {
+                                if (array_key_exists($feature, $feature_templates)) {
+                                    // Get the plugin directory path
+                                    $plugin_dir = RCH_PLUGIN_INCLUDES; // Adjust if your plugin files are in a subfolder
+
+                                    // Construct the template part file path
+                                    $template_part_path = $plugin_dir . 'local-logic/' . $feature_templates[$feature] . '.php';                            // Check if the template part file exists, then include it
+                                    if (file_exists($template_part_path)) {
+                                        include $template_part_path;
+                                    }
+                                }
+                            }
+                            ?>
+                        </div>
+                        <?php if (!empty($listing_detail['mls_info'])) { ?>
+                            <div class="rch-disclaimer-show">
+                                <h2>
+                                    Disclaimer
+                                </h2>
+                                <?php
+                                $currentYear = date('Y'); // Get the current year
+
+                                // Check if mls_info is an array
+                                $mls_info = $listing_detail['mls_info']['disclaimer'];
+
+                                // Replace {{currentYear}} with the actual current year
+                                $mls_info = str_replace('{{currentYear}}', $currentYear, $mls_info);
+
+                                // Safely output the HTML content
+                                ?>
+                                <div class="rch-inside-disclaimer">
+                                    <?php echo wp_kses_post($mls_info); ?>
+                                </div>
+
+                                <?php
+                                ?>
+                            </div>
+                        <?php } ?>
+                    </div>
+                    <div class="rch-single-right-main-layout">
+                        <div class="rch-listing-form-lead" id="leadCaptureForm">
+
+                            <form action="" method="post">
+                                <h2>Inquire About This Property</h2>
+                                <!-- First Name -->
+                                <div class="form-group">
+                                    <label for="first_name">First Name</label>
+                                    <input type="text" id="first_name" name="first_name" placeholder="Enter your first name" required>
+                                </div>
+
+                                <!-- Last Name -->
+                                <div class="form-group">
+                                    <label for="last_name">Last Name</label>
+                                    <input type="text" id="last_name" name="last_name" placeholder="Enter your last name" required>
+                                </div>
+
+                                <!-- Phone Number -->
+                                <div class="form-group">
+                                    <label for="phone_number">Phone Number</label>
+                                    <input type="tel" id="phone_number" name="phone_number" placeholder="Enter your phone number" required>
+                                </div>
+
+                                <!-- Email Address -->
+                                <div class="form-group">
+                                    <label for="email">Email Address</label>
+                                    <input type="email" id="email" name="email" placeholder="Enter your email address" required>
+                                </div>
+
+                                <!-- Note -->
+                                <div class="form-group">
+                                    <label for="note">Note</label>
+                                    <textarea id="note" name="note" placeholder="Write your note here" required></textarea>
+                                </div>
+
+                                <!-- Submit Button -->
+                                <button type="submit">Submit Request</button>
+                                <div id="loading-spinner" class="rch-loading-spinner-form" style="display: none;"></div>
+                                <div id="rch-listing-success-sdk" class="rch-success-box-listing">
+                                    Thank you! Your data has been successfully sent.
+                                </div>
+                                <div id="rch-listing-cancel-sdk" class="rch-error-box-listing">
+                                    Something went wrong. Please try again.
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                </div>
             </div>
-        </div>
-    </main><!-- #main -->
-</div><!-- #primary -->
+        </main><!-- #main -->
+    </div><!-- #primary -->
+</div>
 <div id="myModal" class="rch-imgs-modal">
     <!-- Modal content -->
     <div class="rch-modal-content">
@@ -407,4 +473,31 @@
             modal.style.display = "none";
         }
     }
+
+    // Show More / Show Less functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const descriptionText = document.getElementById('rch-description-text');
+        const showMoreBtn = document.getElementById('rch-show-more-btn');
+        
+        if (descriptionText && showMoreBtn) {
+            // Check if the description height is greater than 200px
+            if (descriptionText.scrollHeight > 200) {
+                descriptionText.classList.add('collapsed');
+                showMoreBtn.style.display = 'inline-block';
+                
+                // Toggle show more/less
+                showMoreBtn.addEventListener('click', function() {
+                    if (descriptionText.classList.contains('collapsed')) {
+                        descriptionText.classList.remove('collapsed');
+                        showMoreBtn.textContent = 'Show Less';
+                    } else {
+                        descriptionText.classList.add('collapsed');
+                        showMoreBtn.textContent = 'Show More';
+                        // Scroll back to the description section
+                        descriptionText.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                });
+            }
+        }
+    });
 </script>
