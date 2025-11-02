@@ -1,4 +1,9 @@
-.container_listing_sdk {
+.rch-listing-block-gutenberg {
+  width: 95%;
+  margin: 10px auto;
+}
+
+.rch-listing-block-gutenberg .container_listing_sdk {
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -6,29 +11,49 @@
   overflow: hidden;
 }
 
-.filters {
+.rch-listing-block-gutenberg .filters {
   padding: 16px;
 }
 
-.wrapper {
+.rch-listing-block-gutenberg .wrapper {
   display: flex;
   gap: 16px;
   flex-grow: 1;
   min-height: 0;
 }
 
-.map {
+.rch-listing-block-gutenberg .map {
   flex: 7;
+  border: 4px solid rgb(255, 255, 255);
+  box-shadow: rgba(16, 24, 40, 0.12) 0px 1px 3px;
+  border-radius: 8px;
 }
 
-.listings {
+.rch-listing-block-gutenberg .listings {
   flex: 7;
   min-height: 0;
   overflow: auto;
 }
-
+.rch-listing-block-gutenberg .listings .listing-card {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: none;
+}
+.rch-listing-block-gutenberg .listings .listing-card:hover {
+  border: 1px solid rgba(0, 0, 0, 0.9);
+  box-shadow: 0px 0px 6px 0px rgba(0, 0, 0, 0.3);
+  background-color: #efefef;
+}
+.rch-listing-block-gutenberg
+  .listings
+  .listing-card
+  .listing-card__badges-container
+  .listing-card__badge {
+  color: white;
+}
 /* Agent Card Styles */
-.agent-container {
+.rch-listing-block-gutenberg .agent-container {
   height: 200px;
   display: flex;
   margin-bottom: 32px;
@@ -38,41 +63,41 @@
   border-radius: 0 8px 8px 0;
 }
 
-.agent-container img {
+.rch-listing-block-gutenberg .agent-container img {
   height: auto;
   border-radius: 16px 16px 0 16px;
 }
 
-.agent-container__heading {
+.rch-listing-block-gutenberg .agent-container__heading {
   display: flex;
   gap: 4px;
   flex-direction: column;
 }
 
-.agent-container__heading .title {
+.rch-listing-block-gutenberg .agent-container__heading .title {
   font-size: 32px;
   font-weight: 800;
 }
 
-.agent-container__heading span {
+.rch-listing-block-gutenberg .agent-container__heading span {
   font-size: 24px;
   color: gray;
 }
 
-.agent-container__contact {
+.rch-listing-block-gutenberg .agent-container__contact {
   display: flex;
   gap: 8px;
   flex-direction: column;
   margin-top: 32px;
 }
 
-.agent-container__contact .contact-item {
+.rch-listing-block-gutenberg .agent-container__contact .contact-item {
   font-weight: 500;
   font-size: 18px;
   color: #1a1a1a;
 }
 
-.agent-container__contact .contact-item.address {
+.rch-listing-block-gutenberg .agent-container__contact .contact-item.address {
   color: gray;
   font-size: 16px;
   font-weight: 500;

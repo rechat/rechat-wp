@@ -8,6 +8,7 @@
   width: 49%;
   position: relative;
   max-height: 455px;
+  
 }
 
 .rch-top-img-slider .rch-left-top-slider img {
@@ -40,7 +41,6 @@
   object-fit: cover;
   border-radius: 10px;
 }
-
 /* modal for image slider */
 .rch-imgs-modal {
   display: none;
@@ -63,17 +63,30 @@
   margin: auto;
   padding: 20px;
   border: 1px solid #888;
-  width: 70%;
-  max-width: 800px;
+  width: 90%;
   border-radius: 15px;
   border: 1px solid rgba(126, 139, 150, 0.5);
+  position: relative;
+  border-radius: 8px;
 }
 
 /* The Close Button */
 .rch-imgs-modal .rch-img-modal-close {
-  color: #aaaaaa;
-  float: right;
-  font-size: 28px;
+     color: #aaaaaa;
+    float: right;
+    font-size: 1.5rem;
+    position: absolute;
+    z-index: 2;
+    background: white;
+    inset-inline-end: 15px;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex
+;
+    align-items: center;
+    justify-content: center;
+    inset-block-start: 15px;
 }
 
 .rch-img-modal-close:hover,
@@ -170,43 +183,96 @@ h1.rch-single-address {
   font-style: normal;
   font-weight: 700;
   line-height: normal;
-  margin-block: 30px 20px;
+  margin-block: 5px 20px;
 }
 
 .rch-single-price-house {
   color: #000;
-  font-size: 26px;
+  font-size: 3rem;
   font-style: normal;
-  font-weight: 600;
-  line-height: normal;
+  font-weight: 900;
+  line-height: 1.167;
+  margin-block-start: 40px;
 }
-
-.rch-house-menu {
+.rch-formatted-data-summary ,.rch-main-description-single-house ,.facilities-in-single-houses{
+      border-top: 1px solid rgb(224, 224, 224);
+    padding-block: 24px;
+}
+.rch-formatted-data-summary ul {
   display: flex;
-  border-bottom: solid 1px rgba(126, 139, 150, 0.5);
-  margin-block: 30px 10px;
-  padding-block: 10px;
+      display: flex
+;
+    flex-flow: wrap;
+    width: 100%;
 }
-
-.rch-house-menu a {
-  color: #666;
-  font-size: 20px;
-  text-decoration: none;
+.rch-formatted-data-summary ul li {
+  width: 30%;
+  padding-top: 32px;
 }
-
-.rch-house-menu a:not(:last-of-type) {
-  margin-inline-end: 30px;
+.rch-formatted-data-summary ul li b {
+    font-size: 3rem;
+    font-weight: 600;
+    line-height: 1.167;
 }
-
-.main-des-single-house p {
-  color: #444;
+.rch-formatted-data-summary ul li span {
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #757575;
+    display: block;
+} 
+.rch-main-description-single-house h2 {
+  font-size: 3rem;
+  font-weight: 900;
+}
+.rch-main-description-single-house .rch-main-description-listing {
+  color: #000;
   font-family: inherit;
-  font-size: 16px;
+  font-size: 1rem;
   font-style: normal;
-  font-weight: 400;
-  line-height: 180%;
-  /* 32px */
-  margin-block: 15px;
+      line-height: 2;
+  margin-block: 1rem;
+  position: relative;
+  transition: max-height 0.3s ease;
+}
+
+.rch-main-description-listing.collapsed {
+  max-height: 200px;
+  overflow: hidden;
+  position: relative;
+}
+
+.rch-main-description-listing.collapsed::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 80px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 1));
+  pointer-events: none;
+}
+
+.rch-show-more-btn {
+  background: #000;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background 0.3s ease;
+}
+
+.rch-show-more-btn:hover {
+  background: rgba(0, 0, 0, 0.519);
+}
+
+.rch-show-more-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.3);
 }
 
 .facilities-in-single-houses {
@@ -255,6 +321,9 @@ h1.rch-single-address {
 .rch-disclaimer-show {
   padding-block-end: 40px;
   margin-block-start: 40px;
+    padding: 24px 32px 32px;
+    background-color: rgb(238, 238, 238);
+    border-radius: 8px;
 }
 
 .rch-disclaimer-show .rch-inside-disclaimer {
@@ -278,6 +347,7 @@ h1.rch-single-address {
   border-radius: 10px;
   background-color: #9cbcdb42;
   padding: 20px 30px;
+  border-radius: 8px;
 }
 
 .rch-single-house-main-layout .rch-single-right-main-layout form h2 {
@@ -306,12 +376,14 @@ h1.rch-single-address {
   font-size: 16px;
   width: 100%;
   font-family: inherit;
+
 }
 
 .rch-single-house-main-layout .rch-single-right-main-layout button {
   width: 100%;
   border-radius: 10px;
   font-size: 16px;
+  border-radius: 8px;
 }
 
 .rch-single-house-main-layout .rch-single-left-main-layout {
@@ -329,63 +401,63 @@ h1.rch-single-address {
     transform: rotate(360deg);
   }
 }
- /* single listing page */
+/* single listing page */
 .rch-left-top-slider .Active,
 .rch-left-top-slider .Pendding,
 .rch-left-top-slider .Sold,
-.rch-left-top-slider span{
-    position: absolute;
-    left: 1rem;
-    top: 1rem;
-    background: var(--baseLight-color);
-    padding: 0.25rem 0.5rem;
-    padding-inline-start: 1.25rem;
-    border-radius: 100px;
-    font-weight: 500;
-    font-size: 14px;
-    text-transform: uppercase;
+.rch-left-top-slider span {
+  position: absolute;
+  left: 1rem;
+  top: 1rem;
+  background: var(--baseLight-color);
+  padding: 0.25rem 0.5rem;
+  padding-inline-start: 1.25rem;
+  border-radius: 100px;
+  font-weight: 500;
+  font-size: 14px;
+  text-transform: uppercase;
 }
 
 .rch-left-top-slider .Active:before,
 .rch-left-top-slider .Pendding:before,
 .rch-left-top-slider .Sold:before,
-.rch-left-top-slider span:before{
-    position: absolute;
-    content: ' ';
-    width: 10px;
-    height: 10px;
-    left: 0.5rem;
-    top: 50%;
-    transform: translatey(-50%);
-    border-radius:50%;
+.rch-left-top-slider span:before {
+  position: absolute;
+  content: " ";
+  width: 10px;
+  height: 10px;
+  left: 0.5rem;
+  top: 50%;
+  transform: translatey(-50%);
+  border-radius: 50%;
 }
 
-.rch-left-top-slider .Active:before{
-   background-color: #22C55E;
+.rch-left-top-slider .Active:before {
+  background-color: #22c55e;
 }
 
-.rch-left-top-slider .Pendding:before{
-   background-color: #FACC15;
+.rch-left-top-slider .Pendding:before {
+  background-color: #facc15;
 }
 
-.rch-left-top-slider .Sold:before{
-   background-color: #EF4444;
+.rch-left-top-slider .Sold:before {
+  background-color: #ef4444;
 }
 
-.rch-left-top-slider span:before{
-   background-color: #949598;
+.rch-left-top-slider span:before {
+  background-color: #949598;
 }
-.listing-card__status{
-    position: absolute;
-    top: 0.5rem;
-    left: 0.5rem;
-    background: var(--baseLight-color);
-    padding: 0.25rem 0.5rem;
-    border-radius: 100px;
-    font-weight: 500;
-    border-radius: 2px;
-    font-size: 14px;
-    text-transform: uppercase;
+.listing-card__status {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  background: var(--baseLight-color);
+  padding: 0.25rem 0.5rem;
+  border-radius: 100px;
+  font-weight: 500;
+  border-radius: 2px;
+  font-size: 14px;
+  text-transform: uppercase;
 }
 /* Medium screens */
 @media (max-width: 1200px) {
@@ -407,9 +479,19 @@ h1.rch-single-address {
   }
 
   .rch-imgs-modal .rch-modal-content {
-    width: 85%;
-  }
+width: 95%;
+        height: 50%;
+    padding: 10px;
 
+  }
+.rch-houses-mySwiper2 {
+  height: 70%;
+}
+
+.rch-houses-mySwiper {
+  height: 20%;
+
+}
   h1.rch-single-address {
     font-size: 20px;
   }
