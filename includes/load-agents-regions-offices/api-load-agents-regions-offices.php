@@ -10,9 +10,7 @@ function rch_update_agents_offices_regions_data()
      ******************************/
 
     $access_token = get_option('rch_rechat_access_token');
-    // $access_token = 'ZjU1NTBhYWUtNWJhYS0xMWVmLTg1MGQtMGU0YmI5NTMxYmQ5';
     $brand_token = get_option('rch_rechat_brand_id');
-    // $brand_token = '2f082158-e865-11eb-899f-0271a4acc769';
     $api_url_base = 'https://api.rechat.com/brands/' . $brand_token . '/users?associations[]=brand.parents&associations[]=brand.settings'; // Adjust the URL as needed
 
     /*******************************
@@ -59,10 +57,10 @@ function rch_update_agents_offices_regions_data()
     foreach ($offices as $office) {
         // Insert or update the office post with regions and address
         $result = rch_insert_or_update_post(
-            'offices', 
-            $office['name'], 
-            $office['id'], 
-            'office_id', 
+            'offices',
+            $office['name'],
+            $office['id'],
+            'office_id',
             $office['region_parent_ids'],
             $office['address'] ?? ''
         );
