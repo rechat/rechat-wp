@@ -12,6 +12,8 @@ function rch_display_latest_listings_shortcode($atts)
             'listing_statuses' => '',
             'own_listing' => true,
             'property_types' => '',
+            'minimum_price' => '',
+            'maximum_price' => '',
             'slides_per_view' => 3.5,
             'space_between' => 16,
             'loop' => true,
@@ -87,6 +89,10 @@ function rch_display_latest_listings_shortcode($atts)
     }
     $listing_statuses = sanitize_text_field($listing_statuses);
     
+    // Process price attributes
+    $minimum_price = !empty($atts['minimum_price']) ? intval($atts['minimum_price']) : '';
+    $maximum_price = !empty($atts['maximum_price']) ? intval($atts['maximum_price']) : '';
+    
     // Process own_listing attribute
     $own_listing = filter_var($atts['own_listing'], FILTER_VALIDATE_BOOLEAN);
     
@@ -139,6 +145,8 @@ function rch_display_latest_listings_shortcode($atts)
             const propertyTypes = <?php echo json_encode($property_types); ?>;
             const listingStatuses = <?php echo json_encode($listing_statuses); ?>;
             const ownListing = <?php echo $own_listing ? 'true' : 'false'; ?>;
+            const minimumPrice = <?php echo json_encode($minimum_price); ?>;
+            const maximumPrice = <?php echo json_encode($maximum_price); ?>;
 
             // Build Swiper settings object conditionally
             const swiperSettings = {
@@ -211,6 +219,8 @@ function rch_display_latest_listings_shortcode($atts)
                             points: mapPoints, // Pass the map points
                             property_types: propertyTypes, // Pass the property types
                             listing_statuses: listingStatuses, // Pass the listing statuses
+                            minimum_price: minimumPrice, // Pass the minimum price
+                            maximum_price: maximumPrice, // Pass the maximum price
                             // add any other parameters here
                         }),
                         headers: {
