@@ -17,8 +17,7 @@ function initPlacesAutocomplete() {
 
     // Only initialize if the elements exist
     if (mobileSearchInput) {
-        mobileAutocomplete = new google.maps.places.Autocomplete(mobileSearchInput, {
-            types: ['(regions)'], // Changed from (cities) to (regions) to include cities, states, and postal codes
+        mobileAutocomplete = new google.maps.places.Autocomplete(mobileSearchInput, {// Changed from (cities) to (regions) to include cities, states, and postal codes
             fields: ['geometry', 'name', 'formatted_address', 'address_components', 'types'],
             componentRestrictions: { country: 'us' }
         });
@@ -33,8 +32,7 @@ function initPlacesAutocomplete() {
     }
 
     if (desktopSearchInput) {
-        desktopAutocomplete = new google.maps.places.Autocomplete(desktopSearchInput, {
-            types: ['(regions)'], // Changed from (cities) to (regions) to include cities, states, and postal codes
+        desktopAutocomplete = new google.maps.places.Autocomplete(desktopSearchInput, { // Changed from (cities) to (regions) to include cities, states, and postal codes
             fields: ['geometry', 'name', 'formatted_address', 'address_components', 'types'],
             componentRestrictions: { country: 'us' }
         });
