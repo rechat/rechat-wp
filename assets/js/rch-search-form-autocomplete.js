@@ -15,7 +15,7 @@ function initSearchFormAutocomplete() {
     // Only initialize if the element exists and we're on the search form page
     if (searchInput && document.getElementById('rch-search-form')) {
         searchFormAutocomplete = new google.maps.places.Autocomplete(searchInput, {
-            types: ['(regions)'], // Changed from (cities) to (regions) to include cities, states, and postal codes
+            types: ['geocode'],
             fields: ['geometry', 'name', 'formatted_address', 'address_components', 'types'],
             componentRestrictions: { country: 'us' }
         });
