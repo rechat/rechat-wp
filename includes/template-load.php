@@ -55,6 +55,10 @@ function load_custom_templates($template)
 
     // Listing detail logic
     if (isset($_GET['listing_id'])) {
+        add_filter('body_class', function ($classes) {
+            $classes[] = 'listing-single-page';
+            return $classes;
+        });
         $plugin_template = RCH_PLUGIN_INCLUDES . 'load-listing/' . $house_detail_template_name;
         return $plugin_template;
     }
