@@ -58,20 +58,9 @@ function initMap() {
         mapId: 'a1b2c3d4e5f6g7h8' // Add your Map ID here
     });
 
-    // If we have valid coordinates from the shortcode, set the query string immediately
-    if (typeof rchListingData !== 'undefined' &&
-        rchListingData.mapCoordinates &&
-        rchListingData.mapCoordinates.hasValidCoordinates &&
-        rchListingData.mapCoordinates.polygonString) {
-
-        const queryString = rchListingData.mapCoordinates.polygonString;
-        document.getElementById('query-string').value = queryString;
-
-        // Also update the filters.points for the API requests
-        if (typeof filters !== 'undefined') {
-            filters.points = queryString;
-        }
-    }
+    // DON'T use the PHP-calculated polygonString on initial load
+    // Instead, we'll calculate it from the actual map bounds after the map loads
+    // This ensures consistency between initial load and drag/zoom events
 
     // Initialize drawing tools and buttons (these don't trigger AJAX requests)
     initDrawingManager();
@@ -80,7 +69,11 @@ function initMap() {
     // Wait for the map to be fully loaded before fetching data
     // This ensures bounds and other map properties are properly initialized
     google.maps.event.addListenerOnce(map, 'idle', function() {
-        // Now that the map is fully loaded, fetch listings data
+        // Calculate the bounding box from the actual map viewport
+        // This ensures the initial bounds match what will be calculated on drag/zoom
+        updateFilterPoints();
+        
+        // Now that the map is fully loaded and bounds are set, fetch listings data
         fetchListingsDataAndUpdateMap();
     });
 }
@@ -327,18 +320,9 @@ function updateFilterPoints() {
         .map(point => `${point.lat},${point.lng}`)
         .join('|');
 
-    // Only set filters.points if we're working with actual coordinates
-    // (not just the default center of the map)
-    const center = map.getCenter();
-    if (center && (
-        Math.abs(center.lat() - 39.8283) > 0.001 ||
-        Math.abs(center.lng() - (-98.5795)) > 0.001
-    )) {
-        filters.points = queryString;
-        document.getElementById('query-string').value = queryString;
-    }
-
-    // Call the function to update listings (assumed to be defined elsewhere)
+    // Always update the filter points with the actual map bounds
+    filters.points = queryString;
+    document.getElementById('query-string').value = queryString;
 }
 /**
  * Adds a marker and info window to the map for a given listing.
