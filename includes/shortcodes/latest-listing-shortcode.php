@@ -58,6 +58,9 @@ function rch_display_latest_listings_shortcode($atts)
             case 'Commercial':
                 $property_types = 'Commercial';
                 break;
+            case 'Residential':
+                $property_types = 'Residential';
+                break;
             default:
                 // If it doesn't match any predefined values, use it as-is
                 $property_types = $property_types_raw;
