@@ -35,7 +35,8 @@ if (rchListingData.mapCoordinates && rchListingData.mapCoordinates.hasValidCoord
         filters.points = queryString.value;
     }
 }
-
+console.log('Initial defaultFilters:', defaultFilters);
+console.log('Initial Filters:', filters);
 function fetchListingsData() {
     const loading = document.getElementById('rch-loading-spinner');
     loading.style.display = 'grid'; // Show loading spinner

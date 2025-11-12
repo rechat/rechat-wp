@@ -8,7 +8,6 @@ const conversionFactor = 0.092903
 function convertToSquareMeters(value) {
     return value * conversionFactor
 }
-
 // Function to get URL parameters and set the content field
 function setContentFromURLParams() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -71,15 +70,34 @@ function applyFilters() {
     // Update the filters with user inputs
     // filters.content = document.getElementById('content').value;
     filters.property_types = getSelectedRadioCheckboxValue('property_types');
-    filters.minimum_price = document.getElementById('minimum_price').value;
-    filters.maximum_price = document.getElementById('maximum_price').value;
+    
+    // For price filters, only update if DOM has a value OR if filter was explicitly cleared
+    const minPriceValue = document.getElementById('minimum_price').value;
+    const maxPriceValue = document.getElementById('maximum_price').value;
+    
+    // Update only if the dropdown has been populated and has a value (including empty string for "No Min/Max")
+    // This prevents overwriting default values with empty strings during initialization
+    if (document.getElementById('minimum_price').options.length > 0) {
+        filters.minimum_price = minPriceValue;
+    }
+    if (document.getElementById('maximum_price').options.length > 0) {
+        filters.maximum_price = maxPriceValue;
+    }
+    
     filters.minimum_bedrooms = document.getElementById('minimum_bedrooms').value;
     filters.maximum_bedrooms = document.getElementById('maximum_bedrooms').value;
     filters.listing_statuses = getSelectedCheckboxValues('listing_statuses');
     filters.minimum_square_meters = document.getElementById('minimum_square_meters').value;
     filters.maximum_square_meters = document.getElementById('maximum_square_meters').value;
-    filters.minimum_year_built = document.getElementById('minimum_year_built').value;
-    filters.maximum_year_built = document.getElementById('maximum_year_built').value;
+    
+    // For year built filters, only update if dropdowns are populated
+    if (document.getElementById('minimum_year_built').options.length > 0) {
+        filters.minimum_year_built = document.getElementById('minimum_year_built').value;
+    }
+    if (document.getElementById('maximum_year_built').options.length > 0) {
+        filters.maximum_year_built = document.getElementById('maximum_year_built').value;
+    }
+    
     filters.points = document.getElementById('query-string').value,
         currentPage = 1; // Reset to the first page after applying filters
     updateActiveClass()
@@ -195,9 +213,6 @@ setupFilterButtons('.rch-bath-filter-listing', 'minimum_bathrooms', 'rch-baths-t
 setupFilterButtons('.rch-parking-filter-listing', 'minimum_parking_spaces', 'rch-parking-text-filter', 'Parking');
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Call the function to set content from URL parameters
-    setContentFromURLParams();
-
     // Initialize both mobile and desktop bath/parking filters
     initFilterButtons();
 
@@ -229,6 +244,9 @@ document.addEventListener('DOMContentLoaded', () => {
         initializeFilter(minYearSelect, maxYearSelect, () => generateYearOptions(currentYear), [], false, defaultMinYear, defaultMaxYear);
     });
 
+    // Call this AFTER initializing all filters so dropdowns are populated first
+    setContentFromURLParams();
+
     // Initialize a Generic Filter (Price or Year Built)
     // Added parameters defaultMin and defaultMax to be used for price defaults.
     function initializeFilter(minSelect, maxSelect, optionsGenerator, options, isPrice, defaultMin = null, defaultMax = null) {
@@ -238,8 +256,8 @@ document.addEventListener('DOMContentLoaded', () => {
         updateMaxOptions(minSelect, maxSelect, optionsGenerator, isPrice, defaultMax);
 
         // When the user changes the min selection, update the max options.
-        // We still pass the defaultMax value so that if needed (e.g. on page load), it gets applied.
-        minSelect.addEventListener('change', () => updateMaxOptions(minSelect, maxSelect, optionsGenerator, isPrice, defaultMax));
+        // Don't pass defaultMax here - only use it for initial load
+        minSelect.addEventListener('change', () => updateMaxOptions(minSelect, maxSelect, optionsGenerator, isPrice, null));
         //update default class come from server
         updateActiveClass();
         //update default price value come from server

@@ -35,10 +35,11 @@ $show_max_price = isset($show_max_price) ? $show_max_price : true;
         <select name="property_types" id="search-property-types" class="rch-dropdown">
             <option value="">Property Type</option>
             <option value="Residential,Residential Lease,Lots & Acreage,Commercial,Multi-Family">All Listings</option>
-            <option value="Residential">For Sale</option>
+            <option value="Residential">Residential</option>
             <option value="Residential Lease">For Lease</option>
             <option value="Lots & Acreage">Lots & Acreage</option>
             <option value="Commercial">Commercial</option>
+            <option value="Multi-Family">Multi-Family</option>
         </select>
     </div>
     <?php endif; ?>
