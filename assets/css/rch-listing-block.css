@@ -30,7 +30,10 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
   padding: 4px 15px;
   width: 100%;
 }
+.box-filter-listing-text input[type="search"]::placeholder {
+      font-size: 12px;
 
+}
 .rch-filters > div .rch-inside-filters {
   position: absolute;
   width: 350px;

@@ -30,7 +30,10 @@
   border-right: none;
   height: 55px;
 }
+ .rch-search-listing-form .rch-search-filters input[type="search"]{
+      font-size: 14px !important;
 
+ }
 .rch-search-listing-form .rch-search-filters input[type="search"] {
   min-width: 280px;
   width: 100%;
