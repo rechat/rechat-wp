@@ -1319,8 +1319,11 @@ registerBlockType('rch-rechat-plugin/listing-block', {
               label: 'All Listings',
               value: 'Residential, Residential Lease, Lots & Acreage, Commercial, Multi-Family'
             }, {
-              label: 'Sale',
+              label: 'Residential',
               value: 'Residential'
+            }, {
+              label: 'Sale',
+              value: 'Residential,Lots & Acreage,Commercial,Multi-Family"'
             }, {
               label: 'Lease',
               value: 'Residential Lease'
@@ -1330,6 +1333,9 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             }, {
               label: 'Commercial',
               value: 'Commercial'
+            }, {
+              label: 'Multi-Family',
+              value: 'Multi-Family'
             }],
             onChange: handlePropertyTypeChange
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {

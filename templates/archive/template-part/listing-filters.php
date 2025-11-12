@@ -245,6 +245,10 @@
                     <label for="all" class="ios-radio">All Listings</label>
                 </span>
                 <span>
+                    <input type="radio" id="all" name="property_types" data-name="Residential" value="Residential" onchange="applyFilters()">
+                    <label for="all" class="ios-radio">Residential</label>
+                </span>
+                <span>
                     <input type="radio" id="sale" name="property_types" data-name="Sale" value="Residential,Lots & Acreage,Commercial,Multi-Family" onchange="applyFilters()">
                     <label for="sale" class="ios-radio">Sale</label>
                 </span>
@@ -259,6 +263,10 @@
                 <span>
                     <input type="radio" id="Commercial" name="property_types" data-name="Commercial" value="Commercial" onchange="applyFilters()">
                     <label for="Commercial" class="ios-radio">Commercial</label>
+                </span>
+                                <span>
+                    <input type="radio" id="Commercial" name="property_types" data-name="Multi-Family" value="Multi-Family" onchange="applyFilters()">
+                    <label for="Commercial" class="ios-radio">Multi-Family</label>
                 </span>
                 <button type="button" class="reset-btn" onclick="resetFilter('property_types')">Reset</button>
 

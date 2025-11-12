@@ -313,7 +313,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         useEffect(() => {
             fetchData('/wp/v2/regions?per_page=100', setRegions);
             fetchData('/wp/v2/offices?per_page=100', setOffices);
-            
+
             // Fetch Google Maps API key
             apiFetch({ path: '/wp/v2/options' })
                 .then(options => {
@@ -403,10 +403,12 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                             selected={property_types}
                             options={[
                                 { label: 'All Listings', value: 'Residential, Residential Lease, Lots & Acreage, Commercial, Multi-Family' },
-                                { label: 'Sale', value: 'Residential' },
+                                { label: 'Residential', value: 'Residential' },
+                                { label: 'Sale', value: 'Residential,Lots & Acreage,Commercial,Multi-Family"' },
                                 { label: 'Lease', value: 'Residential Lease' },
                                 { label: 'Lots & Acreage', value: 'Lots & Acreage' },
                                 { label: 'Commercial', value: 'Commercial' },
+                                { label: 'Multi-Family', value: 'Multi-Family' },
                             ]}
                             onChange={handlePropertyTypeChange}
                         />
@@ -539,13 +541,13 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                     maximum_bathrooms={maximum_bathrooms}
                     minimum_bathrooms={minimum_bathrooms}
                     maximum_lot_square_meters={maximum_lot_square_meters}
-                    minimum_lot_square_meters= {minimum_lot_square_meters}
+                    minimum_lot_square_meters={minimum_lot_square_meters}
                     maximum_price={maximum_price}
                     minimum_price={minimum_price}
-                    property_types ={property_types}
+                    property_types={property_types}
                     own_listing={own_listing}
                     show_filter_bar={show_filter_bar}
-                    selectedStatuses ={listing_statuses}
+                    selectedStatuses={listing_statuses}
                 />
             </>
         );
@@ -587,7 +589,7 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
             const checkUserLogin = async () => {
                 try {
                     const response = await apiFetch({ path: '/wp/v2/users/me' });
-                    
+
                     if (response && response.id) {
                         setIsLoggedIn(true);
                         fetchBrandId();
