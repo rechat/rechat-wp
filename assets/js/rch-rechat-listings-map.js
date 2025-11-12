@@ -58,9 +58,20 @@ function initMap() {
         mapId: 'a1b2c3d4e5f6g7h8' // Add your Map ID here
     });
 
-    // DON'T use the PHP-calculated polygonString on initial load
-    // Instead, we'll calculate it from the actual map bounds after the map loads
-    // This ensures consistency between initial load and drag/zoom events
+    // If we have valid coordinates from the shortcode, set the query string immediately
+    if (typeof rchListingData !== 'undefined' &&
+        rchListingData.mapCoordinates &&
+        rchListingData.mapCoordinates.hasValidCoordinates &&
+        rchListingData.mapCoordinates.polygonString) {
+
+        const queryString = rchListingData.mapCoordinates.polygonString;
+        document.getElementById('query-string').value = queryString;
+
+        // Also update the filters.points for the API requests
+        if (typeof filters !== 'undefined') {
+            filters.points = queryString;
+        }
+    }
 
     // Initialize drawing tools and buttons (these don't trigger AJAX requests)
     initDrawingManager();
@@ -320,9 +331,18 @@ function updateFilterPoints() {
         .map(point => `${point.lat},${point.lng}`)
         .join('|');
 
-    // Always update the filter points with the actual map bounds
-    filters.points = queryString;
-    document.getElementById('query-string').value = queryString;
+    // Only set filters.points if we're working with actual coordinates
+    // (not just the default center of the map)
+    const center = map.getCenter();
+    if (center && (
+        Math.abs(center.lat() - 39.8283) > 0.001 ||
+        Math.abs(center.lng() - (-98.5795)) > 0.001
+    )) {
+        filters.points = queryString;
+        document.getElementById('query-string').value = queryString;
+    }
+
+    // Call the function to update listings (assumed to be defined elsewhere)
 }
 /**
  * Adds a marker and info window to the map for a given listing.
