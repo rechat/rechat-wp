@@ -236,7 +236,7 @@ function rch_collect_brands($brand, &$regions, &$offices, &$processed_brands)
 
         // Extract address from brand or parent hierarchy
         $office_address = '';
-        
+
         // Check if address.full exists in current brand settings
         if (isset($brand['settings']['marketing_palette']['address']['full']) && !empty($brand['settings']['marketing_palette']['address']['full'])) {
             $office_address = $brand['settings']['marketing_palette']['address']['full'];
@@ -249,7 +249,7 @@ function rch_collect_brands($brand, &$regions, &$offices, &$processed_brands)
                     $office_address = $current_parent['settings']['marketing_palette']['address']['full'];
                     break;
                 }
-                
+
                 // Also check if this parent has parents array
                 if (empty($office_address) && isset($current_parent['parents']) && is_array($current_parent['parents'])) {
                     // Check all brands to find parents with addresses
@@ -263,7 +263,7 @@ function rch_collect_brands($brand, &$regions, &$offices, &$processed_brands)
                         }
                     }
                 }
-                
+
                 // Move up the hierarchy to the next parent
                 $current_parent = $current_parent['parent'] ?? null;
             }
@@ -612,6 +612,7 @@ function rch_process_agents_data($access_token, $api_url_base)
                             return isset($agent['id']);
                         })) : array(),
                     'api_id' => $api_id,
+                    'last_name' => $user['last_name'] ?? '',
                     '_rch_agent_regions' => $regions_for_agent,
                     '_rch_agent_offices' => $offices_for_agent,
                 );
