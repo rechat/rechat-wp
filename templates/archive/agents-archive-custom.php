@@ -7,11 +7,23 @@ $posts_per_page = get_option('_rch_posts_per_page', 12);
 $paged = (get_query_var('paged')) ? absint(get_query_var('paged')) : 1;
 
 $args = array(
-    'post_type'      => 'agents', // Ensure this is your custom post type
+    'post_type'      => 'agents',
     'posts_per_page' => $posts_per_page,
-    'orderby'        => 'menu_order', // Order by the custom order
-    'order'          => 'ASC', // Or 'DESC' depending on your needs
-    'paged'          => $paged
+    'orderby'        => 'title',   // Sort by name (post title)
+    'order'          => 'ASC',     // ASC = A → Z
+    'paged'          => $paged,
+    'meta_query'     => array(
+        'relation' => 'OR',
+        array(
+            'key'     => 'agent_visibility',
+            'value'   => 'show',
+            'compare' => '='
+        ),
+        array(
+            'key'     => 'agent_visibility',
+            'compare' => 'NOT EXISTS' // Include agents where visibility is not set (defaults to show)
+        )
+    )
 );
 
 $query = new WP_Query($args);

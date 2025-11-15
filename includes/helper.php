@@ -612,6 +612,7 @@ function rch_process_agents_data($access_token, $api_url_base)
                             return isset($agent['id']);
                         })) : array(),
                     'api_id' => $api_id,
+                    'last_name' => $user['last_name'] ?? '',
                     '_rch_agent_regions' => $regions_for_agent,
                     '_rch_agent_offices' => $offices_for_agent,
                 );
