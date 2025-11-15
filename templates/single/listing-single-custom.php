@@ -238,6 +238,50 @@
                             }
                             ?>
                         </div>
+                        <?php
+                        // Check if agent exists in the agents custom post type
+                        $agent_api_id = isset($listing_detail['list_agent']['id']) ? $listing_detail['list_agent']['id'] : '';
+                        $agent_posts = rch_check_agent_exists($agent_api_id);
+
+                        // Output result
+                        if (!empty($agent_posts)) {
+                            // Agents found - display list of agents
+                        ?>
+                            <div class="rch-agent-exists rch-agent-info">
+                                <h2><?php echo count($agent_posts) > 1 ? 'Listing Agents' : 'Listing Agent'; ?></h2>
+                                <ul class="rch-agent-list">
+                                    <?php foreach ($agent_posts as $agent_post) :
+                                        $agent_title = get_the_title($agent_post->ID);
+                                        $agent_url = get_permalink($agent_post->ID);
+                                        $agent_img = get_post_meta($agent_post->ID, 'profile_image_url', true);
+                                        $licence_number = get_post_meta($agent_post->ID, 'license_number', true);
+                                    ?>
+                                        <li class="rch-agent-item">
+                                            <a href="<?php echo esc_url($agent_url); ?>" class="rch-agent-link">
+                                                <?php if ($agent_img) : ?>
+                                                    <img src="<?php echo esc_url($agent_img); ?>" alt="<?php echo esc_attr($agent_title); ?>" class="rch-agent-photo">
+                                                <?php endif; ?>
+                                                <div class="rch-listing-agent-info">
+                                                    <span class="rch-agent-name"><?php echo esc_html($agent_title); ?></span>
+                                                    <?php if ($licence_number) : ?>
+                                                        <span class="rch-agent-license">Licence number: <?php echo esc_html($licence_number); ?></span>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </a>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </div>
+                        <?php
+                        } else {
+                            $courtesy_text = '';
+                            if (isset($listing_detail['formatted']['courtesy']['text'])) {
+                                // Sanitize then convert newlines to <br>
+                                $courtesy_text = nl2br(esc_html($listing_detail['formatted']['courtesy']['text']));
+                            }
+                            echo '<div class="rch-agent-no-exists">' . $courtesy_text . '</div>';
+                        }
+                        ?>
                         <?php if (!empty($listing_detail['mls_info'])) { ?>
                             <div class="rch-disclaimer-show">
                                 <h2>
@@ -478,13 +522,13 @@
     document.addEventListener('DOMContentLoaded', function() {
         const descriptionText = document.getElementById('rch-description-text');
         const showMoreBtn = document.getElementById('rch-show-more-btn');
-        
+
         if (descriptionText && showMoreBtn) {
             // Check if the description height is greater than 200px
             if (descriptionText.scrollHeight > 200) {
                 descriptionText.classList.add('collapsed');
                 showMoreBtn.style.display = 'inline-block';
-                
+
                 // Toggle show more/less
                 showMoreBtn.addEventListener('click', function() {
                     if (descriptionText.classList.contains('collapsed')) {
@@ -494,7 +538,10 @@
                         descriptionText.classList.add('collapsed');
                         showMoreBtn.textContent = 'Show More';
                         // Scroll back to the description section
-                        descriptionText.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        descriptionText.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
                     }
                 });
             }
