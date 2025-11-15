@@ -1005,3 +1005,40 @@ function rch_render_listing_template($request)
         'html' => $html
     );
 }
+
+/*******************************
+ * Check if agent exists by checking if agent ID exists in 'agents' meta array
+ * Returns an array of all matching WP_Post objects, or empty array if none found
+ ******************************/
+function rch_check_agent_exists($agent_api_id)
+{
+    // Return empty array if empty
+    if (empty($agent_api_id)) {
+        return array();
+    }
+
+    // Sanitize the agent API ID
+    $agent_api_id = sanitize_text_field($agent_api_id);
+
+    // Query all 'agents' custom post type posts
+    $args = [
+        'post_type'      => 'agents',
+        'post_status'    => 'publish',
+        'posts_per_page' => -1, // Get all agents posts
+    ];
+
+    $agent_posts = get_posts($args);
+    $matching_agents = array();
+    
+    // Loop through each agent post and check if the agent_api_id exists in the 'agents' meta array
+    foreach ($agent_posts as $agent_post) {
+        $agents_meta = get_post_meta($agent_post->ID, 'agents', true);
+        
+        // Check if agents_meta is an array and contains the agent_api_id
+        if (is_array($agents_meta) && in_array($agent_api_id, $agents_meta, true)) {
+            $matching_agents[] = $agent_post;
+        }
+    }
+    
+    return $matching_agents;
+}
