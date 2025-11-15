@@ -37,6 +37,7 @@ function rch_register_block_assets_listing()
             'map_latitude' => array('type' => 'string', 'default' => ''), // Map location attribute
             'map_longitude' => array('type' => 'string', 'default' => ''), // Map location attribute
             'map_zoom' => array('type' => 'string', 'default' => '12'), // Map zoom attribute
+            'order_by' => array('type' => 'string', 'default' => '-price'), // Order by attribute
         ),
         'render_callback' => 'rch_render_listing_block',
     ));
@@ -110,8 +111,8 @@ function rch_render_listing_block($attributes)
         'map_latitude' => isset($attributes['map_latitude']) ? $attributes['map_latitude'] : '',
         'map_longitude' => isset($attributes['map_longitude']) ? $attributes['map_longitude'] : '',
         'map_zoom' => isset($attributes['map_zoom']) ? $attributes['map_zoom'] : '12',
+        'order_by' => isset($attributes['order_by']) ? $attributes['order_by'] : '-price',
     );
-
     // Override default values with URL parameters if they exist
     $shortcode_params = array_merge($shortcode_params, $url_params);
     // Build shortcode string

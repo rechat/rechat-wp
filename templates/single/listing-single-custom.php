@@ -238,6 +238,7 @@
                             }
                             ?>
                         </div>
+                        <?php var_dump($listing_detail['list_agent']['id']) ?>
                         <?php if (!empty($listing_detail['mls_info'])) { ?>
                             <div class="rch-disclaimer-show">
                                 <h2>

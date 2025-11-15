@@ -12,17 +12,25 @@ function rch_fetch_listing($filters, $page, $listingPerPage)
     $offset = ($page - 1) * $listingPerPage;
     // Extract the brand value from the filters
     $brand = !empty($filters['brand']) ? $filters['brand'] : get_option('rch_rechat_brand_id');
+    
+    // Extract order_by from filters, default to '-price' if not set
+    $order_by = !empty($filters['order_by']) ? $filters['order_by'] : '-price';
+    
+    // Remove order_by from filters as it's used in the URL, not the request body
+    $requestFilters = $filters;
+    unset($requestFilters['order_by']);
+    
     $requestBody = array_merge([
         // 'brand' => $brandId,
         'limit' => $listingPerPage,
         'offset' => $offset,
-    ], $filters);
+    ], $requestFilters);
     $headers = [
         'Content-Type' => 'application/json',
         'X-RECHAT-BRAND' => $brand,
         'Authorization' => 'Bearer ' . get_option('rch_rechat_access_token')
     ];
-    $response = wp_remote_post('https://api.rechat.com/valerts?order_by[]=-price', [
+    $response = wp_remote_post('https://api.rechat.com/valerts?order_by[]=' . $order_by, [
         'method' => 'POST',
         'headers' => $headers,
         'body' => wp_json_encode($requestBody),
@@ -88,6 +96,7 @@ function rch_fetch_listing_ajax()
 
     // Debugging: Capture var_dump output
     ob_start();
+    var_dump($filters);
     $debugOutput = ob_get_clean(); // Store the var_dump output in a variable
 
     // Prepare the response

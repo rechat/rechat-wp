@@ -22,6 +22,7 @@ let defaultFilters = {
     maximum_bedrooms: rchListingData.filters.maximum_bedrooms,
     listing_statuses: rchListingData.filters.listing_statuses,
     property_types: rchListingData.propertyTypes, // Convert PHP array to JavaScript array
+    order_by: rchListingData.filters.order_by,
 };
 
 let filters = {

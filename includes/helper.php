@@ -724,6 +724,7 @@ function rch_get_filters($atts)
                 : $atts['agents'] // It's already an array
             )
             : null,
+        'order_by' => isset($atts['order_by']) && $atts['order_by'] !== '' ? sanitize_text_field($atts['order_by']) : null,
     ];
 
     // Apply array_filter to remove null values
