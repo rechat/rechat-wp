@@ -29,6 +29,7 @@ function rch_display_latest_listings_shortcode($atts)
             'grab_cursor' => false, // New attribute
             'simulate_touch' => true, // New attribute
             'autoplay' => '', // New attribute (JSON string for autoplay settings)
+            'order_by' => '-price', // Options: '-price' (Price), '-list_date' (Date)
         ),
         $atts
     );
@@ -115,6 +116,16 @@ function rch_display_latest_listings_shortcode($atts)
     $simulate_touch = filter_var($atts['simulate_touch'], FILTER_VALIDATE_BOOLEAN);
     $autoplay = !empty($atts['autoplay']) ? $atts['autoplay'] : null;
 
+    // Map human-friendly order_by values to API order_by values
+    $order_by_raw = isset($atts['order_by']) ? trim($atts['order_by']) : '-price';
+    if (strcasecmp($order_by_raw, 'Date') === 0 || strcasecmp($order_by_raw, 'list_date') === 0 || $order_by_raw === '-list_date') {
+        $order_by = '-list_date';
+    } elseif (strcasecmp($order_by_raw, 'Price') === 0 || strcasecmp($order_by_raw, 'price') === 0 || $order_by_raw === '-price') {
+        $order_by = '-price';
+    } else {
+        // If it's already an API-style value (e.g. -price) or something else, pass it through
+        $order_by = $order_by_raw;
+    }
 
     ob_start();
 ?>
@@ -150,6 +161,7 @@ function rch_display_latest_listings_shortcode($atts)
             const ownListing = <?php echo $own_listing ? 'true' : 'false'; ?>;
             const minimumPrice = <?php echo json_encode($minimum_price); ?>;
             const maximumPrice = <?php echo json_encode($maximum_price); ?>;
+            const orderBy = <?php echo json_encode($order_by); ?>;
 
             // Build Swiper settings object conditionally
             const swiperSettings = {
@@ -224,6 +236,7 @@ function rch_display_latest_listings_shortcode($atts)
                             listing_statuses: listingStatuses, // Pass the listing statuses
                             minimum_price: minimumPrice, // Pass the minimum price
                             maximum_price: maximumPrice, // Pass the maximum price
+                            order_by: orderBy, // Pass the order by parameter
                             // add any other parameters here
                         }),
                         headers: {

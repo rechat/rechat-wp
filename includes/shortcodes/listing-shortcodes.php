@@ -32,6 +32,7 @@ function rch_render_listing_list($atts)
         'map_latitude' => '',
         'map_longitude' => '',
         'map_zoom' => '',
+        'order_by' => '-price', // Options: '-price' (Price), '-list_date' (Date)
     ], $atts);
     // Get sanitized filters
     $filters = rch_get_filters($atts);

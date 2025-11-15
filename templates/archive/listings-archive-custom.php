@@ -4,12 +4,10 @@ if (isset($atts['show_filter_bar']) && $atts['show_filter_bar'] === '1') {
     // Include the template if the condition is met
     include RCH_PLUGIN_DIR . 'templates/archive/template-part/listing-filters.php';
 }
-
 // Get map coordinates and zoom level from attributes
 $latitude = isset($atts['map_latitude']) ? floatval($atts['map_latitude']) : 0;
 $longitude = isset($atts['map_longitude']) ? floatval($atts['map_longitude']) : 0;
 $zoom = isset($atts['map_zoom']) ? intval($atts['map_zoom']) : 10;
-
 // Only calculate bounding box and polygon string if we have valid coordinates
 $boundingBox = null;
 $polygonString = '';
@@ -91,6 +89,7 @@ wp_localize_script('rechat-listings-request', 'rchListingData', array(
         'minimum_bedrooms' => $atts['minimum_bedrooms'],
         'maximum_bedrooms' => $atts['maximum_bedrooms'],
         'listing_statuses' => $atts['listing_statuses'],
+        'order_by' => isset($atts['order_by']) ? $atts['order_by'] : '-price',
     )
 ));
 
@@ -125,6 +124,7 @@ wp_localize_script('rechat-listings-map', 'rchListingData', array(
         'minimum_bedrooms' => $atts['minimum_bedrooms'],
         'maximum_bedrooms' => $atts['maximum_bedrooms'],
         'listing_statuses' => $atts['listing_statuses'],
+        'order_by' => isset($atts['order_by']) ? $atts['order_by'] : '-price',
     )
 ));
 

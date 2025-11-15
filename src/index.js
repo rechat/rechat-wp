@@ -275,7 +275,8 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         property_types: { type: 'string', default: '' },
         map_latitude: { type: 'string', default: '' },
         map_longitude: { type: 'string', default: '' },
-        map_zoom: { type: 'string', default: '12' }
+        map_zoom: { type: 'string', default: '12' },
+        order_by: { type: 'string', default: '-price' }
 
     },
     edit({ attributes, setAttributes }) {
@@ -284,7 +285,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             minimum_bathrooms, maximum_bathrooms, minimum_square_meters, maximum_square_meters,
             minimum_year_built, maximum_year_built, minimum_bedrooms, maximum_bedrooms,
             listing_per_page, filterByRegions, filterByOffices, selectedStatuses, show_filter_bar, own_listing, property_types, listing_statuses,
-            map_latitude, map_longitude, map_zoom
+            map_latitude, map_longitude, map_zoom, order_by
         } = attributes;
 
         const [regions, setRegions] = useState([]);
@@ -489,6 +490,15 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                             value={listing_per_page}
                             type="number"
                             onChange={(value) => setAttributes({ listing_per_page: value === '' ? '' : value.toString() })}
+                        />
+                        <SelectControl
+                            label="Order By"
+                            value={order_by}
+                            options={[
+                                { label: 'Price', value: '-price' },
+                                { label: 'Date', value: '-list_date' },
+                            ]}
+                            onChange={(value) => setAttributes({ order_by: value })}
                         />
                     </PanelBody>
                     <PanelBody title="Map Settings">

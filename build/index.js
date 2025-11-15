@@ -1158,6 +1158,10 @@ registerBlockType('rch-rechat-plugin/listing-block', {
     map_zoom: {
       type: 'string',
       default: '12'
+    },
+    order_by: {
+      type: 'string',
+      default: '-price'
     }
   },
   edit({
@@ -1187,7 +1191,8 @@ registerBlockType('rch-rechat-plugin/listing-block', {
       listing_statuses,
       map_latitude,
       map_longitude,
-      map_zoom
+      map_zoom,
+      order_by
     } = attributes;
     const [regions, setRegions] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
     const [offices, setOffices] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
@@ -1428,6 +1433,19 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             type: "number",
             onChange: value => setAttributes({
               listing_per_page: value === '' ? '' : value.toString()
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(SelectControl, {
+            label: "Order By",
+            value: order_by,
+            options: [{
+              label: 'Price',
+              value: '-price'
+            }, {
+              label: 'Date',
+              value: '-list_date'
+            }],
+            onChange: value => setAttributes({
+              order_by: value
             })
           })]
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(PanelBody, {
