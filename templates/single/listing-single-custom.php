@@ -1,4 +1,11 @@
-<?php get_header() ?>
+<?php
+// Check if agent exists in the agents custom post type
+$agent_api_id = isset($listing_detail['list_agent']['id']) ? $listing_detail['list_agent']['id'] : '';
+$seller_agent_api_id = isset($listing_detail['selling_agent']['id']) ? $listing_detail['selling_agent']['id'] : '';
+
+$agent_posts = rch_check_agent_exists($agent_api_id);
+$seller_agent_posts = rch_check_agent_exists($seller_agent_api_id);
+get_header() ?>
 <div class="container">
     <div id="primary" class="content-area rch-primary-content">
         <main id="main" class="site-main content-container site-container">
@@ -201,9 +208,113 @@
                             </ul>
 
                         </div>
+                        <?php
+                        // Output result
+                        if (!empty($agent_posts)):
+                            // Agents found - display list of agents
+                        ?>
+                            <div class="rch-agent-exists rch-agent-info">
+                                <h2><?php echo count($agent_posts) > 1 ? 'Listing Agents' : 'Listing Agent'; ?></h2>
+                                <ul class="rch-agent-list">
+                                    <?php foreach ($agent_posts as $agent_post) :
+                                        $agent_title = get_the_title($agent_post->ID);
+                                        $agent_url = get_permalink($agent_post->ID);
+                                        $agent_img = get_post_meta($agent_post->ID, 'profile_image_url', true);
+                                        $licence_number = get_post_meta($agent_post->ID, 'license_number', true);
+                                        $phone_number = get_post_meta($agent_post->ID, 'phone_number', true);
+                                        $email = get_post_meta($agent_post->ID, 'email', true);
+                                    ?>
+                                        <li class="rch-agent-item">
+                                            <a href="<?php echo esc_url($agent_url); ?>" class="rch-agent-link">
+                                                <?php if ($agent_img) : ?>
+                                                    <img src="<?php echo esc_url($agent_img); ?>" alt="<?php echo esc_attr($agent_title); ?>" class="rch-agent-photo">
+                                                <?php endif; ?>
+                                            </a>
+                                            <div class="rch-listing-agent-info">
+                                                <span class="rch-agent-name">
+                                                    <a href="<?php echo esc_url($agent_url); ?>">
+                                                        <?php echo esc_html($agent_title); ?>
+                                                </a>
 
+                                                <div class="rch_main_listing_agent_data">
+                                                    <?php if ($licence_number) : ?>
+                                                        <div class="rch-agent-license">
+                                                            <span>
+                                                                Licence number:
+                                                            </span>
+                                                            <span class="rch_agent_data_listing">
+                                                                <?php echo esc_html($licence_number); ?>
+                                                            </span>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                    <?php if ($phone_number) : ?>
+                                                        <div class="rch-agent-phone">
+                                                            <span>
+                                                                Phone:
+                                                            </span>
+                                                            <span class="rch_agent_data_listing">
+                                                                <a href="tel:<?php echo esc_html($phone_number); ?>">
+                                                                <?php echo esc_html($phone_number); ?>
+                                                                </a>
+                                                            </span>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                    <?php if ($email) : ?>
+                                                        <div class="rch-agent-email">
+                                                            <span>
+                                                                
+                                                                Email:
+                                                            </span>
+                                                            <span class="rch_agent_data_listing">
+                                                                    <a href="mailto:<?php echo esc_html($email); ?>">
+                                                                        <?php echo esc_html($email); ?>
+                                                                    </a>
+                                                            </span>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
 
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </div>
+                        <?php endif; ?>
 
+                        <?php
+                        // Output result
+                        if (!empty($seller_agent_posts)):
+                            // Agents found - display list of agents
+
+                        ?>
+                            <div class="rch-agent-exists rch-agent-info">
+                                <h2><?php echo count($seller_agent_posts) > 1 ? 'Selling Agents' : 'Selling Agent'; ?></h2>
+                                <ul class="rch-agent-list">
+                                    <?php foreach ($seller_agent_posts as $agent_post) :
+                                        $agent_title = get_the_title($agent_post->ID);
+                                        $agent_url = get_permalink($agent_post->ID);
+                                        $agent_img = get_post_meta($agent_post->ID, 'profile_image_url', true);
+                                        $licence_number = get_post_meta($agent_post->ID, 'license_number', true);
+                                        $phone_number = get_post_meta($agent_post->ID, 'phone_number', true);
+                                        $email = get_post_meta($agent_post->ID, 'email', true);
+                                    ?>
+                                        <li class="rch-agent-item">
+                                            <a href="<?php echo esc_url($agent_url); ?>" class="rch-agent-link">
+                                                <?php if ($agent_img) : ?>
+                                                    <img src="<?php echo esc_url($agent_img); ?>" alt="<?php echo esc_attr($agent_title); ?>" class="rch-agent-photo">
+                                                <?php endif; ?>
+                                                <div class="rch-listing-agent-info">
+                                                    <span class="rch-agent-name"><?php echo esc_html($agent_title); ?></span>
+                                                    <?php if ($licence_number) : ?>
+                                                        <span class="rch-agent-license">Licence number: <?php echo esc_html($licence_number); ?></span>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </a>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </div>
+                        <?php endif; ?>
                         <div class=rch_local_logic id="rch-location">
                             <?php
                             // Retrieve the selected features from the settings
@@ -238,49 +349,14 @@
                             }
                             ?>
                         </div>
-                        <?php
-                        // Check if agent exists in the agents custom post type
-                        $agent_api_id = isset($listing_detail['list_agent']['id']) ? $listing_detail['list_agent']['id'] : '';
-                        $agent_posts = rch_check_agent_exists($agent_api_id);
-
-                        // Output result
-                        if (!empty($agent_posts)) {
-                            // Agents found - display list of agents
-                        ?>
-                            <div class="rch-agent-exists rch-agent-info">
-                                <h2><?php echo count($agent_posts) > 1 ? 'Listing Agents' : 'Listing Agent'; ?></h2>
-                                <ul class="rch-agent-list">
-                                    <?php foreach ($agent_posts as $agent_post) :
-                                        $agent_title = get_the_title($agent_post->ID);
-                                        $agent_url = get_permalink($agent_post->ID);
-                                        $agent_img = get_post_meta($agent_post->ID, 'profile_image_url', true);
-                                        $licence_number = get_post_meta($agent_post->ID, 'license_number', true);
-                                    ?>
-                                        <li class="rch-agent-item">
-                                            <a href="<?php echo esc_url($agent_url); ?>" class="rch-agent-link">
-                                                <?php if ($agent_img) : ?>
-                                                    <img src="<?php echo esc_url($agent_img); ?>" alt="<?php echo esc_attr($agent_title); ?>" class="rch-agent-photo">
-                                                <?php endif; ?>
-                                                <div class="rch-listing-agent-info">
-                                                    <span class="rch-agent-name"><?php echo esc_html($agent_title); ?></span>
-                                                    <?php if ($licence_number) : ?>
-                                                        <span class="rch-agent-license">Licence number: <?php echo esc_html($licence_number); ?></span>
-                                                    <?php endif; ?>
-                                                </div>
-                                            </a>
-                                        </li>
-                                    <?php endforeach; ?>
-                                </ul>
-                            </div>
-                        <?php
-                        } else {
+                        <?php if (empty($agent_posts)):
                             $courtesy_text = '';
                             if (isset($listing_detail['formatted']['courtesy']['text'])) {
                                 // Sanitize then convert newlines to <br>
                                 $courtesy_text = nl2br(esc_html($listing_detail['formatted']['courtesy']['text']));
                             }
                             echo '<div class="rch-agent-no-exists">' . $courtesy_text . '</div>';
-                        }
+                        endif;
                         ?>
                         <?php if (!empty($listing_detail['mls_info'])) { ?>
                             <div class="rch-disclaimer-show">
