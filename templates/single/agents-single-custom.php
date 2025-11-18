@@ -195,6 +195,7 @@ wp_localize_script('rch-agent-single', 'rchAgentData', [
     'brandId' => get_option('rch_rechat_brand_id'),
     'agentMatrixIds' => $agents,
     'agentEmail' => $email,
+    'sortBy' => '-list_date',
     'leadChannel' => get_option('rch_agents_lead_channels'),
     'tags' => explode(',', get_option('rch_agents_selected_tags')),
     'prevIconPath' => RCH_PLUGIN_ASSETS_URL_IMG . 'left-arrow.svg',
