@@ -42,8 +42,15 @@ $primary_color = get_option('_rch_primary_color');
         const sdkOptions = {
             lat: <?php echo isset($listing_detail['property']['address']['location']['latitude']) ? esc_js($listing_detail['property']['address']['location']['latitude']) : "''"; ?>,
             lng: <?php echo isset($listing_detail['property']['address']['location']['longitude']) ? esc_js($listing_detail['property']['address']['location']['longitude']) : "''"; ?>,
+  branding: false ,// ONLY if SDK docs support it
 
-            // ...Other sdk specific options
+            // Add custom marker/pin at the property location
+            marker: {
+                lat: <?php echo isset($listing_detail['property']['address']['location']['latitude']) ? esc_js($listing_detail['property']['address']['location']['latitude']) : "''"; ?>,
+                lng: <?php echo isset($listing_detail['property']['address']['location']['longitude']) ? esc_js($listing_detail['property']['address']['location']['longitude']) : "''"; ?>,
+            },
+
+            // Map provider configuration
             mapProvider: {
                 name: "google",
                 key: "<?php echo esc_js($google_map_api) ?>",
