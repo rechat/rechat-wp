@@ -389,14 +389,14 @@ get_header() ?>
                         <?php endif; ?>
                         
                         <?php
-                        // Output result
-                        if (!empty($agent_posts)):
-                            // Agents found - display list of agents
+                        // Output result - only render if $agent_posts is a non-empty array
+                        if (is_array($agent_posts) && count($agent_posts) > 0):
                         ?>
                             <div class="rch-agent-exists rch-agent-info">
                                 <h2><?php echo count($agent_posts) > 1 ? 'Listing Agents' : 'Listing Agent'; ?></h2>
                                 <ul class="rch-agent-list">
                                     <?php foreach ($agent_posts as $agent_post) :
+                                        if (empty($agent_post) || !isset($agent_post->ID)) continue;
                                         $agent_title = get_the_title($agent_post->ID);
                                         $agent_url = get_permalink($agent_post->ID);
                                         $agent_img = get_post_meta($agent_post->ID, 'profile_image_url', true);
@@ -462,15 +462,14 @@ get_header() ?>
                         <?php endif; ?>
 
                         <?php
-                        // Output result
-                        if (!empty($seller_agent_posts)):
-                            // Agents found - display list of agents
-
+                        // Output result - seller agent posts
+                        if (is_array($seller_agent_posts) && count($seller_agent_posts) > 0):
                         ?>
                             <div class="rch-agent-exists rch-agent-info">
-                                <h2><?php echo count($agent_posts) > 1 ? 'Listing Agents' : 'Listing Agent'; ?></h2>
+                                <h2><?php echo count($seller_agent_posts) > 1 ? 'Seller Agents' : 'Seller Agent'; ?></h2>
                                 <ul class="rch-agent-list">
-                                    <?php foreach ($agent_posts as $agent_post) :
+                                    <?php foreach ($seller_agent_posts as $agent_post) :
+                                        if (empty($agent_post) || !isset($agent_post->ID)) continue;
                                         $agent_title = get_the_title($agent_post->ID);
                                         $agent_url = get_permalink($agent_post->ID);
                                         $agent_img = get_post_meta($agent_post->ID, 'profile_image_url', true);
