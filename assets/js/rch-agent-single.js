@@ -365,6 +365,11 @@
         }
 
         showNoResults() {
+            this.hideLoading();
+            // Hide pagination if present
+            const pagination = DOMService.getElement('agent-pagination');
+            if (pagination) DOMService.hide(pagination);
+
             DOMService.setHTML(
                 this.container, 
                 `<li class="no-properties">${CONFIG.MESSAGES.NO_PROPERTIES}</li>`
@@ -395,6 +400,7 @@
 
         async initialize() {
             if (!Validator.hasAgentIds()) {
+                this.listingsRenderer.hideLoading();
                 this.listingsRenderer.showNoResults();
                 return;
             }
