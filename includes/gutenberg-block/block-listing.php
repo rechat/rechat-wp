@@ -232,7 +232,7 @@ function rch_render_listing_block($attributes)
     disable_filter_baths="<?php echo filter_var($attributes['disable_filter_baths'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false'; ?>"
     disable_filter_property_types="<?php echo filter_var($attributes['disable_filter_property_types'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false'; ?>"
     disable_filter_advanced="<?php echo filter_var($attributes['disable_filter_advanced'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false'; ?>"
-    listing_hyperlink_href="<?php echo home_url(); ?>/listing-detail/?listing_id={id}"
+    listing_hyperlink_href="<?php echo home_url(); ?>/listing-detail/{street_address}?listing_id={id}"
     listing_hyperlink_target="_blank">
 
     <div class="container_listing_sdk">
