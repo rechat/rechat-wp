@@ -200,7 +200,6 @@ h1.rch-single-address {
 }
 .rch-formatted-data-summary ul {
   display: flex;
-  display: flex;
   flex-flow: wrap;
   width: 100%;
 }
@@ -530,6 +529,20 @@ h1.rch-single-address {
   font-family: inherit;
   line-height: 1.5;
 }
+ul.rch_all_listing_data_features {
+  display: flex;
+  flex-direction: column;
+}
+ul.rch_all_listing_data_features li span:first-child {
+  font-weight: bold;
+  margin-inline-end: 10px;
+  display: block;
+      width: 200px;
+
+}
+ul.rch_all_listing_data_features li span:last-child {
+  font-weight: normal;
+}
 /* Medium screens */
 @media (max-width: 1200px) {
 }
@@ -584,6 +597,12 @@ h1.rch-single-address {
   }
   .rch-agent-exists ul li .rch-listing-agent-info .rch_main_listing_agent_data {
     flex-direction: column;
+}
+.rch-formatted-data-summary ul {
+    justify-content: space-between;
+}
+.rch-formatted-data-summary ul li b ,.rch-main-description-single-house h2 {
+    font-size: 1.5rem;
 }
 }
 
