@@ -534,14 +534,17 @@ ul.rch_all_listing_data_features {
   flex-direction: column;
 }
 ul.rch_all_listing_data_features li span:first-child {
-  font-weight: bold;
-  margin-inline-end: 10px;
-  display: block;
-      width: 200px;
+font-weight: bold;
+    margin-inline-end: 10px;
+    display: block;
+    width: 20%;
 
 }
 ul.rch_all_listing_data_features li span:last-child {
-  font-weight: normal;
+ font-weight: normal;
+    display: block;
+    width: 80%;
+    line-height: 1.5;
 }
 /* Medium screens */
 @media (max-width: 1200px) {
