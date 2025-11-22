@@ -546,6 +546,12 @@ ul.rch_all_listing_data_features li span:last-child {
     width: 80%;
     line-height: 1.5;
 }
+.rch-single-image-layout .rch-left-top-slider {
+    width: 100%;
+    max-width: 100%;
+        max-height: 600px;
+
+}
 /* Medium screens */
 @media (max-width: 1200px) {
 }

@@ -10,9 +10,15 @@ get_header() ?>
     <div id="primary" class="content-area rch-primary-content">
         <main id="main" class="site-main content-container site-container">
             <div id="rch-house-detail" class="rch-house-main-details">
-                <div class="rch-top-img-slider">
+                <?php
+                // Check if we have images and determine layout
+                $has_images = is_array($listing_detail['gallery_image_urls']) && !empty($listing_detail['gallery_image_urls']);
+                $image_count = $has_images ? count($listing_detail['gallery_image_urls']) : 0;
+                $is_single_image = ($image_count === 1);
+                ?>
+                <div class="rch-top-img-slider <?php echo $is_single_image ? 'rch-single-image-layout' : ''; ?>">
                     <div class="rch-left-top-slider">
-                        <?php if (is_array($listing_detail['gallery_image_urls']) && !empty($listing_detail['gallery_image_urls'])) { ?>
+                        <?php if ($has_images) { ?>
                             <picture data-slider="0" id="myBtn">
                                 <img src="<?php echo esc_url($listing_detail['cover_image_url']); ?>" alt="Image of House">
                             </picture>
@@ -26,26 +32,25 @@ get_header() ?>
                         }
                         ?>
                     </div>
-                    <div class="rch-right-top-slider">
-                        <?php
-                        // Ensure the gallery_image_urls is an array and has values
-                        if (is_array($listing_detail['gallery_image_urls']) && !empty($listing_detail['gallery_image_urls'])) {
-                            // Loop through the first 4 images
-                            $i = 1;
-                            foreach (array_slice($listing_detail['gallery_image_urls'], 1, 4) as $image_url) {
-                        ?>
-                                <picture data-slider="<?php echo esc_attr($i); ?>" id="myBtn">
-                                    <img src="<?php echo esc_url($image_url); ?>" alt="Gallery of House">
-                                </picture>
-                        <?php
-                                $i++;
+                    <?php if (!$is_single_image) : ?>
+                        <div class="rch-right-top-slider">
+                            <?php
+                            // Ensure the gallery_image_urls is an array and has values with more than 1 image
+                            if ($has_images && $image_count > 1) {
+                                // Loop through the first 4 images
+                                $i = 1;
+                                foreach (array_slice($listing_detail['gallery_image_urls'], 1, 4) as $image_url) {
+                            ?>
+                                    <picture data-slider="<?php echo esc_attr($i); ?>" id="myBtn">
+                                        <img src="<?php echo esc_url($image_url); ?>" alt="Gallery of House">
+                                    </picture>
+                            <?php
+                                    $i++;
+                                }
                             }
-                        } else {
-                            // Fallback message if no images are available
-                            echo '';
-                        }
-                        ?>
-                    </div>
+                            ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
                 <div class="rch-single-price-house">
                     <?php echo sanitize_text_field($listing_detail['formatted']['price']['text']); ?>

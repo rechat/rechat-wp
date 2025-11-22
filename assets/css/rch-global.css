@@ -860,6 +860,20 @@ ul.rch-rechat-block img {
  */
 .rch-agents-list {
   position: relative;
+  margin-bottom: 50px;
+}
+
+.rch-agents-list h2 {
+  margin-bottom: 20px;
+}
+
+/* Separate sections for Active and Sold */
+.rch-agents-active-section {
+  margin-bottom: 60px;
+}
+
+.rch-agents-sold-section {
+  margin-top: 60px;
 }
 
 .rch-agents-list-items {

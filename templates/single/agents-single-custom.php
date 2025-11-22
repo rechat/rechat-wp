@@ -163,20 +163,78 @@ $agents = get_post_meta($post_id, 'agents', true);
                     </div>
                 </div>
             </div>
-            <div class="rch-agents-list">
+            <?php
+            // Get admin settings for listing display mode
+            $display_mode = get_option('rch_listing_display_mode', 'combined'); // Default: combined
+            ?>
+
+            <?php if ($display_mode === 'combined') : ?>
+            <!-- Combined Listings Section -->
+            <div class="rch-agents-list rch-agents-combined-section">
                 <h2><?php the_title(); ?>'s Properties</h2>
                 <!-- 
-                    Agent Properties Section
-                    This section displays all properties associated with the current agent.
-                    Properties are loaded via AJAX by sending the agent's matrix IDs to the API.
-                    The CSS styling for this grid is located in rch-global.css.
+                    Combined Properties Section
+                    Displays all listings: Active, Sold, and Leased properties together
                 -->
-                <div class="rch-agents-list-items rch-listing-list" id="agent-properties-list">
-                    <!-- Properties will be loaded here via AJAX -->
+                <div class="rch-agents-list-items rch-listing-list" id="agent-combined-properties-list">
+                    <!-- All properties will be loaded here via AJAX -->
                 </div>
-                <div id="loading-properties" class="rch-loader" style="display: block;"></div>
-                <?php include(RCH_PLUGIN_DIR . '/templates/single/template-part/agent-properties-pagination.php'); ?>
+                <div id="loading-combined-properties" class="rch-loader" style="display: block;"></div>
+                <div id="agent-combined-pagination" class="rch-listing-pagination"></div>
             </div>
+
+            <?php elseif ($display_mode === 'separate') : ?>
+            <!-- Active Listings Section -->
+            <div class="rch-agents-list rch-agents-active-section">
+                <h2><?php the_title(); ?>'s Active Listings</h2>
+                <!-- 
+                    Active Properties Section
+                    Displays: Active, Incoming, Coming Soon, Active Under Contract, Active Option Contract, 
+                              Active Contingent, Active Kick Out, Pending
+                -->
+                <div class="rch-agents-list-items rch-listing-list" id="agent-active-properties-list">
+                    <!-- Active properties will be loaded here via AJAX -->
+                </div>
+                <div id="loading-active-properties" class="rch-loader" style="display: block;"></div>
+                <div id="agent-active-pagination" class="rch-listing-pagination"></div>
+            </div>
+
+            <!-- Sold Listings Section -->
+            <div class="rch-agents-list rch-agents-sold-section">
+                <h2><?php the_title(); ?>'s Sold Listings</h2>
+                <!-- 
+                    Sold Properties Section
+                    Displays: Sold, Leased
+                -->
+                <div class="rch-agents-list-items rch-listing-list" id="agent-sold-properties-list">
+                    <!-- Sold properties will be loaded here via AJAX -->
+                </div>
+                <div id="loading-sold-properties" class="rch-loader" style="display: block;"></div>
+                <div id="agent-sold-pagination" class="rch-listing-pagination"></div>
+            </div>
+
+            <?php elseif ($display_mode === 'active-only') : ?>
+            <!-- Active Listings Only Section -->
+            <div class="rch-agents-list rch-agents-active-section">
+                <h2><?php the_title(); ?>'s Active Listings</h2>
+                <div class="rch-agents-list-items rch-listing-list" id="agent-active-properties-list">
+                    <!-- Active properties will be loaded here via AJAX -->
+                </div>
+                <div id="loading-active-properties" class="rch-loader" style="display: block;"></div>
+                <div id="agent-active-pagination" class="rch-listing-pagination"></div>
+            </div>
+
+            <?php elseif ($display_mode === 'sold-only') : ?>
+            <!-- Sold Listings Only Section -->
+            <div class="rch-agents-list rch-agents-sold-section">
+                <h2><?php the_title(); ?>'s Sold Listings</h2>
+                <div class="rch-agents-list-items rch-listing-list" id="agent-sold-properties-list">
+                    <!-- Sold properties will be loaded here via AJAX -->
+                </div>
+                <div id="loading-sold-properties" class="rch-loader" style="display: block;"></div>
+                <div id="agent-sold-pagination" class="rch-listing-pagination"></div>
+            </div>
+            <?php endif; ?>
         <?php endwhile; ?>
 
     </main><!-- #main -->
@@ -200,6 +258,7 @@ wp_localize_script('rch-agent-single', 'rchAgentData', [
     'tags' => explode(',', get_option('rch_agents_selected_tags')),
     'prevIconPath' => RCH_PLUGIN_ASSETS_URL_IMG . 'left-arrow.svg',
     'nextIconPath' => RCH_PLUGIN_ASSETS_URL_IMG . 'right-arrow.svg',
+    'displayMode' => get_option('rch_listing_display_mode', 'combined'),
 ]);
 ?>
 

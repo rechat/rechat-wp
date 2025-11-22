@@ -34,8 +34,9 @@ function rch_rechat_menu_page()
             <h2 class="nav-tab-wrapper">
                 <a href="?page=rechat-setting&tab=sync-data" class="nav-tab <?php echo $active_tab === 'sync-data' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Sync Your Data', 'rechat-plugin'); ?></a>
                 <a href="?page=rechat-setting&tab=connect-to-rechat" class="nav-tab <?php echo $active_tab === 'connect-to-rechat' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Connect To Rechat', 'rechat-plugin'); ?></a>
+                <a href="?page=rechat-setting&tab=general-settings" class="nav-tab <?php echo $active_tab === 'general-settings' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('General Settings', 'rechat-plugin'); ?></a>
                 <a href="?page=rechat-setting&tab=lead-capture" class="nav-tab <?php echo $active_tab === 'lead-capture' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Lead Capture', 'rechat-plugin'); ?></a>
-                <a href="?page=rechat-setting&tab=local-logic" class="nav-tab <?php echo $active_tab === 'lead-logic' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Local Logic Settings', 'rechat-plugin'); ?></a>
+                <a href="?page=rechat-setting&tab=local-logic" class="nav-tab <?php echo $active_tab === 'local-logic' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e('Local Logic Settings', 'rechat-plugin'); ?></a>
             </h2>
         </div>
         <?php settings_errors(); ?>
@@ -163,6 +164,14 @@ function rch_rechat_menu_page()
                             <button id="cancel-disconnect" class="button"><?php esc_html_e('Cancel', 'rechat-plugin'); ?></button>
                         </div>
                     </div>
+                <?php elseif ($active_tab === 'general-settings') : ?>
+                    <form method="POST" action="options.php">
+                        <?php
+                        settings_fields('general_settings');
+                        do_settings_sections('general_settings');
+                        submit_button();
+                        ?>
+                    </form>
                 <?php elseif ($active_tab === 'lead-capture') : ?>
                     <form method="POST" action="options.php">
                         <?php

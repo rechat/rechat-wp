@@ -21,7 +21,11 @@
     // ============================================================================
 
     const CONFIG = {
-        LISTING_STATUSES: 'Active, Sold, Pending,Temp Off Market, Leased,Active Option Contract, Active Contingent, Active Kick Out, Incoming,Coming Soon,Active Under Contract',
+        LISTING_STATUSES: {
+            ACTIVE: 'Active,Incoming,Coming Soon,Active Under Contract,Active Option Contract,Active Contingent,Active Kick Out,Pending',
+            SOLD: 'Sold,Leased',
+            COMBINED: 'Active,Incoming,Coming Soon,Active Under Contract,Active Option Contract,Active Contingent,Active Kick Out,Pending,Sold,Leased'
+        },
         LISTINGS_PER_PAGE: 12,
         PAGINATION_RANGE: 2,
         MESSAGES: {
@@ -390,12 +394,13 @@
      * Single Responsibility: Coordinate listings and pagination
      */
     class AgentPropertiesManager {
-        constructor(config, ajaxService, listingsRenderer, paginationRenderer, paginationState) {
+        constructor(config, ajaxService, listingsRenderer, paginationRenderer, paginationState, listingType) {
             this.config = config;
             this.ajaxService = ajaxService;
             this.listingsRenderer = listingsRenderer;
             this.paginationRenderer = paginationRenderer;
             this.paginationState = paginationState;
+            this.listingType = listingType; // 'active' or 'sold'
         }
 
         async initialize() {
@@ -459,7 +464,7 @@
                 brand: this.config.brandId,
                 agents: this.config.agentMatrixIds,
                 order_by: this.config.sortBy,
-                listing_statuses: CONFIG.LISTING_STATUSES
+                listing_statuses: this._getCurrentListingStatuses()
             };
         }
 
@@ -468,8 +473,18 @@
                 brand: this.config.brandId,
                 agents: this.config.agentMatrixIds,
                 sortBy: this.config.sortBy,
-                listing_statuses: CONFIG.LISTING_STATUSES
+                listing_statuses: this._getCurrentListingStatuses()
             };
+        }
+
+        _getCurrentListingStatuses() {
+            if (this.listingType === 'sold') {
+                return CONFIG.LISTING_STATUSES.SOLD;
+            } else if (this.listingType === 'combined') {
+                return CONFIG.LISTING_STATUSES.COMBINED;
+            } else {
+                return CONFIG.LISTING_STATUSES.ACTIVE;
+            }
         }
     }
 
@@ -584,31 +599,149 @@
             }
 
             const ajaxService = new AjaxService(this.config.ajaxUrl);
-            const paginationState = new PaginationState();
+            const displayMode = this.config.displayMode || 'combined';
 
-            const listingsRenderer = new ListingsRenderer(
-                DOMService.getElement('agent-properties-list'),
-                DOMService.getElement('loading-properties')
-            );
+            if (displayMode === 'combined') {
+                // Initialize Combined Listings Section
+                const combinedPaginationState = new PaginationState();
 
-            const paginationRenderer = new PaginationRenderer(
-                DOMService.getElement('agent-pagination'),
-                paginationState,
-                {
-                    prev: this.config.prevIconPath,
-                    next: this.config.nextIconPath
-                }
-            );
+                const combinedListingsRenderer = new ListingsRenderer(
+                    DOMService.getElement('agent-combined-properties-list'),
+                    DOMService.getElement('loading-combined-properties')
+                );
 
-            const propertiesManager = new AgentPropertiesManager(
-                this.config,
-                ajaxService,
-                listingsRenderer,
-                paginationRenderer,
-                paginationState
-            );
+                const combinedPaginationRenderer = new PaginationRenderer(
+                    DOMService.getElement('agent-combined-pagination'),
+                    combinedPaginationState,
+                    {
+                        prev: this.config.prevIconPath,
+                        next: this.config.nextIconPath
+                    }
+                );
 
-            propertiesManager.initialize();
+                const combinedPropertiesManager = new AgentPropertiesManager(
+                    this.config,
+                    ajaxService,
+                    combinedListingsRenderer,
+                    combinedPaginationRenderer,
+                    combinedPaginationState,
+                    'combined'
+                );
+
+                combinedPropertiesManager.initialize();
+            } else if (displayMode === 'separate') {
+                // Initialize Active Listings Section
+                const activePaginationState = new PaginationState();
+
+                const activeListingsRenderer = new ListingsRenderer(
+                    DOMService.getElement('agent-active-properties-list'),
+                    DOMService.getElement('loading-active-properties')
+                );
+
+                const activePaginationRenderer = new PaginationRenderer(
+                    DOMService.getElement('agent-active-pagination'),
+                    activePaginationState,
+                    {
+                        prev: this.config.prevIconPath,
+                        next: this.config.nextIconPath
+                    }
+                );
+
+                const activePropertiesManager = new AgentPropertiesManager(
+                    this.config,
+                    ajaxService,
+                    activeListingsRenderer,
+                    activePaginationRenderer,
+                    activePaginationState,
+                    'active'
+                );
+
+                activePropertiesManager.initialize();
+
+                // Initialize Sold Listings Section
+                const soldPaginationState = new PaginationState();
+
+                const soldListingsRenderer = new ListingsRenderer(
+                    DOMService.getElement('agent-sold-properties-list'),
+                    DOMService.getElement('loading-sold-properties')
+                );
+
+                const soldPaginationRenderer = new PaginationRenderer(
+                    DOMService.getElement('agent-sold-pagination'),
+                    soldPaginationState,
+                    {
+                        prev: this.config.prevIconPath,
+                        next: this.config.nextIconPath
+                    }
+                );
+
+                const soldPropertiesManager = new AgentPropertiesManager(
+                    this.config,
+                    ajaxService,
+                    soldListingsRenderer,
+                    soldPaginationRenderer,
+                    soldPaginationState,
+                    'sold'
+                );
+
+                soldPropertiesManager.initialize();
+            } else if (displayMode === 'active-only') {
+                // Initialize Active Listings Only
+                const activePaginationState = new PaginationState();
+
+                const activeListingsRenderer = new ListingsRenderer(
+                    DOMService.getElement('agent-active-properties-list'),
+                    DOMService.getElement('loading-active-properties')
+                );
+
+                const activePaginationRenderer = new PaginationRenderer(
+                    DOMService.getElement('agent-active-pagination'),
+                    activePaginationState,
+                    {
+                        prev: this.config.prevIconPath,
+                        next: this.config.nextIconPath
+                    }
+                );
+
+                const activePropertiesManager = new AgentPropertiesManager(
+                    this.config,
+                    ajaxService,
+                    activeListingsRenderer,
+                    activePaginationRenderer,
+                    activePaginationState,
+                    'active'
+                );
+
+                activePropertiesManager.initialize();
+            } else if (displayMode === 'sold-only') {
+                // Initialize Sold Listings Only
+                const soldPaginationState = new PaginationState();
+
+                const soldListingsRenderer = new ListingsRenderer(
+                    DOMService.getElement('agent-sold-properties-list'),
+                    DOMService.getElement('loading-sold-properties')
+                );
+
+                const soldPaginationRenderer = new PaginationRenderer(
+                    DOMService.getElement('agent-sold-pagination'),
+                    soldPaginationState,
+                    {
+                        prev: this.config.prevIconPath,
+                        next: this.config.nextIconPath
+                    }
+                );
+
+                const soldPropertiesManager = new AgentPropertiesManager(
+                    this.config,
+                    ajaxService,
+                    soldListingsRenderer,
+                    soldPaginationRenderer,
+                    soldPaginationState,
+                    'sold'
+                );
+
+                soldPropertiesManager.initialize();
+            }
         }
     }
 
