@@ -1042,3 +1042,264 @@ function rch_check_agent_exists($agent_api_id)
     
     return $matching_agents;
 }
+
+/*******************************
+ * Convert hexadecimal color to RGB array
+ ******************************/
+function rch_hex_to_rgb($hex)
+{
+    $hex = str_replace('#', '', $hex);
+
+    if (strlen($hex) === 3) {
+        $r = hexdec(str_repeat(substr($hex, 0, 1), 2));
+        $g = hexdec(str_repeat(substr($hex, 1, 1), 2));
+        $b = hexdec(str_repeat(substr($hex, 2, 1), 2));
+    } else {
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+    }
+
+    return [$r, $g, $b];
+}
+
+/*******************************
+ * Determine if a color is dark based on brightness calculation
+ ******************************/
+function rch_is_color_dark($hex)
+{
+    list($r, $g, $b) = rch_hex_to_rgb($hex);
+
+    // Calculate perceived brightness using standard luminance formula
+    $brightness = (($r * 299) + ($g * 587) + ($b * 114)) / 1000;
+
+    return $brightness < 150;
+}
+
+/*******************************
+ * Get text color (black or white) that contrasts with background
+ ******************************/
+function rch_get_contrast_text_color($background_color)
+{
+    return rch_is_color_dark($background_color) ? '#ffffff' : '#000000';
+}
+
+/*******************************
+ * Get block attributes configuration for listing block
+ ******************************/
+function rch_get_listing_block_attributes()
+{
+    return array(
+        'minimum_price' => array('type' => 'string', 'default' => ''),
+        'maximum_price' => array('type' => 'string', 'default' => ''),
+        'minimum_lot_square_meters' => array('type' => 'string', 'default' => ''),
+        'maximum_lot_square_meters' => array('type' => 'string', 'default' => ''),
+        'minimum_bathrooms' => array('type' => 'string', 'default' => ''),
+        'maximum_bathrooms' => array('type' => 'string', 'default' => ''),
+        'minimum_square_meters' => array('type' => 'string', 'default' => ''),
+        'maximum_square_meters' => array('type' => 'string', 'default' => ''),
+        'minimum_year_built' => array('type' => 'string', 'default' => ''),
+        'maximum_year_built' => array('type' => 'string', 'default' => ''),
+        'minimum_bedrooms' => array('type' => 'string', 'default' => ''),
+        'maximum_bedrooms' => array('type' => 'string', 'default' => ''),
+        'listing_per_page' => array('type' => 'string', 'default' => 5),
+        'filterByRegions' => array('type' => 'string', 'default' => ''),
+        'filterByOffices' => array('type' => 'string', 'default' => ''),
+        'brand' => array('type' => 'string', 'default' => get_option('rch_rechat_brand_id')),
+        'selectedStatuses' => array('type' => 'array', 'default' => []),
+        'listing_statuses' => array('type' => 'array', 'default' => []),
+        'disable_filter_address' => array('type' => 'boolean', 'default' => false),
+        'disable_filter_price' => array('type' => 'boolean', 'default' => false),
+        'disable_filter_beds' => array('type' => 'boolean', 'default' => false),
+        'disable_filter_baths' => array('type' => 'boolean', 'default' => false),
+        'disable_filter_property_types' => array('type' => 'boolean', 'default' => false),
+        'disable_filter_advanced' => array('type' => 'boolean', 'default' => false),
+        'layout_style' => array('type' => 'string', 'default' => 'default'),
+        'show_agent_card' => array('type' => 'boolean', 'default' => false),
+        'agent_image' => array('type' => 'string', 'default' => ''),
+        'agent_name' => array('type' => 'string', 'default' => ''),
+        'agent_title' => array('type' => 'string', 'default' => ''),
+        'agent_phone' => array('type' => 'string', 'default' => ''),
+        'agent_email' => array('type' => 'string', 'default' => ''),
+        'agent_address' => array('type' => 'string', 'default' => ''),
+        'own_listing' => array('type' => 'boolean', 'default' => true),
+        'property_types' => array('type' => 'string', 'default' => ''),
+        'map_latitude' => array('type' => 'string', 'default' => ''),
+        'map_longitude' => array('type' => 'string', 'default' => ''),
+        'map_zoom' => array('type' => 'string', 'default' => '12'),
+    );
+}
+
+/*******************************
+ * Sanitize listing statuses array to comma-separated string
+ ******************************/
+function rch_sanitize_listing_statuses($listing_statuses)
+{
+    if (is_array($listing_statuses)) {
+        $sanitized = array_filter(
+            array_map('sanitize_text_field', $listing_statuses),
+            function ($status) {
+                return $status !== '';
+            }
+        );
+        return implode(',', $sanitized);
+    }
+
+    return sanitize_text_field((string) $listing_statuses);
+}
+
+/*******************************
+ * Get map default center coordinates
+ ******************************/
+function rch_get_map_default_center($latitude, $longitude)
+{
+    $default_center = '32.7767, -96.797'; // Dallas coordinates
+
+    if (!empty($latitude) && !empty($longitude)) {
+        $lat = sanitize_text_field($latitude);
+        $lng = sanitize_text_field($longitude);
+
+        if (is_numeric($lat) && is_numeric($lng)) {
+            $default_center = $lat . ', ' . $lng;
+        }
+    }
+
+    return $default_center;
+}
+
+/*******************************
+ * Sanitize agent card data
+ ******************************/
+function rch_sanitize_agent_data($attributes)
+{
+    return array(
+        'show_agent_card' => isset($attributes['show_agent_card']) && filter_var($attributes['show_agent_card'], FILTER_VALIDATE_BOOLEAN),
+        'agent_image' => isset($attributes['agent_image']) ? esc_url($attributes['agent_image']) : '',
+        'agent_name' => isset($attributes['agent_name']) ? sanitize_text_field($attributes['agent_name']) : '',
+        'agent_title' => isset($attributes['agent_title']) ? sanitize_text_field($attributes['agent_title']) : '',
+        'agent_phone' => isset($attributes['agent_phone']) ? sanitize_text_field($attributes['agent_phone']) : '',
+        'agent_email' => isset($attributes['agent_email']) ? sanitize_email($attributes['agent_email']) : '',
+        'agent_address' => isset($attributes['agent_address']) ? sanitize_text_field($attributes['agent_address']) : '',
+    );
+}
+
+/*******************************
+ * Render agent card HTML
+ ******************************/
+function rch_render_agent_card($agent_data)
+{
+    if (!$agent_data['show_agent_card']) {
+        return '';
+    }
+
+    ob_start();
+?>
+    <div class="agent-container">
+        <?php if (!empty($agent_data['agent_image'])): ?>
+            <img src="<?php echo esc_url($agent_data['agent_image']); ?>" alt="<?php echo esc_attr($agent_data['agent_name']); ?>" />
+        <?php endif; ?>
+
+        <div>
+            <div class="agent-container__heading">
+                <div class="title"><?php echo esc_html($agent_data['agent_name']); ?></div>
+                <span><?php echo esc_html($agent_data['agent_title']); ?></span>
+            </div>
+
+            <div class="agent-container__contact">
+                <?php if (!empty($agent_data['agent_phone'])): ?>
+                    <div class="contact-item"><?php echo esc_html($agent_data['agent_phone']); ?></div>
+                <?php endif; ?>
+                <?php if (!empty($agent_data['agent_email'])): ?>
+                    <div class="contact-item"><?php echo esc_html($agent_data['agent_email']); ?></div>
+                <?php endif; ?>
+                <?php if (!empty($agent_data['agent_address'])): ?>
+                    <div class="contact-item address"><?php echo esc_html($agent_data['agent_address']); ?></div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+<?php
+    return ob_get_clean();
+}
+
+/*******************************
+ * Render listing block layout styles
+ ******************************/
+function rch_render_layout_styles($layout_style, $primary_color)
+{
+    $text_color = rch_get_contrast_text_color($primary_color);
+
+    ob_start();
+?>
+    <style>
+        .rechat-component.map__marker {
+            background-color: <?php echo esc_attr($primary_color); ?> !important;
+            color: <?php echo esc_attr($text_color); ?> !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 7px 5px !important;
+            font-size: 10px !important;
+        }
+    </style>
+
+    <?php if ($layout_style === 'layout2' || $layout_style === 'layout3'): ?>
+        <style>
+            <?php if ($layout_style === 'layout2'): ?>
+                .map {
+                    flex: 3;
+                }
+                .listings {
+                    flex: 7;
+                    min-height: 0;
+                    overflow: auto;
+                }
+            <?php elseif ($layout_style === 'layout3'): ?>
+                .map {
+                    flex: 9;
+                }
+                .listings {
+                    flex: 3;
+                    min-height: 0;
+                    overflow: auto;
+                }
+            <?php endif; ?>
+        </style>
+    <?php endif; ?>
+<?php
+    return ob_get_clean();
+}
+
+/*******************************
+ * Render rechat root attributes
+ ******************************/
+function rch_get_rechat_root_attributes($attributes, $map_default_center, $listing_statuses_str)
+{
+    $attrs = array();
+
+    if (!empty($attributes['own_listing']) && filter_var($attributes['own_listing'], FILTER_VALIDATE_BOOLEAN)) {
+        $attrs[] = 'brand_id="' . esc_attr($attributes['brand']) . '"';
+    }
+
+    $attrs[] = 'map_zoom="' . esc_attr($attributes['map_zoom']) . '"';
+    $attrs[] = 'map_api_key="' . esc_attr(get_option('rch_rechat_google_map_api_key')) . '"';
+    $attrs[] = 'map_default_center="' . esc_attr($map_default_center) . '"';
+    $attrs[] = 'filter_address=""';
+    $attrs[] = 'disable_price="true"';
+    $attrs[] = 'filter_minimum_price="' . esc_attr($attributes['minimum_price']) . '"';
+    $attrs[] = 'filter_minimum_bathrooms="' . esc_attr($attributes['minimum_bathrooms']) . '"';
+    $attrs[] = 'filter_minimum_bedrooms="' . esc_attr($attributes['minimum_bedrooms']) . '"';
+    $attrs[] = 'filter_maximum_bedrooms="' . esc_attr($attributes['maximum_bedrooms']) . '"';
+    $attrs[] = 'filter_maximum_year_built="' . esc_attr($attributes['maximum_year_built']) . '"';
+    $attrs[] = 'filter_listing_statuses="' . esc_attr($listing_statuses_str) . '"';
+    $attrs[] = 'disable_filter_address="' . (filter_var($attributes['disable_filter_address'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
+    $attrs[] = 'disable_filter_price="' . (filter_var($attributes['disable_filter_price'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
+    $attrs[] = 'disable_filter_beds="' . (filter_var($attributes['disable_filter_beds'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
+    $attrs[] = 'disable_filter_baths="' . (filter_var($attributes['disable_filter_baths'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
+    $attrs[] = 'disable_filter_property_types="' . (filter_var($attributes['disable_filter_property_types'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
+    $attrs[] = 'disable_filter_advanced="' . (filter_var($attributes['disable_filter_advanced'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
+    $attrs[] = 'listing_hyperlink_href="' . home_url() . '/listing-detail/{street_address}?listing_id={id}"';
+    $attrs[] = 'listing_hyperlink_target="_blank"';
+
+    return implode("\n      ", $attrs);
+}
