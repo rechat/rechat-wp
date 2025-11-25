@@ -949,7 +949,7 @@ get_header() ?>
             phone_number: document.getElementById('phone_number').value,
             email: document.getElementById('email').value,
             note: document.getElementById('note').value,
-            tag: <?php echo wp_json_encode(explode(',', get_option("rch_selected_tags"))); ?>, // Convert comma-separated string to array
+            tag: <?php echo get_option("rch_selected_tags", '[]'); ?>, // Already a JSON array
             source_type: 'Website',
             mlsid: '<?php echo esc_js($listing_detail['mls_number']) ?>',
             listing_id: '<?php echo esc_js($listing_detail['id']) ?>',
