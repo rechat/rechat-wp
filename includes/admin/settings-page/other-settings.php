@@ -32,6 +32,22 @@ function rch_appearance_setting()
         return array_map('sanitize_text_field', $input); // Sanitizes each tag
     }
 
+    // Sanitize function for JSON array (used for tags)
+    function rch_sanitize_json_array($input)
+    {
+        // Decode the JSON string
+        $decoded = json_decode($input, true);
+        
+        // If it's not valid JSON or not an array, return empty JSON array
+        if (!is_array($decoded)) {
+            return '[]';
+        }
+        
+        // Sanitize each item and re-encode
+        $sanitized = array_map('sanitize_text_field', $decoded);
+        return wp_json_encode($sanitized);
+    }
+
     // Register the 'rch_lead_channel' setting
     register_setting('appearance_settings', 'rch_lead_channels', array(
         'sanitize_callback' => 'sanitize_lead_channel',
@@ -42,11 +58,15 @@ function rch_appearance_setting()
         'sanitize_callback' => 'sanitize_lead_channel',
     ));
 
-    // Register the 'rch_selected_tags' setting
-    register_setting('appearance_settings', 'rch_selected_tags');
+    // Register the 'rch_selected_tags' setting with proper sanitization
+    register_setting('appearance_settings', 'rch_selected_tags', array(
+        'sanitize_callback' => 'rch_sanitize_json_array',
+    ));
 
     // Register for Agent's Tags
-    register_setting('appearance_settings', 'rch_agents_selected_tags');
+    register_setting('appearance_settings', 'rch_agents_selected_tags', array(
+        'sanitize_callback' => 'rch_sanitize_json_array',
+    ));
 
     add_settings_section(
         'rch_theme_appearance_setting',
