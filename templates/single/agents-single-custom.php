@@ -255,7 +255,7 @@ wp_localize_script('rch-agent-single', 'rchAgentData', [
     'agentEmail' => $email,
     'sortBy' => '-list_date',
     'leadChannel' => get_option('rch_agents_lead_channels'),
-    'tags' => explode(',', get_option('rch_agents_selected_tags')),
+    'tags' => json_decode(get_option('rch_agents_selected_tags', '[]'), true),
     'prevIconPath' => RCH_PLUGIN_ASSETS_URL_IMG . 'left-arrow.svg',
     'nextIconPath' => RCH_PLUGIN_ASSETS_URL_IMG . 'right-arrow.svg',
     'displayMode' => get_option('rch_listing_display_mode', 'combined'),
