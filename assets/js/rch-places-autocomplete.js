@@ -24,7 +24,7 @@ function initPlacesAutocomplete() {
         });
 
         // Filter out neighborhoods - only allow cities, states, and postal codes
-        mobileAutocomplete.setTypes(['locality', 'administrative_area_level_1', 'postal_code']);
+        mobileAutocomplete.setTypes(['locality', 'administrative_area_level_1', 'postal_code', 'street_address', 'route']);
 
         // Add listener for place selection
         mobileAutocomplete.addListener('place_changed', () => {
@@ -40,7 +40,7 @@ function initPlacesAutocomplete() {
         });
 
         // Filter out neighborhoods - only allow cities, states, and postal codes
-        desktopAutocomplete.setTypes(['locality', 'administrative_area_level_1', 'postal_code']);
+        desktopAutocomplete.setTypes(['locality', 'administrative_area_level_1', 'postal_code', 'street_address', 'route']);
 
         // Add listener for place selection
         desktopAutocomplete.addListener('place_changed', () => {
@@ -55,7 +55,6 @@ function initPlacesAutocomplete() {
  */
 function handlePlaceSelection(autocomplete) {
     const place = autocomplete.getPlace();
-
     if (!place.geometry || !place.geometry.location) {
         console.error('No details available for place selection');
         return;
@@ -64,16 +63,36 @@ function handlePlaceSelection(autocomplete) {
     // Get the latitude and longitude
     const lat = place.geometry.location.lat();
     const lng = place.geometry.location.lng();
+    // Check if the place has viewport (bounding box)
+    let boundingBox = null;
+    if (place.geometry.viewport) {
+        const viewport = place.geometry.viewport;
+        boundingBox = {
+            northeast: [viewport.getNorthEast().lat(), viewport.getNorthEast().lng()],
+            southeast: [viewport.getSouthWest().lat(), viewport.getNorthEast().lng()],
+            southwest: [viewport.getSouthWest().lat(), viewport.getSouthWest().lng()],
+            northwest: [viewport.getNorthEast().lat(), viewport.getSouthWest().lng()]
+        };
+    }
 
-    // Use a closer zoom level for cities/places (zoom level 12 is good for cities)
-    const zoom = 10;
+    // Use bounds if available, otherwise use viewport or default zoom
+    let zoom = 12;
+    if (place.geometry.bounds) {
+        // Has precise bounds - use them
+        map.fitBounds(place.geometry.bounds);
+        zoom = map.getZoom();
+    } else if (place.geometry.viewport) {
+        // Has viewport - use it
+        map.fitBounds(place.geometry.viewport);
+        zoom = map.getZoom();
+    } else {
+        // No bounds - just center and zoom
+        map.setCenter(place.geometry.location);
+        map.setZoom(zoom);
+    }
 
-    // Update the map center and zoom immediately
-    map.setCenter(place.geometry.location);
-    map.setZoom(zoom);
-
-    // Call PHP functions through AJAX to calculate bounding box and polygon
-    calculatePolygonFromPlace(lat, lng, zoom);
+    // Calculate polygon from the place
+    calculatePolygonFromPlace(lat, lng, zoom, boundingBox, place);
 }
 
 /**
@@ -81,17 +100,56 @@ function handlePlaceSelection(autocomplete) {
  * @param {number} lat - The latitude of the selected place
  * @param {number} lng - The longitude of the selected place
  * @param {number} zoom - The current zoom level
+ * @param {Object|null} boundingBox - Pre-calculated bounding box from place viewport
+ * @param {Object} place - The full place object from Google Places API
  */
-function calculatePolygonFromPlace(lat, lng, zoom) {
+function calculatePolygonFromPlace(lat, lng, zoom, boundingBox = null, place = null) {
+    // If we already have a bounding box from the place viewport, use it directly
+    if (boundingBox) {
+        const polygonString = formatPolygonString(boundingBox);
+        
+        // Update the hidden input with the new polygon string
+        document.getElementById('query-string').value = polygonString;
+
+        // Update filters for API requests
+        if (typeof filters !== 'undefined') {
+            filters.points = polygonString;
+        }
+
+        // Fetch new listings with the updated polygon
+        updateListingList();
+        return;
+    }
+
+    // Otherwise, calculate it via AJAX
+    const ajaxData = {
+        action: 'rch_calculate_polygon_from_place',
+        lat: lat,
+        lng: lng,
+        zoom: zoom
+    };
+
+    // If we have place geometry bounds or viewport, send them
+    if (place) {
+        if (place.geometry.bounds) {
+            const bounds = place.geometry.bounds;
+            ajaxData.bounds = {
+                northeast: [bounds.getNorthEast().lat(), bounds.getNorthEast().lng()],
+                southwest: [bounds.getSouthWest().lat(), bounds.getSouthWest().lng()]
+            };
+        } else if (place.geometry.viewport) {
+            const viewport = place.geometry.viewport;
+            ajaxData.bounds = {
+                northeast: [viewport.getNorthEast().lat(), viewport.getNorthEast().lng()],
+                southwest: [viewport.getSouthWest().lat(), viewport.getSouthWest().lng()]
+            };
+        }
+    }
+
     jQuery.ajax({
         url: rchListingData.ajaxUrl,
         type: 'POST',
-        data: {
-            action: 'rch_calculate_polygon_from_place',
-            lat: lat,
-            lng: lng,
-            zoom: zoom
-        },
+        data: ajaxData,
         success: function (response) {
             if (response.success) {
                 // Update the hidden input with the new polygon string
@@ -115,6 +173,23 @@ function calculatePolygonFromPlace(lat, lng, zoom) {
             console.error('AJAX error:', error);
         }
     });
+}
+
+/**
+ * Format bounding box into polygon string for API
+ * @param {Object} boundingBox - The bounding box with northeast, southeast, southwest, northwest coordinates
+ * @returns {string} - Formatted polygon string
+ */
+function formatPolygonString(boundingBox) {
+    const points = [
+        boundingBox.northeast,
+        boundingBox.southeast,
+        boundingBox.southwest,
+        boundingBox.northwest,
+        boundingBox.northeast // Close the polygon
+    ];
+    
+    return points.map(point => `${point[0]},${point[1]}`).join('|');
 }
 
 /**

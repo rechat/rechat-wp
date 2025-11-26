@@ -1,4 +1,9 @@
 /**
+ * Global flag to track if a preset polygon was provided from search form
+ */
+let hasPresetPolygonFromSearch = false;
+
+/**
  * Formats the price to a shortened format (e.g., 1M, 340K).
  * @param {number} price - The price to format.
  * @returns {string} - The formatted price.
@@ -80,11 +85,28 @@ function initMap() {
     // Wait for the map to be fully loaded before fetching data
     // This ensures bounds and other map properties are properly initialized
     google.maps.event.addListenerOnce(map, 'idle', function() {
-        // Calculate the bounding box from the actual map viewport
-        // This ensures the initial bounds match what will be calculated on drag/zoom
-        updateFilterPoints();
+        // Check if we have a pre-calculated polygon from search form
+        const queryStringInput = document.getElementById('query-string');
+        const hasPresetPolygon = queryStringInput && queryStringInput.value &&
+            typeof rchListingData !== 'undefined' &&
+            rchListingData.mapCoordinates &&
+            rchListingData.mapCoordinates.polygonString;
         
-        // Now that the map is fully loaded and bounds are set, fetch listings data
+        // Only update filter points if we don't have a preset polygon
+        if (!hasPresetPolygon) {
+            // Calculate the bounding box from the actual map viewport
+            // This ensures the initial bounds match what will be calculated on drag/zoom
+            updateFilterPoints();
+        } else {
+            console.log('Preserving preset polygon from search form:', queryStringInput.value);
+            hasPresetPolygonFromSearch = true;
+            // Make sure filters.points is set to the preset polygon
+            if (typeof filters !== 'undefined') {
+                filters.points = queryStringInput.value;
+            }
+        }
+        
+        // Now that the map is fully loaded and polygon is set, fetch listings data
         fetchListingsDataAndUpdateMap();
     });
 }
@@ -109,8 +131,10 @@ function fetchListingsDataAndUpdateMap() {
                     map.fitBounds(bounds);
                     map.setCenter(bounds.getCenter());
 
-                    // Update filter points for the current view
-                    updateFilterPoints();
+                    // Update filter points for the current view (only if no preset polygon)
+                    if (!hasPresetPolygonFromSearch) {
+                        updateFilterPoints();
+                    }
                 } else {
                     // We have coordinates from the shortcode, but we need to ensure
                     // the map viewport shows the listings properly
@@ -137,22 +161,26 @@ function fetchListingsDataAndUpdateMap() {
                             const bounds = createBoundsFromListings(allListingsData);
                             map.fitBounds(bounds);
                             
-                            // Update filter points after adjusting the view
-                            setTimeout(() => {
-                                updateFilterPoints();
-                            }, 300);
+                            // Update filter points after adjusting the view (only if no preset polygon)
+                            if (!hasPresetPolygonFromSearch) {
+                                setTimeout(() => {
+                                    updateFilterPoints();
+                                }, 300);
+                            }
                         } else {
-                            // Listings are visible, just ensure the filter points are set
-                            updateFilterPoints();
+                            // Listings are visible, just ensure the filter points are set (only if no preset polygon)
+                            if (!hasPresetPolygonFromSearch) {
+                                updateFilterPoints();
+                            }
                         }
                     }, 500);
                 }
             } else {
                 // No listings found
-                if (!hasShortcodeCoordinates) {
+                if (!hasShortcodeCoordinates && !hasPresetPolygonFromSearch) {
                     // If no coordinates from shortcode, keep default center
                     updateFilterPoints();
-                } else {
+                } else if (hasShortcodeCoordinates && !hasPresetPolygonFromSearch) {
                     // If we have coordinates but no listings, keep the initial view
                     updateFilterPoints();
                 }
