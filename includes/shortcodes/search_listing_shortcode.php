@@ -115,7 +115,8 @@ function rch_get_url_parameters()
         'listing_statuses',
         'content',
         'postal_codes',
-        'place_coords'
+        'place_coords',
+        'place_polygon_string'
     );
 
     $params = array();
@@ -155,21 +156,40 @@ function rch_get_url_parameters()
                         $lat = floatval($lat);
                         $lng = floatval($lng);
 
-                        // Use a city-level zoom by default
-                        $zoom = 12;
-
-                        // Calculate bounding box if the functions are available
-                        if (function_exists('rch_calculate_bounding_box') && function_exists('rch_generate_polygon_string')) {
-                            $boundingBox = rch_calculate_bounding_box($lat, $lng, $zoom);
-                            $polygonString = rch_generate_polygon_string($boundingBox);
-
-                            // Add these values to the parameters
-                            $params['map_latitude'] = $lat;
-                            $params['map_longitude'] = $lng;
-                            $params['map_zoom'] = $zoom;
+                        // Store coordinates
+                        $params['map_latitude'] = $lat;
+                        $params['map_longitude'] = $lng;
+                        
+                        // Check if we have a pre-calculated polygon string from the search form
+                        if (isset($_GET['place_polygon_string']) && !empty($_GET['place_polygon_string'])) {
+                            // Use the polygon string directly from the search form
+                            $polygonString = sanitize_text_field($_GET['place_polygon_string']);
                             $params['map_points'] = $polygonString;
+                            $params['map_zoom'] = 12;
+                            
+                            error_log('Using place_polygon_string from URL: ' . $polygonString);
+                        } else {
+                            // Fallback: Calculate polygon from coordinates using zoom
+                            $zoom = 12;
+
+                            // Calculate bounding box if the functions are available
+                            if (function_exists('rch_calculate_bounding_box') && function_exists('rch_generate_polygon_string')) {
+                                $boundingBox = rch_calculate_bounding_box($lat, $lng, $zoom);
+                                $polygonString = rch_generate_polygon_string($boundingBox);
+
+                                // Add these values to the parameters
+                                $params['map_zoom'] = $zoom;
+                                $params['map_points'] = $polygonString;
+                                
+                                error_log('Calculated polygon from coordinates: ' . $polygonString);
+                            }
                         }
                     }
+                    break;
+
+                case 'place_polygon_string':
+                    // This is handled in the place_coords case above
+                    // Skip it here to avoid duplicate processing
                     break;
 
                 default:

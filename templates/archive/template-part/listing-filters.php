@@ -23,32 +23,32 @@
             </span>
             <div class="rch-inside-filters rch-for-lease" style="display:flex;">
                 <span>
-                    <input type="radio" id="all" name="property_types" value="Residential,Residential Lease,Lots & Acreage,Commercial,Multi-Family" onchange="applyFilters()">
-                    <label for="all" class="ios-radio">All Listings</label>
+                    <input type="radio" id="mobile_all" name="property_types" data-name="All Listing" value="Residential,Residential Lease,Lots & Acreage,Commercial,Multi-Family" onchange="applyFilters()">
+                    <label for="mobile_all" class="ios-radio">All Listings</label>
                 </span>
                 <span>
-                    <input type="radio" id="all" name="property_types" data-name="Residential" value="Residential" onchange="applyFilters()">
-                    <label for="all" class="ios-radio">Residential</label>
+                    <input type="radio" id="mobile_residential" name="property_types" data-name="Residential" value="Residential" onchange="applyFilters()">
+                    <label for="mobile_residential" class="ios-radio">Residential</label>
                 </span>
                 <span>
-                    <input type="radio" id="sale" name="property_types" value="Residential,Lots & Acreage,Commercial,Multi-Family" onchange="applyFilters()">
-                    <label for="sale" class="ios-radio">Sale</label>
+                    <input type="radio" id="mobile_sale" name="property_types" data-name="Sale" value="Residential,Lots & Acreage,Commercial,Multi-Family" onchange="applyFilters()">
+                    <label for="mobile_sale" class="ios-radio">Sale</label>
                 </span>
                 <span>
-                    <input type="radio" id="lease" name="property_types" value="Residential Lease" onchange="applyFilters()">
-                    <label for="lease" class="ios-radio">Lease</label>
+                    <input type="radio" id="mobile_lease" name="property_types" data-name="Lease" value="Residential Lease" onchange="applyFilters()">
+                    <label for="mobile_lease" class="ios-radio">Lease</label>
                 </span>
                 <span>
-                    <input type="radio" id="lots" name="property_types" value="Lots & Acreage" onchange="applyFilters()">
-                    <label for="lots" class="ios-radio">Lots & Acreage</label>
+                    <input type="radio" id="mobile_lots" name="property_types" data-name="Lots & Acreage" value="Lots & Acreage" onchange="applyFilters()">
+                    <label for="mobile_lots" class="ios-radio">Lots & Acreage</label>
                 </span>
                 <span>
-                    <input type="radio" id="Commercial" name="property_types" value="Commercial" onchange="applyFilters()">
-                    <label for="Commercial" class="ios-radio">Commercial</label>
+                    <input type="radio" id="mobile_commercial" name="property_types" data-name="Commercial" value="Commercial" onchange="applyFilters()">
+                    <label for="mobile_commercial" class="ios-radio">Commercial</label>
                 </span>
                 <span>
-                    <input type="radio" id="Commercial" name="property_types" data-name="Multi-Family" value="Multi-Family" onchange="applyFilters()">
-                    <label for="Commercial" class="ios-radio">Multi-Family</label>
+                    <input type="radio" id="mobile_multifamily" name="property_types" data-name="Multi-Family" value="Multi-Family" onchange="applyFilters()">
+                    <label for="mobile_multifamily" class="ios-radio">Multi-Family</label>
                 </span>
                 <button type="button" class="reset-btn" onclick="resetFilter('property_types')">Reset</button>
             </div>
@@ -249,32 +249,32 @@
             <span class="toggleMain" id="rch-property-type-text">Property Type</span>
             <div class="rch-inside-filters rch-for-lease" style="display: none;">
                 <span>
-                    <input type="radio" id="all" name="property_types" data-name="All Listing" value="Residential,Residential Lease,Lots & Acreage,Commercial,Multi-Family" onchange="applyFilters()">
-                    <label for="all" class="ios-radio">All Listings</label>
+                    <input type="radio" id="desktop_all" name="property_types" data-name="All Listing" value="Residential,Residential Lease,Lots & Acreage,Commercial,Multi-Family" onchange="applyFilters()">
+                    <label for="desktop_all" class="ios-radio">All Listings</label>
                 </span>
                 <span>
-                    <input type="radio" id="all" name="property_types" data-name="Residential" value="Residential" onchange="applyFilters()">
-                    <label for="all" class="ios-radio">Residential</label>
+                    <input type="radio" id="desktop_residential" name="property_types" data-name="Residential" value="Residential" onchange="applyFilters()">
+                    <label for="desktop_residential" class="ios-radio">Residential</label>
                 </span>
                 <span>
-                    <input type="radio" id="sale" name="property_types" data-name="Sale" value="Residential,Lots & Acreage,Commercial,Multi-Family" onchange="applyFilters()">
-                    <label for="sale" class="ios-radio">Sale</label>
+                    <input type="radio" id="desktop_sale" name="property_types" data-name="Sale" value="Residential,Lots & Acreage,Commercial,Multi-Family" onchange="applyFilters()">
+                    <label for="desktop_sale" class="ios-radio">Sale</label>
                 </span>
                 <span>
-                    <input type="radio" id="lease" name="property_types" data-name="Lease" value="Residential Lease" onchange="applyFilters()">
-                    <label for="lease" class="ios-radio">Lease</label>
+                    <input type="radio" id="desktop_lease" name="property_types" data-name="Lease" value="Residential Lease" onchange="applyFilters()">
+                    <label for="desktop_lease" class="ios-radio">Lease</label>
                 </span>
                 <span>
-                    <input type="radio" id="lots" name="property_types" data-name="Lots & Acreage" value="Lots & Acreage" onchange="applyFilters()">
-                    <label for="lots" class="ios-radio">Lots & Acreage</label>
+                    <input type="radio" id="desktop_lots" name="property_types" data-name="Lots & Acreage" value="Lots & Acreage" onchange="applyFilters()">
+                    <label for="desktop_lots" class="ios-radio">Lots & Acreage</label>
                 </span>
                 <span>
-                    <input type="radio" id="Commercial" name="property_types" data-name="Commercial" value="Commercial" onchange="applyFilters()">
-                    <label for="Commercial" class="ios-radio">Commercial</label>
+                    <input type="radio" id="desktop_commercial" name="property_types" data-name="Commercial" value="Commercial" onchange="applyFilters()">
+                    <label for="desktop_commercial" class="ios-radio">Commercial</label>
                 </span>
                 <span>
-                    <input type="radio" id="Commercial" name="property_types" data-name="Multi-Family" value="Multi-Family" onchange="applyFilters()">
-                    <label for="Commercial" class="ios-radio">Multi-Family</label>
+                    <input type="radio" id="desktop_multifamily" name="property_types" data-name="Multi-Family" value="Multi-Family" onchange="applyFilters()">
+                    <label for="desktop_multifamily" class="ios-radio">Multi-Family</label>
                 </span>
                 <button type="button" class="reset-btn" onclick="resetFilter('property_types')">Reset</button>
 

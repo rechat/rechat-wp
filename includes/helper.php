@@ -148,7 +148,7 @@ function rch_generate_polygon_string($boundingBox)
 function rch_calculate_polygon_from_place()
 {
     // Verify if request has required parameters
-    if (!isset($_POST['lat']) || !isset($_POST['lng']) || !isset($_POST['zoom'])) {
+    if (!isset($_POST['lat']) || !isset($_POST['lng'])) {
         wp_send_json_error(['message' => 'Missing required parameters']);
         return;
     }
@@ -156,16 +156,45 @@ function rch_calculate_polygon_from_place()
     // Get parameters from request
     $lat = floatval($_POST['lat']);
     $lng = floatval($_POST['lng']);
-    $zoom = intval($_POST['zoom']);
+    $zoom = isset($_POST['zoom']) ? intval($_POST['zoom']) : 12;
 
-    // Calculate bounding box and polygon string
+    // Check if bounds are provided from Google Places API
+    if (isset($_POST['bounds']) && is_array($_POST['bounds'])) {
+        $bounds = $_POST['bounds'];
+        
+        // Validate bounds structure
+        if (isset($bounds['northeast']) && isset($bounds['southwest']) && 
+            is_array($bounds['northeast']) && is_array($bounds['southwest'])) {
+            
+            // Use the provided bounds to create bounding box
+            $boundingBox = [
+                'northeast' => [floatval($bounds['northeast'][0]), floatval($bounds['northeast'][1])],
+                'southeast' => [floatval($bounds['southwest'][0]), floatval($bounds['northeast'][1])],
+                'southwest' => [floatval($bounds['southwest'][0]), floatval($bounds['southwest'][1])],
+                'northwest' => [floatval($bounds['northeast'][0]), floatval($bounds['southwest'][1])]
+            ];
+            
+            $polygonString = rch_generate_polygon_string($boundingBox);
+            
+            // Send response
+            wp_send_json_success([
+                'boundingBox' => $boundingBox,
+                'polygonString' => $polygonString,
+                'source' => 'google_places_bounds'
+            ]);
+            return;
+        }
+    }
+
+    // Fallback: Calculate bounding box and polygon string from coordinates and zoom
     $boundingBox = rch_calculate_bounding_box($lat, $lng, $zoom);
     $polygonString = rch_generate_polygon_string($boundingBox);
 
     // Send response
     wp_send_json_success([
         'boundingBox' => $boundingBox,
-        'polygonString' => $polygonString
+        'polygonString' => $polygonString,
+        'source' => 'calculated_from_zoom'
     ]);
 }
 

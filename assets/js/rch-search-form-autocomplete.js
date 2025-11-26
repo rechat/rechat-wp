@@ -20,8 +20,8 @@ function initSearchFormAutocomplete() {
             componentRestrictions: { country: 'us' }
         });
 
-        // Filter out neighborhoods - only allow cities, states, and postal codes
-        searchFormAutocomplete.setTypes(['locality', 'administrative_area_level_1', 'postal_code']);
+        // Filter out neighborhoods - only allow cities, states, and postal codes, streets, and addresses
+        searchFormAutocomplete.setTypes(['locality', 'administrative_area_level_1', 'postal_code', 'street_address', 'route']);
 
         // Add listener for place selection
         searchFormAutocomplete.addListener('place_changed', () => {
@@ -51,10 +51,36 @@ function handleSearchFormPlaceSelection(autocomplete) {
     // Get the latitude and longitude
     const lat = place.geometry.location.lat();
     const lng = place.geometry.location.lng();
+    console.log('Selected place coordinates:', lat, lng);
+
+    // Check if the place has viewport or bounds
+    let polygonString = '';
+    if (place.geometry.viewport) {
+        const viewport = place.geometry.viewport;
+        const ne = viewport.getNorthEast();
+        const sw = viewport.getSouthWest();
+        
+        // Create polygon from viewport (5 points to close the polygon)
+        polygonString = `${ne.lat()},${sw.lng()}|${ne.lat()},${ne.lng()}|${sw.lat()},${ne.lng()}|${sw.lat()},${sw.lng()}|${ne.lat()},${sw.lng()}`;
+        console.log('Extracted polygon from viewport:', polygonString);
+    } else if (place.geometry.bounds) {
+        const bounds = place.geometry.bounds;
+        const ne = bounds.getNorthEast();
+        const sw = bounds.getSouthWest();
+        
+        // Create polygon from bounds (5 points to close the polygon)
+        polygonString = `${ne.lat()},${sw.lng()}|${ne.lat()},${ne.lng()}|${sw.lat()},${ne.lng()}|${sw.lat()},${sw.lng()}|${ne.lat()},${sw.lng()}`;
+        console.log('Extracted polygon from bounds:', polygonString);
+    }
 
     // Store the place data in hidden inputs that will be submitted with the form
     addOrUpdateHiddenInput('place_lat', lat);
     addOrUpdateHiddenInput('place_lng', lng);
+    
+    // Store the polygon string if we have it
+    if (polygonString) {
+        addOrUpdateHiddenInput('place_polygon', polygonString);
+    }
 
     // Use the formatted address if available, otherwise fall back to place name
     const displayName = place.formatted_address || place.name;
@@ -92,6 +118,7 @@ function handleSearchFormSubmit(event) {
     const placeLat = document.querySelector('input[name="place_lat"]');
     const placeLng = document.querySelector('input[name="place_lng"]');
     const placeName = document.querySelector('input[name="place_name"]');
+    const placePolygon = document.querySelector('input[name="place_polygon"]');
 
     // If we have place coordinates, add them as separate hidden fields
     if (placeLat && placeLng && placeLat.value && placeLng.value) {
@@ -107,6 +134,16 @@ function handleSearchFormSubmit(event) {
         // If we have a place_name, make sure content field has the same value
         if (placeName && placeName.value) {
             contentInput.value = placeName.value;
+        }
+        
+        // If we have a polygon string, add it to the form
+        if (placePolygon && placePolygon.value) {
+            const polygonInput = document.createElement('input');
+            polygonInput.type = 'hidden';
+            polygonInput.name = 'place_polygon_string';
+            polygonInput.value = placePolygon.value;
+            document.getElementById('rch-search-form').appendChild(polygonInput);
+            console.log('Submitting with polygon:', placePolygon.value);
         }
     }
 }

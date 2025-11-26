@@ -11,10 +11,18 @@ $zoom = isset($atts['map_zoom']) ? intval($atts['map_zoom']) : 10;
 // Only calculate bounding box and polygon string if we have valid coordinates
 $boundingBox = null;
 $polygonString = '';
-if ($latitude != 0 && $longitude != 0) {
+
+// Priority 1: Use map_points if provided (from search form with polygon)
+if (isset($atts['map_points']) && !empty($atts['map_points'])) {
+    $polygonString = $atts['map_points'];
+    error_log('Using map_points from URL: ' . $polygonString);
+}
+// Priority 2: Calculate from coordinates as fallback
+elseif ($latitude != 0 && $longitude != 0) {
     // Calculate the bounding box and polygon string using helper functions
     $boundingBox = rch_calculate_bounding_box($latitude, $longitude, $zoom);
     $polygonString = rch_generate_polygon_string($boundingBox);
+    error_log('Calculated polygon from coordinates: ' . $polygonString);
 }
 ?>
 

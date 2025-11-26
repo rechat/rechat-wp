@@ -14,6 +14,7 @@ function setContentFromURLParams() {
     if (urlParams.has('content')) {
         const contentValue = urlParams.get('content');
         const contentInput = document.getElementById('content');
+        console.log('Setting content from URL param:', contentValue);
         if (contentInput) {
             contentInput.value = contentValue;
             // Trigger filter application with the loaded value
