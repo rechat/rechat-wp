@@ -88,20 +88,23 @@ function initMap() {
         // Check if we have a pre-calculated polygon from search form
         const queryStringInput = document.getElementById('query-string');
         const hasPresetPolygon = queryStringInput && queryStringInput.value &&
-            typeof rchListingData !== 'undefined' &&
+            (typeof rchListingData !== 'undefined' &&
             rchListingData.mapCoordinates &&
-            rchListingData.mapCoordinates.polygonString;
+            rchListingData.mapCoordinates.polygonString);
+        
+        // Also check if polygon came from URL parameters (search form submission)
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasPolygonFromURL = urlParams.has('place_polygon_string') || urlParams.has('place_coords');
         
         // Only update filter points if we don't have a preset polygon
-        if (!hasPresetPolygon) {
+        if (!hasPresetPolygon && !hasPolygonFromURL) {
             // Calculate the bounding box from the actual map viewport
             // This ensures the initial bounds match what will be calculated on drag/zoom
             updateFilterPoints();
         } else {
-            console.log('Preserving preset polygon from search form:', queryStringInput.value);
             hasPresetPolygonFromSearch = true;
             // Make sure filters.points is set to the preset polygon
-            if (typeof filters !== 'undefined') {
+            if (typeof filters !== 'undefined' && queryStringInput && queryStringInput.value) {
                 filters.points = queryStringInput.value;
             }
         }
@@ -332,6 +335,13 @@ function attachMapEventListeners() {
     // Attach all update events
     updateEvents.forEach(eventName => {
         google.maps.event.addListener(map, eventName, function () {
+            // After user interacts with map, allow polygon updates
+            // Clear the preset polygon flag so user can explore other areas
+            if (hasPresetPolygonFromSearch && eventName === 'dragend') {
+                hasPresetPolygonFromSearch = false;
+            }
+            
+            // Update filter points based on current map viewport
             updateFilterPoints();
             updateListingList();
         });
