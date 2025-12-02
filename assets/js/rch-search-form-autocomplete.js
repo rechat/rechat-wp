@@ -57,9 +57,6 @@ function handleSearchFormPlaceSelection(autocomplete) {
     // Get the latitude and longitude
     const lat = place.geometry.location.lat();
     const lng = place.geometry.location.lng();
-    console.log('Selected place coordinates:', lat, lng);
-    console.log('Original search input:', searchFormOriginalInput);
-    console.log('Place types:', place.types);
 
     // Extract unit number from original input if present
     const unitMatch = searchFormOriginalInput.match(/(?:unit|apt|apartment|suite|#)\s*([a-z0-9-]+)/i);
@@ -71,9 +68,6 @@ function handleSearchFormPlaceSelection(autocomplete) {
         place.types.includes('premise') ||
         place.types.includes('subpremise')
     );
-    
-    console.log('Has unit:', hasUnit, 'Unit:', unitMatch ? unitMatch[1] : 'N/A');
-    console.log('Is specific address:', isSpecificAddress);
 
     // Check if the place has viewport or bounds
     let polygonString = '';
@@ -91,7 +85,6 @@ function handleSearchFormPlaceSelection(autocomplete) {
         ];
         
         polygonString = smallPolygon.map(point => `${point[0]},${point[1]}`).join('|');
-        console.log('Created small polygon for specific address/unit:', polygonString);
     } else if (place.geometry.viewport) {
         const viewport = place.geometry.viewport;
         const ne = viewport.getNorthEast();
@@ -99,7 +92,6 @@ function handleSearchFormPlaceSelection(autocomplete) {
         
         // Create polygon from viewport (5 points to close the polygon)
         polygonString = `${ne.lat()},${sw.lng()}|${ne.lat()},${ne.lng()}|${sw.lat()},${ne.lng()}|${sw.lat()},${sw.lng()}|${ne.lat()},${sw.lng()}`;
-        console.log('Extracted polygon from viewport:', polygonString);
     } else if (place.geometry.bounds) {
         const bounds = place.geometry.bounds;
         const ne = bounds.getNorthEast();
@@ -107,7 +99,6 @@ function handleSearchFormPlaceSelection(autocomplete) {
         
         // Create polygon from bounds (5 points to close the polygon)
         polygonString = `${ne.lat()},${sw.lng()}|${ne.lat()},${ne.lng()}|${sw.lat()},${ne.lng()}|${sw.lat()},${sw.lng()}|${ne.lat()},${sw.lng()}`;
-        console.log('Extracted polygon from bounds:', polygonString);
     }
 
     // Store the place data in hidden inputs that will be submitted with the form
@@ -124,9 +115,9 @@ function handleSearchFormPlaceSelection(autocomplete) {
     addOrUpdateHiddenInput('place_name', displayName);
     
     // If this is a specific address with a unit, store the original input as the address parameter
-    if (hasUnit) {
+    // Always check the original input to preserve user-entered unit numbers that Google might strip
+    if (hasUnit && isSpecificAddress) {
         addOrUpdateHiddenInput('place_address', searchFormOriginalInput);
-        console.log('Storing address parameter:', searchFormOriginalInput);
     } else {
         // Remove address parameter if no unit
         const form = document.getElementById('rch-search-form');
@@ -136,8 +127,13 @@ function handleSearchFormPlaceSelection(autocomplete) {
         }
     }
 
-    // Update the input field with the formatted address (showing the full selection)
-    document.getElementById('content').value = displayName;
+    // Update the input field with the original input if it has a unit, otherwise use formatted address
+    // This preserves the unit number the user typed
+    if (hasUnit && searchFormOriginalInput) {
+        document.getElementById('content').value = searchFormOriginalInput;
+    } else {
+        document.getElementById('content').value = displayName;
+    }
 }
 
 /**
@@ -194,7 +190,6 @@ function handleSearchFormSubmit(event) {
             polygonInput.name = 'place_polygon_string';
             polygonInput.value = placePolygon.value;
             document.getElementById('rch-search-form').appendChild(polygonInput);
-            console.log('Submitting with polygon:', placePolygon.value);
         }
         
         // If we have an address (with unit number), add it to the form
@@ -204,7 +199,6 @@ function handleSearchFormSubmit(event) {
             addressInput.name = 'address';
             addressInput.value = placeAddress.value;
             document.getElementById('rch-search-form').appendChild(addressInput);
-            console.log('Submitting with address:', placeAddress.value);
         }
     }
 }

@@ -25,13 +25,10 @@ function initPlacesAutocomplete() {
             // Clear address filter when user modifies the input
             if (typeof filters !== 'undefined' && filters.address) {
                 delete filters.address;
-                console.log('Cleared address filter on input change');
             }
             
             // If input is cleared, reset to default map viewport
             if (e.target.value.trim() === '') {
-                console.log('Input cleared - resetting to default map viewport');
-                
                 // Reset the preset polygon flag
                 if (typeof hasPresetPolygonFromSearch !== 'undefined') {
                     hasPresetPolygonFromSearch = false;
@@ -66,7 +63,6 @@ function initPlacesAutocomplete() {
                     }
                 }
                 
-                console.log('Resetting to:', { lat: defaultLat, lng: defaultLng, zoom: defaultZoom, fromShortcode: hasShortcodeCoords });
                 
                 // Update listings and fit map to show them
                 if (typeof updateListingList === 'function') {
@@ -119,13 +115,10 @@ function initPlacesAutocomplete() {
             // Clear address filter when user modifies the input
             if (typeof filters !== 'undefined' && filters.address) {
                 delete filters.address;
-                console.log('Cleared address filter on input change');
             }
             
             // If input is cleared, reset to default map viewport
             if (e.target.value.trim() === '') {
-                console.log('Input cleared - resetting to default map viewport');
-                
                 // Reset the preset polygon flag
                 if (typeof hasPresetPolygonFromSearch !== 'undefined') {
                     hasPresetPolygonFromSearch = false;
@@ -160,7 +153,6 @@ function initPlacesAutocomplete() {
                     }
                 }
                 
-                console.log('Resetting to:', { lat: defaultLat, lng: defaultLng, zoom: defaultZoom, fromShortcode: hasShortcodeCoords });
                 
                 // Update listings and fit map to show them
                 if (typeof updateListingList === 'function') {
@@ -233,11 +225,6 @@ function handlePlaceSelection(autocomplete, originalInput = '') {
         place.types.includes('subpremise')
     );
     
-    console.log('Place selected:', place);
-    console.log('Original input:', originalInput);
-    console.log('Has unit:', hasUnit, 'Unit:', unitMatch ? unitMatch[1] : 'N/A');
-    console.log('Is specific address:', isSpecificAddress, 'Types:', place.types);
-    
     // If user specified a unit or it's a specific address, use very small search area
     if (isSpecificAddress || hasUnit) {
         // For specific addresses or units, create a very small polygon around the exact point
@@ -254,8 +241,6 @@ function handlePlaceSelection(autocomplete, originalInput = '') {
         
         const polygonString = smallPolygon.map(point => `${point[0]},${point[1]}`).join('|');
         
-        console.log('Created small polygon for specific address/unit:', polygonString);
-        
         // Update the hidden input with the small polygon
         document.getElementById('query-string').value = polygonString;
         
@@ -266,7 +251,6 @@ function handlePlaceSelection(autocomplete, originalInput = '') {
             // Store the unit info in the address filter if present, otherwise clear it
             if (hasUnit) {
                 filters.address = originalInput;
-                console.log('Setting address filter to:', originalInput);
             } else {
                 // Clear address filter if no unit specified
                 delete filters.address;
