@@ -116,7 +116,8 @@ function rch_get_url_parameters()
         'content',
         'postal_codes',
         'place_coords',
-        'place_polygon_string'
+        'place_polygon_string',
+        'address'
     );
 
     $params = array();

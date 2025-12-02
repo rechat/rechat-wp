@@ -4,6 +4,7 @@
  */
 
 let searchFormAutocomplete;
+let searchFormOriginalInput = ''; // Store the original input before autocomplete modifies it
 
 /**
  * Initialize Google Places Autocomplete for search form
@@ -14,6 +15,11 @@ function initSearchFormAutocomplete() {
 
     // Only initialize if the element exists and we're on the search form page
     if (searchInput && document.getElementById('rch-search-form')) {
+        // Capture the original input before autocomplete modifies it
+        searchInput.addEventListener('input', (e) => {
+            searchFormOriginalInput = e.target.value;
+        });
+        
         searchFormAutocomplete = new google.maps.places.Autocomplete(searchInput, {
             types: ['geocode'],
             fields: ['geometry', 'name', 'formatted_address', 'address_components', 'types'],
@@ -52,10 +58,41 @@ function handleSearchFormPlaceSelection(autocomplete) {
     const lat = place.geometry.location.lat();
     const lng = place.geometry.location.lng();
     console.log('Selected place coordinates:', lat, lng);
+    console.log('Original search input:', searchFormOriginalInput);
+    console.log('Place types:', place.types);
+
+    // Extract unit number from original input if present
+    const unitMatch = searchFormOriginalInput.match(/(?:unit|apt|apartment|suite|#)\s*([a-z0-9-]+)/i);
+    const hasUnit = unitMatch !== null;
+    
+    // Check if this is a specific address (street_address or premise)
+    const isSpecificAddress = place.types && (
+        place.types.includes('street_address') || 
+        place.types.includes('premise') ||
+        place.types.includes('subpremise')
+    );
+    
+    console.log('Has unit:', hasUnit, 'Unit:', unitMatch ? unitMatch[1] : 'N/A');
+    console.log('Is specific address:', isSpecificAddress);
 
     // Check if the place has viewport or bounds
     let polygonString = '';
-    if (place.geometry.viewport) {
+    
+    // If it's a specific address or has a unit, create a small polygon
+    if (isSpecificAddress || hasUnit) {
+        // Create a very small polygon around the exact point (approximately 20 meters)
+        const offset = 0.0002;
+        const smallPolygon = [
+            [lat + offset, lng - offset], // Northwest
+            [lat + offset, lng + offset], // Northeast
+            [lat - offset, lng + offset], // Southeast
+            [lat - offset, lng - offset], // Southwest
+            [lat + offset, lng - offset]  // Close polygon
+        ];
+        
+        polygonString = smallPolygon.map(point => `${point[0]},${point[1]}`).join('|');
+        console.log('Created small polygon for specific address/unit:', polygonString);
+    } else if (place.geometry.viewport) {
         const viewport = place.geometry.viewport;
         const ne = viewport.getNorthEast();
         const sw = viewport.getSouthWest();
@@ -85,6 +122,19 @@ function handleSearchFormPlaceSelection(autocomplete) {
     // Use the formatted address if available, otherwise fall back to place name
     const displayName = place.formatted_address || place.name;
     addOrUpdateHiddenInput('place_name', displayName);
+    
+    // If this is a specific address with a unit, store the original input as the address parameter
+    if (hasUnit) {
+        addOrUpdateHiddenInput('place_address', searchFormOriginalInput);
+        console.log('Storing address parameter:', searchFormOriginalInput);
+    } else {
+        // Remove address parameter if no unit
+        const form = document.getElementById('rch-search-form');
+        const addressInput = form.querySelector('input[name="place_address"]');
+        if (addressInput) {
+            addressInput.remove();
+        }
+    }
 
     // Update the input field with the formatted address (showing the full selection)
     document.getElementById('content').value = displayName;
@@ -119,6 +169,7 @@ function handleSearchFormSubmit(event) {
     const placeLng = document.querySelector('input[name="place_lng"]');
     const placeName = document.querySelector('input[name="place_name"]');
     const placePolygon = document.querySelector('input[name="place_polygon"]');
+    const placeAddress = document.querySelector('input[name="place_address"]');
 
     // If we have place coordinates, add them as separate hidden fields
     if (placeLat && placeLng && placeLat.value && placeLng.value) {
@@ -144,6 +195,16 @@ function handleSearchFormSubmit(event) {
             polygonInput.value = placePolygon.value;
             document.getElementById('rch-search-form').appendChild(polygonInput);
             console.log('Submitting with polygon:', placePolygon.value);
+        }
+        
+        // If we have an address (with unit number), add it to the form
+        if (placeAddress && placeAddress.value) {
+            const addressInput = document.createElement('input');
+            addressInput.type = 'hidden';
+            addressInput.name = 'address';
+            addressInput.value = placeAddress.value;
+            document.getElementById('rch-search-form').appendChild(addressInput);
+            console.log('Submitting with address:', placeAddress.value);
         }
     }
 }

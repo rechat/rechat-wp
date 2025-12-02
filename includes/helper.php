@@ -719,6 +719,7 @@ function rch_get_filters($atts)
         'maximum_bedrooms' => isset($atts['maximum_bedrooms']) && $atts['maximum_bedrooms'] !== '' ? intval($atts['maximum_bedrooms']) : null,
         'minimum_parking_spaces' => isset($atts['minimum_parking_spaces']) && $atts['minimum_parking_spaces'] !== '' ? intval($atts['minimum_parking_spaces']) : null,
         'content' => isset($atts['content']) && $atts['content'] !== '' ? sanitize_text_field($atts['content']) : null,
+        'address' => isset($atts['address']) && $atts['address'] !== '' ? sanitize_text_field($atts['address']) : null,
         'show_filter_bar' => isset($atts['show_filter_bar']) && $atts['show_filter_bar'] !== '' ? boolval($atts['show_filter_bar']) : null,
         'postal_codes' => isset($atts['postal_codes']) && $atts['postal_codes'] !== ''
             ? array_map('trim', explode(',', $atts['postal_codes'])) // Split and trim each value
@@ -816,6 +817,10 @@ function rch_get_primary_color_and_logo()
         $brand = $palette_data['data'];
 
         $primary_color = rch_find_get_setting($brand, 'button-bg-color', '#2271b1');
+        
+        // Check if the primary color is white or very light - if so, use black instead
+        $primary_color = rch_check_and_replace_light_color($primary_color);
+        
         $container_logo_wide = rch_find_get_setting($brand, 'container-logo-wide', 'null');
         $container_logo_square = rch_find_get_setting($brand, 'container-logo-square', 'null');
         $container_team_logo_wide = rch_find_get_setting($brand, 'container-team-logo-wide', 'null');
@@ -853,6 +858,40 @@ function rch_find_get_setting($brand, $key, $default = '#2271b1')
 
     // Sanitize the color or return a default color
     return $value ? $value : $default;
+}
+
+/*******************************
+ * Helper function to check if color is white or very light, and replace with black
+ ******************************/
+function rch_check_and_replace_light_color($color)
+{
+    // Remove # if present
+    $hex = ltrim($color, '#');
+    
+    // Handle 3-character hex codes
+    if (strlen($hex) == 3) {
+        $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+    }
+    
+    // Convert hex to RGB
+    if (strlen($hex) == 6) {
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+        
+        // Calculate brightness using perceived luminance formula
+        // Values closer to 255 are lighter
+        $brightness = (($r * 299) + ($g * 587) + ($b * 114)) / 1000;
+        
+        // If brightness is above 240 (very light/white), return black
+        // 240 threshold catches #fff (255), #fafafa (250), and similar light colors
+        if ($brightness > 240) {
+            return '#000000';
+        }
+    }
+    
+    // Return original color if not too light
+    return $color;
 }
 /*******************************
  *Helper function to create api for sending data to react
