@@ -487,13 +487,18 @@ function setupFilterButtons(containerSelector, filterKey, textElementId, prefix 
             const displayValue = selectedValue ? `${prefix} +${selectedValue}` : prefix;
             textElement.textContent = displayValue;
 
-            // If selectedValue is empty, remove the 'active' class from the closest '.box-filter-listing'
-            if (!selectedValue) {
-                const closestBoxFilter = button.closest('.box-filter-listing');
-                if (closestBoxFilter) {
+            // Update the active class on the container
+            const closestBoxFilter = button.closest('.box-filter-listing');
+            if (closestBoxFilter) {
+                if (selectedValue) {
+                    closestBoxFilter.classList.add('active');
+                } else {
                     closestBoxFilter.classList.remove('active');
                 }
             }
+            
+            // Update More Filters container if this button is inside it
+            updateMoreFiltersActiveClass();
 
             // Call applyFilters to apply the filter and update the listings
             applyFilters();
@@ -746,6 +751,73 @@ function closeAllOptions() {
 }
 
 /**
+ * Updates the active class for the "More Filters" container
+ * based on whether any child filters are active.
+ */
+function updateMoreFiltersActiveClass() {
+    // Find the main "More Filters" container (the one with .more-filter-text)
+    const moreFiltersContainer = document.querySelector('.box-filter-listing .more-filter-text')?.closest('.box-filter-listing');
+    
+    if (!moreFiltersContainer) return;
+    
+    // Find all nested filter containers inside "More Filters"
+    const nestedFilters = moreFiltersContainer.querySelectorAll('.rch-other-filter-listing .box-filter-listing');
+    
+    // Check if any nested filter has the active class
+    let hasActiveFilter = false;
+    nestedFilters.forEach(filter => {
+        if (filter.classList.contains('active')) {
+            hasActiveFilter = true;
+        }
+    });
+    
+    // Also check for active inputs/selects directly in the More Filters area
+    const moreFiltersArea = moreFiltersContainer.querySelector('.rch-other-filter-listing');
+    let hasActiveInput = false;
+    
+    if (moreFiltersArea) {
+        // Check checkboxes
+        if (moreFiltersArea.querySelector('input[type="checkbox"]:checked')) {
+            hasActiveInput = true;
+        }
+        
+        // Check text inputs with values
+        if (!hasActiveInput) {
+            const textInputs = moreFiltersArea.querySelectorAll('input[type="text"]');
+            textInputs.forEach(input => {
+                if (input.value && input.value.trim() !== '') {
+                    hasActiveInput = true;
+                }
+            });
+        }
+        
+        // Check select elements with non-empty values
+        if (!hasActiveInput) {
+            const selects = moreFiltersArea.querySelectorAll('select');
+            selects.forEach(select => {
+                if (select.value && select.value.trim() !== '') {
+                    hasActiveInput = true;
+                }
+            });
+        }
+        
+        // Check for active buttons (like parking buttons)
+        if (!hasActiveInput && moreFiltersArea.querySelector('.filter-btn.active:not(.default-btn)')) {
+            const activeBtn = moreFiltersArea.querySelector('.filter-btn.active:not(.default-btn)');
+            if (activeBtn && activeBtn.dataset.value) {
+                hasActiveInput = true;
+            }
+        }
+    }
+    
+    if (hasActiveFilter || hasActiveInput) {
+        moreFiltersContainer.classList.add('active');
+    } else {
+        moreFiltersContainer.classList.remove('active');
+    }
+}
+
+/**
  * Updates CSS classes based on filter selections.
  * Adds 'active' class to containers with selected filters.
  */
@@ -772,6 +844,9 @@ function updateActiveClass() {
                     container.classList.remove('active');
                 }
             }
+            
+            // Update "More Filters" parent container if this filter is inside it
+            updateMoreFiltersActiveClass();
         };
 
         // Initial check on page load
@@ -791,7 +866,7 @@ function updateActiveClass() {
     });
 
     // Add 'active' class for buttons inside filter lists
-    document.querySelectorAll('.rch-bath-filter-listing .filter-btn').forEach(button => {
+    document.querySelectorAll('.rch-bath-filter-listing .filter-btn, .rch-parking-filter-listing .filter-btn').forEach(button => {
         // Check if the button has a selected value (either from a default value or clicked)
         if (button.dataset.value) {
             // Add 'active' class to buttons that have a value
@@ -804,7 +879,16 @@ function updateActiveClass() {
             // Check if the dataset.value is not empty
             if (this.dataset.value) {
                 this.closest('.box-filter-listing').classList.add('active');
+            } else {
+                // If empty value (like "Any"), check if other buttons in same container are active
+                const container = this.closest('.box-filter-listing');
+                const hasOtherActive = container.querySelector('.filter-btn.active:not([data-value=""])');
+                if (!hasOtherActive) {
+                    container.classList.remove('active');
+                }
             }
+            // Update More Filters container
+            updateMoreFiltersActiveClass();
         });
     });
 
@@ -812,6 +896,8 @@ function updateActiveClass() {
     document.querySelectorAll('.reset-btn').forEach(button => {
         button.addEventListener('click', function () {
             this.closest('.box-filter-listing').classList.remove('active');
+            // Update More Filters container if this reset is inside it
+            updateMoreFiltersActiveClass();
         });
     });
     document.querySelectorAll('.reset-btn-all').forEach(button => {
