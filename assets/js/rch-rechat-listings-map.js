@@ -1,7 +1,10 @@
 /**
  * Global flag to track if a preset polygon was provided from search form
  */
-let hasPresetPolygonFromSearch = false;
+if (typeof window.hasPresetPolygonFromSearch === 'undefined') {
+    window.hasPresetPolygonFromSearch = false;
+}
+let hasPresetPolygonFromSearch = window.hasPresetPolygonFromSearch;
 
 /**
  * Formats the price to a shortened format (e.g., 1M, 340K).
@@ -31,6 +34,33 @@ function processMapMarkers(allListingsData) {
             addMapMarker(listing, map);
         }
     });
+}
+
+/**
+ * Create bounds from a polygon string
+ * @param {string} polygonString - Polygon string in format "lat,lng|lat,lng|..."
+ * @returns {google.maps.LatLngBounds|null} - Bounds object or null if invalid
+ */
+function createBoundsFromPolygonString(polygonString) {
+    if (!polygonString || typeof polygonString !== 'string') {
+        return null;
+    }
+    
+    const bounds = new google.maps.LatLngBounds();
+    const points = polygonString.split('|');
+    
+    points.forEach(point => {
+        const coords = point.split(',');
+        if (coords.length === 2) {
+            const lat = parseFloat(coords[0]);
+            const lng = parseFloat(coords[1]);
+            if (!isNaN(lat) && !isNaN(lng)) {
+                bounds.extend(new google.maps.LatLng(lat, lng));
+            }
+        }
+    });
+    
+    return bounds;
 }
 
 /**
@@ -103,9 +133,18 @@ function initMap() {
             updateFilterPoints();
         } else {
             hasPresetPolygonFromSearch = true;
+            window.hasPresetPolygonFromSearch = true;
             // Make sure filters.points is set to the preset polygon
             if (typeof filters !== 'undefined' && queryStringInput && queryStringInput.value) {
                 filters.points = queryStringInput.value;
+                
+                // Fit map bounds to the polygon from search form
+                // This ensures the zoom level matches the polygon size
+                const polygonBounds = createBoundsFromPolygonString(queryStringInput.value);
+                if (polygonBounds) {
+                    // Use fitBounds without padding to match the exact viewport from search
+                    map.fitBounds(polygonBounds, 0);
+                }
             }
         }
         
@@ -335,10 +374,10 @@ function attachMapEventListeners() {
     // Attach all update events
     updateEvents.forEach(eventName => {
         google.maps.event.addListener(map, eventName, function () {
-            // After user interacts with map, allow polygon updates
-            // Clear the preset polygon flag so user can explore other areas
+            // After user interacts with map, clear the preset polygon flag so user can explore other areas
             if (hasPresetPolygonFromSearch && eventName === 'dragend') {
                 hasPresetPolygonFromSearch = false;
+                window.hasPresetPolygonFromSearch = false;
             }
             
             // Update filter points based on current map viewport

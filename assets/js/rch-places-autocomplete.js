@@ -30,8 +30,8 @@ function initPlacesAutocomplete() {
             // If input is cleared, reset to default map viewport
             if (e.target.value.trim() === '') {
                 // Reset the preset polygon flag
-                if (typeof hasPresetPolygonFromSearch !== 'undefined') {
-                    hasPresetPolygonFromSearch = false;
+                if (typeof window.hasPresetPolygonFromSearch !== 'undefined') {
+                    window.hasPresetPolygonFromSearch = false;
                 }
                 
                 // Clear the query-string input
@@ -120,8 +120,8 @@ function initPlacesAutocomplete() {
             // If input is cleared, reset to default map viewport
             if (e.target.value.trim() === '') {
                 // Reset the preset polygon flag
-                if (typeof hasPresetPolygonFromSearch !== 'undefined') {
-                    hasPresetPolygonFromSearch = false;
+                if (typeof window.hasPresetPolygonFromSearch !== 'undefined') {
+                    window.hasPresetPolygonFromSearch = false;
                 }
                 
                 // Clear the query-string input

@@ -72,8 +72,8 @@ function handleSearchFormPlaceSelection(autocomplete) {
     // Check if the place has viewport or bounds
     let polygonString = '';
     
-    // If it's a specific address or has a unit, create a small polygon
-    if (isSpecificAddress || hasUnit) {
+    // Only create a small polygon if there's an actual unit number (not just any specific address)
+    if (hasUnit) {
         // Create a very small polygon around the exact point (approximately 20 meters)
         const offset = 0.0002;
         const smallPolygon = [
@@ -107,7 +107,7 @@ function handleSearchFormPlaceSelection(autocomplete) {
     
     // Store the polygon string if we have it
     if (polygonString) {
-        addOrUpdateHiddenInput('place_polygon', polygonString);
+        addOrUpdateHiddenInput('place_polygon_string', polygonString);
     }
 
     // Use the formatted address if available, otherwise fall back to place name
@@ -164,7 +164,7 @@ function handleSearchFormSubmit(event) {
     const placeLat = document.querySelector('input[name="place_lat"]');
     const placeLng = document.querySelector('input[name="place_lng"]');
     const placeName = document.querySelector('input[name="place_name"]');
-    const placePolygon = document.querySelector('input[name="place_polygon"]');
+    const placePolygon = document.querySelector('input[name="place_polygon_string"]');
     const placeAddress = document.querySelector('input[name="place_address"]');
 
     // If we have place coordinates, add them as separate hidden fields
