@@ -154,7 +154,7 @@ $agents = get_post_meta($post_id, 'agents', true);
                             <button type="submit">Submit Request</button>
                             <div id="loading-spinner" class="rch-loading-spinner-form" style="display: none;"></div>
                             <div id="rch-listing-success-sdk" class="rch-success-box-listing">
-                                Thank you! Your data has been successfully sent.
+                                Your information has been sent.
                             </div>
                             <div id="rch-listing-cancel-sdk" class="rch-error-box-listing">
                                 Something went wrong. Please try again.
@@ -169,71 +169,71 @@ $agents = get_post_meta($post_id, 'agents', true);
             ?>
 
             <?php if ($display_mode === 'combined') : ?>
-            <!-- Combined Listings Section -->
-            <div class="rch-agents-list rch-agents-combined-section">
-                <h2><?php the_title(); ?>'s Properties</h2>
-                <!-- 
+                <!-- Combined Listings Section -->
+                <div class="rch-agents-list rch-agents-combined-section">
+                    <h2><?php the_title(); ?>'s Properties</h2>
+                    <!-- 
                     Combined Properties Section
                     Displays all listings: Active, Sold, and Leased properties together
                 -->
-                <div class="rch-agents-list-items rch-listing-list" id="agent-combined-properties-list">
-                    <!-- All properties will be loaded here via AJAX -->
+                    <div class="rch-agents-list-items rch-listing-list" id="agent-combined-properties-list">
+                        <!-- All properties will be loaded here via AJAX -->
+                    </div>
+                    <div id="loading-combined-properties" class="rch-loader" style="display: block;"></div>
+                    <div id="agent-combined-pagination" class="rch-listing-pagination"></div>
                 </div>
-                <div id="loading-combined-properties" class="rch-loader" style="display: block;"></div>
-                <div id="agent-combined-pagination" class="rch-listing-pagination"></div>
-            </div>
 
             <?php elseif ($display_mode === 'separate') : ?>
-            <!-- Active Listings Section -->
-            <div class="rch-agents-list rch-agents-active-section">
-                <h2><?php the_title(); ?>'s Active Listings</h2>
-                <!-- 
+                <!-- Active Listings Section -->
+                <div class="rch-agents-list rch-agents-active-section">
+                    <h2><?php the_title(); ?>'s Active Listings</h2>
+                    <!-- 
                     Active Properties Section
                     Displays: Active, Incoming, Coming Soon, Active Under Contract, Active Option Contract, 
                               Active Contingent, Active Kick Out, Pending
                 -->
-                <div class="rch-agents-list-items rch-listing-list" id="agent-active-properties-list">
-                    <!-- Active properties will be loaded here via AJAX -->
+                    <div class="rch-agents-list-items rch-listing-list" id="agent-active-properties-list">
+                        <!-- Active properties will be loaded here via AJAX -->
+                    </div>
+                    <div id="loading-active-properties" class="rch-loader" style="display: block;"></div>
+                    <div id="agent-active-pagination" class="rch-listing-pagination"></div>
                 </div>
-                <div id="loading-active-properties" class="rch-loader" style="display: block;"></div>
-                <div id="agent-active-pagination" class="rch-listing-pagination"></div>
-            </div>
 
-            <!-- Sold Listings Section -->
-            <div class="rch-agents-list rch-agents-sold-section">
-                <h2><?php the_title(); ?>'s Sold Listings</h2>
-                <!-- 
+                <!-- Sold Listings Section -->
+                <div class="rch-agents-list rch-agents-sold-section">
+                    <h2><?php the_title(); ?>'s Sold Listings</h2>
+                    <!-- 
                     Sold Properties Section
                     Displays: Sold, Leased
                 -->
-                <div class="rch-agents-list-items rch-listing-list" id="agent-sold-properties-list">
-                    <!-- Sold properties will be loaded here via AJAX -->
+                    <div class="rch-agents-list-items rch-listing-list" id="agent-sold-properties-list">
+                        <!-- Sold properties will be loaded here via AJAX -->
+                    </div>
+                    <div id="loading-sold-properties" class="rch-loader" style="display: block;"></div>
+                    <div id="agent-sold-pagination" class="rch-listing-pagination"></div>
                 </div>
-                <div id="loading-sold-properties" class="rch-loader" style="display: block;"></div>
-                <div id="agent-sold-pagination" class="rch-listing-pagination"></div>
-            </div>
 
             <?php elseif ($display_mode === 'active-only') : ?>
-            <!-- Active Listings Only Section -->
-            <div class="rch-agents-list rch-agents-active-section">
-                <h2><?php the_title(); ?>'s Active Listings</h2>
-                <div class="rch-agents-list-items rch-listing-list" id="agent-active-properties-list">
-                    <!-- Active properties will be loaded here via AJAX -->
+                <!-- Active Listings Only Section -->
+                <div class="rch-agents-list rch-agents-active-section">
+                    <h2><?php the_title(); ?>'s Active Listings</h2>
+                    <div class="rch-agents-list-items rch-listing-list" id="agent-active-properties-list">
+                        <!-- Active properties will be loaded here via AJAX -->
+                    </div>
+                    <div id="loading-active-properties" class="rch-loader" style="display: block;"></div>
+                    <div id="agent-active-pagination" class="rch-listing-pagination"></div>
                 </div>
-                <div id="loading-active-properties" class="rch-loader" style="display: block;"></div>
-                <div id="agent-active-pagination" class="rch-listing-pagination"></div>
-            </div>
 
             <?php elseif ($display_mode === 'sold-only') : ?>
-            <!-- Sold Listings Only Section -->
-            <div class="rch-agents-list rch-agents-sold-section">
-                <h2><?php the_title(); ?>'s Sold Listings</h2>
-                <div class="rch-agents-list-items rch-listing-list" id="agent-sold-properties-list">
-                    <!-- Sold properties will be loaded here via AJAX -->
+                <!-- Sold Listings Only Section -->
+                <div class="rch-agents-list rch-agents-sold-section">
+                    <h2><?php the_title(); ?>'s Sold Listings</h2>
+                    <div class="rch-agents-list-items rch-listing-list" id="agent-sold-properties-list">
+                        <!-- Sold properties will be loaded here via AJAX -->
+                    </div>
+                    <div id="loading-sold-properties" class="rch-loader" style="display: block;"></div>
+                    <div id="agent-sold-pagination" class="rch-listing-pagination"></div>
                 </div>
-                <div id="loading-sold-properties" class="rch-loader" style="display: block;"></div>
-                <div id="agent-sold-pagination" class="rch-listing-pagination"></div>
-            </div>
             <?php endif; ?>
         <?php endwhile; ?>
 
