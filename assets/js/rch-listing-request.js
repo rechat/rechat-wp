@@ -25,6 +25,11 @@ let defaultFilters = {
     order_by: rchListingData.filters.order_by,
 };
 
+// Only add open_house if it exists and is true
+if (rchListingData.filters.open_house === true) {
+    defaultFilters.open_house = true;
+}
+
 let filters = {
     ...defaultFilters
 };

@@ -35,6 +35,7 @@ function rch_render_listing_list($atts)
         'map_points' => '',
         'place_polygon_string' => '',
         'order_by' => '-price', // Options: '-price' (Price), '-list_date' (Date)
+        'open_houses_only' => false,
     ], $atts);
     // Get sanitized filters
     $filters = rch_get_filters($atts);

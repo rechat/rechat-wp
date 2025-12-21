@@ -276,7 +276,8 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         map_latitude: { type: 'string', default: '' },
         map_longitude: { type: 'string', default: '' },
         map_zoom: { type: 'string', default: '12' },
-        order_by: { type: 'string', default: '-price' }
+        order_by: { type: 'string', default: '-price' },
+        open_houses_only: { type: 'boolean', default: false }
 
     },
     edit({ attributes, setAttributes }) {
@@ -285,7 +286,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             minimum_bathrooms, maximum_bathrooms, minimum_square_meters, maximum_square_meters,
             minimum_year_built, maximum_year_built, minimum_bedrooms, maximum_bedrooms,
             listing_per_page, filterByRegions, filterByOffices, selectedStatuses, show_filter_bar, own_listing, property_types, listing_statuses,
-            map_latitude, map_longitude, map_zoom, order_by
+            map_latitude, map_longitude, map_zoom, order_by, open_houses_only
         } = attributes;
 
         const [regions, setRegions] = useState([]);
@@ -376,6 +377,11 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                             label="Only our own listings"
                             checked={own_listing}
                             onChange={() => setAttributes({ own_listing: !own_listing })}
+                        />
+                        <CheckboxControl
+                            label="Open Houses Only"
+                            checked={open_houses_only}
+                            onChange={() => setAttributes({ open_houses_only: !open_houses_only })}
                         />
                         <SelectControl
                             label="Select a Region"
@@ -558,6 +564,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                     own_listing={own_listing}
                     show_filter_bar={show_filter_bar}
                     selectedStatuses={listing_statuses}
+                    open_houses_only={open_houses_only}
                 />
             </>
         );

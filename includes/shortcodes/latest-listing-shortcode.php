@@ -14,6 +14,7 @@ function rch_display_latest_listings_shortcode($atts)
             'property_types' => '',
             'minimum_price' => '',
             'maximum_price' => '',
+            'open_houses_only' => false,
             'slides_per_view' => 3.5,
             'space_between' => 16,
             'loop' => true,
@@ -97,6 +98,9 @@ function rch_display_latest_listings_shortcode($atts)
     $minimum_price = !empty($atts['minimum_price']) ? intval($atts['minimum_price']) : '';
     $maximum_price = !empty($atts['maximum_price']) ? intval($atts['maximum_price']) : '';
     
+    // Process open_houses_only attribute
+    $open_houses_only = filter_var($atts['open_houses_only'], FILTER_VALIDATE_BOOLEAN);
+    
     // Process own_listing attribute
     $own_listing = filter_var($atts['own_listing'], FILTER_VALIDATE_BOOLEAN);
     
@@ -161,6 +165,7 @@ function rch_display_latest_listings_shortcode($atts)
             const ownListing = <?php echo $own_listing ? 'true' : 'false'; ?>;
             const minimumPrice = <?php echo json_encode($minimum_price); ?>;
             const maximumPrice = <?php echo json_encode($maximum_price); ?>;
+            const openHousesOnly = <?php echo $open_houses_only ? 'true' : 'false'; ?>;
             const orderBy = <?php echo json_encode($order_by); ?>;
 
             // Build Swiper settings object conditionally
@@ -223,22 +228,30 @@ function rch_display_latest_listings_shortcode($atts)
                 loading.style.display = 'flex';
                 const token = '<?php echo get_option('rch_rechat_access_token'); ?>';
                 const brandId = '<?php echo esc_js(get_option('rch_rechat_brand_id')); ?>';
+                
+                // Build the request body
+                const requestBody = {
+                    action: 'rch_fetch_listing',
+                    listing_per_page: listingPerPage,
+                    template: template,
+                    content: '<?php echo esc_js($atts['content']); ?>',
+                    brand: ownListing ? brandId : '',
+                    points: mapPoints,
+                    property_types: propertyTypes,
+                    listing_statuses: listingStatuses,
+                    minimum_price: minimumPrice,
+                    maximum_price: maximumPrice,
+                    order_by: orderBy,
+                };
+                
+                // Only add open_house if it's true
+                if (openHousesOnly) {
+                    requestBody.open_house = true;
+                }
+                
                 fetch(adminAjaxUrl, {
-                        method: 'POST', // Ensure method is POST
-                        body: new URLSearchParams({
-                            action: 'rch_fetch_listing',
-                            listing_per_page: listingPerPage,
-                            template: template,
-                            content: '<?php echo esc_js($atts['content']); ?>', // Pass the content filter
-                            brand: ownListing ? brandId : '', // Pass brand only if own_listing is true
-                            points: mapPoints, // Pass the map points
-                            property_types: propertyTypes, // Pass the property types
-                            listing_statuses: listingStatuses, // Pass the listing statuses
-                            minimum_price: minimumPrice, // Pass the minimum price
-                            maximum_price: maximumPrice, // Pass the maximum price
-                            order_by: orderBy, // Pass the order by parameter
-                            // add any other parameters here
-                        }),
+                        method: 'POST',
+                        body: new URLSearchParams(requestBody),
                         headers: {
                             'Content-Type': 'application/x-www-form-urlencoded',
                             'authorization': 'Bearer ' + token

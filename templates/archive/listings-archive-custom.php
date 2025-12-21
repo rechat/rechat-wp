@@ -98,7 +98,7 @@ wp_localize_script('rechat-listings-request', 'rchListingData', array(
         'maximum_bedrooms' => $atts['maximum_bedrooms'],
         'listing_statuses' => $atts['listing_statuses'],
         'order_by' => isset($atts['order_by']) ? $atts['order_by'] : '-price',
-    )
+    ) + (isset($atts['open_houses_only']) && $atts['open_houses_only'] ? array('open_house' => true) : array())
 ));
 
 // Enqueue the map JavaScript file
@@ -133,7 +133,7 @@ wp_localize_script('rechat-listings-map', 'rchListingData', array(
         'maximum_bedrooms' => $atts['maximum_bedrooms'],
         'listing_statuses' => $atts['listing_statuses'],
         'order_by' => isset($atts['order_by']) ? $atts['order_by'] : '-price',
-    )
+    ) + (isset($atts['open_houses_only']) && $atts['open_houses_only'] ? array('open_house' => true) : array())
 ));
 
 // Enqueue Places Autocomplete Script and CSS

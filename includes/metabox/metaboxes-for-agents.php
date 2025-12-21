@@ -187,6 +187,12 @@ function save_agents_meta_box($post_id)
             if (in_array($visibility, array('show', 'hide'))) {
                 update_post_meta($post_id, 'agent_visibility', $visibility);
             }
+        } else {
+            // If not set, default to 'show'
+            $current_visibility = get_post_meta($post_id, 'agent_visibility', true);
+            if (empty($current_visibility)) {
+                update_post_meta($post_id, 'agent_visibility', 'show');
+            }
         }
     }
 }

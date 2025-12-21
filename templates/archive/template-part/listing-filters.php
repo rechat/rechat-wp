@@ -133,6 +133,18 @@
                 </label>
             </div>
         </div>
+        <div class="box-filter-listing rch-open-house-filter-listing">
+            <span class="toggleMain">
+                Open Houses Only
+                <img src="<?php echo RCH_PLUGIN_ASSETS_URL_IMG ?>down-arrow.svg" alt="">
+            </span>
+            <div class="rch-other-inside-filters rch-inside-filters" style="display: none;">
+                <label>
+                    <input type="checkbox" id="mobile_open_house" name="open_house" value="true" <?php echo (isset($atts['open_houses_only']) && $atts['open_houses_only']) ? 'checked' : ''; ?> onchange="applyFilters()"> Open Houses Only
+                </label>
+                <button type="button" class="reset-btn" onclick="resetFilter('open_house')">Reset</button>
+            </div>
+        </div>
         <div class="box-filter-listing rch-price-filter-listing rch-bath-filter-listing">
             <span class="toggleMain">
                 Bath
@@ -380,6 +392,15 @@
                         </label>
                         <label>
                             <input type="checkbox" name="listing_statuses" value="Withdrawn,Expired" onchange="applyFilters()"> Archived
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Open Houses Only Filter -->
+                <div class="rch-open-house-filter-listing">
+                    <div class="rch-other-inside-filters">
+                        <label>
+                            <input type="checkbox" id="desktop_open_house" name="open_house" value="true" <?php echo (isset($atts['open_houses_only']) && $atts['open_houses_only']) ? 'checked' : ''; ?> onchange="applyFilters()"> Open Houses Only
                         </label>
                     </div>
                 </div>
