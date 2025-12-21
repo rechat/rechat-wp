@@ -755,6 +755,7 @@ function rch_get_filters($atts)
             )
             : null,
         'order_by' => isset($atts['order_by']) && $atts['order_by'] !== '' ? sanitize_text_field($atts['order_by']) : null,
+        'open_house' => (isset($atts['open_house']) && boolval($atts['open_house'])) ? true : null,
     ];
 
     // Apply array_filter to remove null values

@@ -88,6 +88,15 @@ function applyFilters() {
     filters.minimum_bedrooms = document.getElementById('minimum_bedrooms').value;
     filters.maximum_bedrooms = document.getElementById('maximum_bedrooms').value;
     filters.listing_statuses = getSelectedCheckboxValues('listing_statuses');
+    
+    // Handle open_house checkbox - only set to true if checked, otherwise remove from filters
+    const openHouseCheckbox = document.getElementById('mobile_open_house') || document.getElementById('desktop_open_house');
+    if (openHouseCheckbox && openHouseCheckbox.checked) {
+        filters.open_house = true;
+    } else {
+        delete filters.open_house;
+    }
+    
     filters.minimum_square_meters = document.getElementById('minimum_square_meters').value;
     filters.maximum_square_meters = document.getElementById('maximum_square_meters').value;
     
@@ -583,6 +592,15 @@ function resetFilter(filterName, skipApply = false) {
             updateText('rch-year-text-filter', 'Year Built');
             break;
 
+        case 'open_house':
+            // Uncheck open house checkboxes
+            const mobileOpenHouse = document.getElementById('mobile_open_house');
+            const desktopOpenHouse = document.getElementById('desktop_open_house');
+            if (mobileOpenHouse) mobileOpenHouse.checked = false;
+            if (desktopOpenHouse) desktopOpenHouse.checked = false;
+            delete filters.open_house;
+            break;
+
         case 'all':
             // Clear input search
             document.getElementById('content').value = '';
@@ -599,6 +617,7 @@ function resetFilter(filterName, skipApply = false) {
             resetFilter('square', true);
             resetFilter('lot', true);
             resetFilter('yearBuilt', true);
+            resetFilter('open_house', true);
             // Hide filter badge if exists
             const badge = document.getElementsByClassName('rch-filter-badge')[0];
             if (badge) {

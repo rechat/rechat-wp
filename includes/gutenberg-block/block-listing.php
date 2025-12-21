@@ -38,6 +38,7 @@ function rch_register_block_assets_listing()
             'map_longitude' => array('type' => 'string', 'default' => ''), // Map location attribute
             'map_zoom' => array('type' => 'string', 'default' => '12'), // Map zoom attribute
             'order_by' => array('type' => 'string', 'default' => '-price'), // Order by attribute
+            'open_houses_only' => array('type' => 'boolean', 'default' => false), // Open houses only attribute
         ),
         'render_callback' => 'rch_render_listing_block',
     ));
@@ -72,7 +73,8 @@ function rch_render_listing_block($attributes)
             'maximum_bedrooms',
             'property_types',
             'listing_statuses',
-            'postal_codes'
+            'postal_codes',
+            'open_houses_only'
         );
 
         // Check for URL parameters and sanitize them
@@ -112,6 +114,7 @@ function rch_render_listing_block($attributes)
         'map_longitude' => isset($attributes['map_longitude']) ? $attributes['map_longitude'] : '',
         'map_zoom' => isset($attributes['map_zoom']) ? $attributes['map_zoom'] : '12',
         'order_by' => isset($attributes['order_by']) ? $attributes['order_by'] : '-price',
+        'open_houses_only' => isset($attributes['open_houses_only']) ? $attributes['open_houses_only'] : false,
     );
     // Override default values with URL parameters if they exist
     $shortcode_params = array_merge($shortcode_params, $url_params);
@@ -125,4 +128,6 @@ function rch_render_listing_block($attributes)
     $shortcode .= ']';
     // Execute the shortcode and return the output
     return do_shortcode($shortcode);
+    
+
 }

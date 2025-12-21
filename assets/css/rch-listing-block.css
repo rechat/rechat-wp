@@ -239,7 +239,7 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
     color: white;
 }
 
-.rch-status-filter-listing .rch-other-inside-filters {
+.rch-status-filter-listing .rch-other-inside-filters ,.rch-open-house-filter-listing .rch-other-inside-filters {
     display: flex;
     flex-direction: column;
 
@@ -253,7 +253,7 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
 }
 
 .rch-status-filter-listing .rch-other-inside-filters input[type="checkbox"],
-.rch-map-view input[type="checkbox"] {
+.rch-map-view input[type="checkbox"] ,.rch-open-house-filter-listing .rch-other-inside-filters input[type="checkbox"] {
     position: relative;
     display: block;
     cursor: pointer;
@@ -1342,7 +1342,7 @@ START: CSS FOR LISTING ARCHIVE SHORTCODE
     }
 
     .rch-status-filter-listing .rch-other-inside-filters input[type="checkbox"],
-    .rch-map-view input[type="checkbox"] {
+    .rch-map-view input[type="checkbox"] ,.rch-open-house-filter-listing .rch-other-inside-filters input[type="checkbox"] {
         height: 0;
 
         &:before {
