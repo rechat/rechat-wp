@@ -54,7 +54,7 @@ function load_custom_templates($template)
     }
 
     // Listing detail logic
-    if (isset($_GET['listing_id'])) {
+    if (get_query_var('listing_detail')) {
         add_filter('body_class', function ($classes) {
             $classes[] = 'listing-single-page';
             return $classes;

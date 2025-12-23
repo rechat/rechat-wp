@@ -29,7 +29,6 @@ function rch_agent_search()
                 <a href="<?php the_permalink(); ?>" class="rch-search-result-item">
                     <img src="<?php echo esc_url($profile_image_url); ?>" alt="<?php the_title(); ?>">
                     <span><?php the_title(); ?></span>
-                    <span><?php echo esc_html($timezone); ?></span>
                 </a>
             </li>
 <?php

@@ -11,7 +11,7 @@ $listing_url = esc_url(
     get_home_url() 
     . '/listing-detail/' 
     . $address_slug 
-    . '/?listing_id=' 
+    . '/' 
     . esc_attr($listing['id'])
 );
 ?>
