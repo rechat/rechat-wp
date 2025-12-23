@@ -3,8 +3,12 @@ if (! defined('ABSPATH')) {
     exit();
 }
 
-// Extract the listing ID from the URL using PHP
-$house_id = isset($_GET['listing_id']) ? sanitize_text_field(wp_unslash($_GET['listing_id'])) : null;
+// Extract the listing ID from the URL path
+$url_path = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
+$path_parts = explode('/', $url_path);
+// The listing ID should be the last segment of the path
+$house_id = end($path_parts);
+$house_id = sanitize_text_field($house_id);
 
 if ($house_id) {
     // Define the brand ID and API endpoint
