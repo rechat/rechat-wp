@@ -406,6 +406,13 @@ function rch_delete_outdated_posts($post_type, $current_brand_ids, $meta_key)
     ));
     foreach ($existing_posts as $post) {
         $stored_brand_id = get_post_meta($post->ID, $meta_key, true);
+        
+        // Skip manually added posts (posts without Rechat ID)
+        if (empty($stored_brand_id)) {
+            continue;
+        }
+        
+        // Only delete posts that came from API but are no longer in the current response
         if (!in_array($stored_brand_id, $current_brand_ids)) {
             wp_delete_post($post->ID, true);
         }
