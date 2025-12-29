@@ -36,15 +36,6 @@ add_filter('no_texturize_tags', 'rch_disable_wptexturize_on_rechat_tags');
  ******************************/
 function rch_render_listing_block($attributes)
 {
-    // Get URL parameters (if function exists from search_listing_shortcode.php)
-    $url_params = function_exists('rch_get_url_parameters') 
-        ? rch_get_url_parameters() 
-        : rch_get_fallback_url_parameters();
-
-    // Handle special parameter formatting
-    if (isset($url_params['minimum_bathrooms'])) {
-        $url_params['minimum_bathrooms'] = intval($url_params['minimum_bathrooms']);
-    }
 
     // Sanitize and prepare data
     $listing_statuses_str = rch_sanitize_listing_statuses($attributes['listing_statuses'] ?? []);
@@ -76,6 +67,7 @@ function rch_get_fallback_url_parameters()
     $url_params = array();
     $allowed_params = array(
         'content',
+        'property_type',
         'minimum_price',
         'maximum_price',
         'minimum_lot_square_meters',
@@ -107,6 +99,35 @@ function rch_get_fallback_url_parameters()
  ******************************/
 function rch_render_listing_block_content($attributes, $agent_data, $layout_style, $map_default_center, $listing_statuses_str)
 {
+    // Get URL parameters from search form
+    $url_params = rch_get_fallback_url_parameters();
+    
+    // Merge URL parameters into attributes, giving priority to URL parameters
+    if (!empty($url_params)) {
+        // Map URL parameters to attribute names
+        if (isset($url_params['content'])) {
+            $attributes['filter_address'] = $url_params['content'];
+        }
+        if (isset($url_params['property_type'])) {
+            $attributes['property_types'] = $url_params['property_type'];
+        }
+        if (isset($url_params['minimum_price'])) {
+            $attributes['minimum_price'] = $url_params['minimum_price'];
+        }
+        if (isset($url_params['maximum_price']) && $url_params['maximum_price'] !== 'null') {
+            $attributes['maximum_price'] = $url_params['maximum_price'];
+        }
+        if (isset($url_params['minimum_bedrooms']) && $url_params['minimum_bedrooms'] !== 'null') {
+            $attributes['minimum_bedrooms'] = $url_params['minimum_bedrooms'];
+        }
+        if (isset($url_params['maximum_bedrooms']) && $url_params['maximum_bedrooms'] !== 'null') {
+            $attributes['maximum_bedrooms'] = $url_params['maximum_bedrooms'];
+        }
+        if (isset($url_params['minimum_bathrooms']) && $url_params['minimum_bathrooms'] !== 'null') {
+            $attributes['minimum_bathrooms'] = $url_params['minimum_bathrooms'];
+        }
+    }
+    
     $rechat_attrs = rch_get_rechat_root_attributes($attributes, $map_default_center, $listing_statuses_str);
     $agent_card_html = rch_render_agent_card($agent_data);
 

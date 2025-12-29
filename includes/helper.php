@@ -952,7 +952,7 @@ function get_related_neighborhoods()
                         </div>
                     </a>
                 </li>
-<?php
+    <?php
             }
         endwhile;
         wp_reset_postdata(); // Reset query
@@ -1029,17 +1029,17 @@ function rch_check_agent_exists($agent_api_id)
 
     $agent_posts = get_posts($args);
     $matching_agents = array();
-    
+
     // Loop through each agent post and check if the agent_api_id exists in the 'agents' meta array
     foreach ($agent_posts as $agent_post) {
         $agents_meta = get_post_meta($agent_post->ID, 'agents', true);
-        
+
         // Check if agents_meta is an array and contains the agent_api_id
         if (is_array($agents_meta) && in_array($agent_api_id, $agents_meta, true)) {
             $matching_agents[] = $agent_post;
         }
     }
-    
+
     return $matching_agents;
 }
 
@@ -1193,7 +1193,7 @@ function rch_render_agent_card($agent_data)
     }
 
     ob_start();
-?>
+    ?>
     <div class="agent-container">
         <?php if (!empty($agent_data['agent_image'])): ?>
             <img src="<?php echo esc_url($agent_data['agent_image']); ?>" alt="<?php echo esc_attr($agent_data['agent_name']); ?>" />
@@ -1245,27 +1245,99 @@ function rch_render_layout_styles($layout_style, $primary_color)
 
     <?php if ($layout_style === 'layout2' || $layout_style === 'layout3'): ?>
         <style>
-            <?php if ($layout_style === 'layout2'): ?>
-                .map {
-                    flex: 3;
-                }
-                .listings {
-                    flex: 7;
-                    min-height: 0;
-                    overflow: auto;
-                }
-            <?php elseif ($layout_style === 'layout3'): ?>
-                .map {
-                    flex: 9;
-                }
-                .listings {
-                    flex: 3;
-                    min-height: 0;
-                    overflow: auto;
-                }
+            <?php if ($layout_style === 'layout2'): ?>.map {
+                flex: 3;
+            }
+
+            .listings {
+                flex: 7;
+                min-height: 0;
+                overflow: auto;
+            }
+
+            <?php elseif ($layout_style === 'layout3'): ?>.map {
+                flex: 9;
+            }
+
+            .listings {
+                flex: 3;
+                min-height: 0;
+                overflow: auto;
+            }
+
             <?php endif; ?>
         </style>
     <?php endif; ?>
+<?php
+    return ob_get_clean();
+}
+
+/*******************************
+ * Render search form styles
+ ******************************/
+function rch_render_search_form_styles($form_id, $show_background, $background_image, $primary_color)
+{
+    ob_start();
+?>
+    <style>
+        .rch-search-listing-form {
+            position: relative;
+            z-index: 100;
+        }
+
+        #<?php echo $form_id; ?> {
+            padding: 0;
+            margin: 0;
+        }
+
+        #<?php echo $form_id; ?>.listing-filter__dropdown_trigger,
+        #<?php echo $form_id; ?>.search_address_input {
+            background-color: #fff;
+        }
+
+        #<?php echo $form_id; ?>.listing-filter__dropdown_trigger:hover,
+        #<?php echo $form_id; ?>.search_address_input:hover {
+            background-color: #fff;
+        }
+
+        #<?php echo $form_id; ?>.rch-search-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            max-width: 100% !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .rechat-button.color-accent {
+            background-color: <?php echo esc_attr($primary_color); ?> !important;
+            border-color: <?php echo esc_attr($primary_color); ?> !important;
+            color: <?php echo esc_attr(rch_get_contrast_text_color($primary_color)); ?> !important;
+        }
+
+        .rechat-button.color-accent p {
+            color: <?php echo esc_attr(rch_get_contrast_text_color($primary_color)); ?> !important;
+        }
+
+        .rechat-switch-button input:checked+.rechat-switch-button__slider {
+            background: <?php echo esc_attr($primary_color); ?>;
+        }
+
+        <?php if ($show_background && $background_image): ?>#<?php echo $form_id; ?>.rch-search-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: -1;
+            background-image: url('<?php echo $background_image; ?>');
+            background-size: contain;
+            filter: blur(3px) grayscale(0.1) brightness(70%);
+        }
+
+        <?php endif; ?>
+    </style>
 <?php
     return ob_get_clean();
 }
@@ -1281,25 +1353,93 @@ function rch_get_rechat_root_attributes($attributes, $map_default_center, $listi
         $attrs[] = 'brand_id="' . esc_attr($attributes['brand']) . '"';
     }
 
-    $attrs[] = 'map_zoom="' . esc_attr($attributes['map_zoom']) . '"';
+    if (!empty($attributes['map_zoom'])) {
+        $attrs[] = 'map_zoom="' . esc_attr($attributes['map_zoom']) . '"';
+    }
+
+    if (!empty($attributes['map_id'])) {
+        $attrs[] = 'map_id="' . esc_attr($attributes['map_id']) . '"';
+    }
+
     $attrs[] = 'map_api_key="' . esc_attr(get_option('rch_rechat_google_map_api_key')) . '"';
-    $attrs[] = 'map_default_center="' . esc_attr($map_default_center) . '"';
-    $attrs[] = 'filter_address=""';
-    $attrs[] = 'disable_price="true"';
-    $attrs[] = 'filter_minimum_price="' . esc_attr($attributes['minimum_price']) . '"';
-    $attrs[] = 'filter_minimum_bathrooms="' . esc_attr($attributes['minimum_bathrooms']) . '"';
-    $attrs[] = 'filter_minimum_bedrooms="' . esc_attr($attributes['minimum_bedrooms']) . '"';
-    $attrs[] = 'filter_maximum_bedrooms="' . esc_attr($attributes['maximum_bedrooms']) . '"';
-    $attrs[] = 'filter_maximum_year_built="' . esc_attr($attributes['maximum_year_built']) . '"';
-    $attrs[] = 'filter_listing_statuses="' . esc_attr($listing_statuses_str) . '"';
-    $attrs[] = 'disable_filter_address="' . (filter_var($attributes['disable_filter_address'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
-    $attrs[] = 'disable_filter_price="' . (filter_var($attributes['disable_filter_price'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
-    $attrs[] = 'disable_filter_beds="' . (filter_var($attributes['disable_filter_beds'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
-    $attrs[] = 'disable_filter_baths="' . (filter_var($attributes['disable_filter_baths'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
-    $attrs[] = 'disable_filter_property_types="' . (filter_var($attributes['disable_filter_property_types'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
-    $attrs[] = 'disable_filter_advanced="' . (filter_var($attributes['disable_filter_advanced'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
-    $attrs[] = 'listing_hyperlink_href="' . home_url() . '/listing-detail/{street_address}?listing_id={id}"';
-    $attrs[] = 'listing_hyperlink_target="_blank"';
+
+    if (!empty($map_default_center)) {
+        $attrs[] = 'map_default_center="' . esc_attr($map_default_center) . '"';
+    }
+
+    if (isset($attributes['filter_address'])) {
+        $attrs[] = 'filter_address="' . esc_attr($attributes['filter_address']) . '"';
+    }
+
+    if (!empty($attributes['property_types'])) {
+        $attrs[] = 'filter_property_types="' . esc_attr($attributes['property_types']) . '"';
+    }
+
+    if (isset($attributes['disable_price']) && filter_var($attributes['disable_price'], FILTER_VALIDATE_BOOLEAN)) {
+        $attrs[] = 'disable_price="true"';
+    }
+
+    if (!empty($attributes['minimum_price'])) {
+        $attrs[] = 'filter_minimum_price="' . esc_attr($attributes['minimum_price']) . '"';
+    }
+
+    if (!empty($attributes['maximum_price'])) {
+        $attrs[] = 'filter_maximum_price="' . esc_attr($attributes['maximum_price']) . '"';
+    }
+
+    if (!empty($attributes['minimum_bathrooms'])) {
+        $attrs[] = 'filter_minimum_bathrooms="' . esc_attr($attributes['minimum_bathrooms']) . '"';
+    }
+
+    if (!empty($attributes['minimum_bedrooms'])) {
+        $attrs[] = 'filter_minimum_bedrooms="' . esc_attr($attributes['minimum_bedrooms']) . '"';
+    }
+
+    if (!empty($attributes['maximum_bedrooms'])) {
+        $attrs[] = 'filter_maximum_bedrooms="' . esc_attr($attributes['maximum_bedrooms']) . '"';
+    }
+
+    if (!empty($attributes['maximum_year_built'])) {
+        $attrs[] = 'filter_maximum_year_built="' . esc_attr($attributes['maximum_year_built']) . '"';
+    }
+
+    if (!empty($listing_statuses_str)) {
+        $attrs[] = 'filter_listing_statuses="' . esc_attr($listing_statuses_str) . '"';
+    }
+
+    if (isset($attributes['disable_filter_address'])) {
+        $attrs[] = 'disable_filter_address="' . (filter_var($attributes['disable_filter_address'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
+    }
+
+    if (isset($attributes['disable_filter_price'])) {
+        $attrs[] = 'disable_filter_price="' . (filter_var($attributes['disable_filter_price'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
+    }
+
+    if (isset($attributes['disable_filter_beds'])) {
+        $attrs[] = 'disable_filter_beds="' . (filter_var($attributes['disable_filter_beds'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
+    }
+
+    if (isset($attributes['disable_filter_baths'])) {
+        $attrs[] = 'disable_filter_baths="' . (filter_var($attributes['disable_filter_baths'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
+    }
+
+    if (isset($attributes['disable_filter_property_types'])) {
+        $attrs[] = 'disable_filter_property_types="' . (filter_var($attributes['disable_filter_property_types'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
+    }
+
+    if (isset($attributes['disable_filter_advanced'])) {
+        $attrs[] = 'disable_filter_advanced="' . (filter_var($attributes['disable_filter_advanced'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
+    }
+
+    if (!empty($attributes['listing_hyperlink_href'])) {
+        $attrs[] = 'listing_hyperlink_href="' . esc_attr($attributes['listing_hyperlink_href']) . '"';
+    } else {
+        $attrs[] = 'listing_hyperlink_href="' . home_url() . '/listing-detail/{street_address}?listing_id={id}"';
+    }
+
+    if (!empty($attributes['listing_hyperlink_target'])) {
+        $attrs[] = 'listing_hyperlink_target="' . esc_attr($attributes['listing_hyperlink_target']) . '"';
+    }
 
     return implode("\n      ", $attrs);
 }
