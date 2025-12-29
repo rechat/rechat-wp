@@ -5,7 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Creates a reusable search form for listings that can be placed anywhere on the site
+ * Creates a reusable search form for listings using Rechat web components
  * When submitted, it sends the selected filter values via GET to a listings page
  * 
  * @param array $atts Shortcode attributes
@@ -16,68 +16,102 @@ function rch_search_listing_form_shortcode($atts)
     // Parse attributes with defaults
     $atts = shortcode_atts([
         'target_page' => '/listings/', // Default target page URL
-        'title' => 'Find Your Perfect Home', // Optional title
-        'show_title' => true, // Whether to show the title
-        'compact' => false, // Whether to use a compact layout
-        // Field visibility controls
-        'show_search' => true, // City search field
-        'show_property_type' => true, // Property type dropdown
-        'show_bathrooms' => true, // Min bathrooms dropdown
-        'show_min_bedrooms' => true, // Min bedrooms dropdown
-        'show_max_bedrooms' => true, // Max bedrooms dropdown
-        'show_min_price' => true, // Min price dropdown
-        'show_max_price' => true, // Max price dropdown
+        'brand_id' => '', // Rechat brand ID
+        'map_zoom' => '', // Map zoom level
+        'map_api_key' => get_option('rch_rechat_google_map_api_key'), // Google Maps API key
+        'map_default_center' => '', // Default map center coordinates
+        'filter_address' => '', // Initial address filter
+        'disable_filter_price' => 'false', // Disable price filter
+        'disable_filter_beds' => 'false', // Disable beds filter
+        'filter_minimum_price' => '', // Minimum price filter
+        'filter_minimum_bathrooms' => '', // Minimum bathrooms
+        'filter_minimum_bedrooms' => '', // Minimum bedrooms
+        'filter_maximum_bedrooms' => '', // Maximum bedrooms
+        'filter_maximum_year_built' => '', // Maximum year built
+        'filter_listing_statuses' => '', // Listing statuses
+        'show_background' => 'false', // Show background image
+        'background_image' => '', // Background image URL
     ], $atts);
 
     // Sanitize attributes
     $target_page = esc_url($atts['target_page']);
-    $title = sanitize_text_field($atts['title']);
-    $show_title = filter_var($atts['show_title'], FILTER_VALIDATE_BOOLEAN);
-    $compact = filter_var($atts['compact'], FILTER_VALIDATE_BOOLEAN);
-    
-    // Sanitize field visibility controls
-    $show_search = filter_var($atts['show_search'], FILTER_VALIDATE_BOOLEAN);
-    $show_property_type = filter_var($atts['show_property_type'], FILTER_VALIDATE_BOOLEAN);
-    $show_bathrooms = filter_var($atts['show_bathrooms'], FILTER_VALIDATE_BOOLEAN);
-    $show_min_bedrooms = filter_var($atts['show_min_bedrooms'], FILTER_VALIDATE_BOOLEAN);
-    $show_max_bedrooms = filter_var($atts['show_max_bedrooms'], FILTER_VALIDATE_BOOLEAN);
-    $show_min_price = filter_var($atts['show_min_price'], FILTER_VALIDATE_BOOLEAN);
-    $show_max_price = filter_var($atts['show_max_price'], FILTER_VALIDATE_BOOLEAN);
+    $brand_id = sanitize_text_field($atts['brand_id']);
+    $map_zoom = sanitize_text_field($atts['map_zoom']);
+    $map_api_key = sanitize_text_field($atts['map_api_key']);
+    $map_default_center = sanitize_text_field($atts['map_default_center']);
+    $filter_address = sanitize_text_field($atts['filter_address']);
+    $disable_filter_price = sanitize_text_field($atts['disable_filter_price']);
+    $disable_filter_beds = sanitize_text_field($atts['disable_filter_beds']);
+    $filter_minimum_price = sanitize_text_field($atts['filter_minimum_price']);
+    $filter_minimum_bathrooms = sanitize_text_field($atts['filter_minimum_bathrooms']);
+    $filter_minimum_bedrooms = sanitize_text_field($atts['filter_minimum_bedrooms']);
+    $filter_maximum_bedrooms = sanitize_text_field($atts['filter_maximum_bedrooms']);
+    $filter_maximum_year_built = sanitize_text_field($atts['filter_maximum_year_built']);
+    $filter_listing_statuses = sanitize_text_field($atts['filter_listing_statuses']);
+    $show_background = filter_var($atts['show_background'], FILTER_VALIDATE_BOOLEAN);
+    $background_image = esc_url($atts['background_image']);
 
+    // Prepare attributes for helper function
+    $attributes = array(
+        'brand' => $brand_id,
+        'map_zoom' => $map_zoom,
+        'map_api_key' => $map_api_key,
+        'filter_address' => $filter_address,
+        'minimum_price' => $filter_minimum_price,
+        'minimum_bathrooms' => $filter_minimum_bathrooms,
+        'minimum_bedrooms' => $filter_minimum_bedrooms,
+        'maximum_bedrooms' => $filter_maximum_bedrooms,
+        'maximum_year_built' => $filter_maximum_year_built,
+        'disable_filter_price' => $disable_filter_price,
+        'disable_filter_beds' => $disable_filter_beds,
+    );
+
+    // Get rechat-root attributes using helper function
+    $rechat_attrs = rch_get_rechat_root_attributes($attributes, $map_default_center, $filter_listing_statuses);
+
+    // Generate unique ID for this form instance
+    $form_id = 'rch-search-form-' . uniqid();
+$primary_color = get_option('_rch_primary_color');
     // Start output buffering
     ob_start();
 
-    // Add custom CSS class for the search form
-    $form_class = $compact ? 'rch-search-form-compact' : 'rch-search-form-full';
+    // Render styles
+    echo rch_render_search_form_styles($form_id, $show_background, $background_image, $primary_color);
 ?>
-    <div class="rch-search-listing-form <?php echo esc_attr($form_class); ?>">
-        <?php if ($show_title): ?>
-            <h3 class="rch-search-form-title"><?php echo esc_html($title); ?></h3>
-        <?php endif; ?>
-
-        <form id="rch-search-form" action="<?php echo esc_url($target_page); ?>" method="get" class="rch-search-form-widget">
-            <?php
-            // Set a flag to indicate we're rendering the search form, not the main filters
-            $is_search_form = true;
-
-            // Include the filters template with our custom flag and field visibility controls
-            include RCH_PLUGIN_DIR . 'templates/search/search-form-filters.php';
-            ?>
-
-            <div class="rch-search-form-submit">
-                <button type="submit" class="rch-search-submit-btn">Search</button>
+    <div id="<?php echo $form_id; ?>" class="rch-search-listing-form">
+        <rechat-root 
+      <?php echo $rechat_attrs; ?>
+        >
+            <div class="container_listing_sdk rch-search-container">
+                <?php if ($show_background && $background_image): ?>
+                    <div class="rch-search-background"></div>
+                <?php endif; ?>
+                <rechat-property-search-form></rechat-property-search-form>
             </div>
-        </form>
+        </rechat-root>
     </div>
 
-<?php
-    // Enqueue the necessary scripts and styles
-    wp_enqueue_script('rechat-search-form', RCH_PLUGIN_URL . 'assets/js/rch-search-form.js', array('jquery'), RCH_VERSION, true);
+    <script>
+    window.addEventListener('rechat-property-search-form:submit', (e) => {
+      const filters = e.detail.filters
 
-    // Enqueue Google Maps API and Places Autocomplete scripts
-    wp_enqueue_script('rch-google-maps-api'); // Use the consolidated Google Maps API script
-    wp_enqueue_script('rechat-search-form-autocomplete', RCH_PLUGIN_URL . 'assets/js/rch-search-form-autocomplete.js', array('jquery', 'rch-google-maps-api'), RCH_VERSION, true);
-    wp_enqueue_style('rch-places-autocomplete');
+      const params = new URLSearchParams({
+        content: filters.address,
+        property_type: filters.property_types[0],
+        minimum_price: filters.minimum_price,
+        maximum_price: filters.maximum_price,
+        minimum_bedrooms: filters.minimum_bedrooms,
+        maximum_bedrooms: filters.maximum_bedrooms,
+        minimum_bathrooms: filters.minimum_bathrooms,
+      })
+
+      const url = `<?php echo esc_url(home_url($target_page)); ?>?${params.toString()}`
+
+      window.location.href = url
+    })
+    </script>
+
+<?php
 
     return ob_get_clean();
 }
@@ -88,120 +122,7 @@ add_shortcode('rch_search_listing_form', 'rch_search_listing_form_shortcode');
  */
 function rch_search_form_styles()
 {
-    wp_enqueue_style('rechat-listings-filter', RCH_PLUGIN_URL . 'assets/css/search_bar_listing_shortcode.css', array(), RCH_VERSION);
-}
+        wp_enqueue_style('rechat-sdk-css');
+        wp_enqueue_script('rechat-sdk-js');
+    }
 add_action('wp_enqueue_scripts', 'rch_search_form_styles');
-
-/**
- * Modify the existing listings shortcode to accept URL parameters
- */
-function rch_get_url_parameters()
-{
-    // List of allowed filter parameters to retrieve from URL
-    $filter_params = array(
-        'minimum_price',
-        'maximum_price',
-        'minimum_bathrooms',
-        'maximum_bathrooms',
-        'minimum_bedrooms',
-        'maximum_bedrooms',
-        'minimum_square_meters',
-        'maximum_square_meters',
-        'minimum_year_built',
-        'maximum_year_built',
-        'minimum_lot_square_meters',
-        'maximum_lot_square_meters',
-        'property_types',
-        'listing_statuses',
-        'content',
-        'postal_codes',
-        'place_coords'
-    );
-
-    $params = array();
-
-    // Loop through allowed parameters and get values from URL
-    foreach ($filter_params as $param) {
-        if (isset($_GET[$param]) && !empty($_GET[$param])) {
-            // Special type handling for certain parameters
-            switch ($param) {
-                case 'minimum_price':
-                case 'maximum_price':
-                case 'minimum_bedrooms':
-                case 'maximum_bedrooms':
-                case 'minimum_bathrooms':
-                case 'maximum_bathrooms':
-                case 'minimum_year_built':
-                case 'maximum_year_built':
-                    $params[$param] = intval(sanitize_text_field($_GET[$param]));
-                    break;
-
-                case 'minimum_square_meters':
-                case 'maximum_square_meters':
-                case 'minimum_lot_square_meters':
-                case 'maximum_lot_square_meters':
-                    $params[$param] = floatval(sanitize_text_field($_GET[$param]));
-                    break;
-
-                case 'place_coords':
-                    // Extract coordinates from place_coords parameter
-                    $coords = sanitize_text_field($_GET[$param]);
-
-                    // If coordinates are present, calculate bounds and generate polygon
-                    if (strpos($coords, ',') !== false) {
-                        list($lat, $lng) = explode(',', $coords, 2);
-
-                        // Convert to floats
-                        $lat = floatval($lat);
-                        $lng = floatval($lng);
-
-                        // Use a city-level zoom by default
-                        $zoom = 12;
-
-                        // Calculate bounding box if the functions are available
-                        if (function_exists('rch_calculate_bounding_box') && function_exists('rch_generate_polygon_string')) {
-                            $boundingBox = rch_calculate_bounding_box($lat, $lng, $zoom);
-                            $polygonString = rch_generate_polygon_string($boundingBox);
-
-                            // Add these values to the parameters
-                            $params['map_latitude'] = $lat;
-                            $params['map_longitude'] = $lng;
-                            $params['map_zoom'] = $zoom;
-                            $params['map_points'] = $polygonString;
-                        }
-                    }
-                    break;
-
-                default:
-                    $params[$param] = sanitize_text_field($_GET[$param]);
-                    break;
-            }
-        }
-    }
-
-    return $params;
-}
-
-/**
- * Filter the listings shortcode attributes to include URL parameters
- */
-function rch_filter_listings_shortcode_atts($out, $pairs, $atts, $shortcode)
-{
-    if ('listings' !== $shortcode) {
-        return $out;
-    }
-
-    // Get URL parameters
-    $url_params = rch_get_url_parameters();
-
-    // For debugging - you can remove this in production
-    if (!empty($url_params) && defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('Search Form URL Parameters: ' . print_r($url_params, true));
-        error_log('Original Shortcode Attributes: ' . print_r($out, true));
-        error_log('Merged Attributes: ' . print_r(array_merge($out, $url_params), true));
-    }
-
-    // Merge URL parameters with shortcode attributes, URL parameters take precedence
-    return array_merge($out, $url_params);
-}
-add_filter('shortcode_atts_listings', 'rch_filter_listings_shortcode_atts', 10, 4);
