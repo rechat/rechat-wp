@@ -28,12 +28,16 @@ $agents = get_post_meta($post_id, 'agents', true);
                 <div class="rch-left-main-layout-single-agent">
                     <div class="rch-top-single-agent">
                         <div class="rch-left-top-single-agent">
-                            <?php if ($profile_image_url) : ?>
+                            <?php 
+                            // Use profile image URL if available, otherwise fall back to post thumbnail
+                            $image_url = $profile_image_url ?: get_the_post_thumbnail_url(get_the_ID(), 'full');
+                            if ($image_url) : 
+                            ?>
                                 <div class="rch-image-container">
                                     <picture>
                                         <a href="<?php the_permalink() ?>">
                                             <div class="rch-loader"></div>
-                                            <img src="<?php echo esc_url($profile_image_url); ?>" alt="<?php echo esc_attr(get_the_title()); ?>" class="rch-profile-image">
+                                            <img src="<?php echo esc_url($image_url); ?>" alt="<?php echo esc_attr(get_the_title()); ?>" class="rch-profile-image">
                                         </a>
                                     </picture>
                                 </div>
