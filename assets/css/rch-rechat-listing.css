@@ -194,9 +194,15 @@ h1.rch-single-address {
 }
 .rch-formatted-data-summary,
 .rch-main-description-single-house,
-.facilities-in-single-houses {
+.facilities-in-single-houses, .openhouse-in-single-houses {
   border-top: 1px solid rgb(224, 224, 224);
   padding-block: 24px;
+}
+.openhouse-in-single-houses .rch-open-houses-list {
+ margin-block-start: 1.5rem;
+}   
+.openhouse-in-single-houses .rch-open-houses-list li {
+  margin-block-end: 20px;
 }
 .rch-formatted-data-summary ul {
   display: flex;
