@@ -24,9 +24,9 @@ add_action('init', 'rch_register_block_assets_listing');
 function rch_disable_wptexturize_on_rechat_tags($tagnames)
 {
     $tagnames[] = 'rechat-root';
-    $tagnames[] = 'rechat-listing-filters';
+    $tagnames[] = 'rechat-map-filter';
     $tagnames[] = 'rechat-map';
-    $tagnames[] = 'rechat-listings-grid';
+    $tagnames[] = 'rechat-map-listings-grid';
     return $tagnames;
 }
 add_filter('no_texturize_tags', 'rch_disable_wptexturize_on_rechat_tags');
@@ -137,7 +137,7 @@ function rch_render_listing_block_content($attributes, $agent_data, $layout_styl
         <rechat-root <?php echo $rechat_attrs; ?>>
             <div class="container_listing_sdk">
                 <div class="filters">
-                    <rechat-listing-filters></rechat-listing-filters>
+                    <rechat-map-filter></rechat-map-filter>
                 </div>
 
                 <?php if ($layout_style === 'layout2'): ?>
@@ -162,7 +162,7 @@ function rch_render_layout_wrapper($agent_card_html, $layout_type)
     <div class="wrapper">
         <?php if ($layout_type === 'layout2'): ?>
             <div class="listings">
-                <rechat-listings-grid></rechat-listings-grid>
+                <rechat-map-listings-grid></rechat-map-listings-grid>
             </div>
             <div class="map">
                 <?php echo $agent_card_html; ?>
@@ -174,7 +174,7 @@ function rch_render_layout_wrapper($agent_card_html, $layout_type)
                 <rechat-map></rechat-map>
             </div>
             <div class="listings">
-                <rechat-listings-grid></rechat-listings-grid>
+                <rechat-map-listings-grid></rechat-map-listings-grid>
             </div>
         <?php endif; ?>
     </div>
