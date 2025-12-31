@@ -98,7 +98,7 @@
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+    object-fit: contain;
   border-radius: 10px;
 }
 
@@ -194,9 +194,15 @@ h1.rch-single-address {
 }
 .rch-formatted-data-summary,
 .rch-main-description-single-house,
-.facilities-in-single-houses {
+.facilities-in-single-houses, .openhouse-in-single-houses {
   border-top: 1px solid rgb(224, 224, 224);
   padding-block: 24px;
+}
+.openhouse-in-single-houses .rch-open-houses-list {
+ margin-block-start: 1.5rem;
+}   
+.openhouse-in-single-houses .rch-open-houses-list li {
+  margin-block-end: 20px;
 }
 .rch-formatted-data-summary ul {
   display: flex;
@@ -461,18 +467,15 @@ h1.rch-single-address {
   text-transform: uppercase;
 }
 .rch-agent-no-exists {
-  color: #848484!important;
+  color: #848484 !important;
   font-family: inherit;
   font-size: 1rem;
   font-style: normal;
   line-height: 2;
-
-
-
 }
 .rch-agent-exists {
-        padding-block: 24px;
-          border-top: 1px solid rgb(224, 224, 224);
+  padding-block: 24px;
+  border-top: 1px solid rgb(224, 224, 224);
 }
 .rch-agent-exists ul {
   margin-block: 1rem;
@@ -486,14 +489,14 @@ h1.rch-single-address {
   margin-inline-end: 10px;
   width: 150px;
   height: 150px;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
 }
 .rch-agent-exists ul li .rch-listing-agent-info {
   display: flex;
   flex-direction: column;
-      width: 83%;
-      margin-inline-start: 15px;
-
+  width: 83%;
+  margin-inline-start: 15px;
 }
 .rch-agent-exists ul li:not(:last-child) {
   border-bottom: 1px solid rgb(224, 224, 224);
@@ -505,22 +508,43 @@ h1.rch-single-address {
 .rch-agent-exists ul li .rch-listing-agent-info .rch_main_listing_agent_data {
   display: flex;
 }
-.rch-agent-exists ul li .rch-listing-agent-info .rch_main_listing_agent_data > div {
+.rch-agent-exists
+  ul
+  li
+  .rch-listing-agent-info
+  .rch_main_listing_agent_data
+  > div {
   display: flex;
   flex-direction: column;
   margin-block-start: 5px;
 }
-.rch-agent-exists ul li .rch-listing-agent-info .rch_main_listing_agent_data > div:not(:last-child) {
+.rch-agent-exists
+  ul
+  li
+  .rch-listing-agent-info
+  .rch_main_listing_agent_data
+  > div:not(:last-child) {
   margin-inline-end: 20px;
-    
-} 
-.rch-agent-exists ul li .rch-listing-agent-info .rch_main_listing_agent_data > div span:first-child {
+}
+.rch-agent-exists
+  ul
+  li
+  .rch-listing-agent-info
+  .rch_main_listing_agent_data
+  > div
+  span:first-child {
   color: #848484;
   font-size: 1.2rem;
   font-weight: bold;
   display: block;
 }
-.rch-agent-exists ul li .rch-listing-agent-info .rch_main_listing_agent_data > div span:last-child {
+.rch-agent-exists
+  ul
+  li
+  .rch-listing-agent-info
+  .rch_main_listing_agent_data
+  > div
+  span:last-child {
   color: #000;
   font-size: 1rem;
   font-weight: normal;
@@ -537,11 +561,18 @@ ul.rch_all_listing_data_features li span:first-child {
   font-weight: bold;
   margin-inline-end: 10px;
   display: block;
-      width: 200px;
-
+  width: 20%;
 }
 ul.rch_all_listing_data_features li span:last-child {
   font-weight: normal;
+  display: block;
+  width: 80%;
+  line-height: 1.5;
+}
+.rch-single-image-layout .rch-left-top-slider {
+  width: 100%;
+  max-width: 100%;
+  max-height: 600px;
 }
 /* Medium screens */
 @media (max-width: 1200px) {
@@ -597,13 +628,14 @@ ul.rch_all_listing_data_features li span:last-child {
   }
   .rch-agent-exists ul li .rch-listing-agent-info .rch_main_listing_agent_data {
     flex-direction: column;
-}
-.rch-formatted-data-summary ul {
+  }
+  .rch-formatted-data-summary ul {
     justify-content: space-between;
-}
-.rch-formatted-data-summary ul li b ,.rch-main-description-single-house h2 {
+  }
+  .rch-formatted-data-summary ul li b,
+  .rch-main-description-single-house h2 {
     font-size: 1.5rem;
-}
+  }
 }
 
 /* Extra small screens */

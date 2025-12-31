@@ -63,6 +63,11 @@ get_header() ?>
                         $address = $listing_detail['formatted']['full_address']['text'];
                         $full_address = '';
                         echo esc_html($address);
+                        
+                        // Display MLS number if available
+                        if (isset($listing_detail['mls_number']) && !empty($listing_detail['mls_number'])) {
+                            echo ' <span class="rch-mls-number">(MLS#: ' . esc_html($listing_detail['mls_number']) . ')</span>';
+                        }
                     } else {
                         // Fallback message if address is not set
                         echo '<p>Address information not available.</p>';
@@ -171,11 +176,27 @@ get_header() ?>
                             </ul>
                         </div>
                         
+
+                        
+                        <div class="rch-main-description-single-house">
+
+                            <?php if (!empty($listing_detail['property']['description'])): ?>
+                                <div class="main-des-single-house" id="rch-overview">
+                                    <h2>
+                                        About the Property
+                                    </h2>
+                                    <div class="rch-main-description-listing" id="rch-description-text">
+                                        <?php echo wp_kses_post($listing_detail['property']['description']); ?>
+                                    </div>
+                                    <button class="rch-show-more-btn" id="rch-show-more-btn" style="display: none;">Show More</button>
+                                </div>
+                            <?php endif; ?>
+                        </div>
                         <?php
                         // Check if open_houses has data
                         if (isset($listing_detail['open_houses']) && is_array($listing_detail['open_houses']) && !empty($listing_detail['open_houses'])) :
                         ?>
-                            <div class="rch-open-houses-section">
+                            <div class="openhouse-in-single-houses" id="rch-facilities">
                                 <h2>Open Houses</h2>
                                 <ul class="rch-open-houses-list">
                                     <?php foreach ($listing_detail['open_houses'] as $open_house) :
@@ -226,22 +247,6 @@ get_header() ?>
                                 </ul>
                             </div>
                         <?php endif; ?>
-                        
-                        <div class="rch-main-description-single-house">
-
-                            <?php if (!empty($listing_detail['property']['description'])): ?>
-                                <div class="main-des-single-house" id="rch-overview">
-                                    <h2>
-                                        About the Property
-                                    </h2>
-                                    <div class="rch-main-description-listing" id="rch-description-text">
-                                        <?php echo wp_kses_post($listing_detail['property']['description']); ?>
-                                    </div>
-                                    <button class="rch-show-more-btn" id="rch-show-more-btn" style="display: none;">Show More</button>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-
                         <?php
                         // Check if Facilities and Features section has any data
                         $has_bedroom = isset($listing_detail['formatted']['bedroom_count']['text']) && strlen(trim((string) $listing_detail['formatted']['bedroom_count']['text'])) > 0;
