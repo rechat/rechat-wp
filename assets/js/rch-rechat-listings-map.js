@@ -480,7 +480,7 @@ function addMapMarker(listing, map) {
 
     const infoWindowContent = `
         <div class="custom-info-window">
-            <a href="${rchData.homeUrl}/listing-detail/?listing_id=${listing.id}" target="_blank">
+            <a href="${rchData.homeUrl}/listing-detail/${listing.address.replace(/\s+/g, '-')}/${listing.id}" target="_blank">
                 ${imageHtml}
                 <div class="info-window-content">
                     <p><strong>Price:</strong> $${listing.price.toLocaleString()}</p>
