@@ -167,6 +167,87 @@ function rch_appearance_setting()
 add_action('admin_init', 'rch_appearance_setting');
 
 /*******************************
+ * Define the General settings fields
+ ******************************/
+function rch_general_setting()
+{
+    // Register listing display mode setting
+    register_setting('general_settings', 'rch_listing_display_mode', array(
+        'type' => 'string',
+        'default' => 'combined',
+        'sanitize_callback' => 'sanitize_text_field'
+    ));
+
+    // Section for agent page listing display
+    add_settings_section(
+        'rch_agents_listing_display_section',
+        __('Agent Page Listing Display', 'rechat-plugin'),
+        'rch_render_agents_listing_display_description',
+        'general_settings'
+    );
+
+    // Add radio buttons for listing display mode
+    add_settings_field(
+        'rch_listing_display_mode',
+        __('Listing Display Mode', 'rechat-plugin'),
+        'rch_render_listing_display_mode_field',
+        'general_settings',
+        'rch_agents_listing_display_section'
+    );
+}
+
+add_action('admin_init', 'rch_general_setting');
+
+/*******************************
+ * Render agents listing display description
+ ******************************/
+function rch_render_agents_listing_display_description()
+{
+    echo '<p>' . __('Choose how listings should be displayed on agent pages.', 'rechat-plugin') . '</p>';
+}
+
+/*******************************
+ * Render listing display mode field
+ ******************************/
+function rch_render_listing_display_mode_field()
+{
+    $display_mode = get_option('rch_listing_display_mode', 'combined');
+    ?>
+    <fieldset>
+        <label>
+            <input type="radio" name="rch_listing_display_mode" value="combined" <?php checked('combined', $display_mode); ?> />
+            <strong><?php _e('Combined (Default)', 'rechat-plugin'); ?></strong>
+            <p class="description" style="margin-left: 25px;"><?php _e('Show all listings (Active + Sold) together in a single section', 'rechat-plugin'); ?></p>
+        </label>
+        <br><br>
+        <label>
+            <input type="radio" name="rch_listing_display_mode" value="separate" <?php checked('separate', $display_mode); ?> />
+            <strong><?php _e('Separate Sections', 'rechat-plugin'); ?></strong>
+            <p class="description" style="margin-left: 25px;"><?php _e('Show Active and Sold listings in two separate sections with independent pagination', 'rechat-plugin'); ?></p>
+        </label>
+        <br><br>
+        <label>
+            <input type="radio" name="rch_listing_display_mode" value="active-only" <?php checked('active-only', $display_mode); ?> />
+            <strong><?php _e('Active Only', 'rechat-plugin'); ?></strong>
+            <p class="description" style="margin-left: 25px;"><?php _e('Show only Active listings (Active, Incoming, Coming Soon, Active Under Contract, Active Option Contract, Active Contingent, Active Kick Out, Pending)', 'rechat-plugin'); ?></p>
+        </label>
+        <br><br>
+        <label>
+            <input type="radio" name="rch_listing_display_mode" value="sold-only" <?php checked('sold-only', $display_mode); ?> />
+            <strong><?php _e('Sold Only', 'rechat-plugin'); ?></strong>
+            <p class="description" style="margin-left: 25px;"><?php _e('Show only Sold listings (Sold, Leased)', 'rechat-plugin'); ?></p>
+        </label>
+        <br><br>
+        <label>
+            <input type="radio" name="rch_listing_display_mode" value="slider" <?php checked('slider', $display_mode); ?> />
+            <strong><?php _e('Slider', 'rechat-plugin'); ?></strong>
+            <p class="description" style="margin-left: 25px;"><?php _e('Display Active listings inside a horizontal slider using navigation buttons', 'rechat-plugin'); ?></p>
+        </label>
+    </fieldset>
+    <?php
+}
+
+/*******************************
  * Helper function to fetch API data
  ******************************/
 function rch_fetch_lead_channels()

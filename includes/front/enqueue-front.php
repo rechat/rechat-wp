@@ -17,6 +17,7 @@ function rch_enqueue_frontend_styles()
     wp_register_style('rch-swiper', RCH_PLUGIN_ASSETS . 'css/swiper-bundle.min.css', [], RCH_VERSION_SWIPER);
     wp_register_style('rch-rechat-listing', RCH_PLUGIN_ASSETS . 'css/rch-rechat-listing.css', [], RCH_VERSION);
     wp_register_style('rch-rechat-search-listing-shortcode', RCH_PLUGIN_ASSETS . 'css/search-bar-listing-shortcode.css', [], RCH_VERSION);
+    wp_register_style('rch-rechat-single-agents', RCH_PLUGIN_ASSETS . 'css/rch-single-agents.css', [], RCH_VERSION);
 
     // Enqueue JavaScript files with version
     wp_enqueue_script('rch-ajax-front', RCH_PLUGIN_ASSETS . 'js/rch-ajax-front.js', ['jquery'], RCH_VERSION, true);
@@ -52,6 +53,9 @@ function rch_enqueue_frontend_styles()
             RCH_VERSION,
             true
         );
+    }
+    if (is_singular('agents')) {
+        wp_enqueue_style('rch-rechat-single-agents');
     }
 }
 add_action('wp_enqueue_scripts', 'rch_enqueue_frontend_styles');

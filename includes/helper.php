@@ -1242,11 +1242,7 @@ function rch_render_layout_styles($layout_style, $primary_color)
         .rechat-component.map__marker {
             background-color: <?php echo esc_attr($primary_color); ?> !important;
             color: <?php echo esc_attr($text_color); ?> !important;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 7px 5px !important;
-            font-size: 10px !important;
+                height: auto !important;
         }
     </style>
 
@@ -1447,6 +1443,6 @@ function rch_get_rechat_root_attributes($attributes, $map_default_center, $listi
     if (!empty($attributes['listing_hyperlink_target'])) {
         $attrs[] = 'listing_hyperlink_target="' . esc_attr($attributes['listing_hyperlink_target']) . '"';
     }
-
+    $attrs[] = 'authorization="' . esc_attr(get_option('rch_rechat_access_token')) . '"';
     return implode("\n      ", $attrs);
 }

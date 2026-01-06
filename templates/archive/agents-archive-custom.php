@@ -35,7 +35,7 @@ $query = new WP_Query($args);
             <!-- AJAX Search Form -->
             <form id="rch-agent-search-form" method="get" action="">
                 <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'search.svg'); ?>" alt="Search Icon">
-                <input type="text" id="rch-agent-search" name="rch_agent_search" placeholder="Search agents by name, specialty, or location">
+                <input type="text" id="rch-agent-search" name="rch_agent_search" placeholder="Search agents by name">
                 <div id="rch-agent-search-results" class="rch-dropdown-menu" style="display: none;">
                     <!-- AJAX results will appear here -->
                 </div>

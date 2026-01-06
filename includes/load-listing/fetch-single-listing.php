@@ -28,7 +28,14 @@ if ($house_id) {
         $data = $response['data']['data'];
         if ($data) {
             $listing_detail = $data;
-
+            // Check if the listing is deleted
+            if (!empty($listing_detail['deleted_at'])) {
+                global $wp_query;
+                $wp_query->set_404();
+                status_header(404);
+                get_template_part(404);
+                exit;
+            }
             // Check if the template exists in the child theme or theme's /rechat folder
             $theme_template = locate_template('rechat/listing-single-custom.php');
 

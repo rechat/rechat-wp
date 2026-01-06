@@ -12,7 +12,9 @@
 }
 
 .rch-listing-block-gutenberg .filters {
-  padding: 16px;
+        padding: 16px;
+      display: flex;
+      justify-content: space-between;
 }
 
 .rch-listing-block-gutenberg .wrapper {
