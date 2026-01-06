@@ -138,6 +138,7 @@ function rch_render_listing_block_content($attributes, $agent_data, $layout_styl
             <div class="container_listing_sdk">
                 <div class="filters">
                     <rechat-map-filter></rechat-map-filter>
+                    <rechat-listings-sort></rechat-listings-sort>
                 </div>
 
                 <?php if ($layout_style === 'layout2'): ?>

@@ -30,7 +30,7 @@ add_action('admin_menu', 'rch_register_my_setting_menu_page');
  ******************************/
 function rch_get_active_tab()
 {
-    $allowed_tabs = ['sync-data', 'connect-to-rechat', 'lead-capture', 'local-logic'];
+    $allowed_tabs = ['sync-data', 'connect-to-rechat', 'lead-capture', 'general-settings', 'local-logic'];
     $tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'sync-data';
     
     return in_array($tab, $allowed_tabs, true) ? $tab : 'sync-data';
@@ -45,6 +45,7 @@ function rch_render_tab_navigation($active_tab)
         'sync-data' => __('Sync Your Data', 'rechat-plugin'),
         'connect-to-rechat' => __('Connect To Rechat', 'rechat-plugin'),
         'lead-capture' => __('Lead Capture', 'rechat-plugin'),
+        'general-settings' => __('General Settings', 'rechat-plugin'),
         'local-logic' => __('Local Logic Settings', 'rechat-plugin'),
     ];
 
@@ -104,6 +105,10 @@ function rch_rechat_menu_page()
                     
                 case 'lead-capture':
                     rch_render_lead_capture_tab();
+                    break;
+                    
+                case 'general-settings':
+                    rch_render_general_settings_tab();
                     break;
                     
                 case 'local-logic':
@@ -319,6 +324,24 @@ function rch_render_lead_capture_tab()
             <?php
             settings_fields('appearance_settings');
             do_settings_sections('appearance_setting');
+            submit_button();
+            ?>
+        </form>
+    </div>
+    <?php
+}
+
+/*******************************
+ * Render General Settings tab
+ ******************************/
+function rch_render_general_settings_tab()
+{
+    ?>
+    <div class="tab-content">
+        <form method="POST" action="options.php">
+            <?php
+            settings_fields('general_settings');
+            do_settings_sections('general_settings');
             submit_button();
             ?>
         </form>
