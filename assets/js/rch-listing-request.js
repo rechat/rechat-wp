@@ -41,6 +41,45 @@ if (rchListingData.mapCoordinates && rchListingData.mapCoordinates.hasValidCoord
         filters.points = queryString.value;
     }
 }
+
+// Initialize filter persistence on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if filter persistence is available
+    if (typeof window.RCH_FilterPersistence !== 'undefined') {
+        // Initialize archive page (clears state on fresh load)
+        window.RCH_FilterPersistence.initializeArchivePage();
+        
+        // Attach handlers to listing links to save state before navigation
+        window.RCH_FilterPersistence.attachListingLinkHandlers();
+        
+        // Check if we should restore state (returning from single listing)
+        if (window.RCH_FilterPersistence.shouldRestore()) {
+            const savedState = window.RCH_FilterPersistence.getState();
+            
+            if (savedState) {
+                console.log('Restoring filter state from previous session');
+                
+                // Restore filters
+                filters = { ...filters, ...savedState.filters };
+                
+                // Restore current page
+                if (savedState.currentPage) {
+                    currentPage = savedState.currentPage;
+                }
+                
+                // Update listings with restored filters
+                updateListingList().then(() => {
+                    // Restore scroll position after content is loaded
+                    if (savedState.scrollPosition) {
+                        window.RCH_FilterPersistence.restoreScrollPosition(savedState.scrollPosition);
+                    }
+                });
+                
+                // Note: Filter UI restoration will happen in rch-rechat-listings-filter.js
+            }
+        }
+    }
+});
 function fetchListingsData() {
     const loading = document.getElementById('rch-loading-spinner');
     loading.style.display = 'grid'; // Show loading spinner
