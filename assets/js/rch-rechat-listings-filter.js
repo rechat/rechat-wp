@@ -113,6 +113,10 @@ function applyFilters() {
     updateActiveClass()
     updateListingList(); // Fetch filtered listings
 
+    // Save filter state for persistence (when user navigates away)
+    if (typeof window.RCH_FilterPersistence !== 'undefined') {
+        window.RCH_FilterPersistence.saveState(filters, currentPage);
+    }
 }
 
 /**
@@ -222,6 +226,127 @@ setupFilterButtons('.rch-bath-filter-listing', 'minimum_bathrooms', 'rch-baths-t
 //handle parking select
 setupFilterButtons('.rch-parking-filter-listing', 'minimum_parking_spaces', 'rch-parking-text-filter', 'Parking');
 
+/**
+ * Restore filter UI state from saved filters object
+ * This syncs the UI controls with the filter values restored from sessionStorage
+ */
+function restoreFilterUI(savedFilters) {
+    console.log('Restoring filter UI with:', savedFilters);
+    
+    // Restore property types (radio buttons)
+    if (savedFilters.property_types) {
+        const propertyTypesValue = Array.isArray(savedFilters.property_types) 
+            ? savedFilters.property_types.join(',') 
+            : savedFilters.property_types;
+        
+        const propertyTypeRadios = document.querySelectorAll('input[name="property_types"]');
+        propertyTypeRadios.forEach(radio => {
+            if (radio.value === propertyTypesValue) {
+                radio.checked = true;
+            }
+        });
+    }
+    
+    // Restore price filters
+    if (savedFilters.minimum_price !== undefined && document.getElementById('minimum_price').options.length > 0) {
+        document.getElementById('minimum_price').value = savedFilters.minimum_price;
+    }
+    if (savedFilters.maximum_price !== undefined && document.getElementById('maximum_price').options.length > 0) {
+        document.getElementById('maximum_price').value = savedFilters.maximum_price;
+    }
+    
+    // Restore bedroom filters
+    if (savedFilters.minimum_bedrooms !== undefined) {
+        document.getElementById('minimum_bedrooms').value = savedFilters.minimum_bedrooms;
+    }
+    if (savedFilters.maximum_bedrooms !== undefined) {
+        document.getElementById('maximum_bedrooms').value = savedFilters.maximum_bedrooms;
+    }
+    
+    // Restore bathroom filters
+    if (savedFilters.minimum_bathrooms !== undefined) {
+        const bathButtons = document.querySelectorAll('.rch-bath-filter-listing .filter-btn');
+        bathButtons.forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.getAttribute('data-value') === String(savedFilters.minimum_bathrooms)) {
+                btn.classList.add('active');
+            }
+        });
+    }
+    
+    // Restore parking filters
+    if (savedFilters.minimum_parking_spaces !== undefined) {
+        const parkingButtons = document.querySelectorAll('.rch-parking-filter-listing .filter-btn');
+        parkingButtons.forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.getAttribute('data-value') === String(savedFilters.minimum_parking_spaces)) {
+                btn.classList.add('active');
+            }
+        });
+    }
+    
+    // Restore square footage
+    if (savedFilters.minimum_square_meters !== undefined) {
+        document.getElementById('minimum_square_meters').value = savedFilters.minimum_square_meters;
+    }
+    if (savedFilters.maximum_square_meters !== undefined) {
+        document.getElementById('maximum_square_meters').value = savedFilters.maximum_square_meters;
+    }
+    
+    // Restore lot size
+    if (savedFilters.minimum_lot_square_meters !== undefined) {
+        document.getElementById('minimum_lot_square_meters').value = savedFilters.minimum_lot_square_meters;
+    }
+    if (savedFilters.maximum_lot_square_meters !== undefined) {
+        document.getElementById('maximum_lot_square_meters').value = savedFilters.maximum_lot_square_meters;
+    }
+    
+    // Restore year built
+    if (savedFilters.minimum_year_built !== undefined && document.getElementById('minimum_year_built').options.length > 0) {
+        document.getElementById('minimum_year_built').value = savedFilters.minimum_year_built;
+    }
+    if (savedFilters.maximum_year_built !== undefined && document.getElementById('maximum_year_built').options.length > 0) {
+        document.getElementById('maximum_year_built').value = savedFilters.maximum_year_built;
+    }
+    
+    // Restore open house checkbox
+    const openHouseCheckboxMobile = document.getElementById('mobile_open_house');
+    const openHouseCheckboxDesktop = document.getElementById('desktop_open_house');
+    if (savedFilters.open_house === true) {
+        if (openHouseCheckboxMobile) openHouseCheckboxMobile.checked = true;
+        if (openHouseCheckboxDesktop) openHouseCheckboxDesktop.checked = true;
+    }
+    
+    // Restore listing statuses (checkboxes)
+    if (savedFilters.listing_statuses) {
+        const statusCheckboxes = document.querySelectorAll('input[name="listing_statuses"]');
+        const statusArray = Array.isArray(savedFilters.listing_statuses) 
+            ? savedFilters.listing_statuses 
+            : [savedFilters.listing_statuses];
+        
+        statusCheckboxes.forEach(checkbox => {
+            checkbox.checked = statusArray.includes(checkbox.value);
+        });
+    }
+    
+    // Update all filter display texts
+    updateActiveClass();
+    updateDropdownTextGeneric("minimum_price", "maximum_price", "rch-price-text-filter", {
+        prefix: "Price",
+        formatNumbers: true,
+        fallbackMin: "Any",
+        fallbackMax: "Any",
+    });
+    updateDropdownTextGeneric("minimum_bedrooms", "maximum_bedrooms", "rch-beds-text-filter", {
+        prefix: "Beds",
+        formatNumbers: false,
+        fallbackMin: "Any",
+        fallbackMax: "Any",
+    });
+    
+    console.log('Filter UI restored successfully');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize both mobile and desktop bath/parking filters
     initFilterButtons();
@@ -256,6 +381,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Call this AFTER initializing all filters so dropdowns are populated first
     setContentFromURLParams();
+    
+    // Check if we need to restore filter state from sessionStorage
+    // This happens when user returns from a single listing via Back button
+    if (typeof window.RCH_FilterPersistence !== 'undefined') {
+        const savedState = window.RCH_FilterPersistence.getState();
+        
+        if (savedState && savedState.filters) {
+            // Delay restoration slightly to ensure all DOM elements are ready
+            setTimeout(() => {
+                restoreFilterUI(savedState.filters);
+            }, 100);
+        }
+    }
 
     // Initialize a Generic Filter (Price or Year Built)
     // Added parameters defaultMin and defaultMax to be used for price defaults.

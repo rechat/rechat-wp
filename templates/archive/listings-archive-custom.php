@@ -67,8 +67,11 @@ elseif ($latitude != 0 && $longitude != 0) {
 </div>
 <?php
 
+// Enqueue the filter persistence script (must load before other scripts)
+wp_enqueue_script('rechat-filter-persistence', RCH_PLUGIN_URL . 'assets/js/rch-filter-persistence.js', array('jquery'), RCH_VERSION, true);
+
 // Enqueue the new JavaScript file
-wp_enqueue_script('rechat-listings-request', RCH_PLUGIN_URL . 'assets/js/rch-listing-request.js', array('jquery'), RCH_VERSION, true);
+wp_enqueue_script('rechat-listings-request', RCH_PLUGIN_URL . 'assets/js/rch-listing-request.js', array('jquery', 'rechat-filter-persistence'), RCH_VERSION, true);
 wp_localize_script('rechat-listings-request', 'rchListingData', array(
     'ajaxUrl' => admin_url('admin-ajax.php'),
     'listingPerPage' => $listingPerPage,

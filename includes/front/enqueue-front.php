@@ -52,11 +52,20 @@ function rch_enqueue_block_assets()
 {
     $primary_color = get_option('_rch_primary_color', '#2271b1'); // Default to red if not set
 
+    // Register filter persistence script
+    wp_register_script(
+        'rechat-filter-persistence',
+        RCH_PLUGIN_ASSETS . '/js/rch-filter-persistence.js',
+        ['wp-blocks', 'wp-element'],
+        RCH_VERSION,
+        true
+    );
+
     // Register block script
     wp_register_script(
         'rch-listing-block-script-filter',
         RCH_PLUGIN_ASSETS . '/js/rch-rechat-listings-filter.js',
-        ['wp-blocks', 'wp-element', 'rechat-listings-request'],
+        ['wp-blocks', 'wp-element', 'rechat-listings-request', 'rechat-filter-persistence'],
         RCH_VERSION,
         true
     );
