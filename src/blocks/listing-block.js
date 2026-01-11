@@ -48,7 +48,8 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         property_types: { type: 'string', default: '' },
         map_latitude: { type: 'string', default: '' },
         map_longitude: { type: 'string', default: '' },
-        map_zoom: { type: 'string', default: '12' }
+        map_zoom: { type: 'string', default: '12' },
+        sort_by: { type: 'string', default: '-list_date' }
     },
     edit({ attributes, setAttributes }) {
         const {
@@ -60,7 +61,8 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             disable_filter_baths, disable_filter_property_types, disable_filter_advanced,
             layout_style, show_agent_card, agent_image, agent_name, agent_title,
             agent_phone, agent_email, agent_address,
-            own_listing, property_types, listing_statuses, map_latitude, map_longitude, map_zoom
+            own_listing, property_types, listing_statuses, map_latitude, map_longitude, map_zoom,
+            sort_by
         } = attributes;
 
         const [regions, setRegions] = useState([]);
@@ -254,6 +256,15 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                             value={listing_per_page}
                             type="number"
                             onChange={(value) => setAttributes({ listing_per_page: value === '' ? '' : value.toString() })}
+                        />
+                        <SelectControl
+                            label="Sort By"
+                            value={sort_by}
+                            options={[
+                                { label: 'Sort by Date', value: '-list_date' },
+                                { label: 'Sort by Price', value: '-price' },
+                            ]}
+                            onChange={(value) => setAttributes({ sort_by: value })}
                         />
                     </PanelBody>
                     <PanelBody title="Filter Visibility Settings" initialOpen={false}>

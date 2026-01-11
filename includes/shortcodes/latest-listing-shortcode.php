@@ -36,11 +36,11 @@ function rch_display_latest_listings_shortcode($atts)
     $template = esc_js($atts['template']);
     $display_type = esc_attr($atts['display_type']);
     $map_points = esc_js($atts['map_points']);
-    
+
     // Map property_types based on user input (property types: Residential, Commercial, etc.)
     $property_types_raw = trim($atts['property_types']);
     $property_types = '';
-    
+
     if (!empty($property_types_raw)) {
         switch ($property_types_raw) {
             case 'All Listings':
@@ -66,7 +66,7 @@ function rch_display_latest_listings_shortcode($atts)
     }
     // Use sanitize_text_field instead of esc_js to preserve special characters
     $property_types = sanitize_text_field($property_types);
-    
+
     // Process listing_statuses attribute (listing statuses: Active, Closed, Archived)
     $listing_statuses_raw = trim($atts['listing_statuses']);
     $listing_statuses = '';
@@ -88,14 +88,14 @@ function rch_display_latest_listings_shortcode($atts)
         }
     }
     $listing_statuses = sanitize_text_field($listing_statuses);
-    
+
     // Process price attributes
     $minimum_price = !empty($atts['minimum_price']) ? intval($atts['minimum_price']) : '';
     $maximum_price = !empty($atts['maximum_price']) ? intval($atts['maximum_price']) : '';
-    
+
     // Process own_listing attribute
     $own_listing = filter_var($atts['own_listing'], FILTER_VALIDATE_BOOLEAN);
-    
+
     $slides_per_view = floatval($atts['slides_per_view']);
     $space_between = intval($atts['space_between']);
     $loop = filter_var($atts['loop'], FILTER_VALIDATE_BOOLEAN);
