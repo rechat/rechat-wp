@@ -71,7 +71,7 @@ function rch_search_listing_form_shortcode($atts)
 
     // Generate unique ID for this form instance
     $form_id = 'rch-search-form-' . uniqid();
-$primary_color = get_option('_rch_primary_color');
+    $primary_color = get_option('_rch_primary_color');
     // Start output buffering
     ob_start();
 
@@ -79,9 +79,8 @@ $primary_color = get_option('_rch_primary_color');
     echo rch_render_search_form_styles($form_id, $show_background, $background_image, $primary_color);
 ?>
     <div id="<?php echo $form_id; ?>" class="rch-search-listing-form">
-        <rechat-root 
-      <?php echo $rechat_attrs; ?>
-        >
+        <rechat-root
+            <?php echo $rechat_attrs; ?>>
             <div class="container_listing_sdk rch-search-container">
                 <?php if ($show_background && $background_image): ?>
                     <div class="rch-search-background"></div>
@@ -92,23 +91,27 @@ $primary_color = get_option('_rch_primary_color');
     </div>
 
     <script>
-    window.addEventListener('rechat-property-search-form:submit', (e) => {
-      const filters = e.detail.filters
+        window.addEventListener('rechat-property-search-form:submit', (e) => {
+            const {
+                filters,
+                map
+            } = e.detail
 
-      const params = new URLSearchParams({
-        content: filters.address,
-        property_type: filters.property_types[0],
-        minimum_price: filters.minimum_price,
-        maximum_price: filters.maximum_price,
-        minimum_bedrooms: filters.minimum_bedrooms,
-        maximum_bedrooms: filters.maximum_bedrooms,
-        minimum_bathrooms: filters.minimum_bathrooms,
-      })
+            const params = new URLSearchParams({
+                content: filters.address,
+                property_type: filters.property_types[0],
+                minimum_price: filters.minimum_price,
+                maximum_price: filters.maximum_price,
+                minimum_bedrooms: filters.minimum_bedrooms,
+                maximum_bedrooms: filters.maximum_bedrooms,
+                minimum_bathrooms: filters.minimum_bathrooms,
+                map_center: map.center.join(',')
+            })
 
-      const url = `<?php echo esc_url(home_url($target_page)); ?>?${params.toString()}`
+            const url = `<?php echo esc_url(home_url($target_page)); ?>?${params.toString()}`
 
-      window.location.href = url
-    })
+            window.location.href = url
+        })
     </script>
 
 <?php
@@ -122,7 +125,7 @@ add_shortcode('rch_search_listing_form', 'rch_search_listing_form_shortcode');
  */
 function rch_search_form_styles()
 {
-        wp_enqueue_style('rechat-sdk-css');
-        wp_enqueue_script('rechat-sdk-js');
-    }
+    wp_enqueue_style('rechat-sdk-css');
+    wp_enqueue_script('rechat-sdk-js');
+}
 add_action('wp_enqueue_scripts', 'rch_search_form_styles');

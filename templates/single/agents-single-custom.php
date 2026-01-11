@@ -166,14 +166,14 @@ $agents = get_post_meta($post_id, 'agents', true);
             <?php
             // Get admin settings for listing display mode
             $display_mode = get_option('rch_listing_display_mode', 'combined'); // Default: combined
-            
+
             // Convert agents array to comma-separated string for web component
             if (is_array($agents)) {
                 $agents_string = implode(',', $agents);
             } else {
                 $agents_string = $agents;
             }
-            
+
             // Define common property types and subtypes
             $property_subtypes = 'RES-Single Family, RES-Half Duplex, RES-Farm/Ranch, RES-Condo, RES-Townhouse, LSE-Apartment, LSE-Condo/Townhome, LSE-Duplex, LSE-Fourplex, LSE-House, LSE-Mobile, LSE-Triplex, LND-Commercial, LND-Farm/Ranch, LND-Residential, MUL-Full Duplex, MUL-Apartment/5Plex+, MUL-Fourplex, MUL-Multiple Single Units, MUL-Triplex, COM-Lease, COM-Sale, Lot/Land';
             $property_types = 'Residential, Residential Lease, Lots & Acreage, Multi-Family, Commercial';
@@ -182,105 +182,138 @@ $agents = get_post_meta($post_id, 'agents', true);
             ?>
 
             <?php if ($display_mode === 'combined') : ?>
-            <!-- Combined Listings Section -->
-            <div class="rch-agents-list rch-agents-combined-section">
-                <h2><?php the_title(); ?>'s Properties</h2>
-                <rechat-root
-                    filter_agents="<?php echo esc_attr($agents_string); ?>"
-                    filter_property_subtypes="<?php echo esc_attr($property_subtypes); ?>"
-                    filter_property_types="<?php echo esc_attr($property_types); ?>"
-                    filter_listing_statuses="<?php echo esc_attr($active_statuses); ?>"
-                >
-                    <rechat-listings-list></rechat-listings-list>
-                </rechat-root>
-            </div>
+                <!-- Combined Listings Section -->
+                <div class="rch-agents-list rch-agents-combined-section">
+                    <h2><?php the_title(); ?>'s Properties</h2>
+                    <rechat-root
+                        filter_pagination_limit="9"
+                        filter_agents="<?php echo esc_attr($agents_string); ?>"
+                        filter_property_subtypes="<?php echo esc_attr($property_subtypes); ?>"
+                        filter_property_types="<?php echo esc_attr($property_types); ?>"
+                        filter_listing_statuses="<?php echo esc_attr($active_statuses); ?>">
+                        <div>
+                            <rechat-listings-list />
+                        </div>
+
+                        <div class="pagination">
+                            <rechat-listings-pagination />
+                        </div>
+                    </rechat-root>
+                </div>
 
             <?php elseif ($display_mode === 'separate') : ?>
-            <!-- Active Listings Section -->
-            <div class="rch-agents-list rch-agents-active-section">
-                <h2><?php the_title(); ?>'s Active Listings</h2>
-                <rechat-root
-                    filter_search_limit="5"
-                    filter_agents="<?php echo esc_attr($agents_string); ?>"
-                    filter_property_subtypes="<?php echo esc_attr($property_subtypes); ?>"
-                    filter_property_types="<?php echo esc_attr($property_types); ?>"
-                    filter_listing_statuses="<?php echo esc_attr($active_statuses); ?>"
-                >
-                    <rechat-listings-list></rechat-listings-list>
-                </rechat-root>
-            </div>
+                <!-- Active Listings Section -->
+                <div class="rch-agents-list rch-agents-active-section">
+                    <h2><?php the_title(); ?>'s Active Listings</h2>
+                    <rechat-root
+                        filter_pagination_limit="9"
+                        filter_agents="<?php echo esc_attr($agents_string); ?>"
+                        filter_property_subtypes="<?php echo esc_attr($property_subtypes); ?>"
+                        filter_property_types="<?php echo esc_attr($property_types); ?>"
+                        filter_listing_statuses="<?php echo esc_attr($active_statuses); ?>">
+                        <div>
+                            <rechat-listings-list />
+                        </div>
 
-            <!-- Sold Listings Section -->
-            <div class="rch-agents-list rch-agents-sold-section">
-                <h2><?php the_title(); ?>'s Sold Listings</h2>
-                <rechat-root
-                    filter_agents="<?php echo esc_attr($agents_string); ?>"
-                    filter_property_subtypes="<?php echo esc_attr($property_subtypes); ?>"
-                    filter_property_types="<?php echo esc_attr($property_types); ?>"
-                    filter_listing_statuses="<?php echo esc_attr($sold_statuses); ?>"
-                >
-                    <rechat-listings-list></rechat-listings-list>
-                </rechat-root>
-            </div>
+                        <div class="pagination">
+                            <rechat-listings-pagination />
+                        </div>
+                    </rechat-root>
+                </div>
+
+                <!-- Sold Listings Section -->
+                <div class="rch-agents-list rch-agents-sold-section">
+                    <h2><?php the_title(); ?>'s Sold Listings</h2>
+                    <rechat-root
+                        filter_pagination_limit="9"
+                        filter_agents="<?php echo esc_attr($agents_string); ?>"
+                        filter_property_subtypes="<?php echo esc_attr($property_subtypes); ?>"
+                        filter_property_types="<?php echo esc_attr($property_types); ?>"
+                        filter_listing_statuses="<?php echo esc_attr($sold_statuses); ?>">
+                        <div>
+                            <rechat-listings-list />
+                        </div>
+
+                        <div class="pagination">
+                            <rechat-listings-pagination />
+                        </div>
+                    </rechat-root>
+                </div>
 
             <?php elseif ($display_mode === 'active-only') : ?>
-            <!-- Active Listings Only Section -->
-            <div class="rch-agents-list rch-agents-active-section">
-                <h2><?php the_title(); ?>'s Active Listings</h2>
-                <rechat-root
-                    filter_agents="<?php echo esc_attr($agents_string); ?>"
-                    filter_property_subtypes="<?php echo esc_attr($property_subtypes); ?>"
-                    filter_property_types="<?php echo esc_attr($property_types); ?>"
-                    filter_listing_statuses="<?php echo esc_attr($active_statuses); ?>"
-                >
-                    <rechat-listings-list></rechat-listings-list>
-                </rechat-root>
-            </div>
+                <!-- Active Listings Only Section -->
+                <div class="rch-agents-list rch-agents-active-section">
+                    <h2><?php the_title(); ?>'s Active Listings</h2>
+                    <rechat-root
+                        filter_pagination_limit="9"
+                        filter_agents="<?php echo esc_attr($agents_string); ?>"
+                        filter_property_subtypes="<?php echo esc_attr($property_subtypes); ?>"
+                        filter_property_types="<?php echo esc_attr($property_types); ?>"
+                        filter_listing_statuses="<?php echo esc_attr($active_statuses); ?>">
+                        <div>
+                            <rechat-listings-list />
+                        </div>
+
+                        <div class="pagination">
+                            <rechat-listings-pagination />
+                        </div>
+                    </rechat-root>
+                </div>
 
             <?php elseif ($display_mode === 'sold-only') : ?>
-            <!-- Sold Listings Only Section -->
-            <div class="rch-agents-list rch-agents-sold-section">
-                <h2><?php the_title(); ?>'s Sold Listings</h2>
-                <rechat-root
-                    filter_search_limit="5"
-                    filter_agents="<?php echo esc_attr($agents_string); ?>"
-                    filter_property_subtypes="<?php echo esc_attr($property_subtypes); ?>"
-                    filter_property_types="<?php echo esc_attr($property_types); ?>"
-                    filter_listing_statuses="<?php echo esc_attr($sold_statuses); ?>"
-                >
-                    <rechat-listings-list></rechat-listings-list>
-                </rechat-root>
-            </div>
+                <!-- Sold Listings Only Section -->
+                <div class="rch-agents-list rch-agents-sold-section">
+                    <h2><?php the_title(); ?>'s Sold Listings</h2>
+                    <rechat-root
+                        filter_pagination_limit="9"
+                        filter_agents="<?php echo esc_attr($agents_string); ?>"
+                        filter_property_subtypes="<?php echo esc_attr($property_subtypes); ?>"
+                        filter_property_types="<?php echo esc_attr($property_types); ?>"
+                        filter_listing_statuses="<?php echo esc_attr($sold_statuses); ?>">
+                        <div>
+                            <rechat-listings-list />
+                        </div>
+
+                        <div class="pagination">
+                            <rechat-listings-pagination />
+                        </div>
+                    </rechat-root>
+                </div>
 
             <?php elseif ($display_mode === 'slider') : ?>
-            <!-- Slider Mode Section -->
-            <div class="rch-agents-list rch-agents-slider-section">
-                <h2><?php the_title(); ?>'s Active Listings</h2>
-                <rechat-root 
-                    filter_agents="<?php echo esc_attr($agents_string); ?>"
-                    filter_property_subtypes="<?php echo esc_attr($property_subtypes); ?>"
-                    filter_property_types="<?php echo esc_attr($property_types); ?>"
-                    filter_listing_statuses="<?php echo esc_attr($active_statuses); ?>"
-                >
-                    <div class="rch-slider-container">
-                        <button class="rch-nav-btn rch-nav-btn-prev" id="prevBtn" aria-label="Previous">‹</button>
-                        <rechat-listings-list></rechat-listings-list>
-                        <button class="rch-nav-btn rch-nav-btn-next" id="nextBtn" aria-label="Next">›</button>
-                    </div>
-                </rechat-root>
-                
-                <script>
-                document.addEventListener('DOMContentLoaded', () => {
-                    const scrollAmount = 320;
-                    document.getElementById('prevBtn')?.addEventListener('click', () => {
-                        document.querySelector('rechat-listings-list')?.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-                    });
-                    document.getElementById('nextBtn')?.addEventListener('click', () => {
-                        document.querySelector('rechat-listings-list')?.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-                    });
-                });
-                </script>
-            </div>
+                <!-- Slider Mode Section -->
+                <div class="rch-agents-list rch-agents-slider-section">
+                    <h2><?php the_title(); ?>'s Active Listings</h2>
+                    <rechat-root
+                        filter_agents="<?php echo esc_attr($agents_string); ?>"
+                        filter_property_subtypes="<?php echo esc_attr($property_subtypes); ?>"
+                        filter_property_types="<?php echo esc_attr($property_types); ?>"
+                        filter_listing_statuses="<?php echo esc_attr($active_statuses); ?>">
+                        <div class="rch-slider-container">
+                            <button class="rch-nav-btn rch-nav-btn-prev" id="prevBtn" aria-label="Previous">‹</button>
+                            <rechat-listings-list></rechat-listings-list>
+                            <button class="rch-nav-btn rch-nav-btn-next" id="nextBtn" aria-label="Next">›</button>
+                        </div>
+                    </rechat-root>
+
+                    <script>
+                        document.addEventListener('DOMContentLoaded', () => {
+                            const scrollAmount = 320;
+                            document.getElementById('prevBtn')?.addEventListener('click', () => {
+                                document.querySelector('rechat-listings-list')?.scrollBy({
+                                    left: -scrollAmount,
+                                    behavior: 'smooth'
+                                });
+                            });
+                            document.getElementById('nextBtn')?.addEventListener('click', () => {
+                                document.querySelector('rechat-listings-list')?.scrollBy({
+                                    left: scrollAmount,
+                                    behavior: 'smooth'
+                                });
+                            });
+                        });
+                    </script>
+                </div>
             <?php endif; ?>
         <?php endwhile; ?>
 

@@ -1134,6 +1134,7 @@ function rch_get_listing_block_attributes()
         'map_latitude' => array('type' => 'string', 'default' => ''),
         'map_longitude' => array('type' => 'string', 'default' => ''),
         'map_zoom' => array('type' => 'string', 'default' => '12'),
+        'sort_by' => array('type' => 'string', 'default' => '-list_date'),
     );
 }
 
@@ -1443,6 +1444,11 @@ function rch_get_rechat_root_attributes($attributes, $map_default_center, $listi
     if (!empty($attributes['listing_hyperlink_target'])) {
         $attrs[] = 'listing_hyperlink_target="' . esc_attr($attributes['listing_hyperlink_target']) . '"';
     }
+
+    if (!empty($attributes['sort_by'])) {
+        $attrs[] = 'filter_sort_by="' . esc_attr($attributes['sort_by']) . '"';
+    }
+
     $attrs[] = 'authorization="' . esc_attr(get_option('rch_rechat_access_token')) . '"';
     return implode("\n      ", $attrs);
 }
