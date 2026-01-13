@@ -634,7 +634,6 @@ get_header() ?>
                             <div class="facilities-in-single-houses" id="rch-amenities">
                                 <h2>
                                     Parking
-
                                 </h2>
                                 <ul class="rch_all_listing_data_features">
                                     <?php
@@ -1036,8 +1035,6 @@ get_header() ?>
                 console.log('Error:', e);
             });
     });
-</script>
-<script>
     var swiper = new Swiper(".rch-houses-mySwiper", {
         spaceBetween: 10,
         slidesPerView: 8, // Default for desktop
