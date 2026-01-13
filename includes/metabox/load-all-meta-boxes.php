@@ -9,6 +9,7 @@ if (! defined('ABSPATH')) {
 include RCH_PLUGIN_INCLUDES . 'metabox/metaboxes-for-agents.php';
 include RCH_PLUGIN_INCLUDES . 'metabox/show-offices-in-agents.php';
 include RCH_PLUGIN_INCLUDES . 'metabox/show-regions-in-agents.php';
+include RCH_PLUGIN_INCLUDES . 'metabox/set-default-agent-visibility.php';
 include RCH_PLUGIN_INCLUDES . 'metabox/metaboxes-for-offices.php';
 include RCH_PLUGIN_INCLUDES . 'metabox/metaboxes-for-regions.php';
 include RCH_PLUGIN_INCLUDES . 'metabox/show-regions-in-office.php';
