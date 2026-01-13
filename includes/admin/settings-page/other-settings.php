@@ -141,6 +141,13 @@ function rch_general_setting()
         'sanitize_callback' => 'sanitize_text_field'
     ));
 
+    // Register setting for sort order (date or price)
+    register_setting('general_settings', 'rch_listing_sort_order', array(
+        'type' => 'string',
+        'default' => 'date',
+        'sanitize_callback' => 'sanitize_text_field'
+    ));
+
     // Add section for Agent Listing Display Options
     add_settings_section(
         'rch_agents_listing_display_section',
@@ -154,6 +161,15 @@ function rch_general_setting()
         'rch_listing_display_mode',
         __('Listing Display Mode', 'rechat-plugin'),
         'rch_render_listing_display_mode_field',
+        'general_settings',
+        'rch_agents_listing_display_section'
+    );
+
+    // Add radio buttons for sort order
+    add_settings_field(
+        'rch_listing_sort_order',
+        __('Sort Listings By', 'rechat-plugin'),
+        'rch_render_listing_sort_order_field',
         'general_settings',
         'rch_agents_listing_display_section'
     );
@@ -452,6 +468,29 @@ function rch_render_listing_display_mode_field()
             <input type="radio" name="rch_listing_display_mode" value="sold-only" <?php checked('sold-only', $display_mode); ?> />
             <strong><?php _e('Sold Only', 'rechat-plugin'); ?></strong>
             <p class="description" style="margin-left: 25px;"><?php _e('Show only Sold listings (Sold, Leased)', 'rechat-plugin'); ?></p>
+        </label>
+    </fieldset>
+    <?php
+}
+
+/*******************************
+ * Render radio buttons for Listing Sort Order
+ ******************************/
+function rch_render_listing_sort_order_field()
+{
+    $sort_order = get_option('rch_listing_sort_order', 'date');
+    ?>
+    <fieldset>
+        <label>
+            <input type="radio" name="rch_listing_sort_order" value="date" <?php checked('date', $sort_order); ?> />
+            <strong><?php _e('Date (Default)', 'rechat-plugin'); ?></strong>
+            <p class="description" style="margin-left: 25px;"><?php _e('Sort listings by listing date (newest first)', 'rechat-plugin'); ?></p>
+        </label>
+        <br><br>
+        <label>
+            <input type="radio" name="rch_listing_sort_order" value="price" <?php checked('price', $sort_order); ?> />
+            <strong><?php _e('Price', 'rechat-plugin'); ?></strong>
+            <p class="description" style="margin-left: 25px;"><?php _e('Sort listings by price (highest first)', 'rechat-plugin'); ?></p>
         </label>
     </fieldset>
     <?php

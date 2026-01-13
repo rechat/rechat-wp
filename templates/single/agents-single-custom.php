@@ -28,10 +28,10 @@ $agents = get_post_meta($post_id, 'agents', true);
                 <div class="rch-left-main-layout-single-agent">
                     <div class="rch-top-single-agent">
                         <div class="rch-left-top-single-agent">
-                            <?php 
+                            <?php
                             // Use profile image URL if available, otherwise fall back to post thumbnail
                             $image_url = $profile_image_url ?: get_the_post_thumbnail_url(get_the_ID(), 'full');
-                            if ($image_url) : 
+                            if ($image_url) :
                             ?>
                                 <div class="rch-image-container">
                                     <picture>
@@ -194,7 +194,7 @@ $agents = get_post_meta($post_id, 'agents', true);
                     <!-- 
                     Active Properties Section
                     Displays: Active, Incoming, Coming Soon, Active Under Contract, Active Option Contract, 
-                              Active Contingent, Active Kick Out, Pending
+                    Active Contingent, Active Kick Out, Pending
                 -->
                     <div class="rch-agents-list-items rch-listing-list" id="agent-active-properties-list">
                         <!-- Active properties will be loaded here via AJAX -->
@@ -251,13 +251,17 @@ wp_enqueue_script('rechat-sdk', 'https://unpkg.com/@rechat/sdk@latest/dist/recha
 // Enqueue agent single page JavaScript
 wp_enqueue_script('rch-agent-single', RCH_PLUGIN_ASSETS . 'js/rch-agent-single.js', ['jquery', 'rechat-sdk'], RCH_VERSION, true);
 
+// Get sort order setting and convert to API parameter
+$sort_order = get_option('rch_listing_sort_order', 'date');
+$sort_by = ($sort_order === 'price') ? '-price' : '-list_date';
+
 // Pass PHP data to JavaScript
 wp_localize_script('rch-agent-single', 'rchAgentData', [
     'ajaxUrl' => admin_url('admin-ajax.php'),
     'brandId' => get_option('rch_rechat_brand_id'),
     'agentMatrixIds' => $agents,
     'agentEmail' => $email,
-    'sortBy' => '-list_date',
+    'sortBy' => $sort_by,
     'leadChannel' => get_option('rch_agents_lead_channels'),
     'tags' => json_decode(get_option('rch_agents_selected_tags', '[]'), true),
     'prevIconPath' => RCH_PLUGIN_ASSETS_URL_IMG . 'left-arrow.svg',
