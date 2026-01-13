@@ -18,20 +18,7 @@ if ($latitude != 0 && $longitude != 0) {
     $boundingBox = rch_calculate_bounding_box($latitude, $longitude, $zoom);
     $polygonString = rch_generate_polygon_string($boundingBox);
 }
-// For debugging purposes only, you can remove this in production
-/*
-echo '<div style="display:none;">';
-echo 'Map Center: ' . $latitude . ', ' . $longitude . ' (Zoom: ' . $zoom . ')<br>';
-if ($boundingBox) {
-    echo 'Bounding Box:<br>';
-    echo 'NE: ' . $boundingBox['northeast'][0] . ', ' . $boundingBox['northeast'][1] . '<br>';
-    echo 'SE: ' . $boundingBox['southeast'][0] . ', ' . $boundingBox['southeast'][1] . '<br>';
-    echo 'SW: ' . $boundingBox['southwest'][0] . ', ' . $boundingBox['southwest'][1] . '<br>';
-    echo 'NW: ' . $boundingBox['northwest'][0] . ', ' . $boundingBox['northwest'][1] . '<br>';
-    echo 'Polygon String: ' . $polygonString;
-}
-echo '</div>';
-*/
+
 ?>
 
 <div class="rch-container-listing-list">

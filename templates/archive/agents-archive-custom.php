@@ -49,13 +49,15 @@ $query = new WP_Query($args);
                     $timezone = get_post_meta($post_id, 'timezone', true);
                     $phone_number = get_post_meta($post_id, 'phone_number', true);
                     $designation = get_post_meta($post_id, 'designation', true);
+                    // Use profile image URL if available, otherwise fall back to post thumbnail
+                    $image_url = $profile_image_url ?: get_the_post_thumbnail_url($post_id, 'full');
             ?>
                     <li>
                         <div class="rch-image-container">
                             <picture>
                                 <a href="<?php the_permalink() ?>">
                                     <div class="rch-loader"></div>
-                                    <img src="<?php echo esc_url($profile_image_url); ?>" alt="<?php the_title() ?>" class="rch-profile-image">
+                                    <img src="<?php echo esc_url($image_url); ?>" alt="<?php the_title() ?>" class="rch-profile-image">
                                 </a>
                             </picture>
                         </div>
