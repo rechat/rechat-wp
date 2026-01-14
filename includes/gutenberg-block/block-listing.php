@@ -159,6 +159,7 @@ function rch_render_listing_block_content($attributes, $agent_data, $layout_styl
 function rch_render_layout_wrapper($agent_card_html, $layout_type)
 {
     ob_start();
+    
     ?>
     <div class="wrapper">
         <?php if ($layout_type === 'layout2'): ?>
