@@ -112,6 +112,11 @@ function applyFilters() {
         currentPage = 1; // Reset to the first page after applying filters
     updateActiveClass()
     updateListingList(); // Fetch filtered listings
+    
+    // Track the search with SDK (only after user interaction, not on initial load)
+    if (typeof window.trackSearchedListings === 'function') {
+        window.trackSearchedListings(filters);
+    }
 
     // Save filter state for persistence (when user navigates away)
     if (typeof window.RCH_FilterPersistence !== 'undefined') {

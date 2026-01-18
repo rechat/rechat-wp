@@ -190,11 +190,22 @@ function updateListingList() {
                 // Fetch total count in a separate request
                 fetchTotalListingCount();
 
+                // Mark that initial page load is complete
+                if (typeof window.isInitialPageLoad !== 'undefined') {
+                    window.isInitialPageLoad = false;
+                }
+                
                 return allListingsData;
             } else {
                 clearMarkers();
                 listingList.innerHTML = `<p class="rch-no-listing">${data.data.message || 'No listings available.'}</p>`;
                 pagination.style.display = 'none'; // Hide pagination
+                
+                // Mark that initial page load is complete even if no listings
+                if (typeof window.isInitialPageLoad !== 'undefined') {
+                    window.isInitialPageLoad = false;
+                }
+                
                 return [];
             }
         })

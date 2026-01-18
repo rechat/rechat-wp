@@ -63,7 +63,7 @@ get_header() ?>
                         $address = $listing_detail['formatted']['full_address']['text'];
                         $full_address = '';
                         echo esc_html($address);
-                        
+
                         // Display MLS number if available
                         if (isset($listing_detail['mls_number']) && !empty($listing_detail['mls_number'])) {
                             echo ' <span class="rch-mls-number">(MLS#: ' . esc_html($listing_detail['mls_number']) . ')</span>';
@@ -175,9 +175,9 @@ get_header() ?>
 
                             </ul>
                         </div>
-                        
 
-                        
+
+
                         <div class="rch-main-description-single-house">
 
                             <?php if (!empty($listing_detail['property']['description'])): ?>
@@ -202,24 +202,24 @@ get_header() ?>
                                     <?php foreach ($listing_detail['open_houses'] as $open_house) :
                                         // Get timezone (default to UTC if not provided)
                                         $timezone = isset($open_house['tz']) ? $open_house['tz'] : 'UTC';
-                                        
+
                                         try {
                                             $tz = new DateTimeZone($timezone);
-                                            
+
                                             // Format start time
                                             $start_date = new DateTime();
                                             $start_date->setTimestamp($open_house['start_time']);
                                             $start_date->setTimezone($tz);
-                                            
+
                                             // Format end time
                                             $end_date = new DateTime();
                                             $end_date->setTimestamp($open_house['end_time']);
                                             $end_date->setTimezone($tz);
-                                            
+
                                             // Format: "Saturday, January 4, 2025 at 1:00 PM - 4:00 PM"
                                             $start_formatted = $start_date->format('l, F j, Y \a\t g:i A');
                                             $end_formatted = $end_date->format('g:i A');
-                                            
+
                                             // If same day, combine
                                             if ($start_date->format('Y-m-d') === $end_date->format('Y-m-d')) {
                                                 $display_text = $start_formatted . ' - ' . $end_formatted;
@@ -989,7 +989,7 @@ get_header() ?>
     const sdk = new Rechat.Sdk({
         tracker: {
             cookie: {
-                name: 'rechat-sdk-tracker' // default: rechat-sdk-tracker
+                name: 'rechat-sdk-tracker'
             }
         }
     })
@@ -997,9 +997,8 @@ get_header() ?>
     const channel = {
         lead_channel: '<?php echo esc_js(get_option("rch_lead_channels")); ?>'
     };
-    sdk.Leads.Tracker.capture({
-        listing_id: '<?php echo esc_js($listing_detail['id']) ?>'
-    })
+    //viewed listing send to sdk
+    sdk.Leads.Tracker.viewedListing({ id: '<?php echo esc_js($listing_detail['id']) ?>' });
 
     document.getElementById('leadCaptureForm').addEventListener('submit', function(event) {
         event.preventDefault(); // Prevent form from submitting normally
@@ -1007,7 +1006,6 @@ get_header() ?>
         <?php
         // Build assignees array from agent_posts and seller_agent_posts
         $assignees = [];
-        
         // Add emails from agent_posts
         if (is_array($agent_posts) && count($agent_posts) > 0) {
             foreach ($agent_posts as $agent_post) {
@@ -1019,7 +1017,6 @@ get_header() ?>
                 }
             }
         }
-        
         // Add emails from seller_agent_posts
         if (is_array($seller_agent_posts) && count($seller_agent_posts) > 0) {
             foreach ($seller_agent_posts as $seller_agent_post) {
