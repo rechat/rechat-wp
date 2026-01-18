@@ -69,16 +69,23 @@ add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'rch_plugin_actio
 
 function rch_plugin_activate()
 {
-    add_rewrite_rule('^listing-detail/?$', 'index.php?listing_detail=1', 'top');
+    add_rewrite_rule('^listing-detail/([^/]+)/([a-f0-9\-]+)/?$', 'index.php?listing_detail=1', 'top');
     flush_rewrite_rules();
 }
 register_activation_hook(__FILE__, 'rch_plugin_activate');
 
+// Add rewrite rules on init
+add_action('init', 'rch_add_rewrite_rules');
+function rch_add_rewrite_rules()
+{
+    add_rewrite_rule('^listing-detail/([^/]+)/([a-f0-9\-]+)/?$', 'index.php?listing_detail=1', 'top');
+}
 // Register the query variable
 add_filter('query_vars', 'rch_plugin_query_vars');
 function rch_plugin_query_vars($vars)
 {
     $vars[] = 'house_detail';
+    $vars[] = 'listing_detail';
     return $vars;
 }
 // Add logic seprate in admin or Frontend
