@@ -142,4 +142,43 @@ wp_localize_script('rechat-listings-map', 'rchListingData', array(
 // Enqueue Places Autocomplete Script and CSS
 wp_enqueue_script('rechat-places-autocomplete', RCH_PLUGIN_URL . 'assets/js/rch-places-autocomplete.js', array('jquery', 'rch-google-maps-api', 'rechat-listings-map'), RCH_VERSION, true);
 wp_enqueue_style('rch-places-autocomplete');
+
 ?>
+<script src="https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.js"></script>
+<script>
+    // Initialize the Rechat SDK
+    const sdk = new Rechat.Sdk({
+        tracker: {
+            cookie: {
+                name: 'rechat-sdk-tracker' // default: rechat-sdk-tracker
+            }
+        }
+    })
+    
+    // Flag to track if this is the initial page load
+    window.isInitialPageLoad = true;
+    
+    // Function to send search tracking data to SDK
+    window.trackSearchedListings = function(filterData) {
+        // Don't track on initial page load
+        if (window.isInitialPageLoad) {
+            return;
+        }
+        
+        sdk.Leads.Tracker.searchedListings({
+            minimum_price: filterData.minimum_price || '',
+            maximum_price: filterData.maximum_price || '',
+            minimum_bedrooms: filterData.minimum_bedrooms || '',
+            maximum_bedrooms: filterData.maximum_bedrooms || '',
+            minimum_bathrooms: filterData.minimum_bathrooms || '',
+            maximum_bathrooms: filterData.maximum_bathrooms || '',
+            minimum_square_meters: filterData.minimum_square_meters || '',
+            maximum_square_meters: filterData.maximum_square_meters || '',
+            property_types: filterData.property_types ? (Array.isArray(filterData.property_types) ? filterData.property_types.join(',') : filterData.property_types) : '',
+            postal_codes: '',
+            url: window.location.href,
+            title: document.title,
+            search: filterData.content || ''
+        });
+    };
+</script>
