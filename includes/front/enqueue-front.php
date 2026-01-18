@@ -35,10 +35,8 @@ function rch_enqueue_frontend_styles()
     ]);
 
     // Conditionally enqueue Swiper and listing styles when 'listing_id' is in the URL
-    if (isset($_GET['listing_id']) && !empty($_GET['listing_id'])) {
+        if (get_query_var('listing_detail')) {
         // Sanitize the listing_id for security (even though we're not using it here)
-        $listing_id = sanitize_text_field(wp_unslash($_GET['listing_id']));
-        
         wp_enqueue_style('rch-rechat-listing');
         wp_enqueue_style('rch-swiper');
         wp_enqueue_script('rch-swiper-js');

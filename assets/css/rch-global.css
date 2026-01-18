@@ -762,7 +762,10 @@ ul.rch-rechat-block img {
   gap: 20px;
   margin-top: 20px;
 }
-
+.search_address_input__suggestions {
+  color: #000;
+  text-align: left;
+}
 @media (max-width: 768px) {
   .rch-listing-pagination {
     flex-wrap: wrap;

@@ -63,7 +63,7 @@ get_header() ?>
                         $address = $listing_detail['formatted']['full_address']['text'];
                         $full_address = '';
                         echo esc_html($address);
-                        
+
                         // Display MLS number if available
                         if (isset($listing_detail['mls_number']) && !empty($listing_detail['mls_number'])) {
                             echo ' <span class="rch-mls-number">(MLS#: ' . esc_html($listing_detail['mls_number']) . ')</span>';
@@ -175,9 +175,9 @@ get_header() ?>
 
                             </ul>
                         </div>
-                        
 
-                        
+
+
                         <div class="rch-main-description-single-house">
 
                             <?php if (!empty($listing_detail['property']['description'])): ?>
@@ -202,24 +202,24 @@ get_header() ?>
                                     <?php foreach ($listing_detail['open_houses'] as $open_house) :
                                         // Get timezone (default to UTC if not provided)
                                         $timezone = isset($open_house['tz']) ? $open_house['tz'] : 'UTC';
-                                        
+
                                         try {
                                             $tz = new DateTimeZone($timezone);
-                                            
+
                                             // Format start time
                                             $start_date = new DateTime();
                                             $start_date->setTimestamp($open_house['start_time']);
                                             $start_date->setTimezone($tz);
-                                            
+
                                             // Format end time
                                             $end_date = new DateTime();
                                             $end_date->setTimestamp($open_house['end_time']);
                                             $end_date->setTimezone($tz);
-                                            
+
                                             // Format: "Saturday, January 4, 2025 at 1:00 PM - 4:00 PM"
                                             $start_formatted = $start_date->format('l, F j, Y \a\t g:i A');
                                             $end_formatted = $end_date->format('g:i A');
-                                            
+
                                             // If same day, combine
                                             if ($start_date->format('Y-m-d') === $end_date->format('Y-m-d')) {
                                                 $display_text = $start_formatted . ' - ' . $end_formatted;
@@ -634,7 +634,6 @@ get_header() ?>
                             <div class="facilities-in-single-houses" id="rch-amenities">
                                 <h2>
                                     Parking
-
                                 </h2>
                                 <ul class="rch_all_listing_data_features">
                                     <?php
@@ -1011,7 +1010,7 @@ get_header() ?>
             phone_number: document.getElementById('phone_number').value,
             email: document.getElementById('email').value,
             note: document.getElementById('note').value,
-            tag: <?php echo get_option("rch_selected_tags", '[]'); ?>, // Already a JSON array
+            tag: <?php echo get_option("rch_selected_tags", '[]'); ?>,
             source_type: 'Website',
             mlsid: '<?php echo esc_js($listing_detail['mls_number']) ?>',
             listing_id: '<?php echo esc_js($listing_detail['id']) ?>',
@@ -1036,8 +1035,6 @@ get_header() ?>
                 console.log('Error:', e);
             });
     });
-</script>
-<script>
     var swiper = new Swiper(".rch-houses-mySwiper", {
         spaceBetween: 10,
         slidesPerView: 8, // Default for desktop

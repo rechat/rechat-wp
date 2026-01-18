@@ -1412,34 +1412,18 @@ function rch_get_rechat_root_attributes($attributes, $map_default_center, $listi
         $attrs[] = 'filter_listing_statuses="' . esc_attr($listing_statuses_str) . '"';
     }
 
-    if (isset($attributes['disable_filter_address'])) {
-        $attrs[] = 'disable_filter_address="' . (filter_var($attributes['disable_filter_address'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
-    }
-
-    if (isset($attributes['disable_filter_price'])) {
-        $attrs[] = 'disable_filter_price="' . (filter_var($attributes['disable_filter_price'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
-    }
-
-    if (isset($attributes['disable_filter_beds'])) {
-        $attrs[] = 'disable_filter_beds="' . (filter_var($attributes['disable_filter_beds'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
-    }
-
-    if (isset($attributes['disable_filter_baths'])) {
-        $attrs[] = 'disable_filter_baths="' . (filter_var($attributes['disable_filter_baths'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
-    }
-
-    if (isset($attributes['disable_filter_property_types'])) {
-        $attrs[] = 'disable_filter_property_types="' . (filter_var($attributes['disable_filter_property_types'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
-    }
-
-    if (isset($attributes['disable_filter_advanced'])) {
-        $attrs[] = 'disable_filter_advanced="' . (filter_var($attributes['disable_filter_advanced'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
-    }
+    // Always output disable filter attributes with proper boolean values
+    $attrs[] = 'disable_filter_address="' . (isset($attributes['disable_filter_address']) && filter_var($attributes['disable_filter_address'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
+    $attrs[] = 'disable_filter_price="' . (isset($attributes['disable_filter_price']) && filter_var($attributes['disable_filter_price'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
+    $attrs[] = 'disable_filter_beds="' . (isset($attributes['disable_filter_beds']) && filter_var($attributes['disable_filter_beds'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
+    $attrs[] = 'disable_filter_baths="' . (isset($attributes['disable_filter_baths']) && filter_var($attributes['disable_filter_baths'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
+    $attrs[] = 'disable_filter_property_types="' . (isset($attributes['disable_filter_property_types']) && filter_var($attributes['disable_filter_property_types'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
+    $attrs[] = 'disable_filter_advanced="' . (isset($attributes['disable_filter_advanced']) && filter_var($attributes['disable_filter_advanced'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
 
     if (!empty($attributes['listing_hyperlink_href'])) {
         $attrs[] = 'listing_hyperlink_href="' . esc_attr($attributes['listing_hyperlink_href']) . '"';
     } else {
-        $attrs[] = 'listing_hyperlink_href="' . home_url() . '/listing_detail/{street_address}/{id}/"';
+        $attrs[] = 'listing_hyperlink_href="' . home_url() . '/listingdetail/{street_address}/{id}/"';
     }
 
     if (!empty($attributes['listing_hyperlink_target'])) {
