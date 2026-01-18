@@ -539,7 +539,7 @@
                 note: DOMService.getValue('note'),
                 tag: this.config.tags,
                 source_type: 'Website',
-                agent_emails: this.config.agentEmail,
+                assignees: this.config.assignees,
                 referer_url: window.location.href
             };
         }

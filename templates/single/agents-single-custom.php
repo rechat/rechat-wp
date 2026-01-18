@@ -260,7 +260,7 @@ wp_localize_script('rch-agent-single', 'rchAgentData', [
     'ajaxUrl' => admin_url('admin-ajax.php'),
     'brandId' => get_option('rch_rechat_brand_id'),
     'agentMatrixIds' => $agents,
-    'agentEmail' => $email,
+    'assignees' => [['email' => $email]],
     'sortBy' => $sort_by,
     'leadChannel' => get_option('rch_agents_lead_channels'),
     'tags' => json_decode(get_option('rch_agents_selected_tags', '[]'), true),

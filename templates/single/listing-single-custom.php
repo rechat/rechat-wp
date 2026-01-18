@@ -1004,6 +1004,35 @@ get_header() ?>
     document.getElementById('leadCaptureForm').addEventListener('submit', function(event) {
         event.preventDefault(); // Prevent form from submitting normally
 
+        <?php
+        // Build assignees array from agent_posts and seller_agent_posts
+        $assignees = [];
+        
+        // Add emails from agent_posts
+        if (is_array($agent_posts) && count($agent_posts) > 0) {
+            foreach ($agent_posts as $agent_post) {
+                if (!empty($agent_post) && isset($agent_post->ID)) {
+                    $agent_email = get_post_meta($agent_post->ID, 'email', true);
+                    if (!empty($agent_email)) {
+                        $assignees[] = ['email' => $agent_email];
+                    }
+                }
+            }
+        }
+        
+        // Add emails from seller_agent_posts
+        if (is_array($seller_agent_posts) && count($seller_agent_posts) > 0) {
+            foreach ($seller_agent_posts as $seller_agent_post) {
+                if (!empty($seller_agent_post) && isset($seller_agent_post->ID)) {
+                    $seller_agent_email = get_post_meta($seller_agent_post->ID, 'email', true);
+                    if (!empty($seller_agent_email)) {
+                        $assignees[] = ['email' => $seller_agent_email];
+                    }
+                }
+            }
+        }
+        ?>
+
         const input = {
             first_name: document.getElementById('first_name').value,
             last_name: document.getElementById('last_name').value,
@@ -1014,6 +1043,7 @@ get_header() ?>
             source_type: 'Website',
             mlsid: '<?php echo esc_js($listing_detail['mls_number']) ?>',
             listing_id: '<?php echo esc_js($listing_detail['id']) ?>',
+            assignees: <?php echo json_encode($assignees); ?>,
             referer_url: window.location.href
         };
 
