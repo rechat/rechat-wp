@@ -36,27 +36,25 @@ add_filter('no_texturize_tags', 'rch_disable_wptexturize_on_rechat_tags');
  ******************************/
 function rch_render_listing_block($attributes)
 {
-
-    // Sanitize and prepare data
-    $listing_statuses_str = rch_sanitize_listing_statuses($attributes['listing_statuses'] ?? []);
-    $map_default_center = rch_get_map_default_center(
-        $attributes['map_latitude'] ?? '',
-        $attributes['map_longitude'] ?? ''
-    );
-    $layout_style = isset($attributes['layout_style']) ? sanitize_text_field($attributes['layout_style']) : 'default';
-    $agent_data = rch_sanitize_agent_data($attributes);
-    $primary_color = get_option('_rch_primary_color');
-
-    // Start output buffering
-    ob_start();
-
-    // Render styles
-    echo rch_render_layout_styles($layout_style, $primary_color);
-
-    // Render main content
-    echo rch_render_listing_block_content($attributes, $agent_data, $layout_style, $map_default_center, $listing_statuses_str);
-
-    return ob_get_clean();
+    // Build shortcode attributes string from block attributes
+    $shortcode_atts = array();
+    
+    foreach ($attributes as $key => $value) {
+        // Always include boolean values (even if false)
+        if (is_bool($value)) {
+            $shortcode_atts[] = $key . '="' . ($value ? 'true' : 'false') . '"';
+        } elseif (!empty($value)) {
+            if (is_array($value)) {
+                $shortcode_atts[] = $key . '="' . esc_attr(implode(',', $value)) . '"';
+            } else {
+                $shortcode_atts[] = $key . '="' . esc_attr($value) . '"';
+            }
+        }
+    }
+    
+    $shortcode_string = '[listings ' . implode(' ', $shortcode_atts) . ']';
+    
+    return do_shortcode($shortcode_string);
 }
 
 /*******************************
@@ -92,94 +90,4 @@ function rch_get_fallback_url_parameters()
     }
 
     return $url_params;
-}
-
-/*******************************
- * Render the main listing block content
- ******************************/
-function rch_render_listing_block_content($attributes, $agent_data, $layout_style, $map_default_center, $listing_statuses_str)
-{
-    // Get URL parameters from search form
-    $url_params = rch_get_fallback_url_parameters();
-    
-    // Merge URL parameters into attributes, giving priority to URL parameters
-    if (!empty($url_params)) {
-        // Map URL parameters to attribute names
-        if (isset($url_params['content'])) {
-            $attributes['filter_address'] = $url_params['content'];
-        }
-        if (isset($url_params['property_type'])) {
-            $attributes['property_types'] = $url_params['property_type'];
-        }
-        if (isset($url_params['minimum_price'])) {
-            $attributes['minimum_price'] = $url_params['minimum_price'];
-        }
-        if (isset($url_params['maximum_price']) && $url_params['maximum_price'] !== 'null') {
-            $attributes['maximum_price'] = $url_params['maximum_price'];
-        }
-        if (isset($url_params['minimum_bedrooms']) && $url_params['minimum_bedrooms'] !== 'null') {
-            $attributes['minimum_bedrooms'] = $url_params['minimum_bedrooms'];
-        }
-        if (isset($url_params['maximum_bedrooms']) && $url_params['maximum_bedrooms'] !== 'null') {
-            $attributes['maximum_bedrooms'] = $url_params['maximum_bedrooms'];
-        }
-        if (isset($url_params['minimum_bathrooms']) && $url_params['minimum_bathrooms'] !== 'null') {
-            $attributes['minimum_bathrooms'] = $url_params['minimum_bathrooms'];
-        }
-    }
-    
-    $rechat_attrs = rch_get_rechat_root_attributes($attributes, $map_default_center, $listing_statuses_str);
-    $agent_card_html = rch_render_agent_card($agent_data);
-
-    ob_start();
-    ?>
-    <div class="rch-listing-block-gutenberg">
-        <rechat-root <?php echo $rechat_attrs; ?>>
-            <div class="container_listing_sdk">
-                <div class="filters">
-                    <rechat-map-filter></rechat-map-filter>
-                    <rechat-listings-sort></rechat-listings-sort>
-                </div>
-
-                <?php if ($layout_style === 'layout2'): ?>
-                    <?php echo rch_render_layout_wrapper($agent_card_html, 'layout2'); ?>
-                <?php else: ?>
-                    <?php echo rch_render_layout_wrapper($agent_card_html, 'default'); ?>
-                <?php endif; ?>
-            </div>
-        </rechat-root>
-    </div>
-    <?php
-    return ob_get_clean();
-}
-
-/*******************************
- * Render layout wrapper with map and listings
- ******************************/
-function rch_render_layout_wrapper($agent_card_html, $layout_type)
-{
-    ob_start();
-    
-    ?>
-    <div class="wrapper">
-        <?php if ($layout_type === 'layout2'): ?>
-            <div class="listings">
-                <rechat-map-listings-grid></rechat-map-listings-grid>
-            </div>
-            <div class="map">
-                <?php echo $agent_card_html; ?>
-                <rechat-map></rechat-map>
-            </div>
-        <?php else: ?>
-            <div class="map">
-                <?php echo $agent_card_html; ?>
-                <rechat-map></rechat-map>
-            </div>
-            <div class="listings">
-                <rechat-map-listings-grid></rechat-map-listings-grid>
-            </div>
-        <?php endif; ?>
-    </div>
-    <?php
-    return ob_get_clean();
 }

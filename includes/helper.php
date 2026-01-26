@@ -1366,7 +1366,6 @@ function rch_get_rechat_root_attributes($attributes, $map_default_center, $listi
     }
 
     $attrs[] = 'map_api_key="' . esc_attr(get_option('rch_rechat_google_map_api_key')) . '"';
-    $attrs[] = 'storage="localstorage"';
 
     if (!empty($map_default_center)) {
         $attrs[] = 'map_default_center="' . esc_attr($map_default_center) . '"';
@@ -1423,7 +1422,7 @@ function rch_get_rechat_root_attributes($attributes, $map_default_center, $listi
     if (!empty($attributes['listing_hyperlink_href'])) {
         $attrs[] = 'listing_hyperlink_href="' . esc_attr($attributes['listing_hyperlink_href']) . '"';
     } else {
-        $attrs[] = 'listing_hyperlink_href="' . home_url() . '/listingdetail/{street_address}/{id}/"';
+        $attrs[] = 'listing_hyperlink_href="' . home_url() . '/listing-detail/{street_address}/{id}/"';
     }
 
     if (!empty($attributes['listing_hyperlink_target'])) {
@@ -1434,6 +1433,6 @@ function rch_get_rechat_root_attributes($attributes, $map_default_center, $listi
         $attrs[] = 'filter_sort_by="' . esc_attr($attributes['sort_by']) . '"';
     }
 
-    $attrs[] = 'authorization="' . esc_attr(get_option('rch_rechat_access_token')) . '"';
+    // $attrs[] = 'authorization="' . esc_attr(get_option('rch_rechat_access_token')) . '"';
     return implode("\n      ", $attrs);
 }

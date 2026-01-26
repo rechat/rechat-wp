@@ -25,7 +25,7 @@ function rch_render_listing_list($atts)
         'minimum_bedrooms' => '',
         'maximum_bedrooms' => '',
         'listing_per_page' => '5',
-        'brand' => get_option('rch_rechat_brand_id'),
+        'brand' => '',
         'listing_statuses' => '',
         'disable_filter_address' => false,
         'disable_filter_price' => false,
@@ -56,6 +56,13 @@ function rch_render_listing_list($atts)
     // Convert boolean attributes from strings
     $atts['own_listing'] = filter_var($atts['own_listing'], FILTER_VALIDATE_BOOLEAN);
     $atts['show_agent_card'] = filter_var($atts['show_agent_card'], FILTER_VALIDATE_BOOLEAN);
+    
+    // Set brand_id only if own_listing is true
+    if ($atts['own_listing']) {
+        $atts['brand'] = get_option('rch_rechat_brand_id');
+    } else {
+        $atts['brand'] = '';
+    }
     $atts['disable_filter_address'] = filter_var($atts['disable_filter_address'], FILTER_VALIDATE_BOOLEAN);
     $atts['disable_filter_price'] = filter_var($atts['disable_filter_price'], FILTER_VALIDATE_BOOLEAN);
     $atts['disable_filter_beds'] = filter_var($atts['disable_filter_beds'], FILTER_VALIDATE_BOOLEAN);
@@ -144,6 +151,217 @@ function rch_render_listing_list($atts)
             </div>
         </rechat-root>
     </div>
+      <script>
+    // Handle filter restoration and persistence
+    (function() {
+      const urlParams = new URLSearchParams(window.location.search)
+      const rechatRoot = document.querySelector('rechat-root')
+      
+      if (!rechatRoot) {
+        return
+      }
+
+      // Mark if we're coming from a browser navigation (back/forward)
+      const isNavigatingBack = window.performance && 
+                              window.performance.navigation && 
+                              window.performance.navigation.type === 2
+      
+      // Store the session key for this listing page
+      const sessionKey = 'rechat_listing_page_' + window.location.pathname
+      
+      // Check if we should restore filters
+      const shouldRestoreFilters = () => {
+        // If URL has parameters, always restore from URL
+        if (urlParams.toString() !== '') {
+          return true
+        }
+        
+        // If no URL parameters and we're navigating back, don't restore old filters
+        // This handles the case where user visits clean URL after using filters
+        return false
+      }
+
+      // Clear session storage if visiting clean URL
+      if (urlParams.toString() === '' && !isNavigatingBack) {
+        // Clear any stored filter state for this page
+        try {
+          sessionStorage.removeItem(sessionKey)
+        } catch (e) {
+          // Ignore storage errors
+        }
+      }
+
+      // Only restore filters if appropriate
+      if (!shouldRestoreFilters()) {
+        return
+      }
+
+      // Wait for rechat-root to be ready
+      const restoreFilters = () => {
+        const filterKeys = [
+          'sort_by',
+          'map_center',
+          'map_zoom',
+          'address',
+          'search_limit',
+          'listing_statuses',
+          'property_types',
+          'minimum_price',
+          'maximum_price',
+          'minimum_bedrooms',
+          'maximum_bedrooms',
+          'minimum_bathrooms',
+          'minimum_parking_spaces',
+          'minimum_square_feet',
+          'maximum_square_feet',
+          'minimum_lot_square_feet',
+          'maximum_lot_square_feet',
+          'minimum_year_built',
+          'maximum_year_built',
+          'minimum_sold_date',
+          'property_subtypes',
+          'architectural_styles',
+          'baths',
+          'open_house',
+          'office_exclusive',
+          'agents',
+          'list_offices'
+        ]
+
+        const filters = {}
+        
+        filterKeys.forEach(key => {
+          if (urlParams.has(key)) {
+            let value = urlParams.get(key)
+            
+            // Handle array values (comma-separated)
+            if (['listing_statuses', 'property_types', 'property_subtypes', 'architectural_styles', 'agents', 'list_offices'].includes(key)) {
+              value = value.split(',').filter(v => v.trim() !== '')
+            }
+            // Handle map_center (should be an object)
+            else if (key === 'map_center') {
+              try {
+                value = JSON.parse(value)
+              } catch (e) {
+                // If not JSON, try to parse as "lat,lng"
+                const coords = value.split(',')
+                if (coords.length === 2) {
+                  value = { lat: parseFloat(coords[0]), lng: parseFloat(coords[1]) }
+                }
+              }
+            }
+            // Handle numeric values
+            else if (['map_zoom', 'search_limit', 'minimum_price', 'maximum_price', 'minimum_bedrooms', 'maximum_bedrooms', 'minimum_bathrooms', 'minimum_parking_spaces', 'minimum_square_feet', 'maximum_square_feet', 'minimum_lot_square_feet', 'maximum_lot_square_feet', 'minimum_year_built', 'maximum_year_built'].includes(key)) {
+              const num = parseFloat(value)
+              if (!isNaN(num)) {
+                value = num
+              }
+            }
+            // Handle boolean values
+            else if (['open_house', 'office_exclusive'].includes(key)) {
+              value = value === 'true' || value === '1'
+            }
+            
+            filters[key] = value
+          }
+        })
+
+        // Apply filters to rechat-root by updating attributes
+        Object.entries(filters).forEach(([key, value]) => {
+          const attrName = key.replace(/_/g, '-')
+          
+          if (typeof value === 'object' && !Array.isArray(value)) {
+            rechatRoot.setAttribute(attrName, JSON.stringify(value))
+          } else if (Array.isArray(value)) {
+            rechatRoot.setAttribute(attrName, value.join(','))
+          } else {
+            rechatRoot.setAttribute(attrName, value)
+          }
+        })
+      }
+
+      // Check if rechat-root is already defined/ready
+      if (customElements.get('rechat-root')) {
+        setTimeout(restoreFilters, 100)
+      } else {
+        // Wait for custom element to be defined
+        customElements.whenDefined('rechat-root').then(() => {
+          setTimeout(restoreFilters, 100)
+        })
+      }
+    })()
+
+    // Save filters to URL when they change
+    // Flag to track if component has fully initialized to avoid saving initial state
+    let isInitialized = false
+    let initTimeout = null
+    
+    // Mark as initialized after a delay to allow component to mount
+    initTimeout = setTimeout(() => {
+      isInitialized = true
+    }, 1500)
+    
+    window.addEventListener('rechat-listing-filters:change', (e) => {
+      // Don't update URL during initial component mount/setup
+      if (!isInitialized) {
+        return
+      }
+      
+      const keys = [
+        'sort_by',
+        'map_center',
+        'map_zoom',
+        'address',
+        'search_limit',
+        'listing_statuses',
+        'property_types',
+        'minimum_price',
+        'maximum_price',
+        'minimum_bedrooms',
+        'maximum_bedrooms',
+        'minimum_bathrooms',
+        'minimum_parking_spaces',
+        'minimum_square_feet',
+        'maximum_square_feet',
+        'minimum_lot_square_feet',
+        'maximum_lot_square_feet',
+        'minimum_year_built',
+        'maximum_year_built',
+        'minimum_sold_date',
+        'property_subtypes',
+        'architectural_styles',
+        'baths',
+        'open_house',
+        'office_exclusive',
+        'agents',
+        'list_offices'
+      ]
+
+      const filters = keys.reduce((acc, key) => {
+        const value = e.detail[key]
+
+        return (value === null || value === undefined) ? acc : {
+          ...acc,
+          [key]: value
+        }
+      }, {})
+
+      const params = new URLSearchParams()
+
+      Object.entries(filters).forEach(([key, value]) => {
+        if (typeof value === 'object' && !Array.isArray(value)) {
+          params.set(key, JSON.stringify(value))
+        } else {
+          params.set(key, Array.isArray(value) ? value.join(',') : value)
+        }
+      })
+
+      const url = new URL(window.location.href)
+
+      url.search = params.toString()
+      window.history.replaceState({}, '', url)
+    })
+  </script>
     <?php
 
     return ob_get_clean();

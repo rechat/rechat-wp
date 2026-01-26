@@ -171,11 +171,13 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                             label="Select Property Type"
                             selected={property_types}
                             options={[
-                                { label: 'All Listings', value: 'Residential, Residential Lease, Lots & Acreage, Commercial, Multi-Family' },
-                                { label: 'Sale', value: 'Residential' },
+                                { label: 'All Listings', value: 'Residential,Residential Lease,Lots & Acreage,Commercial,Multi-Family' },
+                                {label: 'Residential', value:'Residential'},
+                                { label: 'Sale', value: 'Residential,Lots & Acreage,Commercial,Multi-Family' },
                                 { label: 'Lease', value: 'Residential Lease' },
                                 { label: 'Lots & Acreage', value: 'Lots & Acreage' },
                                 { label: 'Commercial', value: 'Commercial' },
+                                { label: 'Multi-Family', value: 'Multi-Family' },
                             ]}
                             onChange={handlePropertyTypeChange}
                         />
