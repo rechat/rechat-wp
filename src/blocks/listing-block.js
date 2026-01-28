@@ -15,12 +15,12 @@ registerBlockType('rch-rechat-plugin/listing-block', {
     attributes: {
         minimum_price: { type: 'string', default: '' },
         maximum_price: { type: 'string', default: '' },
-        minimum_lot_square_meters: { type: 'string', default: '' },
-        maximum_lot_square_meters: { type: 'string', default: '' },
+        minimum_square_feet: { type: 'string', default: '' },
+        maximum_square_feet: { type: 'string', default: '' },
         minimum_bathrooms: { type: 'string', default: '' },
         maximum_bathrooms: { type: 'string', default: '' },
-        minimum_square_meters: { type: 'string', default: '' },
-        maximum_square_meters: { type: 'string', default: '' },
+        minimum_lot_square_feet: { type: 'string', default: '' },
+        maximum_lot_square_feet: { type: 'string', default: '' },
         minimum_year_built: { type: 'string', default: '' },
         maximum_year_built: { type: 'string', default: '' },
         minimum_bedrooms: { type: 'string', default: '' },
@@ -37,15 +37,10 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         disable_filter_property_types: { type: 'boolean', default: false },
         disable_filter_advanced: { type: 'boolean', default: false },
         layout_style: { type: 'string', default: 'default' },
-        show_agent_card: { type: 'boolean', default: false },
-        agent_image: { type: 'string', default: '' },
-        agent_name: { type: 'string', default: '' },
-        agent_title: { type: 'string', default: '' },
-        agent_phone: { type: 'string', default: '' },
-        agent_email: { type: 'string', default: '' },
-        agent_address: { type: 'string', default: '' },
         own_listing: { type: 'boolean', default: true },
         property_types: { type: 'string', default: '' },
+        filter_open_houses: { type: 'boolean', default: false },
+        office_exclusive: { type: 'boolean', default: false },
         map_latitude: { type: 'string', default: '' },
         map_longitude: { type: 'string', default: '' },
         map_zoom: { type: 'string', default: '12' },
@@ -53,15 +48,13 @@ registerBlockType('rch-rechat-plugin/listing-block', {
     },
     edit({ attributes, setAttributes }) {
         const {
-            minimum_price, maximum_price, minimum_lot_square_meters, maximum_lot_square_meters,
-            minimum_bathrooms, maximum_bathrooms, minimum_square_meters, maximum_square_meters,
+            minimum_price, maximum_price, minimum_square_feet, maximum_square_feet,
+            minimum_bathrooms, maximum_bathrooms, minimum_lot_square_feet, maximum_lot_square_feet,
             minimum_year_built, maximum_year_built, minimum_bedrooms, maximum_bedrooms,
             listing_per_page, filterByRegions, filterByOffices, selectedStatuses, 
             disable_filter_address, disable_filter_price, disable_filter_beds, 
             disable_filter_baths, disable_filter_property_types, disable_filter_advanced,
-            layout_style, show_agent_card, agent_image, agent_name, agent_title,
-            agent_phone, agent_email, agent_address,
-            own_listing, property_types, listing_statuses, map_latitude, map_longitude, map_zoom,
+            layout_style, own_listing, property_types, filter_open_houses, office_exclusive, listing_statuses, map_latitude, map_longitude, map_zoom,
             sort_by
         } = attributes;
 
@@ -145,6 +138,16 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                             checked={own_listing}
                             onChange={() => setAttributes({ own_listing: !own_listing })}
                         />
+                        <CheckboxControl
+                            label="Open Houses Only"
+                            checked={filter_open_houses}
+                            onChange={() => setAttributes({ filter_open_houses: !filter_open_houses })}
+                        />
+                        <CheckboxControl
+                            label="Office Exclusive"
+                            checked={office_exclusive}
+                            onChange={() => setAttributes({ office_exclusive: !office_exclusive })}
+                        />
                         <SelectControl
                             label="Select a Region"
                             value={filterByRegions}
@@ -171,9 +174,8 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                             label="Select Property Type"
                             selected={property_types}
                             options={[
-                                { label: 'All Listings', value: 'Residential,Residential Lease,Lots & Acreage,Commercial,Multi-Family' },
+                                { label: 'All Listings', value: '' },
                                 {label: 'Residential', value:'Residential'},
-                                { label: 'Sale', value: 'Residential,Lots & Acreage,Commercial,Multi-Family' },
                                 { label: 'Lease', value: 'Residential Lease' },
                                 { label: 'Lots & Acreage', value: 'Lots & Acreage' },
                                 { label: 'Commercial', value: 'Commercial' },
@@ -194,16 +196,16 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                             onChange={(value) => setAttributes({ maximum_price: value === '' ? '' : value.toString() })}
                         />
                         <TextControl
-                            label="Minimum Lot Size (m²)"
-                            value={minimum_lot_square_meters}
+                            label="Minimum Square Feet"
+                            value={minimum_square_feet}
                             type="number"
-                            onChange={(value) => setAttributes({ minimum_lot_square_meters: value === '' ? '' : value.toString() })}
+                            onChange={(value) => setAttributes({ minimum_square_feet: value === '' ? '' : value.toString() })}
                         />
                         <TextControl
-                            label="Maximum Lot Size (m²)"
-                            value={maximum_lot_square_meters}
+                            label="Maximum Square Feet"
+                            value={maximum_square_feet}
                             type="number"
-                            onChange={(value) => setAttributes({ maximum_lot_square_meters: value === '' ? '' : value.toString() })}
+                            onChange={(value) => setAttributes({ maximum_square_feet: value === '' ? '' : value.toString() })}
                         />
                         <TextControl
                             label="Minimum Bathrooms"
@@ -218,16 +220,16 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                             onChange={(value) => setAttributes({ maximum_bathrooms: value === '' ? '' : value.toString() })}
                         />
                         <TextControl
-                            label="Minimum Square Meters"
-                            value={minimum_square_meters}
+                            label="Minimum Lot Square Feet"
+                            value={minimum_lot_square_feet}
                             type="number"
-                            onChange={(value) => setAttributes({ minimum_square_meters: value === '' ? '' : value.toString() })}
+                            onChange={(value) => setAttributes({ minimum_lot_square_feet: value === '' ? '' : value.toString() })}
                         />
                         <TextControl
-                            label="Maximum Square Meters"
-                            value={maximum_square_meters}
+                            label="Maximum Lot Square Feet"
+                            value={maximum_lot_square_feet}
                             type="number"
-                            onChange={(value) => setAttributes({ maximum_square_meters: value === '' ? '' : value.toString() })}
+                            onChange={(value) => setAttributes({ maximum_lot_square_feet: value === '' ? '' : value.toString() })}
                         />
                         <TextControl
                             label="Minimum Year Built"
@@ -252,12 +254,6 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                             value={maximum_bedrooms}
                             type="number"
                             onChange={(value) => setAttributes({ maximum_bedrooms: value === '' ? '' : value.toString() })}
-                        />
-                        <TextControl
-                            label="Listing Per Page"
-                            value={listing_per_page}
-                            type="number"
-                            onChange={(value) => setAttributes({ listing_per_page: value === '' ? '' : value.toString() })}
                         />
                         <SelectControl
                             label="Sort By"
@@ -301,89 +297,6 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                             checked={disable_filter_advanced}
                             onChange={() => setAttributes({ disable_filter_advanced: !disable_filter_advanced })}
                         />
-                    </PanelBody>
-                    <PanelBody title="Agent Card Settings" initialOpen={false}>
-                        <CheckboxControl
-                            label="Show Agent Card"
-                            checked={show_agent_card}
-                            onChange={() => setAttributes({ show_agent_card: !show_agent_card })}
-                        />
-                        {show_agent_card && (
-                            <>
-                                <MediaUploadCheck>
-                                    <MediaUpload
-                                        onSelect={(media) => setAttributes({ agent_image: media.url })}
-                                        allowedTypes={['image']}
-                                        value={agent_image}
-                                        render={({ open }) => (
-                                            <div style={{ marginBottom: '16px' }}>
-                                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                                                    Agent Image
-                                                </label>
-                                                {agent_image && (
-                                                    <div style={{ marginBottom: '8px' }}>
-                                                        <img 
-                                                            src={agent_image} 
-                                                            alt="Agent preview" 
-                                                            style={{ 
-                                                                maxWidth: '200px', 
-                                                                height: 'auto',
-                                                                borderRadius: '8px',
-                                                                display: 'block'
-                                                            }} 
-                                                        />
-                                                    </div>
-                                                )}
-                                                <div style={{ display: 'flex', gap: '8px' }}>
-                                                    <Button onClick={open} variant="primary">
-                                                        {agent_image ? 'Change Image' : 'Upload Image'}
-                                                    </Button>
-                                                    {agent_image && (
-                                                        <Button 
-                                                            onClick={() => setAttributes({ agent_image: '' })} 
-                                                            variant="secondary"
-                                                            isDestructive
-                                                        >
-                                                            Remove
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
-                                    />
-                                </MediaUploadCheck>
-                                <TextControl
-                                    label="Agent Name"
-                                    value={agent_name}
-                                    onChange={(value) => setAttributes({ agent_name: value })}
-                                    placeholder="Brett Singleton"
-                                />
-                                <TextControl
-                                    label="Agent Title"
-                                    value={agent_title}
-                                    onChange={(value) => setAttributes({ agent_title: value })}
-                                    placeholder="Dallas Real Estate Agent"
-                                />
-                                <TextControl
-                                    label="Agent Phone"
-                                    value={agent_phone}
-                                    onChange={(value) => setAttributes({ agent_phone: value })}
-                                    placeholder="+1 424 152 1609"
-                                />
-                                <TextControl
-                                    label="Agent Email"
-                                    value={agent_email}
-                                    onChange={(value) => setAttributes({ agent_email: value })}
-                                    placeholder="brett@dallasrealestate.com"
-                                />
-                                <TextControl
-                                    label="Agent Address"
-                                    value={agent_address}
-                                    onChange={(value) => setAttributes({ agent_address: value })}
-                                    placeholder="12200 Ford Rd #434, Dallas, TX"
-                                />
-                            </>
-                        )}
                     </PanelBody>
                     <PanelBody title="Map Settings">{googleMapsApiKey ? (
                             <>
