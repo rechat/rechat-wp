@@ -14,12 +14,12 @@ function rch_render_listing_list($atts)
     $atts = shortcode_atts([
         'minimum_price' => '',
         'maximum_price' => '',
-        'minimum_lot_square_meters' => '',
-        'maximum_lot_square_meters' => '',
+        'minimum_square_feet' => '',
+        'maximum_square_feet' => '',
         'minimum_bathrooms' => '',
         'maximum_bathrooms' => '',
-        'minimum_square_meters' => '',
-        'maximum_square_meters' => '',
+        'minimum_lot_square_feet' => '',
+        'maximum_lot_square_feet' => '',
         'minimum_year_built' => '',
         'maximum_year_built' => '',
         'minimum_bedrooms' => '',
@@ -34,15 +34,10 @@ function rch_render_listing_list($atts)
         'disable_filter_property_types' => false,
         'disable_filter_advanced' => false,
         'layout_style' => 'default',
-        'show_agent_card' => false,
-        'agent_image' => '',
-        'agent_name' => '',
-        'agent_title' => '',
-        'agent_phone' => '',
-        'agent_email' => '',
-        'agent_address' => '',
         'own_listing' => true,
         'property_types' => '',
+        'filter_open_houses' => false,
+        'office_exclusive' => false,
         'map_latitude' => '',
         'map_longitude' => '',
         'map_zoom' => '12',
@@ -55,7 +50,6 @@ function rch_render_listing_list($atts)
     }
     // Convert boolean attributes from strings
     $atts['own_listing'] = filter_var($atts['own_listing'], FILTER_VALIDATE_BOOLEAN);
-    $atts['show_agent_card'] = filter_var($atts['show_agent_card'], FILTER_VALIDATE_BOOLEAN);
     
     // Set brand_id only if own_listing is true
     if ($atts['own_listing']) {
@@ -69,6 +63,8 @@ function rch_render_listing_list($atts)
     $atts['disable_filter_baths'] = filter_var($atts['disable_filter_baths'], FILTER_VALIDATE_BOOLEAN);
     $atts['disable_filter_property_types'] = filter_var($atts['disable_filter_property_types'], FILTER_VALIDATE_BOOLEAN);
     $atts['disable_filter_advanced'] = filter_var($atts['disable_filter_advanced'], FILTER_VALIDATE_BOOLEAN);
+    $atts['filter_open_houses'] = filter_var($atts['filter_open_houses'], FILTER_VALIDATE_BOOLEAN);
+    $atts['office_exclusive'] = filter_var($atts['office_exclusive'], FILTER_VALIDATE_BOOLEAN);
 
     // Sanitize and prepare data
     $listing_statuses_str = rch_sanitize_listing_statuses($atts['listing_statuses'] ?? []);
@@ -77,7 +73,6 @@ function rch_render_listing_list($atts)
         $atts['map_longitude'] ?? ''
     );
     $layout_style = isset($atts['layout_style']) ? sanitize_text_field($atts['layout_style']) : 'default';
-    $agent_data = rch_sanitize_agent_data($atts);
     $primary_color = get_option('_rch_primary_color');
 
     // Get URL parameters from search form
@@ -116,7 +111,6 @@ function rch_render_listing_list($atts)
 
     // Get rechat root attributes
     $rechat_attrs = rch_get_rechat_root_attributes($atts, $map_default_center, $listing_statuses_str);
-    $agent_card_html = rch_render_agent_card($agent_data);
 
     ?>
     <div class="rch-listing-block-gutenberg">
@@ -133,14 +127,12 @@ function rch_render_listing_list($atts)
                             <rechat-map-listings-grid></rechat-map-listings-grid>
                         </div>
                         <div class="map">
-                            <?php echo $agent_card_html; ?>
                             <rechat-map></rechat-map>
                         </div>
                     </div>
                 <?php else: ?>
                     <div class="wrapper">
                         <div class="map">
-                            <?php echo $agent_card_html; ?>
                             <rechat-map></rechat-map>
                         </div>
                         <div class="listings">

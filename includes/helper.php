@@ -1099,12 +1099,12 @@ function rch_get_listing_block_attributes()
     return array(
         'minimum_price' => array('type' => 'string', 'default' => ''),
         'maximum_price' => array('type' => 'string', 'default' => ''),
-        'minimum_lot_square_meters' => array('type' => 'string', 'default' => ''),
-        'maximum_lot_square_meters' => array('type' => 'string', 'default' => ''),
+        'minimum_square_feet' => array('type' => 'string', 'default' => ''),
+        'maximum_square_feet' => array('type' => 'string', 'default' => ''),
         'minimum_bathrooms' => array('type' => 'string', 'default' => ''),
         'maximum_bathrooms' => array('type' => 'string', 'default' => ''),
-        'minimum_square_meters' => array('type' => 'string', 'default' => ''),
-        'maximum_square_meters' => array('type' => 'string', 'default' => ''),
+        'minimum_lot_square_feet' => array('type' => 'string', 'default' => ''),
+        'maximum_lot_square_feet' => array('type' => 'string', 'default' => ''),
         'minimum_year_built' => array('type' => 'string', 'default' => ''),
         'maximum_year_built' => array('type' => 'string', 'default' => ''),
         'minimum_bedrooms' => array('type' => 'string', 'default' => ''),
@@ -1122,15 +1122,10 @@ function rch_get_listing_block_attributes()
         'disable_filter_property_types' => array('type' => 'boolean', 'default' => false),
         'disable_filter_advanced' => array('type' => 'boolean', 'default' => false),
         'layout_style' => array('type' => 'string', 'default' => 'default'),
-        'show_agent_card' => array('type' => 'boolean', 'default' => false),
-        'agent_image' => array('type' => 'string', 'default' => ''),
-        'agent_name' => array('type' => 'string', 'default' => ''),
-        'agent_title' => array('type' => 'string', 'default' => ''),
-        'agent_phone' => array('type' => 'string', 'default' => ''),
-        'agent_email' => array('type' => 'string', 'default' => ''),
-        'agent_address' => array('type' => 'string', 'default' => ''),
         'own_listing' => array('type' => 'boolean', 'default' => true),
         'property_types' => array('type' => 'string', 'default' => ''),
+        'filter_open_houses' => array('type' => 'boolean', 'default' => false),
+        'office_exclusive' => array('type' => 'boolean', 'default' => false),
         'map_latitude' => array('type' => 'string', 'default' => ''),
         'map_longitude' => array('type' => 'string', 'default' => ''),
         'map_zoom' => array('type' => 'string', 'default' => '12'),
@@ -1176,61 +1171,6 @@ function rch_get_map_default_center($latitude, $longitude)
 }
 
 /*******************************
- * Sanitize agent card data
- ******************************/
-function rch_sanitize_agent_data($attributes)
-{
-    return array(
-        'show_agent_card' => isset($attributes['show_agent_card']) && filter_var($attributes['show_agent_card'], FILTER_VALIDATE_BOOLEAN),
-        'agent_image' => isset($attributes['agent_image']) ? esc_url($attributes['agent_image']) : '',
-        'agent_name' => isset($attributes['agent_name']) ? sanitize_text_field($attributes['agent_name']) : '',
-        'agent_title' => isset($attributes['agent_title']) ? sanitize_text_field($attributes['agent_title']) : '',
-        'agent_phone' => isset($attributes['agent_phone']) ? sanitize_text_field($attributes['agent_phone']) : '',
-        'agent_email' => isset($attributes['agent_email']) ? sanitize_email($attributes['agent_email']) : '',
-        'agent_address' => isset($attributes['agent_address']) ? sanitize_text_field($attributes['agent_address']) : '',
-    );
-}
-
-/*******************************
- * Render agent card HTML
- ******************************/
-function rch_render_agent_card($agent_data)
-{
-    if (!$agent_data['show_agent_card']) {
-        return '';
-    }
-
-    ob_start();
-    ?>
-    <div class="agent-container">
-        <?php if (!empty($agent_data['agent_image'])): ?>
-            <img src="<?php echo esc_url($agent_data['agent_image']); ?>" alt="<?php echo esc_attr($agent_data['agent_name']); ?>" />
-        <?php endif; ?>
-
-        <div>
-            <div class="agent-container__heading">
-                <div class="title"><?php echo esc_html($agent_data['agent_name']); ?></div>
-                <span><?php echo esc_html($agent_data['agent_title']); ?></span>
-            </div>
-
-            <div class="agent-container__contact">
-                <?php if (!empty($agent_data['agent_phone'])): ?>
-                    <div class="contact-item"><?php echo esc_html($agent_data['agent_phone']); ?></div>
-                <?php endif; ?>
-                <?php if (!empty($agent_data['agent_email'])): ?>
-                    <div class="contact-item"><?php echo esc_html($agent_data['agent_email']); ?></div>
-                <?php endif; ?>
-                <?php if (!empty($agent_data['agent_address'])): ?>
-                    <div class="contact-item address"><?php echo esc_html($agent_data['agent_address']); ?></div>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-<?php
-    return ob_get_clean();
-}
-
-/*******************************
  * Render listing block layout styles
  ******************************/
 function rch_render_layout_styles($layout_style, $primary_color)
@@ -1243,7 +1183,6 @@ function rch_render_layout_styles($layout_style, $primary_color)
         .rechat-component.map__marker {
             background-color: <?php echo esc_attr($primary_color); ?> !important;
             color: <?php echo esc_attr($text_color); ?> !important;
-                height: auto !important;
         }
     </style>
 
@@ -1375,8 +1314,23 @@ function rch_get_rechat_root_attributes($attributes, $map_default_center, $listi
         $attrs[] = 'filter_address="' . esc_attr($attributes['filter_address']) . '"';
     }
 
-    if (!empty($attributes['property_types'])) {
-        $attrs[] = 'filter_property_types="' . esc_attr($attributes['property_types']) . '"';
+if (!empty($attributes['property_types'])) {
+    $attrs[] = 'filter_property_types="' . esc_attr(
+        is_array($attributes['property_types'])
+            ? implode(',', $attributes['property_types'])
+            : $attributes['property_types']
+    ) . '"';
+} else {
+    // property_types is empty → explicitly send empty property_subtypes
+    $attrs[] = 'filter_property_types=""';
+}
+
+    if (!empty($attributes['filter_open_houses']) && filter_var($attributes['filter_open_houses'], FILTER_VALIDATE_BOOLEAN)) {
+        $attrs[] = 'filter_open_houses="true"';
+    }
+
+    if (!empty($attributes['office_exclusive']) && filter_var($attributes['office_exclusive'], FILTER_VALIDATE_BOOLEAN)) {
+        $attrs[] = 'filter_office_exclusives="true"';
     }
 
     if (isset($attributes['disable_price']) && filter_var($attributes['disable_price'], FILTER_VALIDATE_BOOLEAN)) {
@@ -1395,16 +1349,36 @@ function rch_get_rechat_root_attributes($attributes, $map_default_center, $listi
         $attrs[] = 'filter_minimum_bathrooms="' . esc_attr($attributes['minimum_bathrooms']) . '"';
     }
 
+    if (!empty($attributes['minimum_square_feet'])) {
+        $attrs[] = 'filter_minimum_square_feet="' . esc_attr($attributes['minimum_square_feet']) . '"';
+    }
+
+    if (!empty($attributes['maximum_square_feet'])) {
+        $attrs[] = 'filter_maximum_square_feet="' . esc_attr($attributes['maximum_square_feet']) . '"';
+    }
+
+    if (!empty($attributes['minimum_lot_square_feet'])) {
+        $attrs[] = 'filter_minimum_lot_square_feet="' . esc_attr($attributes['minimum_lot_square_feet']) . '"';
+    }
+
+    if (!empty($attributes['maximum_lot_square_feet'])) {
+        $attrs[] = 'filter_maximum_lot_square_feet="' . esc_attr($attributes['maximum_lot_square_feet']) . '"';
+    }
+
+    if (!empty($attributes['minimum_year_built'])) {
+        $attrs[] = 'filter_minimum_year_built="' . esc_attr($attributes['minimum_year_built']) . '"';
+    }
+
+    if (!empty($attributes['maximum_year_built'])) {
+        $attrs[] = 'filter_maximum_year_built="' . esc_attr($attributes['maximum_year_built']) . '"';
+    }
+
     if (!empty($attributes['minimum_bedrooms'])) {
         $attrs[] = 'filter_minimum_bedrooms="' . esc_attr($attributes['minimum_bedrooms']) . '"';
     }
 
     if (!empty($attributes['maximum_bedrooms'])) {
         $attrs[] = 'filter_maximum_bedrooms="' . esc_attr($attributes['maximum_bedrooms']) . '"';
-    }
-
-    if (!empty($attributes['maximum_year_built'])) {
-        $attrs[] = 'filter_maximum_year_built="' . esc_attr($attributes['maximum_year_built']) . '"';
     }
 
     if (!empty($listing_statuses_str)) {
