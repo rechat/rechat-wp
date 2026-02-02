@@ -16,6 +16,8 @@ $email = get_post_meta($post_id, 'email', true);
 $profile_image_url = get_post_meta($post_id, 'profile_image_url', true);
 $timezone = get_post_meta($post_id, 'timezone', true);
 $agents = get_post_meta($post_id, 'agents', true);
+$license_number = get_post_meta($post_id, 'license_number', true);
+
 ?>
 
 <div id="primary" class="content-area rch-primary-content">
@@ -28,10 +30,10 @@ $agents = get_post_meta($post_id, 'agents', true);
                 <div class="rch-left-main-layout-single-agent">
                     <div class="rch-top-single-agent">
                         <div class="rch-left-top-single-agent">
-                                                        <?php 
+                            <?php
                             // Use profile image URL if available, otherwise fall back to post thumbnail
                             $image_url = $profile_image_url ?: get_the_post_thumbnail_url(get_the_ID(), 'full');
-                            if ($image_url) : 
+                            if ($image_url) :
                             ?>
                                 <div class="rch-image-container">
                                     <picture>
@@ -44,7 +46,12 @@ $agents = get_post_meta($post_id, 'agents', true);
                             <?php endif; ?>
                             <div class="rch-data-agent">
                                 <?php the_title('<h1>', '</h1>') ?>
-
+                                <?php if ($license_number) : ?>
+                                    <span>
+                                        License Number:
+                                        <?php echo esc_html($license_number); ?>
+                                    </span>
+                                <?php endif; ?>
                                 <?php if ($phone_number) : ?>
                                     <span>
                                         Phone:
@@ -284,40 +291,6 @@ $agents = get_post_meta($post_id, 'agents', true);
                     </rechat-root>
                 </div>
 
-            <?php elseif ($display_mode === 'slider') : ?>
-                <!-- Slider Mode Section -->
-                <div class="rch-agents-list rch-agents-slider-section">
-                    <h2><?php the_title(); ?>'s Active Listings</h2>
-                    <rechat-root
-                        filter_agents="<?php echo esc_attr($agents_string); ?>"
-                        filter_property_subtypes="<?php echo esc_attr($property_subtypes); ?>"
-                        filter_property_types="<?php echo esc_attr($property_types); ?>"
-                        filter_listing_statuses="<?php echo esc_attr($active_statuses); ?>">
-                        <div class="rch-slider-container">
-                            <button class="rch-nav-btn rch-nav-btn-prev" id="prevBtn" aria-label="Previous">‹</button>
-                            <rechat-listings-list></rechat-listings-list>
-                            <button class="rch-nav-btn rch-nav-btn-next" id="nextBtn" aria-label="Next">›</button>
-                        </div>
-                    </rechat-root>
-
-                    <script>
-                        document.addEventListener('DOMContentLoaded', () => {
-                            const scrollAmount = 320;
-                            document.getElementById('prevBtn')?.addEventListener('click', () => {
-                                document.querySelector('rechat-listings-list')?.scrollBy({
-                                    left: -scrollAmount,
-                                    behavior: 'smooth'
-                                });
-                            });
-                            document.getElementById('nextBtn')?.addEventListener('click', () => {
-                                document.querySelector('rechat-listings-list')?.scrollBy({
-                                    left: scrollAmount,
-                                    behavior: 'smooth'
-                                });
-                            });
-                        });
-                    </script>
-                </div>
             <?php endif; ?>
         <?php endwhile; ?>
 

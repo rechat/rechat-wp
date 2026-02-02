@@ -237,12 +237,6 @@ function rch_render_listing_display_mode_field()
             <strong><?php _e('Sold Only', 'rechat-plugin'); ?></strong>
             <p class="description" style="margin-left: 25px;"><?php _e('Show only Sold listings (Sold, Leased)', 'rechat-plugin'); ?></p>
         </label>
-        <br><br>
-        <label>
-            <input type="radio" name="rch_listing_display_mode" value="slider" <?php checked('slider', $display_mode); ?> />
-            <strong><?php _e('Slider', 'rechat-plugin'); ?></strong>
-            <p class="description" style="margin-left: 25px;"><?php _e('Display Active listings inside a horizontal slider using navigation buttons', 'rechat-plugin'); ?></p>
-        </label>
     </fieldset>
     <?php
 }
