@@ -642,6 +642,10 @@ registerBlockType('rch-rechat-plugin/listing-block', {
       type: 'boolean',
       default: false
     },
+    disable_sort: {
+      type: 'boolean',
+      default: false
+    },
     map_latitude: {
       type: 'string',
       default: ''
@@ -691,6 +695,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
       property_types,
       filter_open_houses,
       office_exclusive,
+      disable_sort,
       listing_statuses,
       map_latitude,
       map_longitude,
@@ -791,6 +796,12 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             checked: filter_open_houses,
             onChange: () => setAttributes({
               filter_open_houses: !filter_open_houses
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(CheckboxControl, {
+            label: "Hide Sort By",
+            checked: disable_sort,
+            onChange: () => setAttributes({
+              disable_sort: !disable_sort
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(CheckboxControl, {
             label: "Office Exclusive",

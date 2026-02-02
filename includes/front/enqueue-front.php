@@ -87,14 +87,14 @@ function rch_enqueue_block_assets()
     // Register Rechat SDK CSS and JS
     wp_register_style(
         'rechat-sdk-css',
-        'https://sdk.rechat.com/examples/dist/rechat.min.css',
+        'https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.css',
         [],
         null
     );
 
     wp_register_script(
         'rechat-sdk-js',
-        'https://sdk.rechat.com/examples/dist/rechat.min.js',
+        'https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.js',
         [],
         null,
         false

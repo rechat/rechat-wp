@@ -38,6 +38,7 @@ function rch_render_listing_list($atts)
         'property_types' => '',
         'filter_open_houses' => false,
         'office_exclusive' => false,
+        'disable_sort' => false,
         'map_latitude' => '',
         'map_longitude' => '',
         'map_zoom' => '12',
@@ -65,6 +66,7 @@ function rch_render_listing_list($atts)
     $atts['disable_filter_advanced'] = filter_var($atts['disable_filter_advanced'], FILTER_VALIDATE_BOOLEAN);
     $atts['filter_open_houses'] = filter_var($atts['filter_open_houses'], FILTER_VALIDATE_BOOLEAN);
     $atts['office_exclusive'] = filter_var($atts['office_exclusive'], FILTER_VALIDATE_BOOLEAN);
+    $atts['disable_sort'] = filter_var($atts['disable_sort'], FILTER_VALIDATE_BOOLEAN);
 
     // Sanitize and prepare data
     $listing_statuses_str = rch_sanitize_listing_statuses($atts['listing_statuses'] ?? []);
@@ -112,13 +114,25 @@ function rch_render_listing_list($atts)
     // Get rechat root attributes
     $rechat_attrs = rch_get_rechat_root_attributes($atts, $map_default_center, $listing_statuses_str);
 
+    // Check if all filters are disabled
+    $all_filters_disabled = $atts['disable_filter_address'] && 
+                           $atts['disable_filter_price'] && 
+                           $atts['disable_filter_beds'] && 
+                           $atts['disable_filter_baths'] && 
+                           $atts['disable_filter_property_types'] && 
+                           $atts['disable_filter_advanced'];
+
     ?>
     <div class="rch-listing-block-gutenberg">
         <rechat-root <?php echo $rechat_attrs; ?>>
             <div class="container_listing_sdk">
                 <div class="filters">
-                    <rechat-map-filter></rechat-map-filter>
-                    <rechat-listings-sort></rechat-listings-sort>
+                    <?php if (!$all_filters_disabled): ?>
+                        <rechat-map-filter></rechat-map-filter>
+                    <?php endif; ?>
+                    <?php if (!$atts['disable_sort']): ?>
+                        <rechat-listings-sort></rechat-listings-sort>
+                    <?php endif; ?>
                 </div>
 
                 <?php if ($layout_style === 'layout2'): ?>

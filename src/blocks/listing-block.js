@@ -41,6 +41,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         property_types: { type: 'string', default: '' },
         filter_open_houses: { type: 'boolean', default: false },
         office_exclusive: { type: 'boolean', default: false },
+        disable_sort: { type: 'boolean', default: false },
         map_latitude: { type: 'string', default: '' },
         map_longitude: { type: 'string', default: '' },
         map_zoom: { type: 'string', default: '12' },
@@ -54,7 +55,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             listing_per_page, filterByRegions, filterByOffices, selectedStatuses, 
             disable_filter_address, disable_filter_price, disable_filter_beds, 
             disable_filter_baths, disable_filter_property_types, disable_filter_advanced,
-            layout_style, own_listing, property_types, filter_open_houses, office_exclusive, listing_statuses, map_latitude, map_longitude, map_zoom,
+            layout_style, own_listing, property_types, filter_open_houses, office_exclusive, disable_sort, listing_statuses, map_latitude, map_longitude, map_zoom,
             sort_by
         } = attributes;
 
@@ -142,6 +143,11 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                             label="Open Houses Only"
                             checked={filter_open_houses}
                             onChange={() => setAttributes({ filter_open_houses: !filter_open_houses })}
+                        />
+                        <CheckboxControl
+                            label="Hide Sort By"
+                            checked={disable_sort}
+                            onChange={() => setAttributes({ disable_sort: !disable_sort })}
                         />
                         <CheckboxControl
                             label="Office Exclusive"
