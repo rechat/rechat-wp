@@ -254,7 +254,6 @@ wp_enqueue_script('rch-agent-single', RCH_PLUGIN_ASSETS . 'js/rch-agent-single.j
 // Get sort order setting and convert to API parameter
 $sort_order = get_option('rch_listing_sort_order', 'date');
 $sort_by = ($sort_order === 'price') ? '-price' : '-list_date';
-
 // Pass PHP data to JavaScript
 wp_localize_script('rch-agent-single', 'rchAgentData', [
     'ajaxUrl' => admin_url('admin-ajax.php'),
