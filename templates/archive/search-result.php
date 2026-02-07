@@ -14,6 +14,18 @@ function rch_agent_search()
         'post_type' => 'agents',  // Replace with your actual custom post type
         'posts_per_page' => -1,
         's' => $search_query,
+        'meta_query'     => array(
+            'relation' => 'OR',
+            array(
+                'key'     => 'agent_visibility',
+                'value'   => 'show',
+                'compare' => '='
+            ),
+            array(
+                'key'     => 'agent_visibility',
+                'compare' => 'NOT EXISTS' // Include agents where visibility is not set (defaults to show)
+            )
+        )
     );
 
     $query = new WP_Query($args);
@@ -23,13 +35,11 @@ function rch_agent_search()
         while ($query->have_posts()) : $query->the_post();
             $post_id = get_the_ID();
             $profile_image_url = get_post_meta($post_id, 'profile_image_url', true);
-            $timezone = get_post_meta($post_id, 'timezone', true);
 ?>
             <li>
                 <a href="<?php the_permalink(); ?>" class="rch-search-result-item">
                     <img src="<?php echo esc_url($profile_image_url); ?>" alt="<?php the_title(); ?>">
                     <span><?php the_title(); ?></span>
-                    <span><?php echo esc_html($timezone); ?></span>
                 </a>
             </li>
 <?php
