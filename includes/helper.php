@@ -1184,6 +1184,7 @@ function rch_render_layout_styles($layout_style, $primary_color)
         .rechat-component.map__marker {
             background-color: <?php echo esc_attr($primary_color); ?> !important;
             color: <?php echo esc_attr($text_color); ?> !important;
+            box-sizing: content-box;
         }
     </style>
 
