@@ -189,7 +189,7 @@ $license_number = get_post_meta($post_id, 'license_number', true);
             $property_subtypes = 'RES-Single Family, RES-Half Duplex, RES-Farm/Ranch, RES-Condo, RES-Townhouse, LSE-Apartment, LSE-Condo/Townhome, LSE-Duplex, LSE-Fourplex, LSE-House, LSE-Mobile, LSE-Triplex, LND-Commercial, LND-Farm/Ranch, LND-Residential, MUL-Full Duplex, MUL-Apartment/5Plex+, MUL-Fourplex, MUL-Multiple Single Units, MUL-Triplex, COM-Lease, COM-Sale, Lot/Land';
             $property_types = 'Residential, Residential Lease, Lots & Acreage, Multi-Family, Commercial';
             $active_statuses = 'Active, Active Contingent, Active Kick Out, Active Option Contract, Active Under Contract, Pending';
-            $sold_statuses = 'Sold';
+            $sold_statuses = 'Sold, Leased';
             ?>
 
             <?php if ($display_mode === 'combined') : ?>
