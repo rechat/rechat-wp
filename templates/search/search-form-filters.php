@@ -26,7 +26,7 @@ $show_max_price = isset($show_max_price) ? $show_max_price : true;
 <div class="<?php echo esc_attr($container_class); ?>">
     <?php if ($show_search): ?>
     <div class="rch-search-form-col">
-        <input type="search" class="rch-text-filter" name="content" id="content" placeholder="Search by MLS #, Address, City, Zip code" />
+        <input type="search" class="rch-text-filter" name="content" id="content" placeholder="Search by MLS #, Address, City, Zip Code" />
     </div>
     <?php endif; ?>
     

@@ -23,7 +23,7 @@
             </span>
             <div class="rch-inside-filters rch-for-lease" style="display:flex;">
                 <span>
-                    <input type="radio" id="mobile_all" name="property_types" data-name="All Listing" value="Residential,Residential Lease,Lots & Acreage,Commercial,Multi-Family" onchange="applyFilters()">
+                    <input type="radio" id="mobile_all" name="property_types" data-name="All Listings" value="Residential,Residential Lease,Lots & Acreage,Commercial,Multi-Family" onchange="applyFilters()">
                     <label for="mobile_all" class="ios-radio">All Listings</label>
                 </span>
                 <span>
@@ -261,7 +261,7 @@
             <span class="toggleMain" id="rch-property-type-text">Property Type</span>
             <div class="rch-inside-filters rch-for-lease" style="display: none;">
                 <span>
-                    <input type="radio" id="desktop_all" name="property_types" data-name="All Listing" value="Residential,Residential Lease,Lots & Acreage,Commercial,Multi-Family" onchange="applyFilters()">
+                    <input type="radio" id="desktop_all" name="property_types" data-name="All Listings" value="Residential,Residential Lease,Lots & Acreage,Commercial,Multi-Family" onchange="applyFilters()">
                     <label for="desktop_all" class="ios-radio">All Listings</label>
                 </span>
                 <span>

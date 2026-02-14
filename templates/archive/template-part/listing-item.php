@@ -1,7 +1,7 @@
 <?php
-// Get and sanitize address parts
-$street = str_replace([',', ' '], ['', '-'], trim($listing['formatted']['street_address']['text']));
-$address_line2 = str_replace([',', ' '], ['', '-'], trim($listing['formatted']['address_line_2']['text']));
+// Get and sanitize address parts (replace forward slashes, commas, and spaces)
+$street = str_replace(['/', ',', ' '], ['-', '', '-'], trim($listing['formatted']['street_address']['text']));
+$address_line2 = str_replace(['/', ',', ' '], ['-', '', '-'], trim($listing['formatted']['address_line_2']['text']));
 
 // Combine address parts
 $address_slug = $street . '-' . $address_line2;
