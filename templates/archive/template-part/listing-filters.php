@@ -142,7 +142,6 @@
                 <label>
                     <input type="checkbox" id="mobile_open_house" name="open_house" value="true" <?php echo (isset($atts['open_houses_only']) && $atts['open_houses_only']) ? 'checked' : ''; ?> onchange="applyFilters()"> Open Houses Only
                 </label>
-                <button type="button" class="reset-btn" onclick="resetFilter('open_house')">Reset</button>
             </div>
         </div>
         <div class="box-filter-listing rch-price-filter-listing rch-bath-filter-listing">
