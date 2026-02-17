@@ -88,7 +88,7 @@
                     <div>
                         <label for="minimum_bedrooms">Min:</label>
                         <select id="minimum_bedrooms" class="rch-beds" onchange="handleBedsChange('min')">
-                            <option value="">No Min</option>
+                            <option value="">Min</option>
                             <option value="1" <?php echo (isset($atts['minimum_bedrooms']) && $atts['minimum_bedrooms'] == 1) ? 'selected' : ''; ?>>1</option>
                             <option value="2" <?php echo (isset($atts['minimum_bedrooms']) && $atts['minimum_bedrooms'] == 2) ? 'selected' : ''; ?>>2</option>
                             <option value="3" <?php echo (isset($atts['minimum_bedrooms']) && $atts['minimum_bedrooms'] == 3) ? 'selected' : ''; ?>>3</option>
@@ -101,7 +101,7 @@
                     <div>
                         <label for="maximum_bedrooms">Max:</label>
                         <select id="maximum_bedrooms" class="rch-beds" onchange="handleBedsChange()">
-                            <option value="">No Max</option>
+                            <option value="">Max</option>
                             <option value="1" <?php echo (isset($atts['maximum_bedrooms']) && $atts['maximum_bedrooms'] == 1) ? 'selected' : ''; ?>>1</option>
                             <option value="2" <?php echo (isset($atts['maximum_bedrooms']) && $atts['maximum_bedrooms'] == 2) ? 'selected' : ''; ?>>2</option>
                             <option value="3" <?php echo (isset($atts['maximum_bedrooms']) && $atts['maximum_bedrooms'] == 3) ? 'selected' : ''; ?>>3</option>
@@ -326,7 +326,7 @@
                     <div>
                         <label for="minimum_bedrooms">Min:</label>
                         <select id="minimum_bedrooms" class="rch-beds" onchange="handleBedsChange('min')">
-                            <option value="">No Min</option>
+                            <option value="">Min</option>
                             <option value="1" <?php echo (isset($atts['minimum_bedrooms']) && $atts['minimum_bedrooms'] == 1) ? 'selected' : ''; ?>>1</option>
                             <option value="2" <?php echo (isset($atts['minimum_bedrooms']) && $atts['minimum_bedrooms'] == 2) ? 'selected' : ''; ?>>2</option>
                             <option value="3" <?php echo (isset($atts['minimum_bedrooms']) && $atts['minimum_bedrooms'] == 3) ? 'selected' : ''; ?>>3</option>
@@ -339,7 +339,7 @@
                     <div>
                         <label for="maximum_bedrooms">Max:</label>
                         <select id="maximum_bedrooms" class="rch-beds" onchange="handleBedsChange()">
-                            <option value="">No Max</option>
+                            <option value="">Max</option>
                             <option value="1" <?php echo (isset($atts['maximum_bedrooms']) && $atts['maximum_bedrooms'] == 1) ? 'selected' : ''; ?>>1</option>
                             <option value="2" <?php echo (isset($atts['maximum_bedrooms']) && $atts['maximum_bedrooms'] == 2) ? 'selected' : ''; ?>>2</option>
                             <option value="3" <?php echo (isset($atts['maximum_bedrooms']) && $atts['maximum_bedrooms'] == 3) ? 'selected' : ''; ?>>3</option>

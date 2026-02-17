@@ -454,7 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Populate the min select element and set its default value if provided.
     function populateMinOptions(selectElement, options, isPrice, defaultValue = null) {
 
-        const noMinOption = createOptionElement('', 'No Min');
+        const noMinOption = createOptionElement('', 'Min');
         selectElement.appendChild(noMinOption);
         options.forEach(optionValue => {
             const formattedValue = isPrice ? formatNumber(optionValue) : optionValue;
@@ -478,7 +478,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateMaxOptions(minSelect, maxSelect, optionsGenerator, isPrice, defaultValue = null) {
         const selectedMin = parseInt(minSelect.value) || 0;
         maxSelect.innerHTML = '';
-        const noMaxOption = createOptionElement('', 'No Max');
+        const noMaxOption = createOptionElement('', 'Max');
         maxSelect.appendChild(noMaxOption);
         const options = optionsGenerator();
         options.forEach(optionValue => {
@@ -1152,8 +1152,8 @@ function updateDropdownTextGeneric(minSelectId, maxSelectId, textElementId, opti
     const {
         prefix = "", // Text prefix, e.g., "Beds" or "Price"
         formatNumbers = false, // Whether to format numbers with "K"/"M"
-        fallbackMin = "No Min", // Default text when minimum is not selected
-        fallbackMax = "No Max", // Default text when maximum is not selected
+        fallbackMin = "Min", // Default text when minimum is not selected
+        fallbackMax = "Max", // Default text when maximum is not selected
     } = options;
 
     // Helper function to format numbers if required
