@@ -640,6 +640,9 @@ ul.rch_all_listing_data_features li span:last-child {
   ul.rch_all_listing_data_features li span:first-child {
     width: 33%;
   }
+  ul.rch_all_listing_data_features li span:last-child {
+    width: 60%;
+  }
 }
 
 /* Extra small screens */
