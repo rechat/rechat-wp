@@ -1157,18 +1157,18 @@ function rch_sanitize_listing_statuses($listing_statuses)
  ******************************/
 function rch_get_map_default_center($latitude, $longitude)
 {
-    $default_center = '32.7767, -96.797'; // Dallas coordinates
-
+    // Only return center if both latitude and longitude are provided
     if (!empty($latitude) && !empty($longitude)) {
         $lat = sanitize_text_field($latitude);
         $lng = sanitize_text_field($longitude);
 
         if (is_numeric($lat) && is_numeric($lng)) {
-            $default_center = $lat . ', ' . $lng;
+            return $lat . ', ' . $lng;
         }
     }
 
-    return $default_center;
+    // Return empty string if no valid coordinates provided
+    return '';
 }
 
 /*******************************
