@@ -1,14 +1,11 @@
-.rch-listing-block-gutenberg {
-  width: 95%;
-  margin: 10px auto;
-}
-
 .rch-listing-block-gutenberg .container_listing_sdk {
   display: flex;
   flex-direction: column;
   gap: 16px;
   height: 100vh;
   overflow: hidden;
+  width: 99%;
+  margin: 0 auto;
 }
 
 .rch-listing-block-gutenberg .filters {
@@ -27,9 +24,6 @@
 
 .rch-listing-block-gutenberg .map {
   flex: 7;
-  border: 4px solid rgb(255, 255, 255);
-  box-shadow: rgba(16, 24, 40, 0.12) 0px 1px 3px;
-  border-radius: 8px;
 }
 
 .rch-listing-block-gutenberg .listings {
@@ -117,6 +111,31 @@
 }
 
 @media (max-width: 768px) {
+        .rch-listing-block-gutenberg .filters {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 12px;
+        gap: 12px;
+      }
+
+      .rch-listing-block-gutenberg .wrapper {
+        flex-direction: column;
+        padding: 0 12px 12px;
+        flex-grow: 0;
+      }
+
+      .rch-listing-block-gutenberg .map {
+        flex: none;
+        height: 50vh;
+        min-height: 300px;
+      }
+
+      .rch-listing-block-gutenberg .listings {
+        flex: none;
+        height: auto;
+        min-height: 50vh;
+        overflow: visible;
+      }
 }
 
 @media screen and (max-width: 576px) {
@@ -131,3 +150,18 @@
 /* Extra small screens */
 @media (max-width: 530px) {
 }
+    @media (max-width: 480px) {
+      .rch-listing-block-gutenberg .filters {
+        padding: 8px;
+      }
+
+      .rch-listing-block-gutenberg .wrapper {
+        padding: 0 8px 8px;
+        gap: 12px;
+      }
+
+      .rch-listing-block-gutenberg .map {
+        height: 40vh;
+        min-height: 250px;
+      }
+    }
