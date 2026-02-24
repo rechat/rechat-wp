@@ -636,6 +636,12 @@ ul.rch_all_listing_data_features li span:last-child {
   .rch-main-description-single-house h2 {
     font-size: 1.5rem;
   }
+  ul.rch_all_listing_data_features li span:first-child {
+    width: 30%;
+}
+ul.rch_all_listing_data_features li span:last-child {
+    width: 65%;
+}
 }
 
 /* Extra small screens */
