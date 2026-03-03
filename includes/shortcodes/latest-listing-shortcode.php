@@ -5,12 +5,16 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Enqueue Rechat SDK assets globally
+ * Enqueue Rechat SDK and Swiper assets globally
  */
 function rch_latest_listings_enqueue_assets()
 {
     wp_enqueue_style('rechat-sdk-css');
     wp_enqueue_script('rechat-sdk-js');
+    
+    // Enqueue Swiper library for the shortcode
+    wp_enqueue_style('rch-swiper');
+    wp_enqueue_script('rch-swiper-js');
 }
 add_action('wp_enqueue_scripts', 'rch_latest_listings_enqueue_assets');
 
@@ -20,8 +24,17 @@ add_action('wp_enqueue_scripts', 'rch_latest_listings_enqueue_assets');
  */
 function rch_display_latest_listings_shortcode($atts)
 {
+    // Generate unique ID for this shortcode instance
+    static $instance = 0;
+    $instance++;
+    $unique_id = 'rch-latest-listings-' . $instance;
+
     // Parse shortcode attributes with defaults
     $atts = shortcode_atts([
+        'display_type' => 'swiper', // 'swiper' or 'grid'
+        'template' => '',
+        'content' => '',
+        'map_points' => '',
         'minimum_price' => '',
         'maximum_price' => '',
         'minimum_lot_square_meters' => '',
@@ -42,11 +55,112 @@ function rch_display_latest_listings_shortcode($atts)
         'map_latitude' => '',
         'map_longitude' => '',
         'sort_by' => '-list_date',
+        'order_by' => '-price',
         'filter_address' => '',
+        'open_houses_only' => false,
+        // Swiper settings
+        'slides_per_view' => 'auto',
+        'space_between' => '32',
+        'loop' => 'false',
+        'centered_slides' => 'false',
+        'speed' => '300',
+        'effect' => 'coverflow',
+        'grab_cursor' => 'true',
+        'simulate_touch' => 'true',
+        'autoplay' => '',
+        'breakpoints' => '',
+        'pagination' => 'false',
+        'pagination_clickable' => 'false',
+        'pagination_type' => 'bullets',
+        'pagination_render_bullet' => '',
+        'navigation' => 'false',
     ], $atts);
 
     // Convert boolean attributes from strings
     $atts['own_listing'] = filter_var($atts['own_listing'], FILTER_VALIDATE_BOOLEAN);
+    $atts['open_houses_only'] = filter_var($atts['open_houses_only'], FILTER_VALIDATE_BOOLEAN);
+
+    // Process display_type
+    $display_type = esc_attr($atts['display_type']);
+    $template = esc_js($atts['template']);
+    $map_points = esc_js($atts['map_points']);
+
+    // Process Swiper boolean attributes
+    $swiper_config = [
+        'loop' => filter_var($atts['loop'], FILTER_VALIDATE_BOOLEAN),
+        'centeredSlides' => filter_var($atts['centered_slides'], FILTER_VALIDATE_BOOLEAN),
+        'grabCursor' => filter_var($atts['grab_cursor'], FILTER_VALIDATE_BOOLEAN),
+        'simulateTouch' => filter_var($atts['simulate_touch'], FILTER_VALIDATE_BOOLEAN),
+        'speed' => intval($atts['speed']),
+        'effect' => esc_js($atts['effect']),
+        'spaceBetween' => is_numeric($atts['space_between']) ? intval($atts['space_between']) : 32,
+    ];
+
+    // Handle slidesPerView (can be number or 'auto')
+    if ($atts['slides_per_view'] === 'auto') {
+        $swiper_config['slidesPerView'] = 'auto';
+    } elseif (is_numeric($atts['slides_per_view'])) {
+        $swiper_config['slidesPerView'] = floatval($atts['slides_per_view']);
+    } else {
+        $swiper_config['slidesPerView'] = 'auto';
+    }
+
+    // Parse autoplay if provided (expects JSON string)
+    if (!empty($atts['autoplay'])) {
+        $autoplay_decoded = json_decode(html_entity_decode($atts['autoplay']), true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($autoplay_decoded)) {
+            $swiper_config['autoplay'] = $autoplay_decoded;
+        }
+    }
+
+    // Parse breakpoints if provided (expects JSON string)
+    if (!empty($atts['breakpoints'])) {
+        $breakpoints_decoded = json_decode(html_entity_decode($atts['breakpoints']), true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($breakpoints_decoded)) {
+            $swiper_config['breakpoints'] = $breakpoints_decoded;
+        }
+    }
+
+    // Handle pagination
+    if (filter_var($atts['pagination'], FILTER_VALIDATE_BOOLEAN)) {
+        $swiper_config['pagination'] = [
+            'el' => '.swiper-pagination',
+            'clickable' => filter_var($atts['pagination_clickable'], FILTER_VALIDATE_BOOLEAN),
+            'type' => esc_js($atts['pagination_type']),
+        ];
+    }
+
+    // Handle navigation
+    if (filter_var($atts['navigation'], FILTER_VALIDATE_BOOLEAN)) {
+        $swiper_config['navigation'] = [
+            'nextEl' => '.swiper-button-next',
+            'prevEl' => '.swiper-button-prev',
+        ];
+    }
+
+    // Add coverflow effect settings if effect is coverflow
+    if ($swiper_config['effect'] === 'coverflow') {
+        $swiper_config['coverflowEffect'] = [
+            'rotate' => 0,
+            'stretch' => 0,
+            'depth' => 40,
+            'modifier' => 2,
+            'slideShadows' => false
+        ];
+    }
+
+    // Convert swiper config to JSON for JavaScript
+    $swiper_config_json = wp_json_encode($swiper_config);
+
+    // Map order_by from human-friendly values to API values
+    $order_by_raw = isset($atts['order_by']) ? trim($atts['order_by']) : $atts['sort_by'];
+    if (strcasecmp($order_by_raw, 'Date') === 0 || strcasecmp($order_by_raw, 'list_date') === 0 || $order_by_raw === '-list_date') {
+        $atts['sort_by'] = '-list_date';
+    } elseif (strcasecmp($order_by_raw, 'Price') === 0 || strcasecmp($order_by_raw, 'price') === 0 || $order_by_raw === '-price') {
+        $atts['sort_by'] = '-price';
+    } else {
+        $atts['sort_by'] = $order_by_raw;
+    }
 
     // Set brand only if own_listing is true
     if ($atts['own_listing']) {
@@ -84,6 +198,26 @@ function rch_display_latest_listings_shortcode($atts)
         }
     }
 
+    // Process listing_statuses attribute with extended mapping
+    $listing_statuses_raw = trim($atts['listing_statuses']);
+    if (!empty($listing_statuses_raw)) {
+        switch ($listing_statuses_raw) {
+            case 'Active':
+                $atts['listing_statuses'] = 'Active,Incoming,Coming Soon,Pending';
+                break;
+            case 'Closed':
+                $atts['listing_statuses'] = 'Sold,Leased';
+                break;
+            case 'Archived':
+                $atts['listing_statuses'] = 'Withdrawn,Expired';
+                break;
+            default:
+                // If it doesn't match any predefined values, use it as-is
+                $atts['listing_statuses'] = $listing_statuses_raw;
+                break;
+        }
+    }
+
     // Convert listing_statuses string to array if needed
     if (!empty($atts['listing_statuses']) && is_string($atts['listing_statuses'])) {
         $atts['listing_statuses'] = array_map('trim', explode(',', $atts['listing_statuses']));
@@ -103,118 +237,162 @@ function rch_display_latest_listings_shortcode($atts)
     ob_start();
 ?>
     <style>
-.main-listing-sdk {
-    position: relative;
-}
-        rechat-root {
-            display: block;
-        }
+    .rch-latest-listings-shortcode-swiper rechat-root {
+      display: block;
+      width: 100%;
+      overflow: hidden;
+    }
 
-        rechat-listings-list {
-            display: flex;
-            flex-wrap: nowrap;
-            overflow-x: auto;
-            gap: 16px;
-            padding: 16px;
-            scroll-snap-type: x mandatory;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-            scroll-behavior: smooth;
-        }
+    .rch-latest-listings-shortcode-swiper .swiper {
+      width: 100%;
+      overflow: hidden;
+      padding: 16px 0 40px;
+    }
 
-        rechat-listings-list::-webkit-scrollbar {
-            display: none;
-        }
+    .rch-latest-listings-shortcode-swiper rechat-listings-list.swiper-wrapper {
+      display: flex;
+    }
 
-        rechat-listings-list > div {
-            flex: 0 0 auto;
-            scroll-snap-align: start;
-        }
+    .rch-latest-listings-shortcode-swiper .rechat-listings-list__item {
+      width: 400px;
+      height: auto;
+      box-sizing: border-box;
+      flex-shrink: 0;
+    }
 
-        .nav-btn {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background: white;
-            border: 1px solid #ddd;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
-            transition: all 0.2s ease;
-        }
+    .rch-latest-listings-shortcode-swiper .listing-card {
+      max-width: auto;
+      border: none;
+    }
 
-        .nav-btn:hover {
-            background: #f5f5f5;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
+    .rch-latest-listings-shortcode-swiper .swiper-button-prev,
+    .rch-latest-listings-shortcode-swiper .swiper-button-next {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: white;
+      border: 1px solid #ddd;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-        .nav-btn:active {
-            transform: translateY(-50%) scale(0.95);
-        }
+    .rch-latest-listings-shortcode-swiper .swiper-button-prev:hover,
+    .rch-latest-listings-shortcode-swiper .swiper-button-next:hover {
+      background: #f5f5f5;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
 
-        .nav-btn-prev {
-            left: 8px;
-        }
+    .rch-latest-listings-shortcode-swiper .swiper-button-prev::after,
+    .rch-latest-listings-shortcode-swiper .swiper-button-next::after {
+      font-size: 12px;
+      font-weight: bold;
+      color: #333;
+    }
 
-        .nav-btn-next {
-            right: 8px;
-        }
+    .rch-latest-listings-shortcode-swiper .swiper-button-prev svg,
+    .rch-latest-listings-shortcode-swiper .swiper-button-next svg {
+      width: 12px;
+      height: 12px;
+    }
 
-        .nav-btn svg {
-            width: 20px;
-            height: 20px;
-            fill: #333;
-        }
-    </style>
+    .rch-latest-listings-shortcode-swiper .swiper-pagination {
+      bottom: 0 !important;
+    }
 
-<div class="main-listing-sdk">
-        <rechat-root <?php echo $rechat_attrs; ?>>
-        <div class="container-listing-sdk">
-            <button class="nav-btn nav-btn-prev" id="prevBtn">
-                <svg viewBox="0 0 24 24">
-                    <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                </svg>
-            </button>
+    .rch-latest-listings-shortcode-swiper .swiper-pagination-bullet-active {
+      background: #333;
+    }
 
-            <rechat-listings-list></rechat-listings-list>
+    .rch-grid-container {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
 
-            <button class="nav-btn nav-btn-next" id="nextBtn">
-                <svg viewBox="0 0 24 24">
-                    <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
-                </svg>
-            </button>
-        </div>
+    .rch-no-listings-message {
+      padding: 40px;
+      text-align: center;
+      color: #666;
+      font-size: 16px;
+    }
+  </style>
+
+<?php if ($display_type === 'swiper'): ?>
+<div class="main-listing-sdk rch-latest-listings-shortcode-swiper" id="<?php echo esc_attr($unique_id); ?>">
+    <rechat-root <?php echo $rechat_attrs; ?>>
+      <div class="swiper">
+        <rechat-listings-list class="swiper-wrapper"></rechat-listings-list>
+
+        <?php if (filter_var($atts['pagination'], FILTER_VALIDATE_BOOLEAN)): ?>
+        <div class="swiper-pagination"></div>
+        <?php endif; ?>
+
+        <?php if (filter_var($atts['navigation'], FILTER_VALIDATE_BOOLEAN)): ?>
+        <div class="swiper-button-prev"></div>
+        <div class="swiper-button-next"></div>
+        <?php endif; ?>
+      </div>
     </rechat-root>
 </div>
+<?php else: ?>
+<div class="rch-grid-container <?php echo esc_attr($template); ?>-grid" id="<?php echo esc_attr($unique_id); ?>">
+    <rechat-root <?php echo $rechat_attrs; ?>>
+      <rechat-listings-list></rechat-listings-list>
+    </rechat-root>
+</div>
+<?php endif; ?>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const prevBtn = document.getElementById('prevBtn')
-            const nextBtn = document.getElementById('nextBtn')
+  <script>
+    (function() {
+      const uniqueId = '<?php echo esc_js($unique_id); ?>';
+      const displayType = '<?php echo esc_js($display_type); ?>';
+      const swiperConfig = <?php echo $swiper_config_json; ?>;
+      
+      function initSwiperInstance() {
+        // Only initialize Swiper if display_type is swiper
+        if (displayType !== 'swiper') return;
 
-            const scrollAmount = 320
+        const container = document.getElementById(uniqueId);
+        if (!container) return;
+        
+        const swiperEl = container.querySelector('.swiper');
+        if (!swiperEl) return;
+        
+        // Check if Swiper is available
+        if (typeof Swiper === 'undefined') {
+          console.warn('Swiper library is not loaded yet. Retrying...');
+          setTimeout(initSwiperInstance, 100);
+          return;
+        }
+        
+        // Add common settings
+        swiperConfig.slideClass = 'rechat-listings-list__item';
+        
+        // Only add pagination if element exists
+        const paginationEl = container.querySelector('.swiper-pagination');
+        if (paginationEl && swiperConfig.pagination) {
+          swiperConfig.pagination.el = paginationEl;
+        }
+        
+        // Only add navigation if elements exist
+        const nextEl = container.querySelector('.swiper-button-next');
+        const prevEl = container.querySelector('.swiper-button-prev');
+        if (nextEl && prevEl && swiperConfig.navigation) {
+          swiperConfig.navigation.nextEl = nextEl;
+          swiperConfig.navigation.prevEl = prevEl;
+        }
 
-            prevBtn.addEventListener('click', () => {
-                const list = document.querySelector('rechat-listings-list')
-                if (list) {
-                    list.scrollBy({ left: -scrollAmount, behavior: 'smooth' })
-                }
-            })
+        new Swiper(swiperEl, swiperConfig);
+      }
 
-            nextBtn.addEventListener('click', () => {
-                const list = document.querySelector('rechat-listings-list')
-                if (list) {
-                    list.scrollBy({ left: scrollAmount, behavior: 'smooth' })
-                }
-            })
-        })
-    </script>
+      window.addEventListener('rechat-listings:fetched', () => {
+        requestAnimationFrame(() => initSwiperInstance())
+      });
+    })();
+  </script>
 <?php
 
     return ob_get_clean();

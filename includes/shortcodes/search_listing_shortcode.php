@@ -85,7 +85,7 @@ function rch_search_listing_form_shortcode($atts)
                 <?php if ($show_background && $background_image): ?>
                     <div class="rch-search-background"></div>
                 <?php endif; ?>
-                <rechat-property-search-form></rechat-property-search-form>
+                 <rechat-property-search-form />
             </div>
         </rechat-root>
     </div>
@@ -98,14 +98,14 @@ function rch_search_listing_form_shortcode($atts)
             } = e.detail
 
             const params = new URLSearchParams({
-                content: filters.address,
-                property_type: filters.property_types[0],
-                minimum_price: filters.minimum_price,
-                maximum_price: filters.maximum_price,
-                minimum_bedrooms: filters.minimum_bedrooms,
-                maximum_bedrooms: filters.maximum_bedrooms,
-                minimum_bathrooms: filters.minimum_bathrooms,
-                map_center: map.center.join(',')
+                content: filters.address || '',
+                property_type: filters.property_types?.[0] || '',
+                minimum_price: filters.minimum_price || '',
+                maximum_price: filters.maximum_price || '',
+                minimum_bedrooms: filters.minimum_bedrooms || '',
+                maximum_bedrooms: filters.maximum_bedrooms || '',
+                minimum_bathrooms: filters.minimum_bathrooms || '',
+                map_center: map?.center?.join(',') || ''
             })
 
             const url = `<?php echo esc_url(home_url($target_page)); ?>?${params.toString()}`
