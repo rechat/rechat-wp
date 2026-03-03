@@ -288,6 +288,47 @@ END: Archive Agents and Regions/Offices styles
   padding: 1rem;
 }
 
+.rch-success-box-listing {
+  text-align: center;
+  color: #3c763d;
+  background-color: #dff0d8;
+  border-color: #d6e9c6;
+  padding: 15px 10px;
+  margin-block-start: 5px;
+  display: none;
+}
+
+.rch-error-box-listing {
+  text-align: center;
+  color: #a94442;
+  background-color: #f2dede;
+  border-color: #ebccd1;
+  padding: 15px 10px;
+  margin-block-start: 5px;
+  display: none;
+}
+
+.rch-loading-spinner-form {
+  width: 15px;
+  height: 15px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 10px auto;
+}
+
+/* Keyframes for spinning effect */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 /*********************
 START: Neighborhoods page
 *********************/
