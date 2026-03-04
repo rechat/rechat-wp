@@ -33,6 +33,7 @@ function display_office_meta_box($post)
     <?php
     // Single address field
     $office_address = get_post_meta($post->ID, 'office_address', true);
+    $office_phone = get_post_meta($post->ID, 'office_phone', true);
 
     // Nonce for security
     wp_nonce_field('office_address_meta_nonce', 'office_address_meta_nonce_field');
@@ -42,6 +43,12 @@ function display_office_meta_box($post)
     <p>
         <label for="office_address"><?php esc_html_e('Full Address', 'rechat-plugin'); ?>:</label><br>
         <input type="text" id="office_address" name="office_address" value="<?php echo esc_attr($office_address); ?>" style="width:100%;">
+    </p>
+
+    <h4><?php esc_html_e('Phone Number', 'rechat-plugin'); ?></h4>
+    <p>
+        <label for="office_phone"><?php esc_html_e('Phone Number', 'rechat-plugin'); ?>:</label><br>
+        <input type="text" id="office_phone" name="office_phone" value="<?php echo esc_attr($office_phone); ?>" style="width:100%;">
     </p>
 <?php
 }
@@ -121,6 +128,9 @@ function save_office_address_meta($post_id)
     if (isset($_POST['office_address'])) {
         update_post_meta($post_id, 'office_address', sanitize_text_field($_POST['office_address']));
     }
+    if (isset($_POST['office_phone'])) {
+        update_post_meta($post_id, 'office_phone', sanitize_text_field($_POST['office_phone']));
+    }
 }
 add_action('save_post_offices', 'save_office_address_meta');
 /*******************************
@@ -142,6 +152,17 @@ function register_office_id_meta()
     register_meta('post', 'office_address', array(
         'type' => 'string',
         'description' => 'Office full address',
+        'single' => true,
+        'show_in_rest' => true,
+        'auth_callback' => function () {
+            return current_user_can('edit_posts');
+        }
+    ));
+
+    // Register single office phone meta field
+    register_meta('post', 'office_phone', array(
+        'type' => 'string',
+        'description' => 'Office phone number',
         'single' => true,
         'show_in_rest' => true,
         'auth_callback' => function () {
