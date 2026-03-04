@@ -234,31 +234,51 @@ function rch_collect_brands($brand, &$regions, &$offices, &$processed_brands)
             }
         }
 
-        // Extract address from brand or parent hierarchy
+        // Extract address and phone from brand or parent hierarchy
         $office_address = '';
+        $office_phone = '';
 
-        // Check if address.full exists in current brand settings
+        // Check if address.full and phone_number exist in current brand settings
         if (isset($brand['settings']['marketing_palette']['address']['full']) && !empty($brand['settings']['marketing_palette']['address']['full'])) {
             $office_address = $brand['settings']['marketing_palette']['address']['full'];
-        } else {
-            // If not, traverse parent hierarchy to find address.full
+        }
+        if (isset($brand['settings']['marketing_palette']['phone_number']) && !empty($brand['settings']['marketing_palette']['phone_number'])) {
+            $office_phone = $brand['settings']['marketing_palette']['phone_number'];
+        }
+
+        // If not found, traverse parent hierarchy
+        if (empty($office_address) || empty($office_phone)) {
             $current_parent = $brand['parent'] ?? null;
-            while ($current_parent && empty($office_address)) {
+            while ($current_parent && (empty($office_address) || empty($office_phone))) {
                 // Check if current parent has an address.full in settings
-                if (isset($current_parent['settings']['marketing_palette']['address']['full']) && !empty($current_parent['settings']['marketing_palette']['address']['full'])) {
+                if (empty($office_address) && isset($current_parent['settings']['marketing_palette']['address']['full']) && !empty($current_parent['settings']['marketing_palette']['address']['full'])) {
                     $office_address = $current_parent['settings']['marketing_palette']['address']['full'];
+                }
+                // Check if current parent has a phone_number in settings
+                if (empty($office_phone) && isset($current_parent['settings']['marketing_palette']['phone_number']) && !empty($current_parent['settings']['marketing_palette']['phone_number'])) {
+                    $office_phone = $current_parent['settings']['marketing_palette']['phone_number'];
+                }
+
+                if (!empty($office_address) && !empty($office_phone)) {
                     break;
                 }
 
                 // Also check if this parent has parents array
-                if (empty($office_address) && isset($current_parent['parents']) && is_array($current_parent['parents'])) {
-                    // Check all brands to find parents with addresses
+                if ((empty($office_address) || empty($office_phone)) && isset($current_parent['parents']) && is_array($current_parent['parents'])) {
+                    // Check all brands to find parents with addresses and phone numbers
                     foreach ($current_parent['parents'] as $grandparent_id) {
                         // Look for this grandparent in all_brands (if available) or regions
                         foreach ($regions as $region) {
-                            if ($region['id'] === $grandparent_id && isset($region['settings']['marketing_palette']['address']['full']) && !empty($region['settings']['marketing_palette']['address']['full'])) {
-                                $office_address = $region['settings']['marketing_palette']['address']['full'];
-                                break 2; // Break out of both foreach loops
+                            if ($region['id'] === $grandparent_id) {
+                                if (empty($office_address) && isset($region['settings']['marketing_palette']['address']['full']) && !empty($region['settings']['marketing_palette']['address']['full'])) {
+                                    $office_address = $region['settings']['marketing_palette']['address']['full'];
+                                }
+                                if (empty($office_phone) && isset($region['settings']['marketing_palette']['phone_number']) && !empty($region['settings']['marketing_palette']['phone_number'])) {
+                                    $office_phone = $region['settings']['marketing_palette']['phone_number'];
+                                }
+                                if (!empty($office_address) && !empty($office_phone)) {
+                                    break 2; // Break out of both foreach loops
+                                }
                             }
                         }
                     }
@@ -269,12 +289,13 @@ function rch_collect_brands($brand, &$regions, &$offices, &$processed_brands)
             }
         }
 
-        // Add office data along with the collected region parent IDs and address
+        // Add office data along with the collected region parent IDs, address, and phone
         $offices[] = [
             'id' => $brand['id'],
             'name' => $brand['name'],
             'region_parent_ids' => $region_parent_ids,
             'address' => $office_address,
+            'phone' => $office_phone,
         ];
     }
 }
@@ -301,7 +322,7 @@ function rch_api_request($url, $token, $brand = null)
 /*******************************
  * Function to insert or update posts and save meta data
  ******************************/
-function rch_insert_or_update_post($post_type, $brand_name, $brand_id, $meta_key, $associated_regions = null, $address = null)
+function rch_insert_or_update_post($post_type, $brand_name, $brand_id, $meta_key, $associated_regions = null, $address = null, $phone = null)
 {
     $existing_posts = get_posts(array(
         'post_type'   => $post_type,
@@ -341,6 +362,11 @@ function rch_insert_or_update_post($post_type, $brand_name, $brand_id, $meta_key
             update_post_meta($post_id, 'office_address', sanitize_text_field($address));
         }
 
+        // Update office phone if provided and post type is offices
+        if ($post_type === 'offices' && !empty($phone)) {
+            update_post_meta($post_id, 'office_phone', sanitize_text_field($phone));
+        }
+
         return 'updated';
     } else {
         // Insert new post
@@ -372,6 +398,11 @@ function rch_insert_or_update_post($post_type, $brand_name, $brand_id, $meta_key
         // Insert office address if provided and post type is offices
         if ($post_type === 'offices' && !empty($address)) {
             update_post_meta($post_id, 'office_address', sanitize_text_field($address));
+        }
+
+        // Insert office phone if provided and post type is offices
+        if ($post_type === 'offices' && !empty($phone)) {
+            update_post_meta($post_id, 'office_phone', sanitize_text_field($phone));
         }
 
         return 'added';

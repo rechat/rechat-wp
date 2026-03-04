@@ -55,14 +55,15 @@ function rch_update_agents_offices_regions_data()
     $office_add_count = 0;
     $office_update_count = 0;
     foreach ($offices as $office) {
-        // Insert or update the office post with regions and address
+        // Insert or update the office post with regions, address, and phone
         $result = rch_insert_or_update_post(
             'offices',
             $office['name'],
             $office['id'],
             'office_id',
             $office['region_parent_ids'],
-            $office['address'] ?? ''
+            $office['address'] ?? '',
+            $office['phone'] ?? ''
         );
         if ($result === 'added') {
             $office_add_count++;
