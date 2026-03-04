@@ -41,6 +41,7 @@ function rch_display_office_meta_box($post)
     // Get office meta fields
     $office_id = get_post_meta($post->ID, 'office_id', true);
     $office_address = get_post_meta($post->ID, 'office_address', true);
+    $office_phone = get_post_meta($post->ID, 'office_phone', true);
 
     // Add inline styles to override theme styles
     rch_add_office_metabox_inline_styles();
@@ -48,6 +49,7 @@ function rch_display_office_meta_box($post)
     // Render fields
     rch_render_office_id_field($office_id);
     rch_render_office_address_field($office_address);
+    rch_render_office_phone_field($office_phone);
 }
 
 /*******************************
@@ -157,6 +159,28 @@ function rch_render_office_address_field($office_address)
     <?php
 }
 
+/*******************************
+ * Render office phone field
+ ******************************/
+function rch_render_office_phone_field($office_phone)
+{
+    ?>
+    <h4><?php esc_html_e('Phone Number', 'rechat-plugin'); ?></h4>
+    <div class="rch-field-wrapper">
+        <label for="rch_office_phone" class="rch-field-label">
+            <strong><?php esc_html_e('Phone Number', 'rechat-plugin'); ?></strong>
+        </label>
+        <input 
+            type="text" 
+            id="rch_office_phone" 
+            name="rch_office_phone" 
+            value="<?php echo esc_attr($office_phone); ?>" 
+            class="rch-office-field" 
+        />
+    </div>
+    <?php
+}
+
 
 /*******************************
  * Add Office ID column to offices post list
@@ -251,6 +275,12 @@ function rch_save_office_meta_box($post_id)
         $office_address = sanitize_text_field(wp_unslash($_POST['rch_office_address']));
         update_post_meta($post_id, 'office_address', $office_address);
     }
+
+    // Save office phone
+    if (isset($_POST['rch_office_phone'])) {
+        $office_phone = sanitize_text_field(wp_unslash($_POST['rch_office_phone']));
+        update_post_meta($post_id, 'office_phone', $office_phone);
+    }
 }
 add_action('save_post_offices', 'rch_save_office_meta_box');
 
@@ -272,6 +302,16 @@ function rch_register_office_meta()
     register_meta('post', 'office_address', [
         'type' => 'string',
         'description' => __('Office full address', 'rechat-plugin'),
+        'single' => true,
+        'show_in_rest' => true,
+        'auth_callback' => function () {
+            return current_user_can('edit_posts');
+        },
+    ]);
+
+    register_meta('post', 'office_phone', [
+        'type' => 'string',
+        'description' => __('Office phone number', 'rechat-plugin'),
         'single' => true,
         'show_in_rest' => true,
         'auth_callback' => function () {
