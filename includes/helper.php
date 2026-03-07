@@ -1440,6 +1440,10 @@ if (!empty($attributes['property_types'])) {
         $attrs[] = 'filter_sort_by="' . esc_attr($attributes['sort_by']) . '"';
     }
 
+    if (!empty($attributes['listing_per_page'])) {
+        $attrs[] = 'search_limit="' . esc_attr($attributes['listing_per_page']) . '"';
+    }
+
     // $attrs[] = 'authorization="' . esc_attr(get_option('rch_rechat_access_token')) . '"';
     return implode("\n      ", $attrs);
 }

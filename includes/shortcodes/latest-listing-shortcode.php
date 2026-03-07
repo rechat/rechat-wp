@@ -48,6 +48,7 @@ function rch_display_latest_listings_shortcode($atts)
         'minimum_bedrooms' => '',
         'maximum_bedrooms' => '',
         'listing_per_page' => '10',
+        'limit' => '',
         'brand' => '',
         'listing_statuses' => '',
         'own_listing' => false,
@@ -75,6 +76,11 @@ function rch_display_latest_listings_shortcode($atts)
         'pagination_render_bullet' => '',
         'navigation' => 'false',
     ], $atts);
+
+    // Allow 'limit' as an alias for 'listing_per_page'
+    if (!empty($atts['limit'])) {
+        $atts['listing_per_page'] = $atts['limit'];
+    }
 
     // Convert boolean attributes from strings
     $atts['own_listing'] = filter_var($atts['own_listing'], FILTER_VALIDATE_BOOLEAN);
