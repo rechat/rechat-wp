@@ -55,7 +55,7 @@ function rch_display_latest_listings_shortcode($atts)
         'map_latitude' => '',
         'map_longitude' => '',
         'sort_by' => '-list_date',
-        'order_by' => '-price',
+        'order_by' => '',
         'filter_address' => '',
         'open_houses_only' => false,
         // Swiper settings
@@ -152,15 +152,18 @@ function rch_display_latest_listings_shortcode($atts)
     // Convert swiper config to JSON for JavaScript
     $swiper_config_json = wp_json_encode($swiper_config);
 
-    // Map order_by from human-friendly values to API values
-    $order_by_raw = isset($atts['order_by']) ? trim($atts['order_by']) : $atts['sort_by'];
-    if (strcasecmp($order_by_raw, 'Date') === 0 || strcasecmp($order_by_raw, 'list_date') === 0 || $order_by_raw === '-list_date') {
-        $atts['sort_by'] = '-list_date';
-    } elseif (strcasecmp($order_by_raw, 'Price') === 0 || strcasecmp($order_by_raw, 'price') === 0 || $order_by_raw === '-price') {
-        $atts['sort_by'] = '-price';
-    } else {
-        $atts['sort_by'] = $order_by_raw;
+    // Map order_by from human-friendly values to API values (only if explicitly provided)
+    if (!empty($atts['order_by'])) {
+        $order_by_raw = trim($atts['order_by']);
+        if (strcasecmp($order_by_raw, 'Date') === 0 || strcasecmp($order_by_raw, 'list_date') === 0 || $order_by_raw === '-list_date') {
+            $atts['sort_by'] = '-list_date';
+        } elseif (strcasecmp($order_by_raw, 'Price') === 0 || strcasecmp($order_by_raw, 'price') === 0 || $order_by_raw === '-price') {
+            $atts['sort_by'] = '-price';
+        } else {
+            $atts['sort_by'] = $order_by_raw;
+        }
     }
+    // If order_by is not provided, keep the default sort_by value or use explicitly provided sort_by
 
     // Set brand only if own_listing is true
     if ($atts['own_listing']) {
