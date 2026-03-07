@@ -36,6 +36,24 @@ add_filter('no_texturize_tags', 'rch_disable_wptexturize_on_rechat_tags');
  ******************************/
 function rch_render_listing_block($attributes)
 {
+    // Get URL parameters and merge with block attributes
+    $url_params = rch_get_fallback_url_parameters();
+    
+    // Handle map_center from URL - convert to map_latitude and map_longitude
+    if (!empty($url_params['map_center'])) {
+        $coords = explode(',', $url_params['map_center']);
+        if (count($coords) === 2) {
+            $url_params['map_latitude'] = trim($coords[0]);
+            $url_params['map_longitude'] = trim($coords[1]);
+        }
+        unset($url_params['map_center']);
+    }
+    
+    // Merge URL parameters with block attributes (URL params take precedence)
+    $attributes = array_merge($attributes, array_filter($url_params, function($value) {
+        return $value !== '' && $value !== null;
+    }));
+    
     // Build shortcode attributes string from block attributes
     $shortcode_atts = array();
     
@@ -80,7 +98,11 @@ function rch_get_fallback_url_parameters()
         'maximum_bedrooms',
         'property_types',
         'listing_statuses',
-        'postal_codes'
+        'postal_codes',
+        'map_center',
+        'map_latitude',
+        'map_longitude',
+        'map_zoom'
     );
 
     foreach ($allowed_params as $param) {
