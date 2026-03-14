@@ -24,7 +24,9 @@ add_action('init', 'rch_register_block_assets_listing');
 function rch_disable_wptexturize_on_rechat_tags($tagnames)
 {
     $tagnames[] = 'rechat-root';
+    $tagnames[] = 'rechat-listings';
     $tagnames[] = 'rechat-map-filter';
+    $tagnames[] = 'rechat-listings-sort';
     $tagnames[] = 'rechat-map';
     $tagnames[] = 'rechat-map-listings-grid';
     return $tagnames;

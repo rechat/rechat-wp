@@ -1319,12 +1319,28 @@ function rch_render_search_form_styles($form_id, $show_background, $background_i
 }
 
 /*******************************
- * Render rechat root attributes
+ * Render rechat root attributes (NEW SDK - only brand_id)
  ******************************/
 function rch_get_rechat_root_attributes($attributes, $map_default_center, $listing_statuses_str)
 {
     $attrs = array();
 
+    // In the new SDK, rechat-root ALWAYS gets brand_id from settings
+    if (!empty($attributes['brand'])) {
+        $attrs[] = 'brand_id="' . esc_attr($attributes['brand']) . '"';
+    }
+
+    return implode("\n      ", $attrs);
+}
+
+/*******************************
+ * Render rechat-listings attributes (NEW SDK)
+ ******************************/
+function rch_get_rechat_listings_attributes($attributes, $map_default_center, $listing_statuses_str)
+{
+    $attrs = array();
+
+    // Add brand_id to rechat-listings only if own_listing is true
     if (!empty($attributes['own_listing']) && filter_var($attributes['own_listing'], FILTER_VALIDATE_BOOLEAN)) {
         $attrs[] = 'brand_id="' . esc_attr($attributes['brand']) . '"';
     }
@@ -1347,16 +1363,16 @@ function rch_get_rechat_root_attributes($attributes, $map_default_center, $listi
         $attrs[] = 'filter_address="' . esc_attr($attributes['filter_address']) . '"';
     }
 
-if (!empty($attributes['property_types'])) {
-    $attrs[] = 'filter_property_types="' . esc_attr(
-        is_array($attributes['property_types'])
-            ? implode(',', $attributes['property_types'])
-            : $attributes['property_types']
-    ) . '"';
-} else {
-    // property_types is empty → explicitly send empty property_subtypes
-    $attrs[] = 'filter_property_types=""';
-}
+    if (!empty($attributes['property_types'])) {
+        $attrs[] = 'filter_property_types="' . esc_attr(
+            is_array($attributes['property_types'])
+                ? implode(',', $attributes['property_types'])
+                : $attributes['property_types']
+        ) . '"';
+    } else {
+        // property_types is empty → explicitly send empty property_subtypes
+        $attrs[] = 'filter_property_types=""';
+    }
 
     if (!empty($attributes['filter_open_houses']) && filter_var($attributes['filter_open_houses'], FILTER_VALIDATE_BOOLEAN)) {
         $attrs[] = 'filter_open_houses="true"';

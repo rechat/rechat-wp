@@ -36,6 +36,12 @@ function rch_search_listing_form_shortcode($atts)
     // Sanitize attributes
     $target_page = esc_url($atts['target_page']);
     $brand_id = sanitize_text_field($atts['brand_id']);
+    
+    // If brand_id not provided, use default from settings
+    if (empty($brand_id)) {
+        $brand_id = get_option('rch_rechat_brand_id');
+    }
+    
     $map_zoom = sanitize_text_field($atts['map_zoom']);
     $map_api_key = sanitize_text_field($atts['map_api_key']);
     $map_default_center = sanitize_text_field($atts['map_default_center']);
