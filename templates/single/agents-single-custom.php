@@ -1,4 +1,17 @@
 <?php
+/**
+ * Agent Single Page Template
+ * 
+ * This template can be overridden by copying it to yourtheme/rechat/agents-single-custom.php
+ * 
+ * IMPORTANT: This template focuses on layout/markup only. 
+ * The listing logic is loaded from the plugin to ensure you always get updates.
+ * You can customize the HTML structure below, but the core listing functionality
+ * will remain up-to-date through plugin updates.
+ * 
+ * @package Rechat
+ */
+
 get_header();
 
 // Get the current post ID
@@ -175,143 +188,35 @@ $license_number = get_post_meta($post_id, 'license_number', true);
                 </div>
             </div>
             <?php
-            // Get admin settings for listing display mode
-            $display_mode = get_option('rch_listing_display_mode', 'combined'); // Default: combined
-
-            // Convert agents array to comma-separated string for web component
-            if (is_array($agents)) {
-                $agents_string = implode(',', $agents);
-            } else {
-                $agents_string = $agents;
+            /**
+             * Render Agent Listings Section
+             * 
+             * The listing logic is loaded from the plugin to ensure updates are applied
+             * even when this template is overridden in the theme.
+             */
+            $listings_section_file = RCH_PLUGIN_DIR . 'templates/single/template-parts/agents-listings-section.php';
+            if (file_exists($listings_section_file)) {
+                require_once $listings_section_file;
+                rch_render_agent_listings_section($post_id);
             }
-
-            // Define common property types and subtypes
-            $property_subtypes = 'RES-Single Family, RES-Half Duplex, RES-Farm/Ranch, RES-Condo, RES-Townhouse, LSE-Apartment, LSE-Condo/Townhome, LSE-Duplex, LSE-Fourplex, LSE-House, LSE-Mobile, LSE-Triplex, LND-Commercial, LND-Farm/Ranch, LND-Residential, MUL-Full Duplex, MUL-Apartment/5Plex+, MUL-Fourplex, MUL-Multiple Single Units, MUL-Triplex, COM-Lease, COM-Sale, Lot/Land';
-            $property_types = 'Residential, Residential Lease, Lots & Acreage, Multi-Family, Commercial';
-            $active_statuses = 'Active, Active Contingent, Active Kick Out, Active Option Contract, Active Under Contract, Pending';
-            $sold_statuses = 'Sold, Leased';
             ?>
-
-            <?php if ($display_mode === 'combined') : ?>
-                <!-- Combined Listings Section -->
-                <div class="rch-agents-list rch-agents-combined-section">
-                    <h2><?php the_title(); ?>'s Properties</h2>
-                    <rechat-root
-                        filter_pagination_limit="9"
-                        filter_agents="<?php echo esc_attr($agents_string); ?>"
-                        filter_property_subtypes="<?php echo esc_attr($property_subtypes); ?>"
-                        filter_property_types="<?php echo esc_attr($property_types); ?>"
-                        filter_listing_statuses="<?php echo esc_attr($active_statuses); ?>">
-                        <div>
-                            <rechat-listings-list />
-                        </div>
-
-                        <div class="pagination">
-                            <rechat-listings-pagination />
-                        </div>
-                    </rechat-root>
-                </div>
-
-            <?php elseif ($display_mode === 'separate') : ?>
-                <!-- Active Listings Section -->
-                <div class="rch-agents-list rch-agents-active-section">
-                    <h2><?php the_title(); ?>'s Active Listings</h2>
-                    <rechat-root
-                        filter_pagination_limit="9"
-                        filter_agents="<?php echo esc_attr($agents_string); ?>"
-                        filter_property_subtypes="<?php echo esc_attr($property_subtypes); ?>"
-                        filter_property_types="<?php echo esc_attr($property_types); ?>"
-                        filter_listing_statuses="<?php echo esc_attr($active_statuses); ?>">
-                        <div>
-                            <rechat-listings-list />
-                        </div>
-
-                        <div class="pagination">
-                            <rechat-listings-pagination />
-                        </div>
-                    </rechat-root>
-                </div>
-
-                <!-- Sold Listings Section -->
-                <div class="rch-agents-list rch-agents-sold-section">
-                    <h2><?php the_title(); ?>'s Sold Listings</h2>
-                    <rechat-root
-                        filter_pagination_limit="9"
-                        filter_agents="<?php echo esc_attr($agents_string); ?>"
-                        filter_property_subtypes="<?php echo esc_attr($property_subtypes); ?>"
-                        filter_property_types="<?php echo esc_attr($property_types); ?>"
-                        filter_listing_statuses="<?php echo esc_attr($sold_statuses); ?>">
-                        <div>
-                            <rechat-listings-list />
-                        </div>
-
-                        <div class="pagination">
-                            <rechat-listings-pagination />
-                        </div>
-                    </rechat-root>
-                </div>
-
-            <?php elseif ($display_mode === 'active-only') : ?>
-                <!-- Active Listings Only Section -->
-                <div class="rch-agents-list rch-agents-active-section">
-                    <h2><?php the_title(); ?>'s Active Listings</h2>
-                    <rechat-root
-                        filter_pagination_limit="9"
-                        filter_agents="<?php echo esc_attr($agents_string); ?>"
-                        filter_property_subtypes="<?php echo esc_attr($property_subtypes); ?>"
-                        filter_property_types="<?php echo esc_attr($property_types); ?>"
-                        filter_listing_statuses="<?php echo esc_attr($active_statuses); ?>">
-                        <div>
-                            <rechat-listings-list />
-                        </div>
-
-                        <div class="pagination">
-                            <rechat-listings-pagination />
-                        </div>
-                    </rechat-root>
-                </div>
-
-            <?php elseif ($display_mode === 'sold-only') : ?>
-                <!-- Sold Listings Only Section -->
-                <div class="rch-agents-list rch-agents-sold-section">
-                    <h2><?php the_title(); ?>'s Sold Listings</h2>
-                    <rechat-root
-                        filter_pagination_limit="9"
-                        filter_agents="<?php echo esc_attr($agents_string); ?>"
-                        filter_property_subtypes="<?php echo esc_attr($property_subtypes); ?>"
-                        filter_property_types="<?php echo esc_attr($property_types); ?>"
-                        filter_listing_statuses="<?php echo esc_attr($sold_statuses); ?>">
-                        <div>
-                            <rechat-listings-list />
-                        </div>
-
-                        <div class="pagination">
-                            <rechat-listings-pagination />
-                        </div>
-                    </rechat-root>
-                </div>
-
-            <?php endif; ?>
         <?php endwhile; ?>
 
     </main><!-- #main -->
 </div><!-- #primary -->
 
 <?php
-// Enqueue Rechat SDK
-wp_enqueue_script('rechat-sdk', 'https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.js', [], null, true);
+/**
+ * Enqueue agent single page scripts
+ * 
+ * Scripts are loaded from the plugin to ensure updates are applied
+ * even when this template is overridden in the theme.
+ */
+$scripts_file = RCH_PLUGIN_DIR . 'templates/single/template-parts/agents-scripts.php';
+if (file_exists($scripts_file)) {
+    require_once $scripts_file;
+    rch_enqueue_agent_single_scripts($email);
+}
 
-// Enqueue agent single page JavaScript for lead capture form
-wp_enqueue_script('rch-agent-single', RCH_PLUGIN_ASSETS . 'js/rch-agent-single.js', ['jquery', 'rechat-sdk'], RCH_VERSION, true);
-
-// Pass PHP data to JavaScript for lead capture form functionality
-wp_localize_script('rch-agent-single', 'rchAgentData', [
-    'ajaxUrl' => admin_url('admin-ajax.php'),
-    'brandId' => get_option('rch_rechat_brand_id'),
-    'agentEmail' => $email,
-    'leadChannel' => get_option('rch_agents_lead_channels'),
-    'tags' => json_decode(get_option('rch_agents_selected_tags', '[]'), true),
-]);
+get_footer();
 ?>
-
-<?php get_footer(); ?>

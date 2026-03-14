@@ -171,12 +171,8 @@ function rch_display_latest_listings_shortcode($atts)
     }
     // If order_by is not provided, keep the default sort_by value or use explicitly provided sort_by
 
-    // Set brand only if own_listing is true
-    if ($atts['own_listing']) {
-        $atts['brand'] = get_option('rch_rechat_brand_id');
-    } else {
-        $atts['brand'] = '';
-    }
+    // Always set brand_id from settings (rechat-root always needs it)
+    $atts['brand'] = get_option('rch_rechat_brand_id');
 
     // Map property_types based on user input
     $property_types_raw = trim($atts['property_types']);
@@ -239,8 +235,11 @@ function rch_display_latest_listings_shortcode($atts)
         $atts['map_longitude'] ?? ''
     );
 
-    // Get rechat root attributes using helper function
+    // Get rechat root attributes using helper function (only brand_id in new SDK)
     $rechat_attrs = rch_get_rechat_root_attributes($atts, $map_default_center, $listing_statuses_str);
+    
+    // Get rechat-listings attributes (all filter/map attributes in new SDK)
+    $rechat_listings_attrs = rch_get_rechat_listings_attributes($atts, $map_default_center, $listing_statuses_str);
 
     // Start output buffering
     ob_start();
@@ -332,24 +331,28 @@ function rch_display_latest_listings_shortcode($atts)
 <?php if ($display_type === 'swiper'): ?>
 <div class="main-listing-sdk rch-latest-listings-shortcode-swiper" id="<?php echo esc_attr($unique_id); ?>">
     <rechat-root <?php echo $rechat_attrs; ?>>
-      <div class="swiper">
-        <rechat-listings-list class="swiper-wrapper"></rechat-listings-list>
+      <rechat-listings <?php echo $rechat_listings_attrs; ?>>
+        <div class="swiper">
+          <rechat-listings-list class="swiper-wrapper"></rechat-listings-list>
 
-        <?php if (filter_var($atts['pagination'], FILTER_VALIDATE_BOOLEAN)): ?>
-        <div class="swiper-pagination"></div>
-        <?php endif; ?>
+          <?php if (filter_var($atts['pagination'], FILTER_VALIDATE_BOOLEAN)): ?>
+          <div class="swiper-pagination"></div>
+          <?php endif; ?>
 
-        <?php if (filter_var($atts['navigation'], FILTER_VALIDATE_BOOLEAN)): ?>
-        <div class="swiper-button-prev"></div>
-        <div class="swiper-button-next"></div>
-        <?php endif; ?>
-      </div>
+          <?php if (filter_var($atts['navigation'], FILTER_VALIDATE_BOOLEAN)): ?>
+          <div class="swiper-button-prev"></div>
+          <div class="swiper-button-next"></div>
+          <?php endif; ?>
+        </div>
+      </rechat-listings>
     </rechat-root>
 </div>
 <?php else: ?>
 <div class="rch-grid-container <?php echo esc_attr($template); ?>-grid" id="<?php echo esc_attr($unique_id); ?>">
     <rechat-root <?php echo $rechat_attrs; ?>>
-      <rechat-listings-list></rechat-listings-list>
+      <rechat-listings <?php echo $rechat_listings_attrs; ?>>
+        <rechat-listings-list></rechat-listings-list>
+      </rechat-listings>
     </rechat-root>
 </div>
 <?php endif; ?>
