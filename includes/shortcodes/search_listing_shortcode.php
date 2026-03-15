@@ -75,6 +75,9 @@ function rch_search_listing_form_shortcode($atts)
     // Get rechat-root attributes using helper function
     $rechat_attrs = rch_get_rechat_root_attributes($attributes, $map_default_center, $filter_listing_statuses);
 
+    // Get rechat-listings attributes (all filter/map attributes in new SDK)
+    $rechat_listings_attrs = rch_get_rechat_listings_attributes($attributes, $map_default_center, $filter_listing_statuses);
+
     // Generate unique ID for this form instance
     $form_id = 'rch-search-form-' . uniqid();
     $primary_color = get_option('_rch_primary_color');
@@ -85,14 +88,15 @@ function rch_search_listing_form_shortcode($atts)
     echo rch_render_search_form_styles($form_id, $show_background, $background_image, $primary_color);
 ?>
     <div id="<?php echo $form_id; ?>" class="rch-search-listing-form">
-        <rechat-root
-            <?php echo $rechat_attrs; ?>>
-            <div class="container_listing_sdk rch-search-container">
-                <?php if ($show_background && $background_image): ?>
-                    <div class="rch-search-background"></div>
-                <?php endif; ?>
-                 <rechat-property-search-form />
-            </div>
+        <rechat-root <?php echo $rechat_attrs; ?>>
+            <rechat-listings <?php echo $rechat_listings_attrs; ?>>
+                <div class="container_listing_sdk rch-search-container">
+                    <?php if ($show_background && $background_image): ?>
+                        <div class="rch-search-background"></div>
+                    <?php endif; ?>
+                    <rechat-property-search-form />
+                </div>
+            </rechat-listings>
         </rechat-root>
     </div>
 
