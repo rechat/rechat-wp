@@ -546,6 +546,31 @@ ul.rch-rechat-block h2 {
 ul.rch-rechat-block img {
   width: 20px;
 }
+.rch-pagination-agent {
+  display: flex;
+  flex-direction: row-reverse;
+  margin-block-start: 40px;
+}
+.rch-pagination-agent .rch-pagination-container {
+  display: flex;
+}
+.rch-pagination-agent .rch-pagination-container > :not(:last-child) {
+  margin-inline-end: 5px;
+}
+.rch-pagination-agent .rch-pagination-container > {
+  border-radius: 2px;
+  border: solid 1px #b1b1b1;
+  background: #fff;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #b1b1b1;
+}
+.rch-pagination-agent .rch-pagination-container .current {
+  color: var(--rch-primary-color);
+}
 
 /* Medium screens */
 @media (max-width: 1200px) {
