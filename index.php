@@ -2,13 +2,13 @@
 /*
 Plugin Name: Rechat Plugin
 Description: Fetches and manages agent, offices, regions, and Listing data from Rechat.
-Version: 6.1.0
+Version: 6.1.1
 Author URI: https://rechat.com/
 Text Domain: rechat-plugin
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 GitHub Plugin URI: https://github.com/rechat/rechat-wp
-GitHub Branch: master
+GitHub Branch: dev
 */
 // Exit if accessed directly
 if (! defined('ABSPATH')) {
@@ -18,7 +18,7 @@ if (! defined('ABSPATH')) {
 // define required constants.
 define('RCH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('RCH_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('RCH_VERSION', '6.1.0');
+define('RCH_VERSION', '6.1.1');
 define('RCH_VERSION_SWIPER', '11.2.5');
 const RCH_PLUGIN_INCLUDES = RCH_PLUGIN_DIR . 'includes/';
 const RCH_PLUGIN_ASSETS = RCH_PLUGIN_URL . 'assets/';
