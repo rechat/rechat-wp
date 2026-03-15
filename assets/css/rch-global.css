@@ -620,7 +620,17 @@ ul.rch-rechat-block img {
   border-radius: 10px;
   font-size: 16px;
 }
-
+.rch-pagination-agent .rch-pagination-container > * {
+    border-radius: 2px;
+    border: solid 1px #b1b1b1;
+    background: #fff;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #b1b1b1;
+}
 /* Medium screens */
 @media (max-width: 1200px) {
 }
