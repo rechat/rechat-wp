@@ -62,7 +62,7 @@ function rch_latest_listings_get_defaults() {
         'loop' => 'false',
         'centered_slides' => 'false',
         'speed' => '300',
-        'effect' => 'coverflow',
+        'effect' => 'slide',
         'grab_cursor' => 'true',
         'simulate_touch' => 'true',
         'autoplay' => '',
@@ -253,6 +253,12 @@ function rch_latest_listings_parse_attributes($atts) {
     // Merge with defaults
     $atts = shortcode_atts(rch_latest_listings_get_defaults(), $atts);
     
+    $atts['display_type'] = strtolower(trim((string) $atts['display_type']));
+    $allowed_display = ['swiper', 'normal', 'grid'];
+    if (!in_array($atts['display_type'], $allowed_display, true)) {
+        $atts['display_type'] = 'swiper';
+    }
+    
     // Process aliases (limit → listing_per_page)
     if (!empty($atts['limit'])) {
         $atts['listing_per_page'] = $atts['limit'];
@@ -415,6 +421,15 @@ function rch_latest_listings_render_styles() {
         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     }
     
+    .rch-latest-listings-shortcode-normal rechat-root {
+        display: block;
+        width: 100%;
+    }
+    
+    .rch-latest-listings-shortcode-normal .rch-latest-listings-normal-inner > .pagination {
+        margin-top: 1.5rem;
+    }
+    
     .rch-no-listings-message {
         padding: 40px;
         text-align: center;
@@ -452,6 +467,38 @@ function rch_latest_listings_render_swiper($atts, $unique_id, $rechat_attrs, $re
                 </div>
             </rechat-listings>
         </rechat-root>
+    </div>
+    <?php
+}
+
+/**
+ * Render normal list + SDK pagination (same structure as agent listings section)
+ *
+ * @param array  $atts                  Attributes
+ * @param string $unique_id             Unique ID
+ * @param string $rechat_attrs          Rechat root attributes
+ * @param string $rechat_listings_attrs Rechat listings attributes
+ */
+function rch_latest_listings_render_normal($atts, $unique_id, $rechat_attrs, $rechat_listings_attrs) {
+    $pagination_attr = '';
+    if (!empty($atts['listing_per_page'])) {
+        $pagination_attr = "\n      " . 'filter_pagination_limit="' . esc_attr($atts['listing_per_page']) . '"';
+    }
+    ?>
+    <div class="main-listing-sdk rch-latest-listings-shortcode-normal" id="<?php echo esc_attr($unique_id); ?>">
+        <div class="rch-latest-listings-normal-inner">
+            <rechat-root <?php echo $rechat_attrs; ?>>
+                <rechat-listings <?php echo $rechat_listings_attrs . $pagination_attr; ?>>
+                    <div>
+                        <rechat-listings-list />
+                    </div>
+
+                    <div class="pagination">
+                        <rechat-listings-pagination />
+                    </div>
+                </rechat-listings>
+            </rechat-root>
+        </div>
     </div>
     <?php
 }
@@ -542,6 +589,7 @@ function rch_latest_listings_render_scripts($atts, $unique_id) {
  * Latest Listings Shortcode Handler
  * 
  * Usage: [rch_latest_listings property_types="Residential" listing_statuses="Active"]
+ * display_type: swiper (default) | normal (list + pagination) | grid (simple grid, no Swiper)
  * 
  * @param array $atts Shortcode attributes
  * @return string Rendered HTML
@@ -572,6 +620,8 @@ function rch_display_latest_listings_shortcode($atts) {
     
     if ($atts['display_type'] === 'swiper') {
         rch_latest_listings_render_swiper($atts, $unique_id, $rechat_attrs, $rechat_listings_attrs);
+    } elseif ($atts['display_type'] === 'normal') {
+        rch_latest_listings_render_normal($atts, $unique_id, $rechat_attrs, $rechat_listings_attrs);
     } else {
         rch_latest_listings_render_grid($atts, $unique_id, $rechat_attrs, $rechat_listings_attrs);
     }
