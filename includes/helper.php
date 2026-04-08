@@ -1442,6 +1442,8 @@ function rch_get_rechat_listings_attributes($attributes, $map_default_center, $l
     $attrs[] = 'disable_filter_property_types="' . (isset($attributes['disable_filter_property_types']) && filter_var($attributes['disable_filter_property_types'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
     $attrs[] = 'disable_filter_advanced="' . (isset($attributes['disable_filter_advanced']) && filter_var($attributes['disable_filter_advanced'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
 
+    // {street_address} is substituted by the SDK. A raw # in the path breaks the URL (fragment).
+    // assets/js/rch-listing-hyperlink-fix.js rewrites those links by omitting the # in the slug.
     if (!empty($attributes['listing_hyperlink_href'])) {
         $attrs[] = 'listing_hyperlink_href="' . esc_attr($attributes['listing_hyperlink_href']) . '"';
     } else {
