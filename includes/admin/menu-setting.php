@@ -31,6 +31,11 @@ add_action('admin_menu', 'rch_register_my_setting_menu_page');
 function rch_get_active_tab()
 {
     $allowed_tabs = ['sync-data', 'connect-to-rechat', 'lead-capture', 'general-settings', 'local-logic'];
+
+    if (is_multisite()) {
+        $allowed_tabs[] = 'multisite';
+    }
+
     $tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'sync-data';
     
     return in_array($tab, $allowed_tabs, true) ? $tab : 'sync-data';
@@ -48,6 +53,10 @@ function rch_render_tab_navigation($active_tab)
         'general-settings' => __('General Settings', 'rechat-plugin'),
         'local-logic' => __('Local Logic Settings', 'rechat-plugin'),
     ];
+
+    if (is_multisite()) {
+        $tabs['multisite'] = __('Multisite', 'rechat-plugin');
+    }
 
     echo '<h2 class="nav-tab-wrapper">';
     
@@ -113,6 +122,12 @@ function rch_rechat_menu_page()
                     
                 case 'local-logic':
                     rch_render_local_logic_tab();
+                    break;
+                    
+                case 'multisite':
+                    if (is_multisite() && function_exists('rch_multisite_render_admin_tab')) {
+                        rch_multisite_render_admin_tab();
+                    }
                     break;
             }
             ?>

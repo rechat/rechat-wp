@@ -102,13 +102,26 @@ jQuery(document).ready(function ($) {
                         statusDiv.html('');
                         
                         // Show detailed results
+                        var resultItems = '';
+                        var coreKeys = ['agents', 'offices', 'regions', 'branding'];
+                        $.each(coreKeys, function (i, key) {
+                            if (messages[key]) {
+                                resultItems += '<li>' + messages[key] + '</li>';
+                            }
+                        });
+
+                        // Append any extra module results (e.g. multisite) returned
+                        // by the rch_sync_response_data filter.
+                        $.each(messages, function (key, value) {
+                            if ($.inArray(key, coreKeys) === -1) {
+                                resultItems += '<li>' + value + '</li>';
+                            }
+                        });
+
                         var successHtml = '<div class="notice notice-success is-dismissible">' +
                             '<p><strong>Sync completed successfully!</strong></p>' +
                             '<ul style="margin-left: 20px;">' +
-                            '<li>' + messages.agents + '</li>' +
-                            '<li>' + messages.offices + '</li>' +
-                            '<li>' + messages.regions + '</li>' +
-                            '<li>' + messages.branding + '</li>' +
+                            resultItems +
                             '</ul>' +
                             '</div>';
                         statusDiv.html(successHtml);
