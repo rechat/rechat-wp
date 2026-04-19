@@ -114,6 +114,11 @@ include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-lead-form.php';
 include RCH_PLUGIN_INCLUDES . 'metabox/load-all-meta-boxes.php';
 // Multisite: agent sub-site management (no-op on single-site installs)
 include RCH_PLUGIN_INCLUDES . 'multisite/agent-sites.php';
+// Multisite: prompt to install & activate Broadcast (ThreeWP) from wordpress.org — admin only
+if (is_multisite() && is_admin()) {
+    require_once RCH_PLUGIN_INCLUDES . 'tgm/class-tgm-plugin-activation.php';
+    require_once RCH_PLUGIN_INCLUDES . 'tgm/register-tgmpa.php';
+}
 if (is_admin()) {
     include RCH_PLUGIN_INCLUDES . 'admin/enqueue-admin.php';
 

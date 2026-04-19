@@ -12,6 +12,15 @@ function rch_is_doing_agent_sync(): bool
     return ! empty($GLOBALS['rch_doing_agent_sync']);
 }
 
+/**
+ * True while rch_update_agents_offices_regions_data() is processing regions/offices
+ * (before agent sync). Avoids duplicate multisite side effects on save_post.
+ */
+function rch_is_doing_rechat_sync(): bool
+{
+    return ! empty($GLOBALS['rch_doing_rechat_sync']);
+}
+
 /*******************************
  * change to readable Date
  ******************************/
@@ -377,6 +386,16 @@ function rch_insert_or_update_post($post_type, $brand_name, $brand_id, $meta_key
             update_post_meta($post_id, 'office_phone', sanitize_text_field($phone));
         }
 
+        if ($post_type === 'offices') {
+            /**
+             * Fires after an office post is inserted or updated via Rechat sync.
+             *
+             * @param int    $post_id     Office post ID.
+             * @param string $brand_name Office display name.
+             */
+            do_action('rch_after_office_synced', (int) $post_id, (string) $brand_name);
+        }
+
         return 'updated';
     } else {
         // Insert new post
@@ -413,6 +432,16 @@ function rch_insert_or_update_post($post_type, $brand_name, $brand_id, $meta_key
         // Insert office phone if provided and post type is offices
         if ($post_type === 'offices' && !empty($phone)) {
             update_post_meta($post_id, 'office_phone', sanitize_text_field($phone));
+        }
+
+        if ($post_type === 'offices') {
+            /**
+             * Fires after an office post is inserted or updated via Rechat sync.
+             *
+             * @param int    $post_id     Office post ID.
+             * @param string $brand_name Office display name.
+             */
+            do_action('rch_after_office_synced', (int) $post_id, (string) $brand_name);
         }
 
         return 'added';
