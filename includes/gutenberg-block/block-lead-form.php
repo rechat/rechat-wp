@@ -49,6 +49,10 @@ function rch_register_block_assets_leads_form()
                 'type' => 'array',
                 'default' => array(),
             ),
+            'submitButtonText' => array(
+                'type' => 'string',
+                'default' => 'Submit Request',
+            ),
         ),
         'render_callback' => 'rch_render_leads_form_block', // Callback function for rendering the block
     ));
@@ -70,6 +74,9 @@ function rch_render_leads_form_block($attributes)
     $show_email = isset($attributes['showEmail']) ? $attributes['showEmail'] : true;
     $show_note = isset($attributes['showNote']) ? $attributes['showNote'] : true;
     $selected_tags = isset($attributes['selectedTagsFrom']) ? $attributes['selectedTagsFrom'] : array();
+    $submit_button_text = isset($attributes['submitButtonText']) && $attributes['submitButtonText'] !== ''
+        ? $attributes['submitButtonText']
+        : 'Submit Request';
     $is_editor = defined('REST_REQUEST') && REST_REQUEST && isset($_GET['context']) && $_GET['context'] === 'edit';
 
     // Start output buffering
@@ -112,7 +119,7 @@ function rch_render_leads_form_block($attributes)
                     <textarea id="note" name="note" placeholder="Write your note here" required></textarea>
                 </div>
             <?php endif; ?>
-            <button type="submit" <?php echo $is_editor ? 'disabled' : ''; ?>>Submit Request</button>
+            <button type="submit" <?php echo $is_editor ? 'disabled' : ''; ?>><?php echo esc_html($submit_button_text); ?></button>
         </form>
         <div id="loading-spinner" class="rch-loading-spinner-form" style="display: none;"></div>
         <div id="rch-listing-success-sdk" class="rch-success-box-listing">

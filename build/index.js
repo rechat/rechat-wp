@@ -249,6 +249,10 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
     emailForGetLead: {
       type: 'string',
       default: ''
+    },
+    submitButtonText: {
+      type: 'string',
+      default: 'Submit Request'
     }
   },
   edit({
@@ -264,7 +268,8 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
       showEmail,
       showNote,
       selectedTagsFrom,
-      emailForGetLead
+      emailForGetLead,
+      submitButtonText
     } = attributes;
     const [leadChannels, setLeadChannels] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)();
     const [tags, setTags] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
@@ -397,6 +402,12 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
             value: formTitle,
             onChange: value => setAttributes({
               formTitle: value
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(TextControl, {
+            label: "Submit button text",
+            value: submitButtonText,
+            onChange: value => setAttributes({
+              submitButtonText: value
             })
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(SelectControl, {
             label: "Lead Channel",
