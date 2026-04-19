@@ -54,6 +54,9 @@ function rch_update_agents_offices_regions_data()
     $current_office_ids = [];
     $office_add_count = 0;
     $office_update_count = 0;
+
+    $GLOBALS['rch_doing_rechat_sync'] = true;
+
     foreach ($offices as $office) {
         // Insert or update the office post with regions, address, and phone
         $result = rch_insert_or_update_post(
@@ -74,6 +77,8 @@ function rch_update_agents_offices_regions_data()
         // Store the office ID for later use
         $current_office_ids[] = $office['id'];
     }
+
+    $GLOBALS['rch_doing_rechat_sync'] = false;
 
     // Delete outdated Region and Office posts
     rch_delete_outdated_posts('regions', $current_region_ids, 'region_id');
