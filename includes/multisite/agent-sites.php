@@ -126,13 +126,11 @@ function rch_multisite_is_create_office_sites_enabled(): bool
 }
 
 /**
- * Network default theme for agent/office sub-sites (no per-post override).
- *
- * Uses `rch_multisite_agent_theme_stylesheet` when set; otherwise main site theme.
+ * Network default theme for agent sub-sites (no per-post override).
  *
  * @return array{template:string,stylesheet:string}
  */
-function rch_multisite_resolve_theme_network_default(): array
+function rch_multisite_resolve_theme_network_default_for_agents(): array
 {
     $main_id = get_main_site_id();
     $saved   = (string) get_site_option('rch_multisite_agent_theme_stylesheet', '');
@@ -154,13 +152,49 @@ function rch_multisite_resolve_theme_network_default(): array
 }
 
 /**
- * Resolve template + stylesheet for agent/office sub-sites (bulk apply, legacy name).
+ * Network default theme for office sub-sites (no per-post override).
+ *
+ * @return array{template:string,stylesheet:string}
+ */
+function rch_multisite_resolve_theme_network_default_for_offices(): array
+{
+    $main_id = get_main_site_id();
+    $saved   = (string) get_site_option('rch_multisite_office_theme_stylesheet', '');
+
+    if ($saved !== '') {
+        $theme = wp_get_theme($saved);
+        if ($theme->exists()) {
+            return [
+                'template'   => $theme->get_template(),
+                'stylesheet' => $theme->get_stylesheet(),
+            ];
+        }
+    }
+
+    return [
+        'template'   => (string) get_blog_option($main_id, 'template'),
+        'stylesheet' => (string) get_blog_option($main_id, 'stylesheet'),
+    ];
+}
+
+/**
+ * Alias: agent network default (backward compatibility for callers).
+ *
+ * @return array{template:string,stylesheet:string}
+ */
+function rch_multisite_resolve_theme_network_default(): array
+{
+    return rch_multisite_resolve_theme_network_default_for_agents();
+}
+
+/**
+ * Resolve template + stylesheet for agent sub-sites bulk apply (network agent default).
  *
  * @return array{template:string,stylesheet:string}
  */
 function rch_multisite_resolve_theme_for_agent_sites(): array
 {
-    return rch_multisite_resolve_theme_network_default();
+    return rch_multisite_resolve_theme_network_default_for_agents();
 }
 
 /**
@@ -185,7 +219,12 @@ function rch_multisite_resolve_theme_for_post(int $post_id): array
         }
     }
 
-    return rch_multisite_resolve_theme_network_default();
+    $pt = get_post_type($post_id);
+    if ($pt === 'offices') {
+        return rch_multisite_resolve_theme_network_default_for_offices();
+    }
+
+    return rch_multisite_resolve_theme_network_default_for_agents();
 }
 
 /**
@@ -491,12 +530,279 @@ function rch_multisite_create_site_for_agent(int $post_id, string $agent_name)
     // Apply theme (per-post override or network default) and essential settings.
     rch_multisite_configure_new_site($blog_id, $agent_name, $post_id, false);
 
+    rch_multisite_maybe_provision_agent_site_editor($post_id, $blog_id);
+
     error_log(
         'Rechat Plugin Multisite: Created site ' . $domain . $path .
         ' (blog_id=' . $blog_id . ') for agent post ' . $post_id
     );
 
     return $blog_id;
+}
+
+/**
+ * Ensure a network user is on the given blog with the Editor role (add or promote).
+ *
+ * @param  int $user_id WordPress user ID.
+ * @param  int $blog_id Blog ID.
+ * @return true|WP_Error
+ */
+function rch_multisite_ensure_user_editor_on_blog(int $user_id, int $blog_id)
+{
+    switch_to_blog($blog_id);
+
+    if (is_user_member_of_blog($user_id, $blog_id)) {
+        $user = new WP_User($user_id);
+        $user->set_role('editor');
+        restore_current_blog();
+
+        return true;
+    }
+
+    $added = add_user_to_blog($blog_id, $user_id, 'editor');
+    restore_current_blog();
+
+    if (is_wp_error($added)) {
+        return $added;
+    }
+
+    return true;
+}
+
+/**
+ * Sync the agent subsite Editor account from agent `email` meta and send login instructions.
+ *
+ * @param  int  $agent_post_id     Agent post ID.
+ * @param  int  $blog_id           Agent sub-site blog ID.
+ * @param  bool $bypass_idempotency When false, no-op if `_rch_agent_site_editor_provisioned` is already `1`.
+ * @return array{ok:bool,skipped?:bool,message?:string} `skipped` only when ok is true and nothing was done.
+ */
+function rch_multisite_sync_agent_site_editor(int $agent_post_id, int $blog_id, bool $bypass_idempotency): array
+{
+    if (! $bypass_idempotency && get_post_meta($agent_post_id, '_rch_agent_site_editor_provisioned', true) === '1') {
+        return [
+            'ok'      => true,
+            'skipped' => true,
+            'message' => '',
+        ];
+    }
+
+    $email = sanitize_email((string) get_post_meta($agent_post_id, 'email', true));
+
+    if (! $email || ! is_email($email)) {
+        update_post_meta($agent_post_id, '_rch_agent_site_editor_provisioned', 'skipped_no_email');
+
+        return [
+            'ok'      => false,
+            'message' => __('This agent has no valid email address. Add one on the agent profile first.', 'rechat-plugin'),
+        ];
+    }
+
+    $user_login = sanitize_user($email, true);
+
+    if ($user_login === '' || ! validate_username($user_login)) {
+        $user_login = 'agent_' . $agent_post_id . '_' . wp_generate_password(6, false, false);
+        $user_login = sanitize_user($user_login, true);
+    }
+
+    switch_to_blog($blog_id);
+    $login_url = wp_login_url();
+    restore_current_blog();
+
+    $existing_id = email_exists($email);
+
+    if ($existing_id) {
+        $ensured = rch_multisite_ensure_user_editor_on_blog((int) $existing_id, $blog_id);
+        if (is_wp_error($ensured)) {
+            error_log('Rechat Multisite: ensure editor on blog failed — ' . $ensured->get_error_message());
+
+            return [
+                'ok'      => false,
+                'message' => $ensured->get_error_message(),
+            ];
+        }
+
+        update_post_meta($agent_post_id, '_rch_agent_site_editor_provisioned', '1');
+        rch_multisite_send_agent_site_editor_email(
+            $email,
+            get_the_title($agent_post_id),
+            $login_url,
+            '',
+            true,
+            $email
+        );
+
+        return [
+            'ok'      => true,
+            'message' => __('Editor access is set for this site and instructions were emailed to the agent.', 'rechat-plugin'),
+        ];
+    }
+
+    if (username_exists($user_login)) {
+        $user = get_user_by('login', $user_login);
+        if (! $user) {
+            return [
+                'ok'      => false,
+                'message' => __('Could not load the WordPress user for this login.', 'rechat-plugin'),
+            ];
+        }
+
+        $ensured = rch_multisite_ensure_user_editor_on_blog((int) $user->ID, $blog_id);
+        if (is_wp_error($ensured)) {
+            error_log('Rechat Multisite: ensure editor on blog failed — ' . $ensured->get_error_message());
+
+            return [
+                'ok'      => false,
+                'message' => $ensured->get_error_message(),
+            ];
+        }
+
+        update_post_meta($agent_post_id, '_rch_agent_site_editor_provisioned', '1');
+        rch_multisite_send_agent_site_editor_email(
+            $email,
+            get_the_title($agent_post_id),
+            $login_url,
+            '',
+            true,
+            $user->user_login
+        );
+
+        return [
+            'ok'      => true,
+            'message' => __('Editor access is set for this site and instructions were emailed to the agent.', 'rechat-plugin'),
+        ];
+    }
+
+    $password = wp_generate_password(24, true, true);
+
+    $user_id = wp_insert_user([
+        'user_login'   => $user_login,
+        'user_email'   => $email,
+        'user_pass'    => $password,
+        'display_name' => get_the_title($agent_post_id),
+        'role'         => get_option('default_role') ?: 'subscriber',
+    ]);
+
+    if (is_wp_error($user_id)) {
+        error_log('Rechat Multisite: wp_insert_user failed — ' . $user_id->get_error_message());
+
+        return [
+            'ok'      => false,
+            'message' => $user_id->get_error_message(),
+        ];
+    }
+
+    $ensured = rch_multisite_ensure_user_editor_on_blog((int) $user_id, $blog_id);
+    if (is_wp_error($ensured)) {
+        error_log('Rechat Multisite: add user to blog failed — ' . $ensured->get_error_message());
+
+        return [
+            'ok'      => false,
+            'message' => $ensured->get_error_message(),
+        ];
+    }
+
+    update_post_meta($agent_post_id, '_rch_agent_site_editor_provisioned', '1');
+
+    rch_multisite_send_agent_site_editor_email(
+        $email,
+        get_the_title($agent_post_id),
+        $login_url,
+        $password,
+        false,
+        $user_login
+    );
+
+    return [
+        'ok'      => true,
+        'message' => __('A new editor account was created and login details were emailed to the agent.', 'rechat-plugin'),
+    ];
+}
+
+/**
+ * After a new agent sub-site is created, add an Editor user from the agent email and notify them.
+ *
+ * Only runs for agent subsites (not offices). Skips if meta `email` is missing/invalid or already provisioned.
+ *
+ * @param  int $agent_post_id Agent post ID.
+ * @param  int $blog_id       New agent sub-site blog ID.
+ * @return void
+ */
+function rch_multisite_maybe_provision_agent_site_editor(int $agent_post_id, int $blog_id): void
+{
+    $result = rch_multisite_sync_agent_site_editor($agent_post_id, $blog_id, false);
+
+    if (! empty($result['skipped'])) {
+        return;
+    }
+
+    if (empty($result['ok'])) {
+        error_log(
+            'Rechat Plugin Multisite: Editor sync failed for agent post ' . $agent_post_id .
+            ' — ' . ($result['message'] ?? '')
+        );
+    }
+}
+
+/**
+ * Email the agent their subsite login details (new account or existing user added to site).
+ *
+ * @param  string $to_email       Recipient.
+ * @param  string $agent_name     Display name.
+ * @param  string $login_url      Subsite wp-login URL.
+ * @param  string $plain_pass     Empty if existing account.
+ * @param  bool   $existing_user  Whether they already had a network account.
+ * @param  string $username_label Username shown in the email body.
+ * @return void
+ */
+function rch_multisite_send_agent_site_editor_email(
+    string $to_email,
+    string $agent_name,
+    string $login_url,
+    string $plain_pass,
+    bool $existing_user,
+    string $username_label
+): void {
+    $main_id   = get_main_site_id();
+    $site_name = wp_specialchars_decode((string) get_blog_option($main_id, 'blogname'), ENT_QUOTES);
+
+    if ($existing_user) {
+        $subject = sprintf(
+            /* translators: %s: site name */
+            __('[%s] You have been added as an editor to your agent website', 'rechat-plugin'),
+            $site_name
+        );
+        $body = sprintf(
+            /* translators: 1: agent name, 2: login URL */
+            __(
+                "Hello %1\$s,\n\nA WordPress editor account has been linked to your agent website so you can manage your site content.\n\nYou already have a login on this network — use your existing password.\n\nLog in here:\n%2\$s\n\n— %3\$s\n",
+                'rechat-plugin'
+            ),
+            $agent_name,
+            $login_url,
+            $site_name
+        );
+    } else {
+        $subject = sprintf(
+            /* translators: %s: site name */
+            __('[%s] Your agent website login details', 'rechat-plugin'),
+            $site_name
+        );
+        $body = sprintf(
+            /* translators: 1: agent name, 2: username, 3: password, 4: login URL, 5: site name */
+            __(
+                "Hello %1\$s,\n\nA WordPress editor account has been created for you to manage your agent website.\n\nUsername: %2\$s\nPassword: %3\$s\n\nPlease log in and change your password after your first login:\n%4\$s\n\nKeep this message secure. If you did not expect this email, contact your broker or site administrator.\n\n— %5\$s\n",
+                'rechat-plugin'
+            ),
+            $agent_name,
+            $username_label,
+            $plain_pass,
+            $login_url,
+            $site_name
+        );
+    }
+
+    wp_mail($to_email, $subject, $body);
 }
 
 /**
@@ -620,7 +926,9 @@ function rch_multisite_configure_new_site(int $blog_id, string $site_title, ?int
 
     $resolved = ($post_id && $post_id > 0)
         ? rch_multisite_resolve_theme_for_post($post_id)
-        : rch_multisite_resolve_theme_network_default();
+        : ($is_office
+            ? rch_multisite_resolve_theme_network_default_for_offices()
+            : rch_multisite_resolve_theme_network_default_for_agents());
 
     $template   = $resolved['template'];
     $stylesheet = $resolved['stylesheet'];
@@ -735,20 +1043,20 @@ function rch_multisite_fix_themes_on_existing_sites(): array
 }
 
 /**
- * Apply a theme to every agent sub-site that has a linked blog_id.
+ * Resolve stylesheet for bulk apply (explicit slug or network default for entity).
  *
- * @param  string|null $stylesheet  Theme stylesheet slug, or null to use
- *                                   rch_multisite_resolve_theme_for_agent_sites().
- * @return array{updated:int,errors:string[]}
+ * @param  string|null $stylesheet Raw stylesheet or null/empty to use network default.
+ * @param  string      $entity      'agents' or 'offices'.
+ * @return array{stylesheet:string,errors:string[]}
  */
-function rch_multisite_bulk_apply_theme_to_agent_sites(?string $stylesheet = null): array
+function rch_multisite_bulk_resolve_stylesheet(?string $stylesheet, string $entity): array
 {
     if ($stylesheet !== null && $stylesheet !== '') {
         $theme = wp_get_theme($stylesheet);
         if (! $theme->exists()) {
             return [
-                'updated' => 0,
-                'errors'  => [
+                'stylesheet' => '',
+                'errors'     => [
                     sprintf(
                         /* translators: %s: theme slug */
                         __('Theme "%s" is not installed.', 'rechat-plugin'),
@@ -757,18 +1065,39 @@ function rch_multisite_bulk_apply_theme_to_agent_sites(?string $stylesheet = nul
                 ],
             ];
         }
-        $stylesheet = $theme->get_stylesheet();
-    } else {
-        $pair       = rch_multisite_resolve_theme_for_agent_sites();
-        $stylesheet = $pair['stylesheet'];
+
+        return ['stylesheet' => $theme->get_stylesheet(), 'errors' => []];
     }
+
+    $pair = $entity === 'offices'
+        ? rch_multisite_resolve_theme_network_default_for_offices()
+        : rch_multisite_resolve_theme_network_default_for_agents();
+
+    $stylesheet = $pair['stylesheet'];
 
     if ($stylesheet === '') {
         return [
-            'updated' => 0,
-            'errors'  => [__('Could not resolve a theme to apply.', 'rechat-plugin')],
+            'stylesheet' => '',
+            'errors'     => [__('Could not resolve a theme to apply.', 'rechat-plugin')],
         ];
     }
+
+    return ['stylesheet' => $stylesheet, 'errors' => []];
+}
+
+/**
+ * Apply a theme to every agent sub-site that has a linked blog_id.
+ *
+ * @param  string|null $stylesheet Theme stylesheet slug, or null for network agent default.
+ * @return array{updated:int,errors:string[]}
+ */
+function rch_multisite_bulk_apply_theme_to_agent_sites(?string $stylesheet = null): array
+{
+    $resolved = rch_multisite_bulk_resolve_stylesheet($stylesheet, 'agents');
+    if (! empty($resolved['errors'])) {
+        return ['updated' => 0, 'errors' => $resolved['errors']];
+    }
+    $stylesheet = $resolved['stylesheet'];
 
     $agents = get_posts([
         'post_type'   => 'agents',
@@ -794,12 +1123,32 @@ function rch_multisite_bulk_apply_theme_to_agent_sites(?string $stylesheet = nul
         }
     }
 
+    return compact('updated', 'errors');
+}
+
+/**
+ * Apply a theme to every office sub-site that has a linked blog_id.
+ *
+ * @param  string|null $stylesheet Theme stylesheet slug, or null for network office default.
+ * @return array{updated:int,errors:string[]}
+ */
+function rch_multisite_bulk_apply_theme_to_office_sites(?string $stylesheet = null): array
+{
+    $resolved = rch_multisite_bulk_resolve_stylesheet($stylesheet, 'offices');
+    if (! empty($resolved['errors'])) {
+        return ['updated' => 0, 'errors' => $resolved['errors']];
+    }
+    $stylesheet = $resolved['stylesheet'];
+
     $offices = get_posts([
         'post_type'   => 'offices',
         'numberposts' => -1,
         'post_status' => 'publish',
         'fields'      => 'all',
     ]);
+
+    $updated = 0;
+    $errors  = [];
 
     foreach ($offices as $office) {
         $blog_id = rch_multisite_get_office_blog_id($office->ID);
@@ -860,9 +1209,15 @@ function rch_multisite_ajax_bulk_apply_theme(): void
     }
 
     $raw = isset($_POST['theme']) ? sanitize_text_field(wp_unslash($_POST['theme'])) : '';
+    $entity = isset($_POST['entity']) ? sanitize_key(wp_unslash($_POST['entity'])) : 'agents';
+    if (! in_array($entity, ['agents', 'offices'], true)) {
+        $entity = 'agents';
+    }
 
-    // Empty string = use saved network default / main site (see resolve).
-    $result = rch_multisite_bulk_apply_theme_to_agent_sites($raw === '' ? null : $raw);
+    $stylesheet = $raw === '' ? null : $raw;
+    $result     = $entity === 'offices'
+        ? rch_multisite_bulk_apply_theme_to_office_sites($stylesheet)
+        : rch_multisite_bulk_apply_theme_to_agent_sites($stylesheet);
 
     if (! empty($result['errors'])) {
         wp_send_json_success([
@@ -877,12 +1232,20 @@ function rch_multisite_ajax_bulk_apply_theme(): void
         return;
     }
 
-    wp_send_json_success([
-        'message' => sprintf(
-            /* translators: %d: number of sites */
-            __('Theme applied successfully to %d agent/office sub-site(s).', 'rechat-plugin'),
+    $msg = $entity === 'offices'
+        ? sprintf(
+            /* translators: %d: number of office sites */
+            __('Theme applied successfully to %d office sub-site(s).', 'rechat-plugin'),
             $result['updated']
-        ),
+        )
+        : sprintf(
+            /* translators: %d: number of agent sites */
+            __('Theme applied successfully to %d agent sub-site(s).', 'rechat-plugin'),
+            $result['updated']
+        );
+
+    wp_send_json_success([
+        'message' => $msg,
         'updated' => $result['updated'],
         'errors'  => [],
     ]);
@@ -1525,6 +1888,8 @@ function rch_multisite_render_agent_metabox(WP_Post $post): void
 {
     wp_nonce_field('rch_agent_site_metabox_' . $post->ID, 'rch_agent_site_metabox_nonce');
 
+    $reprovision_nonce = wp_create_nonce('rch_multisite_reprovision_editor');
+
     $enabled         = rch_multisite_is_agent_site_enabled($post->ID);
     $blog_id         = rch_multisite_get_agent_blog_id($post->ID);
     $slug            = (string) get_post_meta($post->ID, '_rch_agent_slug', true);
@@ -1556,6 +1921,8 @@ function rch_multisite_render_agent_metabox(WP_Post $post): void
             ?>
         </p>
     <?php endif; ?>
+
+    <div id="rch-agent-site-metabox-root">
 
     <p>
         <label style="display:flex;align-items:center;gap:8px;cursor:<?php echo rch_multisite_is_create_agent_sites_enabled() ? 'pointer' : 'default'; ?>;">
@@ -1607,6 +1974,19 @@ function rch_multisite_render_agent_metabox(WP_Post $post): void
                 <?php esc_html_e('Site Admin', 'rechat-plugin'); ?>
             </a>
         </p>
+        <?php if (is_multisite()) : ?>
+            <p style="margin-top:10px;">
+                <button
+                    type="button"
+                    class="button button-secondary rch-reprovision-agent-editor"
+                    data-post-id="<?php echo esc_attr((string) $post->ID); ?>"
+                    data-nonce="<?php echo esc_attr($reprovision_nonce); ?>"
+                >
+                    <?php esc_html_e('Update editor user & email', 'rechat-plugin'); ?>
+                </button>
+            </p>
+            <p class="description rch-reprovision-editor-feedback" style="margin-top:4px;min-height:1.2em;" aria-live="polite"></p>
+        <?php endif; ?>
         <p class="description">
             <?php esc_html_e('Blog ID:', 'rechat-plugin'); ?> <code><?php echo esc_html((string) $blog_id); ?></code>
         </p>
@@ -1615,6 +1995,40 @@ function rch_multisite_render_agent_metabox(WP_Post $post): void
             <?php esc_html_e('Site URL will be:', 'rechat-plugin'); ?><br>
             <code><?php echo esc_html($site_url); ?></code>
         </p>
+    <?php endif; ?>
+
+    </div>
+
+    <?php if (is_multisite() && $blog_id) : ?>
+        <script>
+        (function ($) {
+            $(document).on('click', '#rch-agent-site-metabox-root .rch-reprovision-agent-editor', function () {
+                var $btn   = $(this);
+                var postId = $btn.data('post-id');
+                var nonce  = $btn.data('nonce');
+                var $fb    = $('#rch-agent-site-metabox-root .rch-reprovision-editor-feedback');
+
+                $btn.prop('disabled', true);
+                $fb.css({ color: '' }).text(<?php echo wp_json_encode(__('Sending…', 'rechat-plugin')); ?>);
+
+                $.post(ajaxurl, {
+                    action:  'rch_multisite_reprovision_agent_editor',
+                    _nonce:  nonce,
+                    post_id: postId,
+                }, function (response) {
+                    $btn.prop('disabled', false);
+                    if (response.success) {
+                        $fb.css('color', '#00a32a').text(response.data.message || <?php echo wp_json_encode(__('Done.', 'rechat-plugin')); ?>);
+                    } else {
+                        $fb.css('color', '#d63638').text(response.data || <?php echo wp_json_encode(__('An error occurred.', 'rechat-plugin')); ?>);
+                    }
+                }).fail(function () {
+                    $btn.prop('disabled', false);
+                    $fb.css('color', '#d63638').text(<?php echo wp_json_encode(__('Request failed. Please try again.', 'rechat-plugin')); ?>);
+                });
+            });
+        })(jQuery);
+        </script>
     <?php endif; ?>
     <?php
 }
@@ -2076,6 +2490,52 @@ function rch_multisite_ajax_toggle_agent_site(): void
 }
 add_action('wp_ajax_rch_multisite_toggle_agent_site', 'rch_multisite_ajax_toggle_agent_site');
 
+/**
+ * AJAX: Re-run editor provisioning for an agent sub-site (create/add user, ensure Editor role, email).
+ *
+ * @return void
+ */
+function rch_multisite_ajax_reprovision_agent_editor(): void
+{
+    check_ajax_referer('rch_multisite_reprovision_editor', '_nonce');
+
+    if (! current_user_can('manage_options')) {
+        wp_send_json_error(__('Insufficient permissions.', 'rechat-plugin'));
+        return;
+    }
+
+    if (! is_multisite()) {
+        wp_send_json_error(__('Multisite is not enabled.', 'rechat-plugin'));
+        return;
+    }
+
+    $post_id = isset($_POST['post_id']) ? absint($_POST['post_id']) : 0;
+
+    if (! $post_id || get_post_type($post_id) !== 'agents') {
+        wp_send_json_error(__('Invalid agent.', 'rechat-plugin'));
+        return;
+    }
+
+    $blog_id = rch_multisite_get_agent_blog_id($post_id);
+
+    if (! $blog_id) {
+        wp_send_json_error(__('This agent does not have a sub-site yet.', 'rechat-plugin'));
+        return;
+    }
+
+    $result = rch_multisite_sync_agent_site_editor($post_id, $blog_id, true);
+
+    if (empty($result['ok'])) {
+        wp_send_json_error($result['message'] ?? __('Could not sync the editor account.', 'rechat-plugin'));
+        return;
+    }
+
+    wp_send_json_success([
+        'message' => $result['message'] ?? __('Done.', 'rechat-plugin'),
+    ]);
+}
+add_action('wp_ajax_rch_multisite_reprovision_agent_editor', 'rch_multisite_ajax_reprovision_agent_editor');
+
 // ─────────────────────────────────────────────────────────────────────────────
 // SECTION 6 – SETTINGS SAVE (handles POST from the Multisite tab form)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2134,6 +2594,14 @@ function rch_multisite_save_settings(): void
         $theme_choice = '';
     }
     update_site_option('rch_multisite_agent_theme_stylesheet', $theme_choice);
+
+    $office_theme = isset($_POST['rch_multisite_office_theme_stylesheet'])
+        ? sanitize_text_field(wp_unslash($_POST['rch_multisite_office_theme_stylesheet']))
+        : '';
+    if ($office_theme !== '' && ! wp_get_theme($office_theme)->exists()) {
+        $office_theme = '';
+    }
+    update_site_option('rch_multisite_office_theme_stylesheet', $office_theme);
 
     add_settings_error(
         'rch_multisite',

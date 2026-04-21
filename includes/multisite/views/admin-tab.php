@@ -18,12 +18,14 @@ function rch_multisite_render_admin_tab(): void
     $network         = get_network();
     $base_domain     = preg_replace('/^www\./i', '', $network->domain);
     $network_path    = trailingslashit($network->path); // e.g. '/rechat-plugin/'
-    $provision_nonce   = wp_create_nonce('rch_multisite_provision_all');
-    $toggle_nonce      = wp_create_nonce('rch_multisite_toggle_agent');
-    $bulk_theme_nonce  = wp_create_nonce('rch_multisite_bulk_theme');
+    $provision_nonce    = wp_create_nonce('rch_multisite_provision_all');
+    $toggle_nonce       = wp_create_nonce('rch_multisite_toggle_agent');
+    $reprovision_nonce  = wp_create_nonce('rch_multisite_reprovision_editor');
+    $bulk_theme_nonce   = wp_create_nonce('rch_multisite_bulk_theme');
     $row_theme_nonce   = wp_create_nonce('rch_multisite_row_theme');
-    $saved_agent_theme = (string) get_site_option('rch_multisite_agent_theme_stylesheet', '');
-    $theme_choices     = rch_multisite_get_theme_choices();
+    $saved_agent_theme  = (string) get_site_option('rch_multisite_agent_theme_stylesheet', '');
+    $saved_office_theme = (string) get_site_option('rch_multisite_office_theme_stylesheet', '');
+    $theme_choices      = rch_multisite_get_theme_choices();
 
     // Detect the WordPress network install type.
     $wp_subdomain_install = defined('SUBDOMAIN_INSTALL') && SUBDOMAIN_INSTALL;
@@ -105,11 +107,10 @@ function rch_multisite_render_admin_tab(): void
                     </td>
                 </tr>
 
-                <?php /* Theme for agent sub-sites */ ?>
                 <tr valign="top">
                     <th scope="row">
                         <label for="rch-multisite-agent-theme">
-                            <?php esc_html_e('Default theme for agent & office sub-sites', 'rechat-plugin'); ?>
+                            <?php esc_html_e('Default theme for agent sub-sites', 'rechat-plugin'); ?>
                         </label>
                     </th>
                     <td>
@@ -128,7 +129,34 @@ function rch_multisite_render_admin_tab(): void
                             <?php endforeach; ?>
                         </select>
                         <p class="description">
-                            <?php esc_html_e('Used when new sites are created and as the target for bulk “Apply theme to all …” below, unless an agent or office has a per-site theme on its edit screen. Enable themes in Network Admin → Themes if a theme does not activate.', 'rechat-plugin'); ?>
+                            <?php esc_html_e('Used for new agent sites and for “Apply theme to all agent sub-sites” below when no per-agent override is set. Enable themes in Network Admin → Themes if a theme does not activate.', 'rechat-plugin'); ?>
+                        </p>
+                    </td>
+                </tr>
+
+                <tr valign="top">
+                    <th scope="row">
+                        <label for="rch-multisite-office-theme">
+                            <?php esc_html_e('Default theme for office sub-sites', 'rechat-plugin'); ?>
+                        </label>
+                    </th>
+                    <td>
+                        <select
+                            name="rch_multisite_office_theme_stylesheet"
+                            id="rch-multisite-office-theme"
+                            class="regular-text"
+                        >
+                            <option value="" <?php selected($saved_office_theme, ''); ?>>
+                                <?php esc_html_e('Same as main site (default)', 'rechat-plugin'); ?>
+                            </option>
+                            <?php foreach ($theme_choices as $slug => $label) : ?>
+                                <option value="<?php echo esc_attr($slug); ?>" <?php selected($saved_office_theme, $slug); ?>>
+                                    <?php echo esc_html($label); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <p class="description">
+                            <?php esc_html_e('Used for new office sites and for “Apply theme to all office sub-sites” below when no per-office override is set.', 'rechat-plugin'); ?>
                         </p>
                     </td>
                 </tr>
@@ -285,30 +313,42 @@ function rch_multisite_render_admin_tab(): void
         <div id="rch-multisite-provision-result" style="margin-top:12px;"></div>
 
         <p style="margin-top:16px;margin-bottom:6px;">
-            <strong><?php esc_html_e('Bulk apply theme to all agent & office sub-sites', 'rechat-plugin'); ?></strong>
+            <strong><?php esc_html_e('Bulk apply theme (agents vs offices)', 'rechat-plugin'); ?></strong>
         </p>
         <p class="description" style="max-width:720px;">
-            <?php esc_html_e('Uses the theme selected in “Default theme for agent & office sub-sites” above (change the dropdown and click here — you do not need to save the form first). Applies to every agent and office that already has a sub-site. Per-post theme overrides on individual agent/office screens take effect again if you clear this bulk choice and save the post, or set a new override.', 'rechat-plugin'); ?>
+            <?php esc_html_e('Each row uses its own default theme dropdown above. You do not need to save the form first. Only sites that already exist are updated.', 'rechat-plugin'); ?>
         </p>
-        <p>
+        <p style="margin-top:10px;">
             <button
                 type="button"
-                id="rch-multisite-bulk-theme-btn"
+                id="rch-multisite-bulk-theme-agents-btn"
                 class="button button-secondary"
                 data-nonce="<?php echo esc_attr($bulk_theme_nonce); ?>"
             >
-                <?php esc_html_e('Apply theme to all agent & office sub-sites', 'rechat-plugin'); ?>
+                <?php esc_html_e('Apply theme to all agent sub-sites', 'rechat-plugin'); ?>
             </button>
-            <span id="rch-multisite-bulk-theme-spinner" class="spinner" style="float:none;margin-top:4px;"></span>
+            <span id="rch-multisite-bulk-theme-agents-spinner" class="spinner" style="float:none;margin-top:4px;"></span>
         </p>
-        <div id="rch-multisite-bulk-theme-result" style="margin-top:8px;"></div>
+        <div id="rch-multisite-bulk-theme-agents-result" style="margin-top:8px;margin-bottom:16px;"></div>
+        <p>
+            <button
+                type="button"
+                id="rch-multisite-bulk-theme-offices-btn"
+                class="button button-secondary"
+                data-nonce="<?php echo esc_attr($bulk_theme_nonce); ?>"
+            >
+                <?php esc_html_e('Apply theme to all office sub-sites', 'rechat-plugin'); ?>
+            </button>
+            <span id="rch-multisite-bulk-theme-offices-spinner" class="spinner" style="float:none;margin-top:4px;"></span>
+        </p>
+        <div id="rch-multisite-bulk-theme-offices-result" style="margin-top:8px;"></div>
 
         <hr>
 
         <?php /* ── Status table ─────────────────────────────────────────── */ ?>
         <h3><?php esc_html_e('Agent Site Status', 'rechat-plugin'); ?></h3>
         <p class="description" style="max-width:900px;margin-bottom:10px;">
-            <?php esc_html_e('Use the Theme column to override the network default for one agent. Changes apply immediately when a sub-site already exists; otherwise they apply when the site is created.', 'rechat-plugin'); ?>
+            <?php esc_html_e('Use the Theme column to override the network default for one agent. Changes apply immediately when a sub-site already exists; otherwise they apply when the site is created. “Update editor” creates or re-adds the WordPress user from the agent email, ensures the Editor role on that sub-site, and sends the login email again (no duplicate user if they already exist).', 'rechat-plugin'); ?>
         </p>
 
         <?php if (empty($agents)) : ?>
@@ -323,6 +363,7 @@ function rch_multisite_render_admin_tab(): void
                         <th><?php esc_html_e('Site Status', 'rechat-plugin'); ?></th>
                         <th><?php esc_html_e('Theme for this sub-site', 'rechat-plugin'); ?></th>
                         <th><?php esc_html_e('Enable / Disable', 'rechat-plugin'); ?></th>
+                        <th><?php esc_html_e('Editor account', 'rechat-plugin'); ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -421,6 +462,21 @@ function rch_multisite_render_admin_tab(): void
                                     >
                                         <?php esc_html_e('Enable Site', 'rechat-plugin'); ?>
                                     </button>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if ($has_site) : ?>
+                                    <button
+                                        type="button"
+                                        class="button button-secondary rch-reprovision-agent-editor"
+                                        data-post-id="<?php echo esc_attr((string) $agent->ID); ?>"
+                                        data-nonce="<?php echo esc_attr($reprovision_nonce); ?>"
+                                    >
+                                        <?php esc_html_e('Update editor', 'rechat-plugin'); ?>
+                                    </button>
+                                    <span class="rch-reprovision-editor-feedback" style="display:block;margin-top:4px;font-size:12px;color:#646970;" aria-live="polite"></span>
+                                <?php else : ?>
+                                    —
                                 <?php endif; ?>
                             </td>
                         </tr>
@@ -674,21 +730,16 @@ function rch_multisite_render_admin_tab(): void
             });
         });
 
-        // ── Bulk apply theme to all agent sub-sites ────────────────────────────
-        $('#rch-multisite-bulk-theme-btn').on('click', function () {
-            var $btn     = $(this);
-            var $spin    = $('#rch-multisite-bulk-theme-spinner');
-            var $out     = $('#rch-multisite-bulk-theme-result');
-            var theme    = $('#rch-multisite-agent-theme').val();
-
+        function rchBulkApplyTheme($btn, entity, themeSelector, $spin, $out) {
             $btn.prop('disabled', true);
             $spin.addClass('is-active');
             $out.html('');
 
             $.post(ajaxurl, {
                 action: 'rch_multisite_bulk_apply_theme',
-                _nonce: $btn.data('nonce'),
-                theme:  theme
+                _nonce:  $btn.data('nonce'),
+                theme:   $(themeSelector).val(),
+                entity:  entity
             }, function (response) {
                 $btn.prop('disabled', false);
                 $spin.removeClass('is-active');
@@ -717,6 +768,26 @@ function rch_multisite_render_admin_tab(): void
                     '<div class="notice notice-error inline"><p><?php echo esc_js(__('Request failed. Please try again.', 'rechat-plugin')); ?></p></div>'
                 );
             });
+        }
+
+        $('#rch-multisite-bulk-theme-agents-btn').on('click', function () {
+            rchBulkApplyTheme(
+                $(this),
+                'agents',
+                '#rch-multisite-agent-theme',
+                $('#rch-multisite-bulk-theme-agents-spinner'),
+                $('#rch-multisite-bulk-theme-agents-result')
+            );
+        });
+
+        $('#rch-multisite-bulk-theme-offices-btn').on('click', function () {
+            rchBulkApplyTheme(
+                $(this),
+                'offices',
+                '#rch-multisite-office-theme',
+                $('#rch-multisite-bulk-theme-offices-spinner'),
+                $('#rch-multisite-bulk-theme-offices-result')
+            );
         });
 
         // ── Per-agent enable / disable toggle ──────────────────────────────────
@@ -777,6 +848,33 @@ function rch_multisite_render_admin_tab(): void
                            : '<?php echo esc_js(__('Disable Site', 'rechat-plugin')); ?>'
                 );
                 alert('<?php echo esc_js(__('Request failed. Please try again.', 'rechat-plugin')); ?>');
+            });
+        });
+
+        // ── Update editor user (provision / re-email) ─────────────────────────
+        $(document).on('click', '.rch-reprovision-agent-editor', function () {
+            var $btn   = $(this);
+            var postId = $btn.data('post-id');
+            var nonce  = $btn.data('nonce');
+            var $fb    = $btn.closest('td').find('.rch-reprovision-editor-feedback');
+
+            $btn.prop('disabled', true);
+            $fb.text('<?php echo esc_js(__('Sending…', 'rechat-plugin')); ?>');
+
+            $.post(ajaxurl, {
+                action:  'rch_multisite_reprovision_agent_editor',
+                _nonce:  nonce,
+                post_id: postId,
+            }, function (response) {
+                $btn.prop('disabled', false);
+                if (response.success) {
+                    $fb.css('color', '#00a32a').text(response.data.message || '<?php echo esc_js(__('Done.', 'rechat-plugin')); ?>');
+                } else {
+                    $fb.css('color', '#d63638').text(response.data || '<?php echo esc_js(__('An error occurred.', 'rechat-plugin')); ?>');
+                }
+            }).fail(function () {
+                $btn.prop('disabled', false);
+                $fb.css('color', '#d63638').text('<?php echo esc_js(__('Request failed. Please try again.', 'rechat-plugin')); ?>');
             });
         });
 
