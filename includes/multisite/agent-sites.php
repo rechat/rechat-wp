@@ -570,6 +570,253 @@ function rch_multisite_ensure_user_editor_on_blog(int $user_id, int $blog_id)
 }
 
 /**
+ * Build a WordPress username base from the agent post (slug meta or post title), not from email.
+ *
+ * @param  int $agent_post_id Agent post ID.
+ * @return string              Sanitized login fragment (may still collide until uniqued).
+ */
+function rch_multisite_agent_editor_login_base(int $agent_post_id): string
+{
+    $slug = (string) get_post_meta($agent_post_id, '_rch_agent_slug', true);
+
+    if ($slug !== '') {
+        $candidate = sanitize_user($slug, true);
+    } else {
+        $candidate = sanitize_user(rch_multisite_sanitize_slug((string) get_the_title($agent_post_id)), true);
+    }
+
+    if ($candidate === '' || ! validate_username($candidate)) {
+        $candidate = 'agent-' . $agent_post_id;
+    }
+
+    $candidate = substr($candidate, 0, 60);
+    $candidate = rtrim($candidate, '-');
+
+    if ($candidate === '' || ! validate_username($candidate)) {
+        $candidate = 'agent-' . $agent_post_id;
+    }
+
+    /**
+     * Filter the base WordPress username derived from an agent before collision handling.
+     *
+     * @param string $candidate     Sanitized username base.
+     * @param int    $agent_post_id Agent post ID.
+     */
+    return (string) apply_filters('rch_multisite_agent_editor_login_base', $candidate, $agent_post_id);
+}
+
+/**
+ * Pick a network-unique username for this email: reuse if the same user already owns the login.
+ *
+ * @param  string $base  Base login from {@see rch_multisite_agent_editor_login_base()}.
+ * @param  string $email Agent email (must match the user being created or linked).
+ * @return string
+ */
+function rch_multisite_unique_agent_editor_login(string $base, string $email): string
+{
+    $base = sanitize_user($base, true);
+
+    if ($base === '' || ! validate_username($base)) {
+        $base = 'agent';
+    }
+
+    $base    = substr($base, 0, 60);
+    $candidate = $base;
+    $suffix_n  = 2;
+
+    while (true) {
+        if (! username_exists($candidate)) {
+            return $candidate;
+        }
+
+        $owner = get_user_by('login', $candidate);
+
+        if ($owner && strcasecmp((string) $owner->user_email, (string) $email) === 0) {
+            return $candidate;
+        }
+
+        $suffix    = '-' . $suffix_n;
+        $candidate = substr($base, 0, max(1, 60 - strlen($suffix))) . $suffix;
+        $suffix_n++;
+
+        if ($suffix_n > 2000) {
+            return sanitize_user('agent-' . wp_generate_password(10, false, false), true);
+        }
+    }
+}
+
+/**
+ * Change a user's login to the preferred agent-based username when possible.
+ *
+ * @param  int    $user_id      User ID.
+ * @param  string $new_login    Desired login (already uniqued for this email).
+ * @return string               Login to use (new or unchanged on failure).
+ */
+function rch_multisite_try_set_agent_editor_user_login(int $user_id, string $new_login): string
+{
+    $user = get_userdata($user_id);
+
+    if (! $user) {
+        return $new_login;
+    }
+
+    if ($user->user_login === $new_login) {
+        return $new_login;
+    }
+
+    if (! validate_username($new_login)) {
+        return $user->user_login;
+    }
+
+    $conflict = get_user_by('login', $new_login);
+
+    if ($conflict && (int) $conflict->ID !== $user_id) {
+        return $user->user_login;
+    }
+
+    $result = wp_update_user([
+        'ID'         => $user_id,
+        'user_login' => $new_login,
+    ]);
+
+    if (is_wp_error($result)) {
+        error_log('Rechat Multisite: could not update user_login — ' . $result->get_error_message());
+
+        return $user->user_login;
+    }
+
+    $refreshed = get_userdata($user_id);
+
+    return $refreshed ? (string) $refreshed->user_login : $new_login;
+}
+
+/**
+ * Email addresses to notify when an agent subsite editor is provisioned or updated.
+ *
+ * @return string[] Non-empty unique emails.
+ */
+function rch_multisite_get_agent_editor_admin_notice_recipients(): array
+{
+    $out = [];
+
+    $network_admin = (string) get_site_option('admin_email', '');
+
+    if ($network_admin && is_email($network_admin)) {
+        $out[] = $network_admin;
+    }
+
+    if (is_multisite()) {
+        $main_id = get_main_site_id();
+        switch_to_blog($main_id);
+        $main_admin = (string) get_option('admin_email', '');
+        restore_current_blog();
+
+        if ($main_admin && is_email($main_admin)) {
+            $out[] = $main_admin;
+        }
+    }
+
+    $owner_id = absint(get_site_option('rch_multisite_admin_user_id', 0));
+
+    if ($owner_id) {
+        $owner = get_userdata($owner_id);
+
+        if ($owner && is_email((string) $owner->user_email)) {
+            $out[] = (string) $owner->user_email;
+        }
+    }
+
+    $out = array_filter(array_map('sanitize_email', $out));
+
+    $deduped = [];
+
+    foreach ($out as $addr) {
+        if (! $addr || ! is_email($addr)) {
+            continue;
+        }
+
+        $key = strtolower($addr);
+
+        if (! isset($deduped[$key])) {
+            $deduped[$key] = $addr;
+        }
+    }
+
+    $out = array_values($deduped);
+
+    /**
+     * Filter who receives the admin copy when an agent editor account is synced.
+     *
+     * @param string[] $out Email addresses.
+     */
+    return array_values(array_filter(
+        (array) apply_filters('rch_multisite_agent_editor_admin_notice_emails', $out)
+    ));
+}
+
+/**
+ * Notify network/main-site admins that an agent subsite editor was synced (separate email from the agent).
+ *
+ * @param  int    $agent_post_id Agent post ID.
+ * @param  string $agent_name    Agent display name.
+ * @param  string $agent_email   Agent profile email.
+ * @param  string $wp_username   Final WordPress username.
+ * @param  string $login_url     Subsite login URL.
+ * @param  string $site_url      Subsite front URL.
+ * @param  bool   $existing_user Whether they already had a network account.
+ * @return void
+ */
+function rch_multisite_send_agent_site_editor_admin_notice(
+    int $agent_post_id,
+    string $agent_name,
+    string $agent_email,
+    string $wp_username,
+    string $login_url,
+    string $site_url,
+    bool $existing_user
+): void {
+    $recipients = rch_multisite_get_agent_editor_admin_notice_recipients();
+
+    if ($recipients === []) {
+        return;
+    }
+
+    $main_id   = get_main_site_id();
+    $site_name = wp_specialchars_decode((string) get_blog_option($main_id, 'blogname'), ENT_QUOTES);
+
+    $subject = sprintf(
+        /* translators: %s: agent display name */
+        __('[%s] Agent subsite editor synced', 'rechat-plugin'),
+        $site_name
+    );
+
+    $mode = $existing_user
+        /* translators: network user existed */
+        ? __('Linked existing network user', 'rechat-plugin')
+        : __('Created new network user', 'rechat-plugin');
+
+    $body = sprintf(
+        /* translators: 1: mode, 2: agent name, 3: post ID, 4: profile email, 5: WP username, 6: site URL, 7: login URL, 8: network name */
+        __(
+            "An agent subsite editor was updated.\n\n%1\$s\n\nAgent: %2\$s (post ID %3\$d)\nProfile email: %4\$s\nWordPress username: %5\$s\n\nSub-site: %6\$s\nLogin URL: %7\$s\n\n— %8\$s\n",
+            'rechat-plugin'
+        ),
+        $mode,
+        $agent_name,
+        $agent_post_id,
+        $agent_email,
+        $wp_username,
+        $site_url,
+        $login_url,
+        $site_name
+    );
+
+    foreach ($recipients as $to) {
+        wp_mail($to, $subject, $body);
+    }
+}
+
+/**
  * Sync the agent subsite Editor account from agent `email` meta and send login instructions.
  *
  * @param  int  $agent_post_id     Agent post ID.
@@ -598,21 +845,21 @@ function rch_multisite_sync_agent_site_editor(int $agent_post_id, int $blog_id, 
         ];
     }
 
-    $user_login = sanitize_user($email, true);
-
-    if ($user_login === '' || ! validate_username($user_login)) {
-        $user_login = 'agent_' . $agent_post_id . '_' . wp_generate_password(6, false, false);
-        $user_login = sanitize_user($user_login, true);
-    }
+    $agent_name    = get_the_title($agent_post_id);
+    $login_base    = rch_multisite_agent_editor_login_base($agent_post_id);
+    $desired_login = rch_multisite_unique_agent_editor_login($login_base, $email);
 
     switch_to_blog($blog_id);
     $login_url = wp_login_url();
+    $site_url  = home_url('/');
     restore_current_blog();
 
     $existing_id = email_exists($email);
 
     if ($existing_id) {
-        $ensured = rch_multisite_ensure_user_editor_on_blog((int) $existing_id, $blog_id);
+        $uid = (int) $existing_id;
+
+        $ensured = rch_multisite_ensure_user_editor_on_blog($uid, $blog_id);
         if (is_wp_error($ensured)) {
             error_log('Rechat Multisite: ensure editor on blog failed — ' . $ensured->get_error_message());
 
@@ -622,49 +869,25 @@ function rch_multisite_sync_agent_site_editor(int $agent_post_id, int $blog_id, 
             ];
         }
 
+        $final_login = rch_multisite_try_set_agent_editor_user_login($uid, $desired_login);
+
         update_post_meta($agent_post_id, '_rch_agent_site_editor_provisioned', '1');
         rch_multisite_send_agent_site_editor_email(
             $email,
-            get_the_title($agent_post_id),
+            $agent_name,
             $login_url,
             '',
             true,
-            $email
+            $final_login
         );
-
-        return [
-            'ok'      => true,
-            'message' => __('Editor access is set for this site and instructions were emailed to the agent.', 'rechat-plugin'),
-        ];
-    }
-
-    if (username_exists($user_login)) {
-        $user = get_user_by('login', $user_login);
-        if (! $user) {
-            return [
-                'ok'      => false,
-                'message' => __('Could not load the WordPress user for this login.', 'rechat-plugin'),
-            ];
-        }
-
-        $ensured = rch_multisite_ensure_user_editor_on_blog((int) $user->ID, $blog_id);
-        if (is_wp_error($ensured)) {
-            error_log('Rechat Multisite: ensure editor on blog failed — ' . $ensured->get_error_message());
-
-            return [
-                'ok'      => false,
-                'message' => $ensured->get_error_message(),
-            ];
-        }
-
-        update_post_meta($agent_post_id, '_rch_agent_site_editor_provisioned', '1');
-        rch_multisite_send_agent_site_editor_email(
+        rch_multisite_send_agent_site_editor_admin_notice(
+            $agent_post_id,
+            $agent_name,
             $email,
-            get_the_title($agent_post_id),
+            $final_login,
             $login_url,
-            '',
-            true,
-            $user->user_login
+            $site_url,
+            true
         );
 
         return [
@@ -676,10 +899,10 @@ function rch_multisite_sync_agent_site_editor(int $agent_post_id, int $blog_id, 
     $password = wp_generate_password(24, true, true);
 
     $user_id = wp_insert_user([
-        'user_login'   => $user_login,
+        'user_login'   => $desired_login,
         'user_email'   => $email,
         'user_pass'    => $password,
-        'display_name' => get_the_title($agent_post_id),
+        'display_name' => $agent_name,
         'role'         => get_option('default_role') ?: 'subscriber',
     ]);
 
@@ -702,15 +925,26 @@ function rch_multisite_sync_agent_site_editor(int $agent_post_id, int $blog_id, 
         ];
     }
 
+    $final_login = rch_multisite_try_set_agent_editor_user_login((int) $user_id, $desired_login);
+
     update_post_meta($agent_post_id, '_rch_agent_site_editor_provisioned', '1');
 
     rch_multisite_send_agent_site_editor_email(
         $email,
-        get_the_title($agent_post_id),
+        $agent_name,
         $login_url,
         $password,
         false,
-        $user_login
+        $final_login
+    );
+    rch_multisite_send_agent_site_editor_admin_notice(
+        $agent_post_id,
+        $agent_name,
+        $email,
+        $final_login,
+        $login_url,
+        $site_url,
+        false
     );
 
     return [
@@ -773,14 +1007,15 @@ function rch_multisite_send_agent_site_editor_email(
             $site_name
         );
         $body = sprintf(
-            /* translators: 1: agent name, 2: login URL */
+            /* translators: 1: agent name, 2: login URL, 3: site name, 4: WordPress username */
             __(
-                "Hello %1\$s,\n\nA WordPress editor account has been linked to your agent website so you can manage your site content.\n\nYou already have a login on this network — use your existing password.\n\nLog in here:\n%2\$s\n\n— %3\$s\n",
+                "Hello %1\$s,\n\nA WordPress editor account has been linked to your agent website so you can manage your site content.\n\nYou already have a login on this network — use your existing password.\n\nUsername: %4\$s\n\nLog in here:\n%2\$s\n\n— %3\$s\n",
                 'rechat-plugin'
             ),
             $agent_name,
             $login_url,
-            $site_name
+            $site_name,
+            $username_label
         );
     } else {
         $subject = sprintf(
