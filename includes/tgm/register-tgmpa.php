@@ -44,12 +44,12 @@ function rch_tgmpa_register_multisite_dependencies(): void
         'dismiss_msg'  => '',
         'is_automatic' => true,
         'message'      => sprintf(
-            /* translators: %s: plugin name */
+            /* translators: %s: plugin name (Broadcast) */
             __(
-                'Rechat Multisite recommends the %s plugin to broadcast posts and content across your agent and office sub-sites.',
+                'When Rechat creates agent or office sub-sites, the %s plugin must be installed and network-activated so shared content can be pushed to each new site automatically.',
                 'rechat-plugin'
             ),
-            'Broadcast'
+            'Broadcast (ThreeWP Broadcast)'
         ),
     ];
 

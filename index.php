@@ -112,6 +112,8 @@ include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-agents.php';
 include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-listing.php';
 include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-lead-form.php';
 include RCH_PLUGIN_INCLUDES . 'metabox/load-all-meta-boxes.php';
+// Multisite: Broadcast integration (no-op on single-site installs)
+include RCH_PLUGIN_INCLUDES . 'multisite/broadcast-integration.php';
 // Multisite: agent sub-site management (no-op on single-site installs)
 include RCH_PLUGIN_INCLUDES . 'multisite/agent-sites.php';
 // Multisite: prompt to install & activate Broadcast (ThreeWP) from wordpress.org — admin only
