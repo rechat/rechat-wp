@@ -437,6 +437,14 @@ function rch_multisite_is_office_site_enabled(int $post_id): bool
  */
 function rch_multisite_create_site_for_agent(int $post_id, string $agent_name)
 {
+    $broadcast_err = function_exists('rch_multisite_broadcast_dependency_error')
+        ? rch_multisite_broadcast_dependency_error()
+        : null;
+
+    if ($broadcast_err instanceof WP_Error) {
+        return $broadcast_err;
+    }
+
     $slug = rch_multisite_sanitize_slug($agent_name);
 
     if (empty($slug)) {
@@ -470,6 +478,11 @@ function rch_multisite_create_site_for_agent(int $post_id, string $agent_name)
             'Rechat Plugin Multisite: Adopted existing site ' . $domain . $path .
             ' (blog_id=' . $existing_blog_id . ') for agent post ' . $post_id
         );
+
+        if (function_exists('rch_multisite_schedule_broadcast_to_new_blog')) {
+            rch_multisite_schedule_broadcast_to_new_blog($existing_blog_id);
+        }
+
         return $existing_blog_id;
     }
 
@@ -532,6 +545,10 @@ function rch_multisite_create_site_for_agent(int $post_id, string $agent_name)
 
     rch_multisite_maybe_provision_agent_site_editor($post_id, $blog_id);
 
+    if (function_exists('rch_multisite_schedule_broadcast_to_new_blog')) {
+        rch_multisite_schedule_broadcast_to_new_blog($blog_id);
+    }
+
     error_log(
         'Rechat Plugin Multisite: Created site ' . $domain . $path .
         ' (blog_id=' . $blog_id . ') for agent post ' . $post_id
@@ -570,23 +587,26 @@ function rch_multisite_ensure_user_editor_on_blog(int $user_id, int $blog_id)
 }
 
 /**
- * Build a WordPress username base from the agent post (slug meta or post title), not from email.
+ * Build a WordPress username base from the agent post title (same source as subsite / agent name).
+ *
+ * Stored `_rch_agent_slug` is only used when the post title cannot produce a valid login (e.g. empty),
+ * because API slugs are often short IDs (e.g. "v1") and must not override the human-readable agent name.
  *
  * @param  int $agent_post_id Agent post ID.
  * @return string              Sanitized login fragment (may still collide until uniqued).
  */
 function rch_multisite_agent_editor_login_base(int $agent_post_id): string
 {
-    $slug = (string) get_post_meta($agent_post_id, '_rch_agent_slug', true);
-
-    if ($slug !== '') {
-        $candidate = sanitize_user($slug, true);
-    } else {
-        $candidate = sanitize_user(rch_multisite_sanitize_slug((string) get_the_title($agent_post_id)), true);
-    }
+    $raw_title = (string) get_post_field('post_title', $agent_post_id, 'raw');
+    $candidate = sanitize_user(rch_multisite_sanitize_slug($raw_title), true);
 
     if ($candidate === '' || ! validate_username($candidate)) {
-        $candidate = 'agent-' . $agent_post_id;
+        $slug = (string) get_post_meta($agent_post_id, '_rch_agent_slug', true);
+        $candidate = $slug !== '' ? sanitize_user($slug, true) : '';
+
+        if ($candidate === '' || ! validate_username($candidate)) {
+            $candidate = 'agent-' . $agent_post_id;
+        }
     }
 
     $candidate = substr($candidate, 0, 60);
@@ -871,6 +891,13 @@ function rch_multisite_sync_agent_site_editor(int $agent_post_id, int $blog_id, 
 
         $final_login = rch_multisite_try_set_agent_editor_user_login($uid, $desired_login);
 
+        if ($agent_name !== '') {
+            wp_update_user([
+                'ID'           => $uid,
+                'display_name' => $agent_name,
+            ]);
+        }
+
         update_post_meta($agent_post_id, '_rch_agent_site_editor_provisioned', '1');
         rch_multisite_send_agent_site_editor_email(
             $email,
@@ -1049,6 +1076,14 @@ function rch_multisite_send_agent_site_editor_email(
  */
 function rch_multisite_create_site_for_office(int $post_id, string $office_name)
 {
+    $broadcast_err = function_exists('rch_multisite_broadcast_dependency_error')
+        ? rch_multisite_broadcast_dependency_error()
+        : null;
+
+    if ($broadcast_err instanceof WP_Error) {
+        return $broadcast_err;
+    }
+
     $slug = rch_multisite_office_public_slug($office_name);
 
     if (empty($slug)) {
@@ -1081,6 +1116,10 @@ function rch_multisite_create_site_for_office(int $post_id, string $office_name)
             'Rechat Plugin Multisite: Adopted existing site ' . $domain . $path .
             ' (blog_id=' . $existing_blog_id . ') for office post ' . $post_id
         );
+
+        if (function_exists('rch_multisite_schedule_broadcast_to_new_blog')) {
+            rch_multisite_schedule_broadcast_to_new_blog($existing_blog_id);
+        }
 
         return $existing_blog_id;
     }
@@ -1137,6 +1176,10 @@ function rch_multisite_create_site_for_office(int $post_id, string $office_name)
     update_post_meta($post_id, '_rch_office_slug', $slug);
 
     rch_multisite_configure_new_site($blog_id, $office_name, $post_id, true);
+
+    if (function_exists('rch_multisite_schedule_broadcast_to_new_blog')) {
+        rch_multisite_schedule_broadcast_to_new_blog($blog_id);
+    }
 
     error_log(
         'Rechat Plugin Multisite: Created site ' . $domain . $path .
@@ -2544,6 +2587,15 @@ function rch_multisite_ajax_provision_all(): void
         wp_send_json_error(
             __('Sub-site creation is disabled. Enable agent and/or office sub-sites in the settings above.', 'rechat-plugin')
         );
+        return;
+    }
+
+    $broadcast_err = function_exists('rch_multisite_broadcast_dependency_error')
+        ? rch_multisite_broadcast_dependency_error()
+        : null;
+
+    if ($broadcast_err instanceof WP_Error) {
+        wp_send_json_error($broadcast_err->get_error_message());
         return;
     }
 

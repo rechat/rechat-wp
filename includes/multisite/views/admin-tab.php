@@ -60,6 +60,21 @@ function rch_multisite_render_admin_tab(): void
 
         <?php settings_errors('rch_multisite'); ?>
 
+        <?php if (function_exists('rch_multisite_subsites_require_broadcast') && rch_multisite_subsites_require_broadcast() && function_exists('rch_multisite_broadcast_plugin_active') && ! rch_multisite_broadcast_plugin_active()) : ?>
+            <div class="notice notice-error inline" style="max-width:900px;">
+                <p>
+                    <?php esc_html_e('Rechat is set to create agent or office sub-sites, but Broadcast (ThreeWP Broadcast) is not network-active. Sub-site creation is blocked until Broadcast is installed and network-activated.', 'rechat-plugin'); ?>
+                    <?php
+                    printf(
+                        ' <a href="%1$s">%2$s</a>',
+                        esc_url(network_admin_url('plugins.php')),
+                        esc_html__('Network Plugins', 'rechat-plugin')
+                    );
+                    ?>
+                </p>
+            </div>
+        <?php endif; ?>
+
         <?php /* ── Settings form ──────────────────────────────────────────── */ ?>
         <form method="POST" action="">
             <?php wp_nonce_field('rch_multisite_save_settings', 'rch_multisite_save_nonce'); ?>
