@@ -479,6 +479,10 @@ function rch_multisite_create_site_for_agent(int $post_id, string $agent_name)
             ' (blog_id=' . $existing_blog_id . ') for agent post ' . $post_id
         );
 
+        if (function_exists('rch_multisite_set_subsite_role_option')) {
+            rch_multisite_set_subsite_role_option($existing_blog_id, 'agent');
+        }
+
         if (function_exists('rch_multisite_schedule_broadcast_to_new_blog')) {
             rch_multisite_schedule_broadcast_to_new_blog($existing_blog_id);
         }
@@ -1117,6 +1121,10 @@ function rch_multisite_create_site_for_office(int $post_id, string $office_name)
             ' (blog_id=' . $existing_blog_id . ') for office post ' . $post_id
         );
 
+        if (function_exists('rch_multisite_set_subsite_role_option')) {
+            rch_multisite_set_subsite_role_option($existing_blog_id, 'office');
+        }
+
         if (function_exists('rch_multisite_schedule_broadcast_to_new_blog')) {
             rch_multisite_schedule_broadcast_to_new_blog($existing_blog_id);
         }
@@ -1242,6 +1250,8 @@ function rch_multisite_configure_new_site(int $blog_id, string $site_title, ?int
     if ($timezone)  update_option('timezone_string', $timezone);
     if ($date_fmt)  update_option('date_format',     $date_fmt);
     if ($time_fmt)  update_option('time_format',     $time_fmt);
+
+    update_option('rch_rechat_subsite_role', $is_office ? 'office' : 'agent', true);
 
     restore_current_blog();
 
@@ -2145,6 +2155,10 @@ add_action('rch_after_office_synced', 'rch_multisite_on_office_synced_counted', 
  */
 function rch_multisite_register_agent_metabox(): void
 {
+    if (function_exists('rch_is_rechat_agent_only_subsite') && rch_is_rechat_agent_only_subsite()) {
+        return;
+    }
+
     add_meta_box(
         'rch_agent_site_control',
         __('Agent Site', 'rechat-plugin'),
@@ -2387,6 +2401,10 @@ add_action('save_post', 'rch_multisite_save_agent_metabox', 5);
  */
 function rch_multisite_register_office_metabox(): void
 {
+    if (function_exists('rch_is_rechat_agent_only_subsite') && rch_is_rechat_agent_only_subsite()) {
+        return;
+    }
+
     add_meta_box(
         'rch_office_site_control',
         __('Office Site', 'rechat-plugin'),

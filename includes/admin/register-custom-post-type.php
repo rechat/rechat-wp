@@ -2,11 +2,22 @@
 if (! defined('ABSPATH')) {
     exit();
 }
+
+/**
+ * @return bool True on agent-only subsites: hide Rechat CPT admin menus while keeping public archives.
+ */
+function rch_rechat_should_hide_cpt_admin_ui(): bool
+{
+    return function_exists('rch_is_rechat_agent_only_subsite') && rch_is_rechat_agent_only_subsite();
+}
+
 /*******************************
  * Register Custom Post Type for Agents
  ******************************/
 function rch_agents()
 {
+    $hide_ui = rch_rechat_should_hide_cpt_admin_ui();
+
     $labels = array(
         'name'                  => _x('Agents', 'Post Type General Name', 'rechat-plugin'),
         'singular_name'         => _x('Agent', 'Post Type Singular Name', 'rechat-plugin'),
@@ -43,12 +54,12 @@ function rch_agents()
         'supports'              => array('title', 'editor', 'thumbnail', 'page-attributes'),
         'hierarchical'          => false,
         'public'                => true,
-        'show_ui'               => true,
-        'show_in_menu'          => true,
+        'show_ui'               => ! $hide_ui,
+        'show_in_menu'          => ! $hide_ui,
         'menu_position'         => 5,
         'menu_icon'             => 'dashicons-admin-users',
-        'show_in_admin_bar'     => true,
-        'show_in_nav_menus'     => true,
+        'show_in_admin_bar'     => ! $hide_ui,
+        'show_in_nav_menus'     => ! $hide_ui,
         'can_export'            => true,
         'has_archive'           => true,
         'exclude_from_search'   => false,
@@ -65,6 +76,8 @@ function rch_agents()
  ******************************/
 function rch_offices()
 {
+    $hide_ui = rch_rechat_should_hide_cpt_admin_ui();
+
     $labels = array(
         'name'                  => _x('Offices', 'Post Type General Name', 'rechat-plugin'),
         'singular_name'         => _x('Office', 'Post Type Singular Name', 'rechat-plugin'),
@@ -101,12 +114,12 @@ function rch_offices()
         'supports'              => array('title', 'editor', 'thumbnail', 'page-attributes'),
         'hierarchical'          => false,
         'public'                => true,
-        'show_ui'               => true,
-        'show_in_menu'          => true, // Changed to true to appear in the top-level menu
+        'show_ui'               => ! $hide_ui,
+        'show_in_menu'          => ! $hide_ui, // Changed to true to appear in the top-level menu
         'menu_position'         => 6,    // Position in the admin menu
         'menu_icon'             => 'dashicons-building', // Custom icon for Offices
-        'show_in_admin_bar'     => true,
-        'show_in_nav_menus'     => true,
+        'show_in_admin_bar'     => ! $hide_ui,
+        'show_in_nav_menus'     => ! $hide_ui,
         'can_export'            => true,
         'has_archive'           => true,
         'exclude_from_search'   => false,
@@ -123,6 +136,8 @@ function rch_offices()
  ******************************/
 function rch_regions()
 {
+    $hide_ui = rch_rechat_should_hide_cpt_admin_ui();
+
     $labels = array(
         'name'                  => _x('Regions', 'Post Type General Name', 'rechat-plugin'),
         'singular_name'         => _x('Region', 'Post Type Singular Name', 'rechat-plugin'),
@@ -159,12 +174,12 @@ function rch_regions()
         'supports'              => array('title', 'editor', 'thumbnail', 'page-attributes'),
         'hierarchical'          => false,
         'public'                => true,
-        'show_ui'               => true,
-        'show_in_menu'          => true, // Changed to true to appear in the top-level menu
+        'show_ui'               => ! $hide_ui,
+        'show_in_menu'          => ! $hide_ui, // Changed to true to appear in the top-level menu
         'menu_position'         => 7,    // Position in the admin menu
         'menu_icon'             => 'dashicons-location-alt', // Custom icon for Regions
-        'show_in_admin_bar'     => true,
-        'show_in_nav_menus'     => true,
+        'show_in_admin_bar'     => ! $hide_ui,
+        'show_in_nav_menus'     => ! $hide_ui,
         'can_export'            => true,
         'has_archive'           => true,
         'exclude_from_search'   => false,
@@ -180,6 +195,8 @@ function rch_regions()
  ******************************/
 function rch_neighborhoods()
 {
+    $hide_ui = rch_rechat_should_hide_cpt_admin_ui();
+
     $args = array(
         'labels' => array(
             'name'               => 'Neighborhoods',
@@ -206,7 +223,10 @@ function rch_neighborhoods()
         'menu_icon'          => 'dashicons-networking', // Change to any icon you prefer
         'supports'           => array('title', 'editor', 'thumbnail', 'excerpt', 'custom-fields'),
         'show_in_rest'       => true, // This enables Gutenberg editor
-        'show_ui'            => true,
+        'show_ui'            => ! $hide_ui,
+        'show_in_menu'       => ! $hide_ui,
+        'show_in_admin_bar'  => ! $hide_ui,
+        'show_in_nav_menus'  => ! $hide_ui,
         'rewrite'            => array('slug' => 'neighborhoods'), // Slug for URLs
         'taxonomies'         => array('category', 'post_tag'), // Add taxonomies if necessary
         'hierarchical'       => false, // Set to true if you want hierarchical (parent-child) structure

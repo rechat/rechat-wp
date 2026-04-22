@@ -59,6 +59,10 @@ const RCH_NEIGHBORHOOD_FEATURES = [
 // Add a "Settings" link to the plugin actions
 function rch_plugin_action_links($links)
 {
+    if (function_exists('rch_is_rechat_agent_only_subsite') && rch_is_rechat_agent_only_subsite()) {
+        return $links;
+    }
+
     $settings_link = '<a href="admin.php?page=rechat-setting">' . __('Settings', 'rechat-plugin') . '</a>';
     array_push($links, $settings_link);
     return $links;
@@ -91,6 +95,9 @@ function rch_plugin_query_vars($vars)
 // Add logic seprate in admin or Frontend
 include RCH_PLUGIN_INCLUDES . 'front/enqueue-front.php';
 include RCH_PLUGIN_INCLUDES . 'front/add-css-in-setting.php';
+if (is_multisite()) {
+    require_once RCH_PLUGIN_INCLUDES . 'multisite/subsite-admin-context.php';
+}
 include RCH_PLUGIN_INCLUDES . 'admin/register-custom-post-type.php';
 include RCH_PLUGIN_INCLUDES . 'admin/settings-page/other-settings.php';
 include RCH_PLUGIN_INCLUDES . 'admin/settings-page/local-logic-setting.php';
@@ -116,10 +123,14 @@ include RCH_PLUGIN_INCLUDES . 'metabox/load-all-meta-boxes.php';
 include RCH_PLUGIN_INCLUDES . 'multisite/broadcast-integration.php';
 // Multisite: agent sub-site management (no-op on single-site installs)
 include RCH_PLUGIN_INCLUDES . 'multisite/agent-sites.php';
-// Multisite: prompt to install & activate Broadcast (ThreeWP) from wordpress.org — admin only
+// Multisite: prompt to install & activate Broadcast (ThreeWP) from wordpress.org — admin only (not on agent subsites)
 if (is_multisite() && is_admin()) {
-    require_once RCH_PLUGIN_INCLUDES . 'tgm/class-tgm-plugin-activation.php';
-    require_once RCH_PLUGIN_INCLUDES . 'tgm/register-tgmpa.php';
+    $rch_skip_tgmpa = function_exists('rch_is_rechat_agent_only_subsite') && rch_is_rechat_agent_only_subsite();
+
+    if (! $rch_skip_tgmpa) {
+        require_once RCH_PLUGIN_INCLUDES . 'tgm/class-tgm-plugin-activation.php';
+        require_once RCH_PLUGIN_INCLUDES . 'tgm/register-tgmpa.php';
+    }
 }
 if (is_admin()) {
     include RCH_PLUGIN_INCLUDES . 'admin/enqueue-admin.php';

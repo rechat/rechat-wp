@@ -18,6 +18,10 @@ function rch_enqueue_admin_styles()
         return;
     }
 
+    if (function_exists('rch_is_rechat_agent_only_subsite') && rch_is_rechat_agent_only_subsite()) {
+        return;
+    }
+
     // Enqueue admin styles
     wp_enqueue_style(
         'rch-admin-styles',
