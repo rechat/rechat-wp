@@ -562,7 +562,7 @@ function rch_multisite_create_site_for_agent(int $post_id, string $agent_name)
 }
 
 /**
- * Ensure a network user is on the given blog with the Editor role (add or promote).
+ * Ensure a network user is on the given blog with the Agent role (add or promote).
  *
  * @param  int $user_id WordPress user ID.
  * @param  int $blog_id Blog ID.
@@ -570,17 +570,19 @@ function rch_multisite_create_site_for_agent(int $post_id, string $agent_name)
  */
 function rch_multisite_ensure_user_editor_on_blog(int $user_id, int $blog_id)
 {
+    $role = function_exists('rch_agent_site_user_role') ? rch_agent_site_user_role() : 'agent';
+
     switch_to_blog($blog_id);
 
     if (is_user_member_of_blog($user_id, $blog_id)) {
         $user = new WP_User($user_id);
-        $user->set_role('editor');
+        $user->set_role($role);
         restore_current_blog();
 
         return true;
     }
 
-    $added = add_user_to_blog($blog_id, $user_id, 'editor');
+    $added = add_user_to_blog($blog_id, $user_id, $role);
     restore_current_blog();
 
     if (is_wp_error($added)) {
@@ -588,6 +590,66 @@ function rch_multisite_ensure_user_editor_on_blog(int $user_id, int $blog_id)
     }
 
     return true;
+}
+
+/**
+ * For every published agent with a linked sub-site and valid profile email, ensure the
+ * matching network user is on that blog with {@see rch_agent_site_user_role()} (no welcome emails).
+ *
+ * @return array{updated:int,skipped:int,errors:string[]}
+ */
+function rch_multisite_bulk_reassign_agent_site_user_roles(): array
+{
+    $updated = 0;
+    $skipped = 0;
+    $errors  = [];
+
+    $agents = get_posts([
+        'post_type'   => 'agents',
+        'numberposts' => -1,
+        'post_status' => 'publish',
+        'orderby'     => 'title',
+        'order'       => 'ASC',
+        'fields'      => 'all',
+    ]);
+
+    foreach ($agents as $agent) {
+        $blog_id = rch_multisite_get_agent_blog_id((int) $agent->ID);
+        $email   = sanitize_email((string) get_post_meta($agent->ID, 'email', true));
+        $label   = trim((string) $agent->post_title);
+
+        if ($label === '') {
+            /* translators: %d: agent post ID */
+            $label = sprintf(__('Agent #%d', 'rechat-plugin'), (int) $agent->ID);
+        }
+
+        if (! $blog_id || ! $email || ! is_email($email)) {
+            $skipped++;
+            continue;
+        }
+
+        $user_id = email_exists($email);
+
+        if (! $user_id) {
+            $skipped++;
+            continue;
+        }
+
+        $result = rch_multisite_ensure_user_editor_on_blog((int) $user_id, $blog_id);
+
+        if (is_wp_error($result)) {
+            $errors[] = sprintf(
+                '%1$s: %2$s',
+                esc_html($label),
+                esc_html($result->get_error_message())
+            );
+            continue;
+        }
+
+        $updated++;
+    }
+
+    return compact('updated', 'skipped', 'errors');
 }
 
 /**
@@ -1034,13 +1096,13 @@ function rch_multisite_send_agent_site_editor_email(
     if ($existing_user) {
         $subject = sprintf(
             /* translators: %s: site name */
-            __('[%s] You have been added as an editor to your agent website', 'rechat-plugin'),
+            __('[%s] You have been added to your agent website', 'rechat-plugin'),
             $site_name
         );
         $body = sprintf(
             /* translators: 1: agent name, 2: login URL, 3: site name, 4: WordPress username */
             __(
-                "Hello %1\$s,\n\nA WordPress editor account has been linked to your agent website so you can manage your site content.\n\nYou already have a login on this network — use your existing password.\n\nUsername: %4\$s\n\nLog in here:\n%2\$s\n\n— %3\$s\n",
+                "Hello %1\$s,\n\nA WordPress account has been linked to your agent website so you can manage your site content.\n\nYou already have a login on this network — use your existing password.\n\nUsername: %4\$s\n\nLog in here:\n%2\$s\n\n— %3\$s\n",
                 'rechat-plugin'
             ),
             $agent_name,
@@ -1051,13 +1113,13 @@ function rch_multisite_send_agent_site_editor_email(
     } else {
         $subject = sprintf(
             /* translators: %s: site name */
-            __('[%s] Your agent website login details', 'rechat-plugin'),
+            __('[%s] Your agent website access details', 'rechat-plugin'),
             $site_name
         );
         $body = sprintf(
             /* translators: 1: agent name, 2: username, 3: password, 4: login URL, 5: site name */
             __(
-                "Hello %1\$s,\n\nA WordPress editor account has been created for you to manage your agent website.\n\nUsername: %2\$s\nPassword: %3\$s\n\nPlease log in and change your password after your first login:\n%4\$s\n\nKeep this message secure. If you did not expect this email, contact your broker or site administrator.\n\n— %5\$s\n",
+                "Hello %1\$s,\n\nA WordPress account has been created for you to manage your agent website.\n\nUsername: %2\$s\nPassword: %3\$s\n\nPlease log in and change your password after your first login:\n%4\$s\n\nKeep this message secure. If you did not expect this email, contact your broker or site administrator.\n\n— %5\$s\n",
                 'rechat-plugin'
             ),
             $agent_name,
@@ -1481,6 +1543,45 @@ function rch_multisite_ajax_fix_themes(): void
     ]);
 }
 add_action('wp_ajax_rch_multisite_fix_themes', 'rch_multisite_ajax_fix_themes');
+
+/**
+ * AJAX: bulk-reassign the agent sub-site role for every provisioned agent user (no emails).
+ *
+ * @return void
+ */
+function rch_multisite_ajax_reassign_agent_site_user_roles(): void
+{
+    check_ajax_referer('rch_multisite_reassign_agent_roles', '_nonce');
+
+    if (! is_multisite()) {
+        wp_send_json_error(__('Multisite is not enabled.', 'rechat-plugin'));
+        return;
+    }
+
+    if (
+        ! function_exists('rch_current_user_can_manage_rechat')
+        || ! rch_current_user_can_manage_rechat()
+        || ! current_user_can('manage_options')
+    ) {
+        wp_send_json_error(__('Insufficient permissions.', 'rechat-plugin'));
+        return;
+    }
+
+    $result = rch_multisite_bulk_reassign_agent_site_user_roles();
+
+    $message = sprintf(
+        /* translators: 1: number of users updated, 2: number of agent rows skipped */
+        __('Done. Role updated for %1$d account(s). %2$d agent row(s) skipped (no sub-site, invalid email, or no WordPress user with that email).', 'rechat-plugin'),
+        $result['updated'],
+        $result['skipped']
+    );
+
+    wp_send_json_success([
+        'message' => $message,
+        'errors'  => $result['errors'],
+    ]);
+}
+add_action('wp_ajax_rch_multisite_reassign_agent_site_user_roles', 'rch_multisite_ajax_reassign_agent_site_user_roles');
 
 /**
  * AJAX: apply selected theme to all agent sub-sites (bulk).

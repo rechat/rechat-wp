@@ -469,7 +469,7 @@ function rch_update_all_data()
     }
 
     // Verify user capabilities
-    if (!current_user_can('manage_options')) {
+    if (! function_exists('rch_current_user_can_manage_rechat') || ! rch_current_user_can_manage_rechat()) {
         wp_send_json_error(__('Insufficient permissions.', 'rechat-plugin'));
         return;
     }

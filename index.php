@@ -56,6 +56,8 @@ const RCH_NEIGHBORHOOD_FEATURES = [
     'Match' => 'Neighborhood Match',
 ];
 
+require_once RCH_PLUGIN_INCLUDES . 'roles/agent-user-role.php';
+
 // Add a "Settings" link to the plugin actions
 function rch_plugin_action_links($links)
 {
@@ -71,6 +73,10 @@ function rch_plugin_activate()
 {
     add_rewrite_rule('^listing-detail/([^/]+)/([a-f0-9\-]+)/?$', 'index.php?listing_detail=1', 'top');
     flush_rewrite_rules();
+
+    if (function_exists('rch_register_agent_user_roles')) {
+        rch_register_agent_user_roles();
+    }
 }
 register_activation_hook(__FILE__, 'rch_plugin_activate');
 
