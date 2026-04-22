@@ -2155,10 +2155,6 @@ add_action('rch_after_office_synced', 'rch_multisite_on_office_synced_counted', 
  */
 function rch_multisite_register_agent_metabox(): void
 {
-    if (function_exists('rch_is_rechat_agent_only_subsite') && rch_is_rechat_agent_only_subsite()) {
-        return;
-    }
-
     add_meta_box(
         'rch_agent_site_control',
         __('Agent Site', 'rechat-plugin'),
@@ -2401,10 +2397,6 @@ add_action('save_post', 'rch_multisite_save_agent_metabox', 5);
  */
 function rch_multisite_register_office_metabox(): void
 {
-    if (function_exists('rch_is_rechat_agent_only_subsite') && rch_is_rechat_agent_only_subsite()) {
-        return;
-    }
-
     add_meta_box(
         'rch_office_site_control',
         __('Office Site', 'rechat-plugin'),
