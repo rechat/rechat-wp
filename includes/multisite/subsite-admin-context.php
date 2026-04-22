@@ -34,8 +34,8 @@ function rch_multisite_set_subsite_role_option(int $blog_id, string $role): void
 /**
  * Whether the current blog is an agent subsite (not the network hub, not an office subsite).
  *
- * When true, Rechat hides its CPT menus, settings page, and related admin UI so editors only see
- * normal WordPress content tools on the agent’s public site.
+ * When true, Rechat hides its custom post type admin menus (Agents, Offices, Regions, Neighborhoods)
+ * while keeping the Rechat settings screen and other network-facing tools available.
  *
  * @return bool
  */
@@ -123,34 +123,3 @@ function rch_is_rechat_agent_only_subsite(): bool
 
     return (bool) apply_filters('rch_is_rechat_agent_only_subsite', $cache);
 }
-
-/**
- * Block direct access to Rechat settings when the admin UI is hidden on an agent subsite.
- *
- * @return void
- */
-function rch_rechat_agent_subsite_block_settings_page(): void
-{
-    if (! is_admin() || wp_doing_ajax()) {
-        return;
-    }
-
-    if (! function_exists('rch_is_rechat_agent_only_subsite') || ! rch_is_rechat_agent_only_subsite()) {
-        return;
-    }
-
-    $page = isset($_GET['page']) ? sanitize_key((string) wp_unslash($_GET['page'])) : '';
-
-    if ($page !== 'rechat-setting') {
-        return;
-    }
-
-    if (! current_user_can('read')) {
-        return;
-    }
-
-    wp_safe_redirect(admin_url());
-    exit;
-}
-
-add_action('admin_init', 'rch_rechat_agent_subsite_block_settings_page', 0);
