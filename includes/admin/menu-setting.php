@@ -14,10 +14,12 @@ function rch_register_my_setting_menu_page()
         return;
     }
 
+    $rechat_cap = function_exists('rch_rechat_settings_capability') ? rch_rechat_settings_capability() : 'manage_options';
+
     add_menu_page(
         __('Rechat Settings', 'rechat-plugin'),
         __('Rechat', 'rechat-plugin'),
-        'manage_options',
+        $rechat_cap,
         'rechat-setting',
         'rch_rechat_menu_page',
         RCH_PLUGIN_URL . 'assets/images/favicon.png'
@@ -79,7 +81,7 @@ function rch_render_tab_navigation($active_tab)
 function rch_rechat_menu_page()
 {
     // Check user capabilities
-    if (!current_user_can('manage_options')) {
+    if (! function_exists('rch_current_user_can_manage_rechat') || ! rch_current_user_can_manage_rechat()) {
         wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'rechat-plugin'));
     }
 

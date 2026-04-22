@@ -23,6 +23,7 @@ function rch_multisite_render_admin_tab(): void
     $reprovision_nonce  = wp_create_nonce('rch_multisite_reprovision_editor');
     $bulk_theme_nonce   = wp_create_nonce('rch_multisite_bulk_theme');
     $row_theme_nonce   = wp_create_nonce('rch_multisite_row_theme');
+    $reassign_roles_nonce = wp_create_nonce('rch_multisite_reassign_agent_roles');
     $saved_agent_theme  = (string) get_site_option('rch_multisite_agent_theme_stylesheet', '');
     $saved_office_theme = (string) get_site_option('rch_multisite_office_theme_stylesheet', '');
     $theme_choices      = rch_multisite_get_theme_choices();
@@ -323,9 +324,23 @@ function rch_multisite_render_admin_tab(): void
             <?php esc_html_e('Fix Theme on Existing Sites', 'rechat-plugin'); ?>
         </button>
 
+        <button
+            id="rch-multisite-reassign-agent-roles-btn"
+            type="button"
+            class="button"
+            style="margin-left:8px;"
+            data-nonce="<?php echo esc_attr($reassign_roles_nonce); ?>"
+        >
+            <?php esc_html_e('Reassign agent sub-site role for all agents', 'rechat-plugin'); ?>
+        </button>
+
         <span id="rch-multisite-provision-spinner" class="spinner" style="float:none;margin-top:4px;"></span>
 
         <div id="rch-multisite-provision-result" style="margin-top:12px;"></div>
+
+        <p class="description" style="max-width:900px;margin-top:10px;">
+            <?php esc_html_e('“Reassign agent sub-site role for all agents” walks every agent profile that has a sub-site and a valid email, finds the WordPress user with that email, and sets their role on that sub-site to the current agent role (e.g. Agent). No login emails are sent. Use this after changing role names or capabilities.', 'rechat-plugin'); ?>
+        </p>
 
         <p style="margin-top:16px;margin-bottom:6px;">
             <strong><?php esc_html_e('Bulk apply theme (agents vs offices)', 'rechat-plugin'); ?></strong>
@@ -363,7 +378,7 @@ function rch_multisite_render_admin_tab(): void
         <?php /* ── Status table ─────────────────────────────────────────── */ ?>
         <h3><?php esc_html_e('Agent Site Status', 'rechat-plugin'); ?></h3>
         <p class="description" style="max-width:900px;margin-bottom:10px;">
-            <?php esc_html_e('Use the Theme column to override the network default for one agent. Changes apply immediately when a sub-site already exists; otherwise they apply when the site is created. “Update editor” creates or re-adds the WordPress user from the agent email, ensures the Editor role on that sub-site, and sends the login email again (no duplicate user if they already exist).', 'rechat-plugin'); ?>
+            <?php esc_html_e('Use the Theme column to override the network default for one agent. Changes apply immediately when a sub-site already exists; otherwise they apply when the site is created. “Update editor” creates or re-adds the WordPress user from the agent email, ensures the correct sub-site role, and sends the login email again (no duplicate user if they already exist). To change roles without emailing everyone, use “Reassign agent sub-site role for all agents” above.', 'rechat-plugin'); ?>
         </p>
 
         <?php if (empty($agents)) : ?>
@@ -729,6 +744,53 @@ function rch_multisite_render_admin_tab(): void
                         '<div class="notice notice-success inline"><p>' +
                         response.data.message + '</p></div>'
                     );
+                } else {
+                    $result.html(
+                        '<div class="notice notice-error inline"><p>' +
+                        (response.data || '<?php echo esc_js(__('An error occurred.', 'rechat-plugin')); ?>') +
+                        '</p></div>'
+                    );
+                }
+            }).fail(function () {
+                $btn.prop('disabled', false);
+                $spinner.removeClass('is-active');
+                $result.html(
+                    '<div class="notice notice-error inline"><p><?php echo esc_js(__('Request failed. Please try again.', 'rechat-plugin')); ?></p></div>'
+                );
+            });
+        });
+
+        // ── Bulk reassign agent sub-site role (no emails) ─────────────────────
+        $('#rch-multisite-reassign-agent-roles-btn').on('click', function () {
+            var $btn     = $(this);
+            var $spinner = $('#rch-multisite-provision-spinner');
+            var $result  = $('#rch-multisite-provision-result');
+
+            $btn.prop('disabled', true);
+            $spinner.addClass('is-active');
+            $result.html('');
+
+            $.post(ajaxurl, {
+                action: 'rch_multisite_reassign_agent_site_user_roles',
+                _nonce: $btn.data('nonce'),
+            }, function (response) {
+                $btn.prop('disabled', false);
+                $spinner.removeClass('is-active');
+
+                if (response.success) {
+                    var d    = response.data;
+                    var html = '<div class="notice notice-success inline"><p>' + d.message + '</p>';
+
+                    if (d.errors && d.errors.length) {
+                        html += '<p><strong><?php echo esc_js(__('Errors:', 'rechat-plugin')); ?></strong></p><ul>';
+                        $.each(d.errors, function (i, err) {
+                            html += '<li>' + err + '</li>';
+                        });
+                        html += '</ul>';
+                    }
+
+                    html += '</div>';
+                    $result.html(html);
                 } else {
                     $result.html(
                         '<div class="notice notice-error inline"><p>' +
