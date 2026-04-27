@@ -6,7 +6,7 @@ if (! defined('ABSPATH')) {
 
 /*******************************
  * Renders the listing as a shortcode based on Gutenberg block
- * Usage: [listings property_types="Residential" listing_statuses="Active" layout_style="layout2"]
+ * Usage: [listings property_types="Residential" listing_statuses="Active" layout_style="layout2" filter_pool="true" filter_search_limit="200"]
  ******************************/
 function rch_render_listing_list($atts)
 {
@@ -33,15 +33,30 @@ function rch_render_listing_list($atts)
     'disable_filter_baths' => false,
     'disable_filter_property_types' => false,
     'disable_filter_advanced' => false,
+    'disable_filter_loading_indicator' => false,
     'layout_style' => 'default',
     'own_listing' => true,
     'property_types' => '',
     'filter_open_houses' => false,
     'office_exclusive' => false,
+    'filter_pool' => false,
     'disable_sort' => false,
     'map_latitude' => '',
     'map_longitude' => '',
     'map_zoom' => '12',
+    'map_id' => '',
+    'filter_address' => '',
+    'filter_search_limit' => '',
+    'filter_suggestions_limit' => '',
+    'filter_pagination_offset' => '',
+    'property_subtypes' => '',
+    'architectural_styles' => '',
+    'filter_baths' => '',
+    'minimum_parking_spaces' => '',
+    'minimum_sold_date' => '',
+    'filter_agents' => '',
+    'list_offices' => '',
+    'filter_brand_id' => '',
     'sort_by' => '-list_date',
   ], $atts);
 
@@ -62,7 +77,9 @@ function rch_render_listing_list($atts)
   $atts['disable_filter_advanced'] = filter_var($atts['disable_filter_advanced'], FILTER_VALIDATE_BOOLEAN);
   $atts['filter_open_houses'] = filter_var($atts['filter_open_houses'], FILTER_VALIDATE_BOOLEAN);
   $atts['office_exclusive'] = filter_var($atts['office_exclusive'], FILTER_VALIDATE_BOOLEAN);
+  $atts['filter_pool'] = filter_var($atts['filter_pool'], FILTER_VALIDATE_BOOLEAN);
   $atts['disable_sort'] = filter_var($atts['disable_sort'], FILTER_VALIDATE_BOOLEAN);
+  $atts['disable_filter_loading_indicator'] = filter_var($atts['disable_filter_loading_indicator'], FILTER_VALIDATE_BOOLEAN);
 
   // Sanitize and prepare data
   $listing_statuses_str = rch_sanitize_listing_statuses($atts['listing_statuses'] ?? []);
@@ -211,13 +228,18 @@ function rch_render_listing_list($atts)
           'map_center',
           'map_zoom',
           'address',
+          'filter_pagination_limit',
           'search_limit',
+          'filter_search_limit',
+          'filter_suggestions_limit',
+          'filter_pagination_offset',
           'listing_statuses',
           'property_types',
           'minimum_price',
           'maximum_price',
           'minimum_bedrooms',
           'maximum_bedrooms',
+          'maximum_bathrooms',
           'minimum_bathrooms',
           'minimum_parking_spaces',
           'minimum_square_feet',
@@ -232,18 +254,61 @@ function rch_render_listing_list($atts)
           'baths',
           'open_house',
           'office_exclusive',
+          'filter_pool',
+          'pool',
           'agents',
-          'list_offices'
+          'list_offices',
+          'filter_agents',
+          'map_id',
+          'filter_brand_id'
         ]
+
+        // Map URL / history keys to <rechat-listings> attribute names (see Rechat Listings SDK).
+        const urlKeyToRechatListingsAttr = (key) => {
+          const map = {
+            search_limit: 'filter_pagination_limit',
+            pool: 'filter_pool',
+            address: 'filter_address',
+            agents: 'filter_agents',
+            list_offices: 'filter_list_offices',
+            open_house: 'filter_open_houses',
+            office_exclusive: 'filter_office_exclusives',
+            sort_by: 'filter_sort_by',
+            listing_statuses: 'filter_listing_statuses',
+            property_types: 'filter_property_types',
+            property_subtypes: 'filter_property_subtypes',
+            architectural_styles: 'filter_architectural_styles',
+            minimum_price: 'filter_minimum_price',
+            maximum_price: 'filter_maximum_price',
+            minimum_bedrooms: 'filter_minimum_bedrooms',
+            maximum_bedrooms: 'filter_maximum_bedrooms',
+            minimum_bathrooms: 'filter_minimum_bathrooms',
+            maximum_bathrooms: 'filter_maximum_bathrooms',
+            baths: 'filter_baths',
+            minimum_parking_spaces: 'filter_minimum_parking_spaces',
+            minimum_square_feet: 'filter_minimum_square_feet',
+            maximum_square_feet: 'filter_maximum_square_feet',
+            minimum_lot_square_feet: 'filter_minimum_lot_square_feet',
+            maximum_lot_square_feet: 'filter_maximum_lot_square_feet',
+            minimum_year_built: 'filter_minimum_year_built',
+            maximum_year_built: 'filter_maximum_year_built',
+            minimum_sold_date: 'filter_minimum_sold_date',
+          }
+          if (Object.prototype.hasOwnProperty.call(map, key)) {
+            return map[key]
+          }
+          return key
+        }
 
         const filters = {}
 
         filterKeys.forEach(key => {
           if (urlParams.has(key)) {
             let value = urlParams.get(key)
+            const outKey = urlKeyToRechatListingsAttr(key)
 
             // Handle array values (comma-separated)
-            if (['listing_statuses', 'property_types', 'property_subtypes', 'architectural_styles', 'agents', 'list_offices'].includes(key)) {
+            if (['listing_statuses', 'property_types', 'property_subtypes', 'architectural_styles', 'agents', 'list_offices', 'filter_agents'].includes(key)) {
               value = value.split(',').filter(v => v.trim() !== '')
             }
             // Handle map_center (should be an object)
@@ -260,20 +325,16 @@ function rch_render_listing_list($atts)
                   }
                 }
               }
-            }
-            // Handle numeric values
-            else if (['map_zoom', 'search_limit', 'minimum_price', 'maximum_price', 'minimum_bedrooms', 'maximum_bedrooms', 'minimum_bathrooms', 'minimum_parking_spaces', 'minimum_square_feet', 'maximum_square_feet', 'minimum_lot_square_feet', 'maximum_lot_square_feet', 'minimum_year_built', 'maximum_year_built'].includes(key)) {
+            } else if (['open_house', 'office_exclusive', 'filter_pool', 'pool'].includes(key)) {
+              value = value === 'true' || value === '1'
+            } else if (['map_zoom', 'search_limit', 'filter_pagination_limit', 'filter_search_limit', 'filter_suggestions_limit', 'filter_pagination_offset', 'minimum_price', 'maximum_price', 'minimum_bedrooms', 'maximum_bedrooms', 'minimum_bathrooms', 'maximum_bathrooms', 'baths', 'minimum_parking_spaces', 'minimum_square_feet', 'maximum_square_feet', 'minimum_lot_square_feet', 'maximum_lot_square_feet', 'minimum_year_built', 'maximum_year_built', 'minimum_sold_date', 'map_id', 'filter_brand_id'].includes(key)) {
               const num = parseFloat(value)
               if (!isNaN(num)) {
                 value = num
               }
             }
-            // Handle boolean values
-            else if (['open_house', 'office_exclusive'].includes(key)) {
-              value = value === 'true' || value === '1'
-            }
 
-            filters[key] = value
+            filters[outKey] = value
           }
         })
 
@@ -285,6 +346,8 @@ function rch_render_listing_list($atts)
             rechatListings.setAttribute(attrName, JSON.stringify(value))
           } else if (Array.isArray(value)) {
             rechatListings.setAttribute(attrName, value.join(','))
+          } else if (typeof value === 'boolean') {
+            rechatListings.setAttribute(attrName, value ? 'true' : 'false')
           } else {
             rechatListings.setAttribute(attrName, value)
           }
@@ -322,8 +385,13 @@ function rch_render_listing_list($atts)
         'sort_by',
         'map_center',
         'map_zoom',
+        'map_id',
         'address',
         'search_limit',
+        'filter_pagination_limit',
+        'filter_search_limit',
+        'filter_suggestions_limit',
+        'filter_pagination_offset',
         'listing_statuses',
         'property_types',
         'minimum_price',
@@ -331,6 +399,7 @@ function rch_render_listing_list($atts)
         'minimum_bedrooms',
         'maximum_bedrooms',
         'minimum_bathrooms',
+        'maximum_bathrooms',
         'minimum_parking_spaces',
         'minimum_square_feet',
         'maximum_square_feet',
@@ -344,8 +413,12 @@ function rch_render_listing_list($atts)
         'baths',
         'open_house',
         'office_exclusive',
+        'filter_pool',
+        'pool',
         'agents',
-        'list_offices'
+        'list_offices',
+        'filter_agents',
+        'filter_brand_id',
       ]
 
       const filters = keys.reduce((acc, key) => {
@@ -362,8 +435,12 @@ function rch_render_listing_list($atts)
       Object.entries(filters).forEach(([key, value]) => {
         if (typeof value === 'object' && !Array.isArray(value)) {
           params.set(key, JSON.stringify(value))
+        } else if (Array.isArray(value)) {
+          params.set(key, value.join(','))
+        } else if (typeof value === 'boolean') {
+          params.set(key, value ? 'true' : 'false')
         } else {
-          params.set(key, Array.isArray(value) ? value.join(',') : value)
+          params.set(key, value)
         }
       })
 

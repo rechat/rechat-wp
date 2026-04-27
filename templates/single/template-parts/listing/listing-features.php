@@ -58,6 +58,60 @@ if (!function_exists('rch_listing_features_format_value')) {
     }
 }
 
+if (!function_exists('rch_listing_features_format_lot_area_display')) {
+    /**
+     * Format lot area numbers for display (trim long float noise from the API).
+     * Whole values render without decimals; fractional values use three decimals.
+     *
+     * @param mixed $value Raw lot_size_area or numeric prefix from lot_size.
+     * @return string
+     */
+    function rch_listing_features_format_lot_area_display($value)
+    {
+        if ($value === null || $value === '') {
+            return '';
+        }
+        if (!is_numeric($value)) {
+            return rch_listing_features_format_value($value);
+        }
+        $f = (float) $value;
+        if (abs($f - round($f, 0)) < 1e-9) {
+            return (string) (int) round($f);
+        }
+
+        return number_format($f, 3, '.', '');
+    }
+}
+
+if (!function_exists('rch_listing_features_format_lot_size_line_string')) {
+    /**
+     * If a lot size line starts with a numeric token, reformat that token for display.
+     *
+     * @param string $line Full line (e.g. "0.22038567493113 Sqft").
+     * @return string
+     */
+    function rch_listing_features_format_lot_size_line_string($line)
+    {
+        $line = trim((string) $line);
+        if ($line === '') {
+            return '';
+        }
+
+        return preg_replace_callback(
+            '/^\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)/',
+            function ($m) {
+                if (!is_numeric($m[1])) {
+                    return $m[0];
+                }
+
+                return rch_listing_features_format_lot_area_display($m[1]);
+            },
+            $line,
+            1
+        );
+    }
+}
+
 $rch_prop = isset($listing_detail['property']) && is_array($listing_detail['property'])
     ? $listing_detail['property']
     : array();
@@ -435,10 +489,13 @@ if ($has_interior || $has_flooring || $has_security || $has_fireplace || $has_ap
 $rch_lot_size_line = '';
 if (isset($rch_prop['lot_size_area']) && $rch_prop['lot_size_area'] !== null && $rch_prop['lot_size_area'] !== '') {
     $rch_unit = rch_listing_features_format_value($rch_prop['lot_size_area_unit'] ?? null);
-    $rch_lot_size_line = trim(rch_listing_features_format_value($rch_prop['lot_size_area']) . ($rch_unit !== '' ? ' ' . $rch_unit : ''));
+    $rch_area_display = rch_listing_features_format_lot_area_display($rch_prop['lot_size_area']);
+    $rch_lot_size_line = trim($rch_area_display . ($rch_unit !== '' ? ' ' . $rch_unit : ''));
 }
 if ($rch_lot_size_line === '' && strlen(rch_listing_features_format_value($rch_prop['lot_size'] ?? null)) > 0) {
-    $rch_lot_size_line = rch_listing_features_format_value($rch_prop['lot_size']);
+    $rch_lot_size_line = rch_listing_features_format_lot_size_line_string(
+        rch_listing_features_format_value($rch_prop['lot_size'])
+    );
 }
 
 // Check if Exterior Features section has any data

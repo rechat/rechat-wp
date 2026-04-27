@@ -40,6 +40,8 @@ function rch_latest_listings_get_defaults() {
         'sort_by' => '-list_date',
         'order_by' => '',
         'open_houses_only' => false,
+        'filter_open_houses' => false,
+        'office_exclusive' => false,
         // Filters
         'minimum_price' => '',
         'maximum_price' => '',
@@ -56,6 +58,30 @@ function rch_latest_listings_get_defaults() {
         'filter_address' => '',
         'map_latitude' => '',
         'map_longitude' => '',
+        'map_zoom' => '',
+        'map_id' => '',
+        // Pass-through to rch_get_rechat_listings_attributes (Rechat SDK on <rechat-listings>)
+        'filter_search_limit' => '',
+        'filter_suggestions_limit' => '',
+        'filter_pagination_offset' => '',
+        'property_subtypes' => '',
+        'architectural_styles' => '',
+        'filter_baths' => '',
+        'minimum_parking_spaces' => '',
+        'minimum_sold_date' => '',
+        'filter_pool' => false,
+        'filter_agents' => '',
+        'list_offices' => '',
+        'filter_brand_id' => '',
+        'disable_filter_address' => false,
+        'disable_filter_price' => false,
+        'disable_filter_beds' => false,
+        'disable_filter_baths' => false,
+        'disable_filter_property_types' => false,
+        'disable_filter_advanced' => false,
+        'disable_filter_loading_indicator' => false,
+        'listing_hyperlink_href' => '',
+        'listing_hyperlink_target' => '',
         // Swiper configuration
         'slides_per_view' => 'auto',
         'space_between' => '32',
@@ -144,6 +170,9 @@ function rch_latest_listings_normalize_booleans($atts) {
     $boolean_fields = [
         'own_listing',
         'open_houses_only',
+        'filter_open_houses',
+        'office_exclusive',
+        'filter_pool',
         'loop',
         'centered_slides',
         'grab_cursor',
@@ -151,6 +180,13 @@ function rch_latest_listings_normalize_booleans($atts) {
         'pagination',
         'pagination_clickable',
         'navigation',
+        'disable_filter_address',
+        'disable_filter_price',
+        'disable_filter_beds',
+        'disable_filter_baths',
+        'disable_filter_property_types',
+        'disable_filter_advanced',
+        'disable_filter_loading_indicator',
     ];
     
     foreach ($boolean_fields as $field) {
@@ -266,6 +302,9 @@ function rch_latest_listings_parse_attributes($atts) {
     
     // Normalize boolean values
     $atts = rch_latest_listings_normalize_booleans($atts);
+
+    // Legacy open_houses_only and explicit filter_open_houses both drive the SDK attribute
+    $atts['filter_open_houses'] = $atts['filter_open_houses'] || $atts['open_houses_only'];
     
     // Process mappings
     $atts = rch_latest_listings_process_property_types($atts);
@@ -480,15 +519,12 @@ function rch_latest_listings_render_swiper($atts, $unique_id, $rechat_attrs, $re
  * @param string $rechat_listings_attrs Rechat listings attributes
  */
 function rch_latest_listings_render_normal($atts, $unique_id, $rechat_attrs, $rechat_listings_attrs) {
-    $pagination_attr = '';
-    if (!empty($atts['listing_per_page'])) {
-        $pagination_attr = "\n      " . 'filter_pagination_limit="' . esc_attr($atts['listing_per_page']) . '"';
-    }
+    // filter_pagination_limit is already set from listing_per_page in rch_get_rechat_listings_attributes()
     ?>
     <div class="main-listing-sdk rch-latest-listings-shortcode-normal" id="<?php echo esc_attr($unique_id); ?>">
         <div class="rch-latest-listings-normal-inner">
             <rechat-root <?php echo $rechat_attrs; ?>>
-                <rechat-listings <?php echo $rechat_listings_attrs . $pagination_attr; ?>>
+                <rechat-listings <?php echo $rechat_listings_attrs; ?>>
                     <div>
                         <rechat-listings-list />
                     </div>
@@ -588,8 +624,9 @@ function rch_latest_listings_render_scripts($atts, $unique_id) {
 /**
  * Latest Listings Shortcode Handler
  * 
- * Usage: [rch_latest_listings property_types="Residential" listing_statuses="Active"]
+ * Usage: [rch_latest_listings property_types="Residential" listing_statuses="Active" filter_search_limit="200"]
  * display_type: swiper (default) | normal (list + pagination) | grid (simple grid, no Swiper)
+ * All optional filters supported by rch_get_rechat_listings_attributes (e.g. filter_search_limit, filter_pool) may be passed; see main [listings] shortcode for the full set.
  * 
  * @param array $atts Shortcode attributes
  * @return string Rendered HTML

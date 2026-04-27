@@ -1162,6 +1162,21 @@ function rch_get_listing_block_attributes()
         'map_longitude' => array('type' => 'string', 'default' => ''),
         'map_zoom' => array('type' => 'string', 'default' => '12'),
         'sort_by' => array('type' => 'string', 'default' => '-list_date'),
+        'map_id' => array('type' => 'string', 'default' => ''),
+        'filter_address' => array('type' => 'string', 'default' => ''),
+        'filter_search_limit' => array('type' => 'string', 'default' => ''),
+        'filter_suggestions_limit' => array('type' => 'string', 'default' => ''),
+        'filter_pagination_offset' => array('type' => 'string', 'default' => ''),
+        'property_subtypes' => array('type' => 'string', 'default' => ''),
+        'architectural_styles' => array('type' => 'string', 'default' => ''),
+        'filter_baths' => array('type' => 'string', 'default' => ''),
+        'minimum_parking_spaces' => array('type' => 'string', 'default' => ''),
+        'minimum_sold_date' => array('type' => 'string', 'default' => ''),
+        'filter_pool' => array('type' => 'boolean', 'default' => false),
+        'filter_agents' => array('type' => 'string', 'default' => ''),
+        'list_offices' => array('type' => 'string', 'default' => ''),
+        'filter_brand_id' => array('type' => 'string', 'default' => ''),
+        'disable_filter_loading_indicator' => array('type' => 'boolean', 'default' => false),
     );
 }
 
@@ -1359,8 +1374,72 @@ function rch_get_rechat_listings_attributes($attributes, $map_default_center, $l
         $attrs[] = 'map_default_center="' . esc_attr($map_default_center) . '"';
     }
 
-    if (isset($attributes['filter_address'])) {
+    if (isset($attributes['filter_address']) && (string) $attributes['filter_address'] !== '') {
         $attrs[] = 'filter_address="' . esc_attr($attributes['filter_address']) . '"';
+    }
+
+    if (!empty($attributes['filter_search_limit'])) {
+        $attrs[] = 'filter_search_limit="' . esc_attr($attributes['filter_search_limit']) . '"';
+    }
+
+    if (!empty($attributes['filter_suggestions_limit'])) {
+        $attrs[] = 'filter_suggestions_limit="' . esc_attr($attributes['filter_suggestions_limit']) . '"';
+    }
+
+    if (isset($attributes['filter_pagination_offset']) && (string) $attributes['filter_pagination_offset'] !== '') {
+        $attrs[] = 'filter_pagination_offset="' . esc_attr($attributes['filter_pagination_offset']) . '"';
+    }
+
+    if (!empty($attributes['property_subtypes'])) {
+        $attrs[] = 'filter_property_subtypes="' . esc_attr(
+            is_array($attributes['property_subtypes'])
+                ? implode(',', $attributes['property_subtypes'])
+                : $attributes['property_subtypes']
+        ) . '"';
+    }
+
+    if (!empty($attributes['architectural_styles'])) {
+        $attrs[] = 'filter_architectural_styles="' . esc_attr(
+            is_array($attributes['architectural_styles'])
+                ? implode(',', $attributes['architectural_styles'])
+                : $attributes['architectural_styles']
+        ) . '"';
+    }
+
+    if (!empty($attributes['filter_baths'])) {
+        $attrs[] = 'filter_baths="' . esc_attr($attributes['filter_baths']) . '"';
+    }
+
+    if (!empty($attributes['minimum_parking_spaces'])) {
+        $attrs[] = 'filter_minimum_parking_spaces="' . esc_attr($attributes['minimum_parking_spaces']) . '"';
+    }
+
+    if (isset($attributes['minimum_sold_date']) && (string) $attributes['minimum_sold_date'] !== '') {
+        $attrs[] = 'filter_minimum_sold_date="' . esc_attr($attributes['minimum_sold_date']) . '"';
+    }
+
+    if (!empty($attributes['filter_pool']) && filter_var($attributes['filter_pool'], FILTER_VALIDATE_BOOLEAN)) {
+        $attrs[] = 'filter_pool="true"';
+    }
+
+    if (!empty($attributes['filter_agents'])) {
+        $attrs[] = 'filter_agents="' . esc_attr(
+            is_array($attributes['filter_agents'])
+                ? implode(',', $attributes['filter_agents'])
+                : $attributes['filter_agents']
+        ) . '"';
+    }
+
+    if (!empty($attributes['list_offices'])) {
+        $attrs[] = 'filter_list_offices="' . esc_attr(
+            is_array($attributes['list_offices'])
+                ? implode(',', $attributes['list_offices'])
+                : $attributes['list_offices']
+        ) . '"';
+    }
+
+    if (!empty($attributes['filter_brand_id'])) {
+        $attrs[] = 'filter_brand_id="' . esc_attr($attributes['filter_brand_id']) . '"';
     }
 
     if (!empty($attributes['property_types'])) {
@@ -1396,6 +1475,10 @@ function rch_get_rechat_listings_attributes($attributes, $map_default_center, $l
 
     if (!empty($attributes['minimum_bathrooms'])) {
         $attrs[] = 'filter_minimum_bathrooms="' . esc_attr($attributes['minimum_bathrooms']) . '"';
+    }
+
+    if (!empty($attributes['maximum_bathrooms'])) {
+        $attrs[] = 'filter_maximum_bathrooms="' . esc_attr($attributes['maximum_bathrooms']) . '"';
     }
 
     if (!empty($attributes['minimum_square_feet'])) {
@@ -1441,6 +1524,7 @@ function rch_get_rechat_listings_attributes($attributes, $map_default_center, $l
     $attrs[] = 'disable_filter_baths="' . (isset($attributes['disable_filter_baths']) && filter_var($attributes['disable_filter_baths'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
     $attrs[] = 'disable_filter_property_types="' . (isset($attributes['disable_filter_property_types']) && filter_var($attributes['disable_filter_property_types'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
     $attrs[] = 'disable_filter_advanced="' . (isset($attributes['disable_filter_advanced']) && filter_var($attributes['disable_filter_advanced'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
+    $attrs[] = 'disable_filter_loading_indicator="' . (isset($attributes['disable_filter_loading_indicator']) && filter_var($attributes['disable_filter_loading_indicator'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
 
     // {street_address} is substituted by the SDK. A raw # in the path breaks the URL (fragment).
     // assets/js/rch-listing-hyperlink-fix.js rewrites those links by omitting the # in the slug.
@@ -1459,7 +1543,7 @@ function rch_get_rechat_listings_attributes($attributes, $map_default_center, $l
     }
 
     if (!empty($attributes['listing_per_page'])) {
-        $attrs[] = 'search_limit="' . esc_attr($attributes['listing_per_page']) . '"';
+        $attrs[] = 'filter_pagination_limit="' . esc_attr($attributes['listing_per_page']) . '"';
     }
 
     // $attrs[] = 'authorization="' . esc_attr(get_option('rch_rechat_access_token')) . '"';
