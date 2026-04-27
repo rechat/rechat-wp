@@ -669,9 +669,69 @@ registerBlockType('rch-rechat-plugin/listing-block', {
       type: 'string',
       default: '12'
     },
+    map_id: {
+      type: 'string',
+      default: ''
+    },
     sort_by: {
       type: 'string',
       default: '-list_date'
+    },
+    filter_address: {
+      type: 'string',
+      default: ''
+    },
+    filter_search_limit: {
+      type: 'string',
+      default: ''
+    },
+    filter_suggestions_limit: {
+      type: 'string',
+      default: ''
+    },
+    filter_pagination_offset: {
+      type: 'string',
+      default: ''
+    },
+    property_subtypes: {
+      type: 'string',
+      default: ''
+    },
+    architectural_styles: {
+      type: 'string',
+      default: ''
+    },
+    filter_baths: {
+      type: 'string',
+      default: ''
+    },
+    minimum_parking_spaces: {
+      type: 'string',
+      default: ''
+    },
+    minimum_sold_date: {
+      type: 'string',
+      default: ''
+    },
+    filter_pool: {
+      type: 'boolean',
+      default: false
+    },
+    filter_agents: {
+      type: 'string',
+      default: ''
+    },
+    list_offices: {
+      type: 'string',
+      default: ''
+    },
+    filter_brand_id: {
+      type: 'string',
+      default: ''
+    },
+    disable_filter_loading_indicator: {
+      type: 'boolean',
+      default: false
     }
   },
   edit({
@@ -706,12 +766,27 @@ registerBlockType('rch-rechat-plugin/listing-block', {
       property_types,
       filter_open_houses,
       office_exclusive,
+      filter_pool,
       disable_sort,
       listing_statuses,
       map_latitude,
       map_longitude,
       map_zoom,
-      sort_by
+      map_id,
+      sort_by,
+      filter_address,
+      filter_search_limit,
+      filter_suggestions_limit,
+      filter_pagination_offset,
+      property_subtypes,
+      architectural_styles,
+      filter_baths,
+      minimum_parking_spaces,
+      minimum_sold_date,
+      filter_agents,
+      list_offices,
+      filter_brand_id,
+      disable_filter_loading_indicator
     } = attributes;
     const [regions, setRegions] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
     const [offices, setOffices] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
@@ -1005,6 +1080,106 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             checked: disable_filter_advanced,
             onChange: () => setAttributes({
               disable_filter_advanced: !disable_filter_advanced
+            })
+          })]
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(PanelBody, {
+          title: "Additional Rechat filters (optional)",
+          initialOpen: false,
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Initial address / map boundary (filter_address)",
+            help: "Sets filter_address on the list view (e.g. city or place search).",
+            value: filter_address,
+            onChange: v => setAttributes({
+              filter_address: v || ''
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Max result count (filter_search_limit)",
+            type: "number",
+            value: filter_search_limit,
+            onChange: v => setAttributes({
+              filter_search_limit: v || ''
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Search suggestions limit (filter_suggestions_limit)",
+            type: "number",
+            value: filter_suggestions_limit,
+            onChange: v => setAttributes({
+              filter_suggestions_limit: v || ''
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Initial pagination offset (filter_pagination_offset)",
+            type: "number",
+            value: filter_pagination_offset,
+            onChange: v => setAttributes({
+              filter_pagination_offset: v || ''
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Property subtypes (comma-separated)",
+            value: property_subtypes,
+            onChange: v => setAttributes({
+              property_subtypes: v || ''
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Architectural styles (comma-separated)",
+            value: architectural_styles,
+            onChange: v => setAttributes({
+              architectural_styles: v || ''
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Exact baths (filter_baths)",
+            type: "number",
+            value: filter_baths,
+            onChange: v => setAttributes({
+              filter_baths: v || ''
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Min parking spaces",
+            type: "number",
+            value: minimum_parking_spaces,
+            onChange: v => setAttributes({
+              minimum_parking_spaces: v || ''
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Minimum sold date (Unix ms, filter_minimum_sold_date)",
+            value: minimum_sold_date,
+            onChange: v => setAttributes({
+              minimum_sold_date: v || ''
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Map ID (map_id, Cloud map styling)",
+            value: map_id,
+            onChange: v => setAttributes({
+              map_id: v || ''
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Override brand ID (filter_brand_id)",
+            value: filter_brand_id,
+            onChange: v => setAttributes({
+              filter_brand_id: v || ''
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Agent IDs (filter_agents, comma-separated)",
+            value: filter_agents,
+            onChange: v => setAttributes({
+              filter_agents: v || ''
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Office IDs (list_offices / filter_list_offices, comma-separated)",
+            value: list_offices,
+            onChange: v => setAttributes({
+              list_offices: v || ''
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(CheckboxControl, {
+            label: "Pool only (filter_pool)",
+            checked: filter_pool,
+            onChange: () => setAttributes({
+              filter_pool: !filter_pool
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(CheckboxControl, {
+            label: "Disable filter loading indicator",
+            checked: disable_filter_loading_indicator,
+            onChange: () => setAttributes({
+              disable_filter_loading_indicator: !disable_filter_loading_indicator
             })
           })]
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(PanelBody, {

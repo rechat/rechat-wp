@@ -45,7 +45,22 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         map_latitude: { type: 'string', default: '' },
         map_longitude: { type: 'string', default: '' },
         map_zoom: { type: 'string', default: '12' },
-        sort_by: { type: 'string', default: '-list_date' }
+        map_id: { type: 'string', default: '' },
+        sort_by: { type: 'string', default: '-list_date' },
+        filter_address: { type: 'string', default: '' },
+        filter_search_limit: { type: 'string', default: '' },
+        filter_suggestions_limit: { type: 'string', default: '' },
+        filter_pagination_offset: { type: 'string', default: '' },
+        property_subtypes: { type: 'string', default: '' },
+        architectural_styles: { type: 'string', default: '' },
+        filter_baths: { type: 'string', default: '' },
+        minimum_parking_spaces: { type: 'string', default: '' },
+        minimum_sold_date: { type: 'string', default: '' },
+        filter_pool: { type: 'boolean', default: false },
+        filter_agents: { type: 'string', default: '' },
+        list_offices: { type: 'string', default: '' },
+        filter_brand_id: { type: 'string', default: '' },
+        disable_filter_loading_indicator: { type: 'boolean', default: false },
     },
     edit({ attributes, setAttributes }) {
         const {
@@ -55,8 +70,8 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             listing_per_page, filterByRegions, filterByOffices, selectedStatuses, 
             disable_filter_address, disable_filter_price, disable_filter_beds, 
             disable_filter_baths, disable_filter_property_types, disable_filter_advanced,
-            layout_style, own_listing, property_types, filter_open_houses, office_exclusive, disable_sort, listing_statuses, map_latitude, map_longitude, map_zoom,
-            sort_by
+            layout_style, own_listing, property_types, filter_open_houses, office_exclusive, filter_pool, disable_sort, listing_statuses, map_latitude, map_longitude, map_zoom, map_id,
+            sort_by, filter_address, filter_search_limit, filter_suggestions_limit, filter_pagination_offset, property_subtypes, architectural_styles, filter_baths, minimum_parking_spaces, minimum_sold_date, filter_agents, list_offices, filter_brand_id, disable_filter_loading_indicator
         } = attributes;
 
         const [regions, setRegions] = useState([]);
@@ -302,6 +317,89 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                             label="Disable Advanced Filter"
                             checked={disable_filter_advanced}
                             onChange={() => setAttributes({ disable_filter_advanced: !disable_filter_advanced })}
+                        />
+                    </PanelBody>
+                    <PanelBody title="Additional Rechat filters (optional)" initialOpen={false}>
+                        <TextControl
+                            label="Initial address / map boundary (filter_address)"
+                            help="Sets filter_address on the list view (e.g. city or place search)."
+                            value={filter_address}
+                            onChange={(v) => setAttributes({ filter_address: v || '' })}
+                        />
+                        <TextControl
+                            label="Max result count (filter_search_limit)"
+                            type="number"
+                            value={filter_search_limit}
+                            onChange={(v) => setAttributes({ filter_search_limit: v || '' })}
+                        />
+                        <TextControl
+                            label="Search suggestions limit (filter_suggestions_limit)"
+                            type="number"
+                            value={filter_suggestions_limit}
+                            onChange={(v) => setAttributes({ filter_suggestions_limit: v || '' })}
+                        />
+                        <TextControl
+                            label="Initial pagination offset (filter_pagination_offset)"
+                            type="number"
+                            value={filter_pagination_offset}
+                            onChange={(v) => setAttributes({ filter_pagination_offset: v || '' })}
+                        />
+                        <TextControl
+                            label="Property subtypes (comma-separated)"
+                            value={property_subtypes}
+                            onChange={(v) => setAttributes({ property_subtypes: v || '' })}
+                        />
+                        <TextControl
+                            label="Architectural styles (comma-separated)"
+                            value={architectural_styles}
+                            onChange={(v) => setAttributes({ architectural_styles: v || '' })}
+                        />
+                        <TextControl
+                            label="Exact baths (filter_baths)"
+                            type="number"
+                            value={filter_baths}
+                            onChange={(v) => setAttributes({ filter_baths: v || '' })}
+                        />
+                        <TextControl
+                            label="Min parking spaces"
+                            type="number"
+                            value={minimum_parking_spaces}
+                            onChange={(v) => setAttributes({ minimum_parking_spaces: v || '' })}
+                        />
+                        <TextControl
+                            label="Minimum sold date (Unix ms, filter_minimum_sold_date)"
+                            value={minimum_sold_date}
+                            onChange={(v) => setAttributes({ minimum_sold_date: v || '' })}
+                        />
+                        <TextControl
+                            label="Map ID (map_id, Cloud map styling)"
+                            value={map_id}
+                            onChange={(v) => setAttributes({ map_id: v || '' })}
+                        />
+                        <TextControl
+                            label="Override brand ID (filter_brand_id)"
+                            value={filter_brand_id}
+                            onChange={(v) => setAttributes({ filter_brand_id: v || '' })}
+                        />
+                        <TextControl
+                            label="Agent IDs (filter_agents, comma-separated)"
+                            value={filter_agents}
+                            onChange={(v) => setAttributes({ filter_agents: v || '' })}
+                        />
+                        <TextControl
+                            label="Office IDs (list_offices / filter_list_offices, comma-separated)"
+                            value={list_offices}
+                            onChange={(v) => setAttributes({ list_offices: v || '' })}
+                        />
+                        <CheckboxControl
+                            label="Pool only (filter_pool)"
+                            checked={filter_pool}
+                            onChange={() => setAttributes({ filter_pool: !filter_pool })}
+                        />
+                        <CheckboxControl
+                            label="Disable filter loading indicator"
+                            checked={disable_filter_loading_indicator}
+                            onChange={() => setAttributes({ disable_filter_loading_indicator: !disable_filter_loading_indicator })}
                         />
                     </PanelBody>
                     <PanelBody title="Map Settings">{googleMapsApiKey ? (
