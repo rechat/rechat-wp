@@ -4,6 +4,54 @@ if (! defined('ABSPATH')) {
   exit();
 }
 
+/**
+ * Enqueue Rechat SDK, listing block layout CSS, and URL/history filter script when [listings] renders.
+ */
+function rch_listings_shortcode_enqueue_assets()
+{
+  wp_enqueue_style('rechat-sdk-css');
+  wp_enqueue_script('rechat-sdk-js');
+  wp_enqueue_style('rch-listing-block-css');
+  wp_enqueue_script('rch-listings-shortcode-filters');
+}
+
+/**
+ * Layout modifier for flex ratios (see assets/css/rch-listing-block.css).
+ *
+ * @param string $layout_style layout2 | layout3 | default
+ * @return string Extra class names (space-prefixed safe for empty)
+ */
+function rch_listings_shortcode_layout_modifier_class($layout_style)
+{
+  switch ($layout_style) {
+    case 'layout2':
+      return 'rch-listing-shortcode--layout2';
+    case 'layout3':
+      return 'rch-listing-shortcode--layout3';
+    default:
+      return '';
+  }
+}
+
+/**
+ * Inline style attribute only for CSS variables (colors from theme options).
+ *
+ * @param string $primary_color Stored primary hex or empty
+ * @return string HTML ` style="..."` or empty when no usable color
+ */
+function rch_listings_shortcode_wrapper_style_attr($primary_color)
+{
+  $primary = ($primary_color !== '' && $primary_color !== null) ? $primary_color : '#2563eb';
+  $on_primary = rch_get_contrast_text_color($primary);
+  $css = sprintf(
+    '--rch-listings-primary:%s;--rch-listings-on-primary:%s;',
+    $primary,
+    $on_primary
+  );
+
+  return ' style="' . esc_attr($css) . '"';
+}
+
 /*******************************
  * Renders the listing as a shortcode based on Gutenberg block
  * Usage: [listings property_types="Residential" listing_statuses="Active" layout_style="layout2" filter_pool="true" filter_search_limit="200"]
@@ -81,6 +129,8 @@ function rch_render_listing_list($atts)
   $atts['disable_sort'] = filter_var($atts['disable_sort'], FILTER_VALIDATE_BOOLEAN);
   $atts['disable_filter_loading_indicator'] = filter_var($atts['disable_filter_loading_indicator'], FILTER_VALIDATE_BOOLEAN);
 
+  rch_listings_shortcode_enqueue_assets();
+
   // Sanitize and prepare data
   $listing_statuses_str = rch_sanitize_listing_statuses($atts['listing_statuses'] ?? []);
   $map_default_center = rch_get_map_default_center(
@@ -118,15 +168,13 @@ function rch_render_listing_list($atts)
     }
   }
 
-  // Start output buffering
-  ob_start();
-
-  // Render styles
-  echo rch_render_layout_styles($layout_style, $primary_color);
+  $layout_modifier = rch_listings_shortcode_layout_modifier_class($layout_style);
+  $wrapper_classes = trim('rch-listing-block-gutenberg ' . $layout_modifier);
+  $wrapper_style_attr = rch_listings_shortcode_wrapper_style_attr($primary_color);
 
   // Get rechat root attributes (only brand_id in new SDK)
   $rechat_attrs = rch_get_rechat_root_attributes($atts, $map_default_center, $listing_statuses_str);
-  
+
   // Get rechat-listings attributes (all filter/map attributes in new SDK)
   $rechat_listings_attrs = rch_get_rechat_listings_attributes($atts, $map_default_center, $listing_statuses_str);
 
@@ -138,8 +186,10 @@ function rch_render_listing_list($atts)
     $atts['disable_filter_property_types'] &&
     $atts['disable_filter_advanced'];
 
+  ob_start();
+
 ?>
-  <div class="rch-listing-block-gutenberg">
+  <div class="<?php echo esc_attr($wrapper_classes); ?>"<?php echo $wrapper_style_attr; ?>>
     <rechat-root <?php echo $rechat_attrs; ?>>
       <rechat-listings <?php echo $rechat_listings_attrs; ?>>
         <div class="container_listing_sdk">
@@ -175,281 +225,6 @@ function rch_render_listing_list($atts)
       </rechat-listings>
     </rechat-root>
   </div>
-  <script>
-    // Handle filter restoration and persistence
-    (function() {
-      const urlParams = new URLSearchParams(window.location.search)
-      const rechatRoot = document.querySelector('rechat-root')
-      const rechatListings = document.querySelector('rechat-listings')
-
-      if (!rechatRoot || !rechatListings) {
-        return
-      }
-
-      // Mark if we're coming from a browser navigation (back/forward)
-      const isNavigatingBack = window.performance &&
-        window.performance.navigation &&
-        window.performance.navigation.type === 2
-
-      // Store the session key for this listing page
-      const sessionKey = 'rechat_listing_page_' + window.location.pathname
-
-      // Check if we should restore filters
-      const shouldRestoreFilters = () => {
-        // If URL has parameters, always restore from URL
-        if (urlParams.toString() !== '') {
-          return true
-        }
-
-        // If no URL parameters and we're navigating back, don't restore old filters
-        // This handles the case where user visits clean URL after using filters
-        return false
-      }
-
-      // Clear session storage if visiting clean URL
-      if (urlParams.toString() === '' && !isNavigatingBack) {
-        // Clear any stored filter state for this page
-        try {
-          sessionStorage.removeItem(sessionKey)
-        } catch (e) {
-          // Ignore storage errors
-        }
-      }
-
-      // Only restore filters if appropriate
-      if (!shouldRestoreFilters()) {
-        return
-      }
-
-      // Wait for rechat-listings to be ready
-      const restoreFilters = () => {
-        const filterKeys = [
-          'sort_by',
-          'map_center',
-          'map_zoom',
-          'address',
-          'filter_pagination_limit',
-          'search_limit',
-          'filter_search_limit',
-          'filter_suggestions_limit',
-          'filter_pagination_offset',
-          'listing_statuses',
-          'property_types',
-          'minimum_price',
-          'maximum_price',
-          'minimum_bedrooms',
-          'maximum_bedrooms',
-          'maximum_bathrooms',
-          'minimum_bathrooms',
-          'minimum_parking_spaces',
-          'minimum_square_feet',
-          'maximum_square_feet',
-          'minimum_lot_square_feet',
-          'maximum_lot_square_feet',
-          'minimum_year_built',
-          'maximum_year_built',
-          'minimum_sold_date',
-          'property_subtypes',
-          'architectural_styles',
-          'baths',
-          'open_house',
-          'office_exclusive',
-          'filter_pool',
-          'pool',
-          'agents',
-          'list_offices',
-          'filter_agents',
-          'map_id',
-          'filter_brand_id'
-        ]
-
-        // Map URL / history keys to <rechat-listings> attribute names (see Rechat Listings SDK).
-        const urlKeyToRechatListingsAttr = (key) => {
-          const map = {
-            search_limit: 'filter_pagination_limit',
-            pool: 'filter_pool',
-            address: 'filter_address',
-            agents: 'filter_agents',
-            list_offices: 'filter_list_offices',
-            open_house: 'filter_open_houses',
-            office_exclusive: 'filter_office_exclusives',
-            sort_by: 'filter_sort_by',
-            listing_statuses: 'filter_listing_statuses',
-            property_types: 'filter_property_types',
-            property_subtypes: 'filter_property_subtypes',
-            architectural_styles: 'filter_architectural_styles',
-            minimum_price: 'filter_minimum_price',
-            maximum_price: 'filter_maximum_price',
-            minimum_bedrooms: 'filter_minimum_bedrooms',
-            maximum_bedrooms: 'filter_maximum_bedrooms',
-            minimum_bathrooms: 'filter_minimum_bathrooms',
-            maximum_bathrooms: 'filter_maximum_bathrooms',
-            baths: 'filter_baths',
-            minimum_parking_spaces: 'filter_minimum_parking_spaces',
-            minimum_square_feet: 'filter_minimum_square_feet',
-            maximum_square_feet: 'filter_maximum_square_feet',
-            minimum_lot_square_feet: 'filter_minimum_lot_square_feet',
-            maximum_lot_square_feet: 'filter_maximum_lot_square_feet',
-            minimum_year_built: 'filter_minimum_year_built',
-            maximum_year_built: 'filter_maximum_year_built',
-            minimum_sold_date: 'filter_minimum_sold_date',
-          }
-          if (Object.prototype.hasOwnProperty.call(map, key)) {
-            return map[key]
-          }
-          return key
-        }
-
-        const filters = {}
-
-        filterKeys.forEach(key => {
-          if (urlParams.has(key)) {
-            let value = urlParams.get(key)
-            const outKey = urlKeyToRechatListingsAttr(key)
-
-            // Handle array values (comma-separated)
-            if (['listing_statuses', 'property_types', 'property_subtypes', 'architectural_styles', 'agents', 'list_offices', 'filter_agents'].includes(key)) {
-              value = value.split(',').filter(v => v.trim() !== '')
-            }
-            // Handle map_center (should be an object)
-            else if (key === 'map_center') {
-              try {
-                value = JSON.parse(value)
-              } catch (e) {
-                // If not JSON, try to parse as "lat,lng"
-                const coords = value.split(',')
-                if (coords.length === 2) {
-                  value = {
-                    lat: parseFloat(coords[0]),
-                    lng: parseFloat(coords[1])
-                  }
-                }
-              }
-            } else if (['open_house', 'office_exclusive', 'filter_pool', 'pool'].includes(key)) {
-              value = value === 'true' || value === '1'
-            } else if (['map_zoom', 'search_limit', 'filter_pagination_limit', 'filter_search_limit', 'filter_suggestions_limit', 'filter_pagination_offset', 'minimum_price', 'maximum_price', 'minimum_bedrooms', 'maximum_bedrooms', 'minimum_bathrooms', 'maximum_bathrooms', 'baths', 'minimum_parking_spaces', 'minimum_square_feet', 'maximum_square_feet', 'minimum_lot_square_feet', 'maximum_lot_square_feet', 'minimum_year_built', 'maximum_year_built', 'minimum_sold_date', 'map_id', 'filter_brand_id'].includes(key)) {
-              const num = parseFloat(value)
-              if (!isNaN(num)) {
-                value = num
-              }
-            }
-
-            filters[outKey] = value
-          }
-        })
-
-        // Apply filters to rechat-listings (NEW SDK) by updating attributes
-        Object.entries(filters).forEach(([key, value]) => {
-          const attrName = key.replace(/_/g, '-')
-
-          if (typeof value === 'object' && !Array.isArray(value)) {
-            rechatListings.setAttribute(attrName, JSON.stringify(value))
-          } else if (Array.isArray(value)) {
-            rechatListings.setAttribute(attrName, value.join(','))
-          } else if (typeof value === 'boolean') {
-            rechatListings.setAttribute(attrName, value ? 'true' : 'false')
-          } else {
-            rechatListings.setAttribute(attrName, value)
-          }
-        })
-      }
-
-      // Check if rechat-listings is already defined/ready
-      if (customElements.get('rechat-listings')) {
-        setTimeout(restoreFilters, 100)
-      } else {
-        // Wait for custom element to be defined
-        customElements.whenDefined('rechat-listings').then(() => {
-          setTimeout(restoreFilters, 100)
-        })
-      }
-    })()
-
-    // Save filters to URL when they change
-    // Flag to track if component has fully initialized to avoid saving initial state
-    let isInitialized = false
-    let initTimeout = null
-
-    // Mark as initialized after a delay to allow component to mount
-    initTimeout = setTimeout(() => {
-      isInitialized = true
-    }, 1500)
-
-    window.addEventListener('rechat-listing-filters:change', (e) => {
-      // Don't update URL during initial component mount/setup
-      if (!isInitialized) {
-        return
-      }
-
-      const keys = [
-        'sort_by',
-        'map_center',
-        'map_zoom',
-        'map_id',
-        'address',
-        'search_limit',
-        'filter_pagination_limit',
-        'filter_search_limit',
-        'filter_suggestions_limit',
-        'filter_pagination_offset',
-        'listing_statuses',
-        'property_types',
-        'minimum_price',
-        'maximum_price',
-        'minimum_bedrooms',
-        'maximum_bedrooms',
-        'minimum_bathrooms',
-        'maximum_bathrooms',
-        'minimum_parking_spaces',
-        'minimum_square_feet',
-        'maximum_square_feet',
-        'minimum_lot_square_feet',
-        'maximum_lot_square_feet',
-        'minimum_year_built',
-        'maximum_year_built',
-        'minimum_sold_date',
-        'property_subtypes',
-        'architectural_styles',
-        'baths',
-        'open_house',
-        'office_exclusive',
-        'filter_pool',
-        'pool',
-        'agents',
-        'list_offices',
-        'filter_agents',
-        'filter_brand_id',
-      ]
-
-      const filters = keys.reduce((acc, key) => {
-        const value = e.detail[key]
-
-        return (value === null || value === undefined) ? acc : {
-          ...acc,
-          [key]: value
-        }
-      }, {})
-
-      const params = new URLSearchParams()
-
-      Object.entries(filters).forEach(([key, value]) => {
-        if (typeof value === 'object' && !Array.isArray(value)) {
-          params.set(key, JSON.stringify(value))
-        } else if (Array.isArray(value)) {
-          params.set(key, value.join(','))
-        } else if (typeof value === 'boolean') {
-          params.set(key, value ? 'true' : 'false')
-        } else {
-          params.set(key, value)
-        }
-      })
-
-      const url = new URL(window.location.href)
-
-      url.search = params.toString()
-      window.history.replaceState({}, '', url)
-    })
-  </script>
 <?php
 
   return ob_get_clean();

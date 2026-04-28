@@ -168,3 +168,30 @@
     min-height: 250px;
   }
 }
+
+/* [listings] shortcode / block — theme primary from wrapper CSS variables */
+.rch-listing-block-gutenberg .rechat-component.map__marker {
+  background-color: var(--rch-listings-primary, #2563eb) !important;
+  color: var(--rch-listings-on-primary, #fff) !important;
+  box-sizing: content-box;
+}
+
+.rch-listing-block-gutenberg.rch-listing-shortcode--layout2 .map {
+  flex: 3;
+}
+
+.rch-listing-block-gutenberg.rch-listing-shortcode--layout2 .listings {
+  flex: 7;
+  min-height: 0;
+  overflow: auto;
+}
+
+.rch-listing-block-gutenberg.rch-listing-shortcode--layout3 .map {
+  flex: 9;
+}
+
+.rch-listing-block-gutenberg.rch-listing-shortcode--layout3 .listings {
+  flex: 3;
+  min-height: 0;
+  overflow: auto;
+}
