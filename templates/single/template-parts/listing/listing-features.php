@@ -137,7 +137,7 @@ if ($has_bedroom || $has_bathroom || $has_sqft || $has_year || $has_security || 
             <?php // Bedrooms
             if (isset($listing_detail['formatted']['bedroom_count']['text']) && strlen(trim((string) $listing_detail['formatted']['bedroom_count']['text'])) > 0) : ?>
                 <li>
-                    <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'bedroomsingle.svg'); ?>" alt="Bedroom icon">
+                    <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'bedroomsingle.svg'); ?>" alt="" width="24" height="24" decoding="async" loading="lazy" role="presentation">
                     <?php echo esc_html($listing_detail['formatted']['bedroom_count']['text']); ?>
                 </li>
             <?php endif; ?>
@@ -145,7 +145,7 @@ if ($has_bedroom || $has_bathroom || $has_sqft || $has_year || $has_security || 
             <?php // Bathrooms
             if (isset($listing_detail['formatted']['bathrooms']['text']) && strlen(trim((string) $listing_detail['formatted']['bathrooms']['text'])) > 0) : ?>
                 <li>
-                    <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'fbathsingle.svg'); ?>" alt="Fullbath icon">
+                    <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'fbathsingle.svg'); ?>" alt="" width="24" height="24" decoding="async" loading="lazy" role="presentation">
                     <?php echo esc_html($listing_detail['formatted']['bathrooms']['text']); ?>
                 </li>
             <?php endif; ?>
@@ -153,7 +153,7 @@ if ($has_bedroom || $has_bathroom || $has_sqft || $has_year || $has_security || 
             <?php // Area / square feet
             if (isset($listing_detail['formatted']['square_feet']['text']) && strlen(trim((string) $listing_detail['formatted']['square_feet']['text'])) > 0) : ?>
                 <li>
-                    <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'areasingle.svg'); ?>" alt="Area icon">
+                    <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'areasingle.svg'); ?>" alt="" width="24" height="24" decoding="async" loading="lazy" role="presentation">
                     <?php echo esc_html($listing_detail['formatted']['square_feet']['text']); ?>
                 </li>
             <?php endif; ?>
@@ -161,7 +161,7 @@ if ($has_bedroom || $has_bathroom || $has_sqft || $has_year || $has_security || 
             <?php // Year built
             if (isset($listing_detail['property']['year_built']) && strlen(trim((string) $listing_detail['property']['year_built'])) > 0) : ?>
                 <li>
-                    <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'yearsingle.svg'); ?>" alt="">
+                    <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'yearsingle.svg'); ?>" alt="" width="24" height="24" decoding="async" loading="lazy" role="presentation">
                     <?php echo esc_html($listing_detail['property']['year_built']); ?>
                     Year Built
                 </li>
