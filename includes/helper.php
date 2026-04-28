@@ -1415,7 +1415,7 @@ function rch_get_rechat_listings_attributes($attributes, $map_default_center, $l
     if (!empty($attributes['listing_hyperlink_href'])) {
         $attrs[] = 'listing_hyperlink_href="' . esc_attr($attributes['listing_hyperlink_href']) . '"';
     } else {
-        $attrs[] = 'listing_hyperlink_href="' . home_url() . '/listing-detail/{street_address}/{id}/"';
+        $attrs[] = 'listing_hyperlink_href="' . home_url() . '/listing-detail/{city}/{street_address}/{id}/"';
     }
 
     if (!empty($attributes['listing_hyperlink_target'])) {
@@ -1432,4 +1432,86 @@ function rch_get_rechat_listings_attributes($attributes, $map_default_center, $l
 
     // $attrs[] = 'authorization="' . esc_attr(get_option('rch_rechat_access_token')) . '"';
     return implode("\n      ", $attrs);
+}
+
+/**
+ * Human-readable listing label for image alt text (address + optional MLS).
+ *
+ * @param array $listing_detail Listing payload from API.
+ * @return string
+ */
+function rch_listing_alt_base_label(array $listing_detail)
+{
+    $parts = [];
+    if (! empty($listing_detail['formatted']['full_address']['text'])) {
+        $parts[] = wp_strip_all_tags((string) $listing_detail['formatted']['full_address']['text']);
+    } elseif (! empty($listing_detail['formatted']['street_address']['text'])) {
+        $parts[] = wp_strip_all_tags((string) $listing_detail['formatted']['street_address']['text']);
+    }
+    if (! empty($listing_detail['mls_number']) && is_scalar($listing_detail['mls_number'])) {
+        $parts[] = sprintf(
+            /* translators: %s: MLS number */
+            __('MLS #%s', 'rechat-plugin'),
+            sanitize_text_field((string) $listing_detail['mls_number'])
+        );
+    }
+    $label = implode(' — ', array_filter($parts));
+    if ($label === '') {
+        return __('Property listing', 'rechat-plugin');
+    }
+
+    return $label;
+}
+
+/**
+ * Build listing image alt text with optional suffix (e.g. photo index).
+ *
+ * @param array       $listing_detail Listing payload.
+ * @param string      $suffix         Optional fragment after an em dash.
+ * @return string
+ */
+function rch_listing_format_image_alt(array $listing_detail, $suffix = '')
+{
+    $base   = rch_listing_alt_base_label($listing_detail);
+    $suffix = is_string($suffix) ? trim($suffix) : '';
+    $out    = $suffix !== '' ? $base . ' — ' . $suffix : $base;
+
+    return apply_filters('rch_listing_image_alt', $out, $listing_detail, $suffix);
+}
+
+/**
+ * Alt text for a gallery image by 1-based index and total count.
+ *
+ * @param array    $listing_detail Listing payload.
+ * @param int      $index_1_based  Position in gallery (1 = first / cover).
+ * @param int|null $total          Total photos, or null to omit “of N”.
+ * @return string
+ */
+function rch_listing_gallery_image_alt(array $listing_detail, $index_1_based, $total = null)
+{
+    $index_1_based = max(1, (int) $index_1_based);
+    $total         = $total !== null ? (int) $total : null;
+
+    if ($total !== null && $total > 1) {
+        $suffix = sprintf(
+            /* translators: 1: current photo number, 2: total photos */
+            __('photo %1$d of %2$d', 'rechat-plugin'),
+            $index_1_based,
+            $total
+        );
+
+        return rch_listing_format_image_alt($listing_detail, $suffix);
+    }
+    if ($index_1_based > 1) {
+        return rch_listing_format_image_alt(
+            $listing_detail,
+            sprintf(
+                /* translators: %d: photo number */
+                __('photo %d', 'rechat-plugin'),
+                $index_1_based
+            )
+        );
+    }
+
+    return rch_listing_format_image_alt($listing_detail, '');
 }

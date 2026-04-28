@@ -87,7 +87,7 @@ function rch_get_agent_listings_attrs($brand_id, $agents_string, $property_subty
     $attrs[] = 'filter_property_subtypes="' . esc_attr($property_subtypes) . '"';
     $attrs[] = 'filter_property_types="' . esc_attr($property_types) . '"';
     $attrs[] = 'filter_listing_statuses="' . esc_attr($listing_statuses) . '"';
-    $attrs[] = 'listing_hyperlink_href="' . home_url() . '/listing-detail/{street_address}/{id}/"';
+    $attrs[] = 'listing_hyperlink_href="' . home_url() . '/listing-detail/{city}/{street_address}/{id}/"';
     
     return implode("\n                        ", $attrs);
 }
