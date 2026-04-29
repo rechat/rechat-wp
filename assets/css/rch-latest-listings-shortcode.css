@@ -12,10 +12,14 @@
   width: 100%;
   overflow: hidden;
   padding: 16px 0 40px;
+  position: relative;
+  touch-action: pan-x;
 }
 
 .rch-latest-listings-shortcode-swiper rechat-listings-list.swiper-wrapper {
   display: flex;
+  flex-direction: row;
+  box-sizing: border-box;
 }
 
 .rch-latest-listings-shortcode-swiper .rechat-listings-list__item {
@@ -23,6 +27,13 @@
   height: auto;
   box-sizing: border-box;
   flex-shrink: 0;
+}
+
+/* Let horizontal swipes reach Swiper instead of the browser / link drag on listing anchors. */
+.rch-latest-listings-shortcode-swiper .swiper a.listing-card__hyperlink,
+.rch-latest-listings-shortcode-swiper .swiper .listing-card__hyperlink {
+  -webkit-user-drag: none;
+  user-select: none;
 }
 
 .rch-latest-listings-shortcode-swiper .listing-card {
@@ -42,6 +53,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 20;
+  pointer-events: auto;
 }
 
 .rch-latest-listings-shortcode-swiper .swiper-button-prev:hover,
