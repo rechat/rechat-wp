@@ -64,6 +64,7 @@ function rch_latest_listings_get_defaults()
         'filter_address' => '',
         'map_latitude' => '',
         'map_longitude' => '',
+        'map_default_center' => '',
         'map_zoom' => '',
         'map_id' => '',
         // Pass-through to rch_get_rechat_listings_attributes (Rechat SDK on <rechat-listings>)
@@ -515,6 +516,7 @@ function rch_latest_listings_enqueue_swiper_instance_script($unique_id, array $a
  * 
  * Usage: [rch_latest_listings property_types="Residential" listing_statuses="Active" filter_search_limit="200"]
  * display_type: swiper (default) | normal (list + pagination) | grid (simple grid, no Swiper)
+ * map_default_center: optional "lat, lng" string passed to rechat-listings (overrides map_latitude/map_longitude when set).
  * All optional filters supported by rch_get_rechat_listings_attributes (e.g. filter_search_limit, filter_pool) may be passed; see main [listings] shortcode for the full set.
  * 
  * @param array $atts Shortcode attributes
@@ -532,10 +534,16 @@ function rch_display_latest_listings_shortcode($atts)
 
     // Prepare data for rendering
     $listing_statuses_str = rch_sanitize_listing_statuses($atts['listing_statuses'] ?? []);
-    $map_default_center = rch_get_map_default_center(
-        $atts['map_latitude'] ?? '',
-        $atts['map_longitude'] ?? ''
-    );
+    $map_default_center = '';
+    $raw_center = trim((string) ($atts['map_default_center'] ?? ''));
+    if ($raw_center !== '') {
+        $map_default_center = sanitize_text_field($raw_center);
+    } else {
+        $map_default_center = rch_get_map_default_center(
+            $atts['map_latitude'] ?? '',
+            $atts['map_longitude'] ?? ''
+        );
+    }
 
     // Get rechat attributes using helper functions
     $rechat_attrs = rch_get_rechat_root_attributes($atts, $map_default_center, $listing_statuses_str);
