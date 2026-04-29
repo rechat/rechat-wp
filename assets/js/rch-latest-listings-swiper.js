@@ -55,9 +55,8 @@
     swiperConfig.loopAdditionalSlides = Math.min(slideCount, extra);
 
     swiperConfig.watchSlidesProgress = true;
-    if (swiperConfig.centeredSlides) {
-      swiperConfig.roundLengths = true;
-    }
+    // Do not set roundLengths here: with loop + fractional slidesPerView it can fight
+    // Swiper spaceBetween margins and touch layout (gaps/arrows/drag look broken).
   }
 
   /**
@@ -78,34 +77,6 @@
     if (slideCount < minSlides) {
       swiperConfig.loop = false;
     }
-  }
-
-  /**
-   * @param {Event} ev
-   * @param {HTMLElement} container
-   * @returns {boolean}
-   */
-  function eventBelongsToContainer(ev, container) {
-    var host = container.querySelector('rechat-listings');
-    if (!host) {
-      return false;
-    }
-    if (ev.composedPath) {
-      var path = ev.composedPath();
-      if (path.indexOf(host) !== -1) {
-        return true;
-      }
-    }
-    var t = ev.target;
-    if (t && (t === host || (typeof host.contains === 'function' && host.contains(t)))) {
-      return true;
-    }
-    if (t && typeof container.contains === 'function' && container.contains(t)) {
-      return true;
-    }
-    // SDK sometimes fires a global custom event; single widget on page cannot be disambiguated.
-    var widgets = document.querySelectorAll('.rch-latest-listings-shortcode-swiper[id^="rch-latest-listings-"]');
-    return widgets.length === 1 && widgets[0] === container;
   }
 
   /**
@@ -158,6 +129,17 @@
       applyLoopStabilityFixes(swiperConfig, slideCount);
     }
 
+    // Breakpoints often only set slidesPerView; ensure spaceBetween is not dropped on merge.
+    var sb = swiperConfig.spaceBetween;
+    if (typeof sb === 'number' && !isNaN(sb) && swiperConfig.breakpoints && typeof swiperConfig.breakpoints === 'object') {
+      Object.keys(swiperConfig.breakpoints).forEach(function (key) {
+        var bp = swiperConfig.breakpoints[key];
+        if (bp && typeof bp === 'object' && typeof bp.spaceBetween === 'undefined') {
+          bp.spaceBetween = sb;
+        }
+      });
+    }
+
     var paginationEl = container.querySelector('.swiper-pagination');
     if (paginationEl && swiperConfig.pagination) {
       swiperConfig.pagination = Object.assign({}, swiperConfig.pagination, {
@@ -172,6 +154,11 @@
         nextEl: nextEl,
         prevEl: prevEl,
       });
+    }
+
+    // Slides live under <rechat-listings-list>; listen on the outer .swiper so drag works reliably.
+    if (typeof swiperConfig.touchEventsTarget === 'undefined') {
+      swiperConfig.touchEventsTarget = 'container';
     }
 
     var swiper = new window.Swiper(swiperEl, swiperConfig);
@@ -214,11 +201,9 @@
    * @param {Record<string, unknown>} swiperConfig
    */
   window.rchLatestListingsSwiperRegister = function (uniqueId, swiperConfig) {
-    window.addEventListener('rechat-listings:fetched', function (ev) {
-      var container = document.getElementById(uniqueId);
-      if (!container || !eventBelongsToContainer(ev, container)) {
-        return;
-      }
+    // Do not gate on event target / composedPath: the SDK may dispatch from window or
+    // another listings instance, which would skip init — then no Swiper (no gaps, no drag, dead arrows).
+    window.addEventListener('rechat-listings:fetched', function () {
       scheduleInit(uniqueId, swiperConfig, 0);
     });
   };
