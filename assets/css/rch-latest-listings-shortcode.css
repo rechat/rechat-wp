@@ -19,7 +19,7 @@
 }
 
 .rch-latest-listings-shortcode-swiper .rechat-listings-list__item {
-  width: 400px;
+  /* Width is set inline by Swiper from slidesPerView; a fixed CSS width breaks loop + centeredSlides + fractional SPV. */
   height: auto;
   box-sizing: border-box;
   flex-shrink: 0;
