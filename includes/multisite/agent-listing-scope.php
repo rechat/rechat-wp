@@ -10,6 +10,10 @@
  * - `rch_rechat_google_map_api_key`
  * (also: `rch_rechat_access_token`, `rch_rechat_refresh_token`)
  *
+ * Requires a real WordPress multisite network (`is_multisite()`). Separate single-site installs
+ * are not supported here. You do not need to recreate agent subsites when hub options exist;
+ * use Network → Rechat → Multisite tools if the agent site link meta is missing.
+ *
  * @package Rechat
  */
 
@@ -158,6 +162,100 @@ function rch_multisite_rechat_option_is_empty($value): bool
 {
     return $value === false || $value === null || $value === '';
 }
+
+/**
+ * Read option_value from a site's options table (bypasses get_option / object cache).
+ * Use for hub fallback when subsite shows empty brand/map in markup.
+ *
+ * @param int    $blog_id      Blog ID.
+ * @param string $option_name Option name (e.g. rch_rechat_brand_id).
+ * @return string Unserialized scalar string, or empty string when missing / non-scalar.
+ */
+function rch_multisite_fetch_raw_option_value_for_blog(int $blog_id, string $option_name): string
+{
+    if ($blog_id <= 0 || $option_name === '') {
+        return '';
+    }
+
+    global $wpdb;
+
+    switch_to_blog($blog_id);
+    $row = $wpdb->get_var(
+        $wpdb->prepare(
+            "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s LIMIT 1",
+            $option_name
+        )
+    );
+    restore_current_blog();
+
+    if ($row === null || $row === '') {
+        return '';
+    }
+
+    $unpacked = maybe_unserialize($row);
+
+    if (is_string($unpacked)) {
+        return $unpacked;
+    }
+
+    if (is_scalar($unpacked)) {
+        return (string) $unpacked;
+    }
+
+    return '';
+}
+
+/**
+ * Short-circuit empty subsite options with hub DB values (runs before alloptions cache).
+ */
+function rch_multisite_pre_option_hub_fallback($pre, string $option_name)
+{
+    unset($pre);
+
+    if (! is_multisite()) {
+        return false;
+    }
+
+    $main_id = (int) get_main_site_id();
+    $here    = get_current_blog_id();
+
+    if ($here <= 0 || $here === $main_id) {
+        return false;
+    }
+
+    $local = rch_multisite_fetch_raw_option_value_for_blog($here, $option_name);
+    if ($local !== '') {
+        return false;
+    }
+
+    $hub = rch_multisite_fetch_raw_option_value_for_blog($main_id, $option_name);
+
+    return $hub !== '' ? $hub : false;
+}
+
+add_filter('pre_option_rch_rechat_brand_id', static function ($pre, $option, $default) {
+    unset($option, $default);
+
+    return rch_multisite_pre_option_hub_fallback($pre, 'rch_rechat_brand_id');
+}, 5, 3);
+
+add_filter('pre_option_rch_rechat_google_map_api_key', static function ($pre, $option, $default) {
+    unset($option, $default);
+
+    return rch_multisite_pre_option_hub_fallback($pre, 'rch_rechat_google_map_api_key');
+}, 5, 3);
+
+add_filter('pre_option_rch_rechat_access_token', static function ($pre, $option, $default) {
+    unset($option, $default);
+
+    return rch_multisite_pre_option_hub_fallback($pre, 'rch_rechat_access_token');
+}, 5, 3);
+
+add_filter('pre_option_rch_rechat_refresh_token', static function ($pre, $option, $default) {
+    unset($option, $default);
+
+    return rch_multisite_pre_option_hub_fallback($pre, 'rch_rechat_refresh_token');
+}, 5, 3);
 
 /**
  * Fallback main-site Rechat option for subsites with missing credentials.
@@ -378,7 +476,178 @@ function rch_multisite_ob_inject_filter_agents($html)
 }
 
 /**
- * Start whole-page buffering so search shortcode and stray SDK markup get filter_agents.
+ * Fix empty brand_id on rechat-root / rechat-listings using hub option (raw DB).
+ *
+ * @param string $html     Full page HTML.
+ * @param string $tag      Tag name without brackets (rechat-root or rechat-listings).
+ * @param string $brand_id Brand UUID from main site.
+ * @return string
+ */
+function rch_multisite_ob_patch_open_tag_brand_id(string $html, string $tag, string $brand_id): string
+{
+    if ($brand_id === '') {
+        return $html;
+    }
+
+    $safe = esc_attr($brand_id);
+
+    return (string) preg_replace_callback(
+        '/<' . preg_quote($tag, '/') . '\b([^>]*)>/i',
+        static function ($m) use ($safe, $tag) {
+            $inner = $m[1];
+            if (preg_match('/\bbrand_id\s*=\s*(["\'])([^"\']*)\1/i', $inner, $mm)) {
+                if (trim($mm[2], " \t\n\r\0\x0B") !== '') {
+                    return '<' . $tag . $inner . '>';
+                }
+
+                $inner = (string) preg_replace(
+                    '/\bbrand_id\s*=\s*["\'][^"\']*["\']/i',
+                    'brand_id="' . $safe . '"',
+                    $inner,
+                    1
+                );
+
+                return '<' . $tag . $inner . '>';
+            }
+
+            $prefix = ($inner !== '' && $inner[0] !== ' ') ? ' ' : '';
+
+            return '<' . $tag . $inner . $prefix . 'brand_id="' . $safe . '">';
+        },
+        $html
+    );
+}
+
+/**
+ * Fix empty map_api_key on <rechat-listings> from hub option.
+ *
+ * @param string $html   Full page HTML.
+ * @param string $api_key Maps API key from main site.
+ * @return string
+ */
+function rch_multisite_ob_patch_rechat_listings_map_api_key(string $html, string $api_key): string
+{
+    if ($api_key === '') {
+        return $html;
+    }
+
+    $safe = esc_attr($api_key);
+
+    return (string) preg_replace_callback(
+        '/<rechat-listings\b([^>]*)>/i',
+        static function ($m) use ($safe) {
+            $inner = $m[1];
+            if (preg_match('/\bmap_api_key\s*=\s*(["\'])([^"\']*)\1/i', $inner, $mm)) {
+                if (trim($mm[2], " \t\n\r\0\x0B") !== '') {
+                    return '<rechat-listings' . $inner . '>';
+                }
+
+                $inner = (string) preg_replace(
+                    '/\bmap_api_key\s*=\s*["\'][^"\']*["\']/i',
+                    'map_api_key="' . $safe . '"',
+                    $inner,
+                    1
+                );
+
+                return '<rechat-listings' . $inner . '>';
+            }
+
+            $prefix = ($inner !== '' && $inner[0] !== ' ') ? ' ' : '';
+
+            return '<rechat-listings' . $inner . $prefix . 'map_api_key="' . $safe . '">';
+        },
+        $html
+    );
+}
+
+/**
+ * Strip mistaken filter_agents on <rechat-listings-list> (parent should own filters).
+ *
+ * @param string $html Full page HTML.
+ * @return string
+ */
+function rch_multisite_ob_strip_filter_agents_on_listings_list(string $html): string
+{
+    return (string) preg_replace_callback(
+        '/<rechat-listings-list\b([^>]*)>/i',
+        static function ($m) {
+            $inner = (string) preg_replace('/\sfilter_agents\s*=\s*(["\'])[^"\']*\1/i', '', $m[1]);
+
+            return '<rechat-listings-list' . $inner . '>';
+        },
+        $html
+    );
+}
+
+/**
+ * Full-page output filter: filter_agents + hub brand/map on live markup.
+ *
+ * @param string $html Full page HTML.
+ * @return string
+ */
+function rch_multisite_ob_patch_rechat_markup(string $html)
+{
+    if (! is_string($html) || $html === '') {
+        return $html;
+    }
+
+    if (! is_multisite() || get_current_blog_id() === (int) get_main_site_id()) {
+        return $html;
+    }
+
+    $html = rch_multisite_ob_inject_filter_agents($html);
+
+    $main_id = (int) get_main_site_id();
+    $hub_brand = rch_multisite_fetch_raw_option_value_for_blog($main_id, 'rch_rechat_brand_id');
+    $hub_map  = rch_multisite_fetch_raw_option_value_for_blog($main_id, 'rch_rechat_google_map_api_key');
+
+    if ($hub_brand !== '') {
+        $html = rch_multisite_ob_patch_open_tag_brand_id($html, 'rechat-root', $hub_brand);
+        $html = rch_multisite_ob_patch_open_tag_brand_id($html, 'rechat-listings', $hub_brand);
+    }
+
+    if ($hub_map !== '') {
+        $html = rch_multisite_ob_patch_rechat_listings_map_api_key($html, $hub_map);
+    }
+
+    $html = rch_multisite_ob_strip_filter_agents_on_listings_list($html);
+
+    return $html;
+}
+
+/**
+ * Whether to buffer the front-end HTML for post-processing.
+ */
+function rch_multisite_should_buffer_listing_markup(): bool
+{
+    if (! is_multisite() || get_current_blog_id() === (int) get_main_site_id()) {
+        return false;
+    }
+
+    $main_id = (int) get_main_site_id();
+    $hub_brand = rch_multisite_fetch_raw_option_value_for_blog($main_id, 'rch_rechat_brand_id');
+    $hub_map  = rch_multisite_fetch_raw_option_value_for_blog($main_id, 'rch_rechat_google_map_api_key');
+
+    if (rch_multisite_is_agent_listing_scope_active()) {
+        $csv = rch_multisite_get_main_site_agent_ids_csv();
+        if ($csv !== '') {
+            return true;
+        }
+    }
+
+    $here = get_current_blog_id();
+    $local_brand = rch_multisite_fetch_raw_option_value_for_blog($here, 'rch_rechat_brand_id');
+    $local_map  = rch_multisite_fetch_raw_option_value_for_blog($here, 'rch_rechat_google_map_api_key');
+
+    if ($hub_brand === '' && $hub_map === '') {
+        return false;
+    }
+
+    return $local_brand === '' || $local_map === '';
+}
+
+/**
+ * Start whole-page buffering so SDK markup can be corrected for hub-less subsites.
  */
 function rch_multisite_start_agent_listing_scope_buffer(): void
 {
@@ -394,11 +663,7 @@ function rch_multisite_start_agent_listing_scope_buffer(): void
         return;
     }
 
-    if (! rch_multisite_is_agent_listing_scope_active()) {
-        return;
-    }
-
-    if (rch_multisite_get_main_site_agent_ids_csv() === '') {
+    if (! rch_multisite_should_buffer_listing_markup()) {
         return;
     }
 
@@ -406,7 +671,7 @@ function rch_multisite_start_agent_listing_scope_buffer(): void
         return;
     }
 
-    ob_start('rch_multisite_ob_inject_filter_agents');
+    ob_start('rch_multisite_ob_patch_rechat_markup');
     $GLOBALS['rch_multisite_listing_scope_buffer_started'] = true;
 }
 
