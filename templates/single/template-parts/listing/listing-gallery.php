@@ -16,17 +16,34 @@ if (!defined('ABSPATH')) {
 $has_images = is_array($listing_detail['gallery_image_urls']) && !empty($listing_detail['gallery_image_urls']);
 $image_count = $has_images ? count($listing_detail['gallery_image_urls']) : 0;
 $is_single_image = ($image_count === 1);
+$rch_cover_alt = rch_listing_format_image_alt($listing_detail, __('Main listing photo', 'rechat-plugin'));
 ?>
 
 <div class="rch-top-img-slider <?php echo $is_single_image ? 'rch-single-image-layout' : ''; ?>">
     <div class="rch-left-top-slider">
         <?php if ($has_images) : ?>
             <picture data-slider="0" id="myBtn">
-                <img src="<?php echo esc_url($listing_detail['cover_image_url']); ?>" alt="Image of House">
+                <img
+                    src="<?php echo esc_url($listing_detail['cover_image_url']); ?>"
+                    alt="<?php echo esc_attr($rch_cover_alt); ?>"
+                    width="1200"
+                    height="800"
+                    decoding="async"
+                    fetchpriority="high"
+                    loading="eager"
+                >
             </picture>
-            <button id="myBtn" data-slider="0" class="rch-load-images">
-                <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'gallery.svg'); ?>" alt="gallery icon">
-                View all Photos
+            <button type="button" id="myBtn" data-slider="0" class="rch-load-images">
+                <img
+                    src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'gallery.svg'); ?>"
+                    alt=""
+                    width="24"
+                    height="24"
+                    decoding="async"
+                    loading="lazy"
+                    aria-hidden="true"
+                >
+                <?php echo esc_html__('View all photos', 'rechat-plugin'); ?>
             </button>
             <span class="<?php echo esc_attr($listing_detail['status']); ?>">
                 <?php echo esc_html($listing_detail['status']); ?>
@@ -44,7 +61,14 @@ $is_single_image = ($image_count === 1);
                 foreach (array_slice($listing_detail['gallery_image_urls'], 1, 4) as $image_url) :
             ?>
                     <picture data-slider="<?php echo esc_attr($i); ?>" id="myBtn">
-                        <img src="<?php echo esc_url($image_url); ?>" alt="Gallery of House">
+                        <img
+                            src="<?php echo esc_url($image_url); ?>"
+                            alt="<?php echo esc_attr(rch_listing_gallery_image_alt($listing_detail, $i + 1, $image_count)); ?>"
+                            width="640"
+                            height="480"
+                            decoding="async"
+                            loading="lazy"
+                        >
                     </picture>
             <?php
                     $i++;

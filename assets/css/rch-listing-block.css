@@ -28,8 +28,24 @@
 
 .rch-listing-block-gutenberg .listings {
   flex: 7;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding-right: 8px;
+}
+.rch-listing-block-gutenberg .listings__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px 8px;
+}
+.rch-listing-block-gutenberg .listings__grid {
+  flex: 1;
   min-height: 0;
   overflow: auto;
+}
+.rch-listing-block-gutenberg .listings__footer {
+  padding: 12px 8px;
 }
 .rch-listing-block-gutenberg .listings .listing-card {
   width: 100%;
@@ -167,4 +183,31 @@
     height: 40vh;
     min-height: 250px;
   }
+}
+
+/* [listings] shortcode / block — theme primary from wrapper CSS variables */
+.rch-listing-block-gutenberg .rechat-component.map__marker {
+  background-color: var(--rch-listings-primary, #2563eb) !important;
+  color: var(--rch-listings-on-primary, #fff) !important;
+  box-sizing: content-box;
+}
+
+.rch-listing-block-gutenberg.rch-listing-shortcode--layout2 .map {
+  flex: 3;
+}
+
+.rch-listing-block-gutenberg.rch-listing-shortcode--layout2 .listings {
+  flex: 7;
+  min-height: 0;
+  overflow: auto;
+}
+
+.rch-listing-block-gutenberg.rch-listing-shortcode--layout3 .map {
+  flex: 9;
+}
+
+.rch-listing-block-gutenberg.rch-listing-shortcode--layout3 .listings {
+  flex: 3;
+  min-height: 0;
+  overflow: auto;
 }

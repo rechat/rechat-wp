@@ -53,9 +53,6 @@ if (isset($listing_detail['open_houses']) && is_array($listing_detail['open_hous
             ?>
                 <li class="rch-open-house-item">
                     <div class="rch-open-house-details">
-                        <?php if (!empty($open_house['open_house_type'])) : ?>
-                            <span class="rch-open-house-type"><?php echo esc_html($open_house['open_house_type']); ?></span>
-                        <?php endif; ?>
                         <span class="rch-open-house-datetime"><?php echo esc_html($display_text); ?></span>
                         <?php if (!empty($open_house['description'])) : ?>
                             <p class="rch-open-house-description"><?php echo esc_html($open_house['description']); ?></p>

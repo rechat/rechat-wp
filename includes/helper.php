@@ -334,9 +334,65 @@ function rch_api_request($url, $token, $brand = null)
     }
     $response = wp_remote_get($url, array('headers' => $headers));
     if (is_wp_error($response)) {
-        return array('success' => false, 'message' => 'Error fetching data');
+        return array(
+            'success'         => false,
+            'message'         => 'Error fetching data',
+            'response_code'   => 0,
+        );
     }
-    return array('success' => true, 'data' => json_decode(wp_remote_retrieve_body($response), true));
+    $response_code = (int) wp_remote_retrieve_response_code($response);
+    $body          = wp_remote_retrieve_body($response);
+    $decoded       = json_decode($body, true);
+
+    return array(
+        'success'         => true,
+        'data'            => is_array($decoded) ? $decoded : null,
+        'response_code'   => $response_code,
+    );
+}
+
+/**
+ * Whether a listings API response likely indicates an invalid/expired access token
+ * (used to trigger OAuth refresh before showing a generic “not found” message).
+ *
+ * @param array $response Return value from {@see rch_api_request()}.
+ * @return bool
+ */
+function rch_single_listing_response_suggests_invalid_token($response)
+{
+    if (! is_array($response) || empty($response['success'])) {
+        return false;
+    }
+    $rc = isset($response['response_code']) ? (int) $response['response_code'] : 0;
+    if (in_array($rc, array(401, 403), true)) {
+        return true;
+    }
+    $d = isset($response['data']) && is_array($response['data']) ? $response['data'] : null;
+    if ($d === null) {
+        return (bool) apply_filters('rch_single_listing_response_suggests_invalid_token', false, $response);
+    }
+    $inner = isset($d['http']) ? (int) $d['http'] : 0;
+    if (in_array($inner, array(401, 403), true)) {
+        return true;
+    }
+    // Some Rechat errors use HTTP 400 in the envelope with a non-Validation code/message for auth issues.
+    if ($inner === 400 && (! isset($d['code']) || $d['code'] !== 'Validation')) {
+        $parts = array();
+        if (isset($d['code'])) {
+            $parts[] = (string) $d['code'];
+        }
+        if (isset($d['message'])) {
+            $parts[] = (string) $d['message'];
+        }
+        $blob = strtolower(implode(' ', $parts));
+        foreach (array('token', 'unauthorized', 'authentication', 'forbidden', 'expired', 'invalid grant', 'oauth') as $needle) {
+            if ($blob !== '' && strpos($blob, $needle) !== false) {
+                return true;
+            }
+        }
+    }
+
+    return (bool) apply_filters('rch_single_listing_response_suggests_invalid_token', false, $response);
 }
 /*******************************
  * Function to insert or update posts and save meta data
@@ -1198,7 +1254,7 @@ function rch_get_listing_block_attributes()
         'maximum_year_built' => array('type' => 'string', 'default' => ''),
         'minimum_bedrooms' => array('type' => 'string', 'default' => ''),
         'maximum_bedrooms' => array('type' => 'string', 'default' => ''),
-        'listing_per_page' => array('type' => 'string', 'default' => 5),
+        'listing_per_page' => array('type' => 'string', 'default' => ''),
         'filterByRegions' => array('type' => 'string', 'default' => ''),
         'filterByOffices' => array('type' => 'string', 'default' => ''),
         'brand' => array('type' => 'string', 'default' => get_option('rch_rechat_brand_id')),
@@ -1220,6 +1276,21 @@ function rch_get_listing_block_attributes()
         'map_longitude' => array('type' => 'string', 'default' => ''),
         'map_zoom' => array('type' => 'string', 'default' => '12'),
         'sort_by' => array('type' => 'string', 'default' => '-list_date'),
+        'map_id' => array('type' => 'string', 'default' => ''),
+        'filter_address' => array('type' => 'string', 'default' => ''),
+        'filter_search_limit' => array('type' => 'string', 'default' => ''),
+        'filter_suggestions_limit' => array('type' => 'string', 'default' => ''),
+        'filter_pagination_offset' => array('type' => 'string', 'default' => ''),
+        'property_subtypes' => array('type' => 'string', 'default' => ''),
+        'architectural_styles' => array('type' => 'string', 'default' => ''),
+        'filter_baths' => array('type' => 'string', 'default' => ''),
+        'minimum_parking_spaces' => array('type' => 'string', 'default' => ''),
+        'minimum_sold_date' => array('type' => 'string', 'default' => ''),
+        'filter_pool' => array('type' => 'boolean', 'default' => false),
+        'filter_agents' => array('type' => 'string', 'default' => ''),
+        'list_offices' => array('type' => 'string', 'default' => ''),
+        'filter_brand_id' => array('type' => 'string', 'default' => ''),
+        'disable_filter_loading_indicator' => array('type' => 'boolean', 'default' => false),
     );
 }
 
@@ -1258,122 +1329,6 @@ function rch_get_map_default_center($latitude, $longitude)
 
     // Return empty string if no valid coordinates provided
     return '';
-}
-
-/*******************************
- * Render listing block layout styles
- ******************************/
-function rch_render_layout_styles($layout_style, $primary_color)
-{
-    $text_color = rch_get_contrast_text_color($primary_color);
-
-    ob_start();
-?>
-    <style>
-        .rechat-component.map__marker {
-            background-color: <?php echo esc_attr($primary_color); ?> !important;
-            color: <?php echo esc_attr($text_color); ?> !important;
-            box-sizing: content-box;
-        }
-    </style>
-
-    <?php if ($layout_style === 'layout2' || $layout_style === 'layout3'): ?>
-        <style>
-            <?php if ($layout_style === 'layout2'): ?>.map {
-                flex: 3;
-            }
-
-            .listings {
-                flex: 7;
-                min-height: 0;
-                overflow: auto;
-            }
-
-            <?php elseif ($layout_style === 'layout3'): ?>.map {
-                flex: 9;
-            }
-
-            .listings {
-                flex: 3;
-                min-height: 0;
-                overflow: auto;
-            }
-
-            <?php endif; ?>
-        </style>
-    <?php endif; ?>
-<?php
-    return ob_get_clean();
-}
-
-/*******************************
- * Render search form styles
- ******************************/
-function rch_render_search_form_styles($form_id, $show_background, $background_image, $primary_color)
-{
-    ob_start();
-?>
-    <style>
-        .rch-search-listing-form {
-            position: relative;
-            z-index: 100;
-        }
-
-        #<?php echo $form_id; ?> {
-            padding: 0;
-            margin: 0;
-        }
-
-        #<?php echo $form_id; ?>.listing-filter__dropdown_trigger,
-        #<?php echo $form_id; ?>.search_address_input {
-            background-color: #fff;
-        }
-
-        #<?php echo $form_id; ?>.listing-filter__dropdown_trigger:hover,
-        #<?php echo $form_id; ?>.search_address_input:hover {
-            background-color: #fff;
-        }
-
-        #<?php echo $form_id; ?>.rch-search-container {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            max-width: 100% !important;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .rechat-button.color-accent {
-            background-color: <?php echo esc_attr($primary_color); ?> !important;
-            border-color: <?php echo esc_attr($primary_color); ?> !important;
-            color: <?php echo esc_attr(rch_get_contrast_text_color($primary_color)); ?> !important;
-        }
-
-        .rechat-button.color-accent p {
-            color: <?php echo esc_attr(rch_get_contrast_text_color($primary_color)); ?> !important;
-        }
-
-        .rechat-switch-button input:checked+.rechat-switch-button__slider {
-            background: <?php echo esc_attr($primary_color); ?>;
-        }
-
-        <?php if ($show_background && $background_image): ?>#<?php echo $form_id; ?>.rch-search-background {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: -1;
-            background-image: url('<?php echo $background_image; ?>');
-            background-size: contain;
-            filter: blur(3px) grayscale(0.1) brightness(70%);
-        }
-
-        <?php endif; ?>
-    </style>
-<?php
-    return ob_get_clean();
 }
 
 /*******************************
@@ -1417,8 +1372,72 @@ function rch_get_rechat_listings_attributes($attributes, $map_default_center, $l
         $attrs[] = 'map_default_center="' . esc_attr($map_default_center) . '"';
     }
 
-    if (isset($attributes['filter_address'])) {
+    if (isset($attributes['filter_address']) && (string) $attributes['filter_address'] !== '') {
         $attrs[] = 'filter_address="' . esc_attr($attributes['filter_address']) . '"';
+    }
+
+    if (!empty($attributes['filter_search_limit'])) {
+        $attrs[] = 'filter_search_limit="' . esc_attr($attributes['filter_search_limit']) . '"';
+    }
+
+    if (!empty($attributes['filter_suggestions_limit'])) {
+        $attrs[] = 'filter_suggestions_limit="' . esc_attr($attributes['filter_suggestions_limit']) . '"';
+    }
+
+    if (isset($attributes['filter_pagination_offset']) && (string) $attributes['filter_pagination_offset'] !== '') {
+        $attrs[] = 'filter_pagination_offset="' . esc_attr($attributes['filter_pagination_offset']) . '"';
+    }
+
+    if (!empty($attributes['property_subtypes'])) {
+        $attrs[] = 'filter_property_subtypes="' . esc_attr(
+            is_array($attributes['property_subtypes'])
+                ? implode(',', $attributes['property_subtypes'])
+                : $attributes['property_subtypes']
+        ) . '"';
+    }
+
+    if (!empty($attributes['architectural_styles'])) {
+        $attrs[] = 'filter_architectural_styles="' . esc_attr(
+            is_array($attributes['architectural_styles'])
+                ? implode(',', $attributes['architectural_styles'])
+                : $attributes['architectural_styles']
+        ) . '"';
+    }
+
+    if (!empty($attributes['filter_baths'])) {
+        $attrs[] = 'filter_baths="' . esc_attr($attributes['filter_baths']) . '"';
+    }
+
+    if (!empty($attributes['minimum_parking_spaces'])) {
+        $attrs[] = 'filter_minimum_parking_spaces="' . esc_attr($attributes['minimum_parking_spaces']) . '"';
+    }
+
+    if (isset($attributes['minimum_sold_date']) && (string) $attributes['minimum_sold_date'] !== '') {
+        $attrs[] = 'filter_minimum_sold_date="' . esc_attr($attributes['minimum_sold_date']) . '"';
+    }
+
+    if (!empty($attributes['filter_pool']) && filter_var($attributes['filter_pool'], FILTER_VALIDATE_BOOLEAN)) {
+        $attrs[] = 'filter_pool="true"';
+    }
+
+    if (!empty($attributes['filter_agents'])) {
+        $attrs[] = 'filter_agents="' . esc_attr(
+            is_array($attributes['filter_agents'])
+                ? implode(',', $attributes['filter_agents'])
+                : $attributes['filter_agents']
+        ) . '"';
+    }
+
+    if (!empty($attributes['list_offices'])) {
+        $attrs[] = 'filter_list_offices="' . esc_attr(
+            is_array($attributes['list_offices'])
+                ? implode(',', $attributes['list_offices'])
+                : $attributes['list_offices']
+        ) . '"';
+    }
+
+    if (!empty($attributes['filter_brand_id'])) {
+        $attrs[] = 'filter_brand_id="' . esc_attr($attributes['filter_brand_id']) . '"';
     }
 
     if (!empty($attributes['property_types'])) {
@@ -1454,6 +1473,10 @@ function rch_get_rechat_listings_attributes($attributes, $map_default_center, $l
 
     if (!empty($attributes['minimum_bathrooms'])) {
         $attrs[] = 'filter_minimum_bathrooms="' . esc_attr($attributes['minimum_bathrooms']) . '"';
+    }
+
+    if (!empty($attributes['maximum_bathrooms'])) {
+        $attrs[] = 'filter_maximum_bathrooms="' . esc_attr($attributes['maximum_bathrooms']) . '"';
     }
 
     if (!empty($attributes['minimum_square_feet'])) {
@@ -1499,13 +1522,14 @@ function rch_get_rechat_listings_attributes($attributes, $map_default_center, $l
     $attrs[] = 'disable_filter_baths="' . (isset($attributes['disable_filter_baths']) && filter_var($attributes['disable_filter_baths'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
     $attrs[] = 'disable_filter_property_types="' . (isset($attributes['disable_filter_property_types']) && filter_var($attributes['disable_filter_property_types'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
     $attrs[] = 'disable_filter_advanced="' . (isset($attributes['disable_filter_advanced']) && filter_var($attributes['disable_filter_advanced'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
+    $attrs[] = 'disable_filter_loading_indicator="' . (isset($attributes['disable_filter_loading_indicator']) && filter_var($attributes['disable_filter_loading_indicator'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
 
     // {street_address} is substituted by the SDK. A raw # in the path breaks the URL (fragment).
     // assets/js/rch-listing-hyperlink-fix.js rewrites those links by omitting the # in the slug.
     if (!empty($attributes['listing_hyperlink_href'])) {
         $attrs[] = 'listing_hyperlink_href="' . esc_attr($attributes['listing_hyperlink_href']) . '"';
     } else {
-        $attrs[] = 'listing_hyperlink_href="' . home_url() . '/listing-detail/{street_address}/{id}/"';
+        $attrs[] = 'listing_hyperlink_href="' . home_url() . '/listing-detail/{city}/{street_address}/{id}/"';
     }
 
     if (!empty($attributes['listing_hyperlink_target'])) {
@@ -1517,9 +1541,91 @@ function rch_get_rechat_listings_attributes($attributes, $map_default_center, $l
     }
 
     if (!empty($attributes['listing_per_page'])) {
-        $attrs[] = 'search_limit="' . esc_attr($attributes['listing_per_page']) . '"';
+        $attrs[] = 'filter_pagination_limit="' . esc_attr($attributes['listing_per_page']) . '"';
     }
 
     // $attrs[] = 'authorization="' . esc_attr(get_option('rch_rechat_access_token')) . '"';
     return implode("\n      ", $attrs);
+}
+
+/**
+ * Human-readable listing label for image alt text (address + optional MLS).
+ *
+ * @param array $listing_detail Listing payload from API.
+ * @return string
+ */
+function rch_listing_alt_base_label(array $listing_detail)
+{
+    $parts = [];
+    if (! empty($listing_detail['formatted']['full_address']['text'])) {
+        $parts[] = wp_strip_all_tags((string) $listing_detail['formatted']['full_address']['text']);
+    } elseif (! empty($listing_detail['formatted']['street_address']['text'])) {
+        $parts[] = wp_strip_all_tags((string) $listing_detail['formatted']['street_address']['text']);
+    }
+    if (! empty($listing_detail['mls_number']) && is_scalar($listing_detail['mls_number'])) {
+        $parts[] = sprintf(
+            /* translators: %s: MLS number */
+            __('MLS #%s', 'rechat-plugin'),
+            sanitize_text_field((string) $listing_detail['mls_number'])
+        );
+    }
+    $label = implode(' — ', array_filter($parts));
+    if ($label === '') {
+        return __('Property listing', 'rechat-plugin');
+    }
+
+    return $label;
+}
+
+/**
+ * Build listing image alt text with optional suffix (e.g. photo index).
+ *
+ * @param array       $listing_detail Listing payload.
+ * @param string      $suffix         Optional fragment after an em dash.
+ * @return string
+ */
+function rch_listing_format_image_alt(array $listing_detail, $suffix = '')
+{
+    $base   = rch_listing_alt_base_label($listing_detail);
+    $suffix = is_string($suffix) ? trim($suffix) : '';
+    $out    = $suffix !== '' ? $base . ' — ' . $suffix : $base;
+
+    return apply_filters('rch_listing_image_alt', $out, $listing_detail, $suffix);
+}
+
+/**
+ * Alt text for a gallery image by 1-based index and total count.
+ *
+ * @param array    $listing_detail Listing payload.
+ * @param int      $index_1_based  Position in gallery (1 = first / cover).
+ * @param int|null $total          Total photos, or null to omit “of N”.
+ * @return string
+ */
+function rch_listing_gallery_image_alt(array $listing_detail, $index_1_based, $total = null)
+{
+    $index_1_based = max(1, (int) $index_1_based);
+    $total         = $total !== null ? (int) $total : null;
+
+    if ($total !== null && $total > 1) {
+        $suffix = sprintf(
+            /* translators: 1: current photo number, 2: total photos */
+            __('photo %1$d of %2$d', 'rechat-plugin'),
+            $index_1_based,
+            $total
+        );
+
+        return rch_listing_format_image_alt($listing_detail, $suffix);
+    }
+    if ($index_1_based > 1) {
+        return rch_listing_format_image_alt(
+            $listing_detail,
+            sprintf(
+                /* translators: %d: photo number */
+                __('photo %d', 'rechat-plugin'),
+                $index_1_based
+            )
+        );
+    }
+
+    return rch_listing_format_image_alt($listing_detail, '');
 }

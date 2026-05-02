@@ -2,7 +2,6 @@ const { registerBlockType } = wp.blocks;
 const { InspectorControls, ColorPalette } = wp.blockEditor || wp.editor;
 const { PanelBody, RangeControl } = wp.components;
 import ServerSideRender from '@wordpress/server-side-render';
-
 registerBlockType('rch-rechat-plugin/regions-block', {
     title: 'Regions Block',
     description: 'Block for showing Regions',

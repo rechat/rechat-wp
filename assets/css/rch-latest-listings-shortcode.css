@@ -1,0 +1,101 @@
+/**
+ * Latest listings shortcode — scoped to shortcode wrappers only.
+ */
+
+.rch-latest-listings-shortcode-swiper rechat-root {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+}
+
+.rch-latest-listings-shortcode-swiper .swiper {
+  width: 100%;
+  overflow: hidden;
+  padding: 16px 0 40px;
+  position: relative;
+  touch-action: pan-x;
+}
+
+.rch-latest-listings-shortcode-swiper rechat-listings-list.swiper-wrapper {
+  display: flex;
+  flex-direction: row;
+  box-sizing: border-box;
+}
+
+.rch-latest-listings-shortcode-swiper .rechat-listings-list__item {
+  /* Width is set inline by Swiper from slidesPerView; a fixed CSS width breaks loop + centeredSlides + fractional SPV. */
+  height: auto;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+/* Let horizontal swipes reach Swiper instead of the browser / link drag on listing anchors. */
+.rch-latest-listings-shortcode-swiper .swiper a.listing-card__hyperlink,
+.rch-latest-listings-shortcode-swiper .swiper .listing-card__hyperlink {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+.rch-latest-listings-shortcode-swiper .listing-card {
+  max-width: none;
+  border: none;
+}
+
+.rch-latest-listings-shortcode-swiper .swiper-button-prev,
+.rch-latest-listings-shortcode-swiper .swiper-button-next {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  pointer-events: auto;
+}
+
+.rch-latest-listings-shortcode-swiper .swiper-button-prev:hover,
+.rch-latest-listings-shortcode-swiper .swiper-button-next:hover {
+  background: #f5f5f5;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.rch-latest-listings-shortcode-swiper .swiper-button-prev::after,
+.rch-latest-listings-shortcode-swiper .swiper-button-next::after {
+  font-size: 12px;
+  font-weight: bold;
+  color: #333;
+}
+
+.rch-latest-listings-shortcode-swiper .swiper-pagination {
+  bottom: 0 !important;
+}
+
+.rch-latest-listings-shortcode-swiper .swiper-pagination-bullet-active {
+  background: #333;
+}
+
+.rch-grid-container {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.rch-latest-listings-shortcode-normal rechat-root {
+  display: block;
+  width: 100%;
+}
+
+.rch-latest-listings-shortcode-normal .rch-latest-listings-normal-inner > .pagination {
+  margin-top: 1.5rem;
+}
+
+.rch-no-listings-message {
+  padding: 40px;
+  text-align: center;
+  color: #666;
+  font-size: 16px;
+}

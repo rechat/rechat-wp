@@ -92,7 +92,9 @@ function rch_rechat_menu_page()
 
     $auth_url = rch_get_oauth_authorization_url();
     $active_tab = rch_get_active_tab();
-    $access_token_exists = (bool) get_option('rch_rechat_access_token');
+    $access_token_exists  = (bool) get_option('rch_rechat_access_token');
+    $refresh_token_exists = (bool) get_option('rch_rechat_refresh_token');
+    $has_oauth_credentials = $access_token_exists || $refresh_token_exists;
 
     ?>
     <div class="wrap wrap-for-rechat">
@@ -111,7 +113,7 @@ function rch_rechat_menu_page()
                     break;
                     
                 case 'connect-to-rechat':
-                    rch_render_connect_tab($auth_url, $access_token_exists);
+                    rch_render_connect_tab($auth_url, $access_token_exists, $refresh_token_exists, $has_oauth_credentials);
                     break;
                     
                 case 'lead-capture':
@@ -197,7 +199,7 @@ function rch_render_sync_data_tab($access_token_exists)
 /*******************************
  * Render Connect to Rechat tab
  ******************************/
-function rch_render_connect_tab($auth_url, $access_token_exists)
+function rch_render_connect_tab($auth_url, $access_token_exists, $refresh_token_exists, $has_oauth_credentials)
 {
     if (!defined('RCH_PLUGIN_ASSETS_URL_IMG')) {
         return;
@@ -213,7 +215,7 @@ function rch_render_connect_tab($auth_url, $access_token_exists)
         </p>
 
         <div class="rch-container-connect-rechat">
-            <?php if (!$access_token_exists) : ?>
+            <?php if (!$has_oauth_credentials) : ?>
                 <a href="<?php echo esc_url($auth_url); ?>" class="button button-primary">
                     <?php esc_html_e('Connect to Rechat', 'rechat-plugin'); ?>
                 </a>
@@ -228,18 +230,29 @@ function rch_render_connect_tab($auth_url, $access_token_exists)
                         <?php esc_html_e('Disconnect from Rechat', 'rechat-plugin'); ?>
                     </button>
                 </form>
-                <p class="rch-connected-text">
-                    <img 
-                        src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'ph_check.svg'); ?>" 
-                        alt="<?php esc_attr_e('Connected', 'rechat-plugin'); ?>"
-                    >
-                    <?php esc_html_e('You are connected to Rechat.', 'rechat-plugin'); ?>
-                </p>
+                <?php if ($access_token_exists) : ?>
+                    <p class="rch-connected-text">
+                        <img 
+                            src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'ph_check.svg'); ?>" 
+                            alt="<?php esc_attr_e('Connected', 'rechat-plugin'); ?>"
+                        >
+                        <?php esc_html_e('You are connected to Rechat (access token present).', 'rechat-plugin'); ?>
+                    </p>
+                <?php else : ?>
+                    <p class="rch-connected-text" style="border-left:4px solid #d63638;padding-left:12px;">
+                        <?php esc_html_e('Access token is missing, but a refresh token is stored. A new access token was requested when you opened this page. If problems persist, use “Refresh access token” below or reconnect.', 'rechat-plugin'); ?>
+                    </p>
+                <?php endif; ?>
             <?php endif; ?>
         </div>
 
-        <?php if ($access_token_exists) : ?>
-            <?php rch_render_token_information(); ?>
+        <?php if ($has_oauth_credentials) : ?>
+            <?php
+            rch_render_token_information(
+                $access_token_exists,
+                $refresh_token_exists
+            );
+            ?>
         <?php endif; ?>
 
         <?php rch_render_disconnect_modal(); ?>
@@ -249,54 +262,162 @@ function rch_render_connect_tab($auth_url, $access_token_exists)
 
 /*******************************
  * Render token information section
+ *
+ * @param bool $access_token_exists  Access token in options.
+ * @param bool $refresh_token_exists Refresh token in options.
  ******************************/
-function rch_render_token_information()
+function rch_render_token_information($access_token_exists, $refresh_token_exists)
 {
     if (!defined('RCH_PLUGIN_ASSETS_URL_IMG')) {
         return;
     }
 
-    $expires_in = absint(get_option('rch_rechat_expires_in', 0));
-    $current_timestamp = time();
-    $expiry_timestamp = $current_timestamp + $expires_in;
-    $has_expired = $current_timestamp > $expiry_timestamp;
+    $expiry_stored = (string) get_option('rch_rechat_expires_in', '');
+    $expiry_ts      = false;
+    if ($expiry_stored !== '') {
+        $expiry_ts = strtotime($expiry_stored . ' UTC');
+        if ($expiry_ts === false) {
+            $expiry_ts = strtotime($expiry_stored);
+        }
+    }
+    $now          = time();
+    $has_expired  = ($expiry_ts !== false) && ($now > $expiry_ts);
     $status_class = $has_expired ? 'rch-expired' : '';
+    $expiry_text  = ($expiry_ts !== false)
+        ? get_date_from_gmt($expiry_stored, get_option('date_format') . ' ' . get_option('time_format'))
+        : '—';
+    if ($expiry_stored !== '' && '—' === $expiry_text) {
+        $expiry_text = $expiry_stored . ' (UTC)';
+    }
+
+    $last = get_option('rch_oauth_last_refresh', array());
+    if (!is_array($last)) {
+        $last = array();
+    }
+    $log_ok  = array_key_exists('ok', $last) ? (bool) $last['ok'] : null;
+    $log_msg = isset($last['message']) ? (string) $last['message'] : '';
+    $log_t   = isset($last['time']) ? (string) $last['time'] : '';
+    if ($log_msg === '') {
+        $log_msg = __('No refresh has been recorded yet. Open this page with a stored refresh token, use “Refresh access token now”, or wait for the automatic refresh when the access token is empty or expired.', 'rechat-plugin');
+    }
+
+    $log_source = isset($last['source']) ? (string) $last['source'] : '';
+    $source_labels = array(
+        'wp_cron' => __('WordPress cron (background / scheduled)', 'rechat-plugin'),
+        'manual'   => __('Manual “Refresh access token now” button', 'rechat-plugin'),
+        'auto'     => __('Automatic when loading Rechat settings (empty access token)', 'rechat-plugin'),
+        'listing_detail' => __('Single listing page (after API indicated invalid token)', 'rechat-plugin'),
+        'other'    => __('Other context', 'rechat-plugin'),
+        'initial'  => __('Initial OAuth connect (authorization code exchange)', 'rechat-plugin'),
+    );
+    $log_source_label = ($log_source !== '' && isset($source_labels[ $log_source ]))
+        ? $source_labels[ $log_source ]
+        : ($log_source !== '' ? $log_source : '—');
+
+    $admin_refresh_url = wp_nonce_url(
+        admin_url('admin-post.php?action=rch_manual_oauth_refresh'),
+        'rch_manual_oauth_refresh',
+        'rch_manual_oauth_refresh_nonce'
+    );
 
     ?>
     <div class="rch-information-token">
-        <h2><?php esc_html_e('Token Information', 'rechat-plugin'); ?></h2>
+        <h2><?php esc_html_e('Token & refresh status', 'rechat-plugin'); ?></h2>
         <p>
-            <?php esc_html_e('Here you can view your OAuth token details. These include the expiration date and permissions granted to this plugin.', 'rechat-plugin'); ?>
+            <?php esc_html_e('OAuth access tokens expire. The plugin uses your refresh token to get a new access token (when you open this screen if the access token is empty, and on the scheduled WordPress cron job when the token is expired). The same log is updated for every attempt — including background cron — so you can see success, errors, and which trigger ran.', 'rechat-plugin'); ?>
+        </p>
+
+        <p>
+            <a class="button button-secondary" href="<?php echo esc_url($admin_refresh_url); ?>">
+                <?php esc_html_e('Refresh access token now', 'rechat-plugin'); ?>
+            </a>
         </p>
 
         <table class="form-table">
             <tr valign="top">
-                <th scope="row">
-                    <?php esc_html_e('Token status', 'rechat-plugin'); ?>
-                </th>
-                <td class="<?php echo esc_attr($status_class); ?> rch-token-status-text">
-                    <img 
-                        src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'ph_check.svg'); ?>" 
-                        alt="<?php esc_attr_e('Active', 'rechat-plugin'); ?>" 
-                        style="position: relative; top: 4px;"
-                    >
-                    <?php esc_html_e('Your OAuth token is active and valid.', 'rechat-plugin'); ?>
+                <th scope="row"><?php esc_html_e('Access token', 'rechat-plugin'); ?></th>
+                <td>
+                    <?php echo $access_token_exists ? esc_html__('Present', 'rechat-plugin') : '<strong>' . esc_html__('Empty — a refresh is attempted when you load this page if a refresh token exists', 'rechat-plugin') . '</strong>'; ?>
+                </td>
+            </tr>
+            <tr valign="top">
+                <th scope="row"><?php esc_html_e('Refresh token', 'rechat-plugin'); ?></th>
+                <td>
+                    <?php echo $refresh_token_exists ? esc_html__('Present', 'rechat-plugin') : esc_html__('Not stored', 'rechat-plugin'); ?>
                 </td>
             </tr>
             <tr valign="top">
                 <th scope="row">
-                    <?php esc_html_e('Token expires on', 'rechat-plugin'); ?>
+                    <?php esc_html_e('Token status (expiry-based)', 'rechat-plugin'); ?>
                 </th>
-                <td class="<?php echo esc_attr($status_class); ?>">
-                    <?php echo esc_html($expires_in); ?>
+                <td class="<?php echo esc_attr($status_class); ?> rch-token-status-text">
+                    <?php if (! $access_token_exists) : ?>
+                        <strong><?php esc_html_e('No access token — see refresh log and use the button above.', 'rechat-plugin'); ?></strong>
+                    <?php elseif ($expiry_ts === false) : ?>
+                        <?php esc_html_e('Expiry not available.', 'rechat-plugin'); ?>
+                    <?php elseif ($has_expired) : ?>
+                        <img 
+                            src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'ph_info.png'); ?>" 
+                            alt=""
+                            style="position: relative; top: 4px; width:16px;height:16px;"
+                        >
+                        <?php esc_html_e('Stored access token’s expiry is in the past. A new token should be obtained on refresh.', 'rechat-plugin'); ?>
+                    <?php else : ?>
+                        <img 
+                            src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'ph_check.svg'); ?>" 
+                            alt=""
+                            style="position: relative; top: 4px;"
+                        >
+                        <?php esc_html_e('According to the saved expiry, the current access token has not yet expired.', 'rechat-plugin'); ?>
+                    <?php endif; ?>
                 </td>
             </tr>
+            <tr valign="top">
+                <th scope="row">
+                    <?php esc_html_e('Access token expires (UTC stored)', 'rechat-plugin'); ?>
+                </th>
+                <td class="<?php echo esc_attr($status_class); ?>">
+                    <?php echo esc_html($expiry_text); ?>
+                </td>
+            </tr>
+            <tr valign="top">
+                <th scope="row"><?php esc_html_e('Last refresh result', 'rechat-plugin'); ?></th>
+                <td>
+                    <?php if (null !== $log_ok) : ?>
+                        <span class="<?php echo $log_ok ? 'notice notice-success' : 'notice notice-error'; ?>" style="display:inline-block;padding:4px 8px;border-left-width:4px;">
+                            <strong><?php echo $log_ok ? esc_html__('OK', 'rechat-plugin') : esc_html__('Failed', 'rechat-plugin'); ?></strong>
+                        </span>
+                    <?php else : ?>
+                        <em><?php esc_html_e('Not yet logged', 'rechat-plugin'); ?></em>
+                    <?php endif; ?>
+                </td>
+            </tr>
+            <tr valign="top">
+                <th scope="row"><?php esc_html_e('How last run was triggered', 'rechat-plugin'); ?></th>
+                <td><?php echo esc_html($log_source_label); ?></td>
+            </tr>
+            <tr valign="top">
+                <th scope="row"><?php esc_html_e('Last refresh message', 'rechat-plugin'); ?></th>
+                <td>
+                    <code style="word-break:break-all;display:block;white-space:pre-wrap;"><?php echo esc_html($log_msg); ?></code>
+                </td>
+            </tr>
+            <tr valign="top">
+                <th scope="row"><?php echo esc_html__('Time (WordPress time)', 'rechat-plugin'); ?></th>
+                <td><?php echo $log_t !== '' ? esc_html($log_t) : '—'; ?></td>
+            </tr>
+            <?php if (isset($last['http_code']) && $last['http_code'] !== null && $last['http_code'] !== '') : ?>
+            <tr valign="top">
+                <th scope="row"><?php esc_html_e('HTTP code', 'rechat-plugin'); ?></th>
+                <td><?php echo esc_html((string) $last['http_code']); ?></td>
+            </tr>
+            <?php endif; ?>
             <tr valign="top">
                 <th scope="row">
                     <?php esc_html_e('Permissions', 'rechat-plugin'); ?>
                 </th>
                 <td>
-                    <?php esc_html_e('Agents, Regions, Offices, Listings, Leads, and more.', 'rechat-plugin'); ?>
+                    <?php esc_html_e('Agents, Regions, Offices, Listings, Leads, and more (as granted in Rechat).', 'rechat-plugin'); ?>
                 </td>
             </tr>
         </table>
