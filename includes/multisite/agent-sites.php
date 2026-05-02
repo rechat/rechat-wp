@@ -3010,4 +3010,5 @@ function rch_multisite_save_settings(): void
 }
 add_action('admin_init', 'rch_multisite_save_settings');
 
+require_once __DIR__ . '/agent-listing-scope.php';
 require_once __DIR__ . '/views/admin-tab.php';
