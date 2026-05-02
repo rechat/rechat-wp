@@ -179,14 +179,19 @@ function rch_multisite_fetch_raw_option_value_for_blog(int $blog_id, string $opt
 
     global $wpdb;
 
-    switch_to_blog($blog_id);
-    $row = $wpdb->get_var(
-        $wpdb->prepare(
-            "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s LIMIT 1",
-            $option_name
-        )
-    );
-    restore_current_blog();
+    $row = null;
+
+    try {
+        switch_to_blog($blog_id);
+        $row = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s LIMIT 1",
+                $option_name
+            )
+        );
+    } finally {
+        restore_current_blog();
+    }
 
     if ($row === null || $row === '') {
         return '';
@@ -430,13 +435,44 @@ add_action('wp_ajax_rch_fetch_total_listing_count', 'rch_multisite_prime_agents_
 add_action('wp_ajax_nopriv_rch_fetch_total_listing_count', 'rch_multisite_prime_agents_for_listing_ajax', 0);
 
 /**
- * Regex for the listing container only — not rechat-listings-sort, -count, -pagination, etc.
+ * Safe preg_replace_callback: never return null (avoids wiping the whole page on PCRE / UTF-8 errors).
  *
- * @param string $tag Lowercase custom element name (e.g. rechat-listings, rechat-listings-list).
+ * @param string   $pattern  Regex pattern.
+ * @param callable $callback Replacement callback.
+ * @param string   $subject  HTML / text.
+ * @return string
  */
-function rch_multisite_ob_open_custom_element_pattern(string $tag): string
+function rch_multisite_preg_replace_callback_safe(string $pattern, callable $callback, string $subject): string
 {
-    return '/<' . preg_quote($tag, '/') . '(?=[\s/>])(\s[^>]*)?>/i';
+    if ($subject === '') {
+        return $subject;
+    }
+
+    $result = @preg_replace_callback($pattern, $callback, $subject);
+
+    return is_string($result) ? $result : $subject;
+}
+
+/**
+ * Safe preg_replace wrapper.
+ *
+ * @param string|string[] $pattern     Regex or array.
+ * @param string|string[] $replacement Replacement.
+ * @param string|string[] $subject     Subject string.
+ * @param int             $limit       Optional limit (default -1 = no limit).
+ * @return string
+ */
+function rch_multisite_preg_replace_safe($pattern, $replacement, $subject, int $limit = -1): string
+{
+    if (! is_string($subject) || $subject === '') {
+        return is_string($subject) ? $subject : '';
+    }
+
+    $result = $limit >= 0
+        ? @preg_replace($pattern, $replacement, $subject, $limit)
+        : @preg_replace($pattern, $replacement, $subject);
+
+    return is_string($result) ? $result : $subject;
 }
 
 /**
@@ -462,12 +498,12 @@ function rch_multisite_ob_inject_filter_agents($html)
 
     $attr = 'filter_agents="' . esc_attr($csv) . '"';
 
-    return (string) preg_replace_callback(
-        rch_multisite_ob_open_custom_element_pattern('rechat-listings'),
+    return rch_multisite_preg_replace_callback_safe(
+        '/<rechat-listings\b([^>]*)>/i',
         static function ($m) use ($attr) {
-            $inner = isset($m[1]) ? (string) $m[1] : '';
+            $inner = $m[1];
             if (preg_match('/\bfilter_agents\s*=/i', $inner)) {
-                $inner = (string) preg_replace(
+                $inner = rch_multisite_preg_replace_safe(
                     '/\sfilter_agents\s*=\s*(["\'])[^"\']*\1/i',
                     ' ' . $attr,
                     $inner,
@@ -501,16 +537,16 @@ function rch_multisite_ob_patch_open_tag_brand_id(string $html, string $tag, str
 
     $safe = esc_attr($brand_id);
 
-    return (string) preg_replace_callback(
-        rch_multisite_ob_open_custom_element_pattern($tag),
+    return rch_multisite_preg_replace_callback_safe(
+        '/<' . preg_quote($tag, '/') . '\b([^>]*)>/i',
         static function ($m) use ($safe, $tag) {
-            $inner = isset($m[1]) ? (string) $m[1] : '';
+            $inner = $m[1];
             if (preg_match('/\bbrand_id\s*=\s*(["\'])([^"\']*)\1/i', $inner, $mm)) {
                 if (trim($mm[2], " \t\n\r\0\x0B") !== '') {
                     return '<' . $tag . $inner . '>';
                 }
 
-                $inner = (string) preg_replace(
+                $inner = rch_multisite_preg_replace_safe(
                     '/\bbrand_id\s*=\s*["\'][^"\']*["\']/i',
                     'brand_id="' . $safe . '"',
                     $inner,
@@ -543,16 +579,16 @@ function rch_multisite_ob_patch_rechat_listings_map_api_key(string $html, string
 
     $safe = esc_attr($api_key);
 
-    return (string) preg_replace_callback(
-        rch_multisite_ob_open_custom_element_pattern('rechat-listings'),
+    return rch_multisite_preg_replace_callback_safe(
+        '/<rechat-listings\b([^>]*)>/i',
         static function ($m) use ($safe) {
-            $inner = isset($m[1]) ? (string) $m[1] : '';
+            $inner = $m[1];
             if (preg_match('/\bmap_api_key\s*=\s*(["\'])([^"\']*)\1/i', $inner, $mm)) {
                 if (trim($mm[2], " \t\n\r\0\x0B") !== '') {
                     return '<rechat-listings' . $inner . '>';
                 }
 
-                $inner = (string) preg_replace(
+                $inner = rch_multisite_preg_replace_safe(
                     '/\bmap_api_key\s*=\s*["\'][^"\']*["\']/i',
                     'map_api_key="' . $safe . '"',
                     $inner,
@@ -578,51 +614,15 @@ function rch_multisite_ob_patch_rechat_listings_map_api_key(string $html, string
  */
 function rch_multisite_ob_strip_filter_agents_on_listings_list(string $html): string
 {
-    return (string) preg_replace_callback(
-        rch_multisite_ob_open_custom_element_pattern('rechat-listings-list'),
+    return rch_multisite_preg_replace_callback_safe(
+        '/<rechat-listings-list\b([^>]*)>/i',
         static function ($m) {
-            $inner = isset($m[1]) ? (string) $m[1] : '';
-            $inner = (string) preg_replace('/\sfilter_agents\s*=\s*(["\'])[^"\']*\1/i', '', $inner);
+            $inner = rch_multisite_preg_replace_safe('/\sfilter_agents\s*=\s*(["\'])[^"\']*\1/i', '', $m[1]);
 
             return '<rechat-listings-list' . $inner . '>';
         },
         $html
     );
-}
-
-/**
- * Remove brand_id / map_api_key from inner listing UI tags (only the container should carry them).
- *
- * @param string $html Full page HTML.
- * @return string
- */
-function rch_multisite_ob_strip_brand_map_on_listing_child_tags(string $html): string
-{
-    if (! is_string($html) || $html === '') {
-        return $html;
-    }
-
-    $children = [
-        'rechat-listings-sort',
-        'rechat-listings-count',
-        'rechat-listings-pagination',
-    ];
-
-    foreach ($children as $tag) {
-        $html = (string) preg_replace_callback(
-            rch_multisite_ob_open_custom_element_pattern($tag),
-            static function ($m) use ($tag) {
-                $inner = isset($m[1]) ? (string) $m[1] : '';
-                $inner = (string) preg_replace('/\sbrand_id\s*=\s*(["\'])[^"\']*\1/i', '', $inner);
-                $inner = (string) preg_replace('/\smap_api_key\s*=\s*(["\'])[^"\']*\1/i', '', $inner);
-
-                return '<' . $tag . $inner . '>';
-            },
-            $html
-        );
-    }
-
-    return $html;
 }
 
 /**
@@ -641,23 +641,43 @@ function rch_multisite_ob_patch_rechat_markup(string $html)
         return $html;
     }
 
-    $html = rch_multisite_ob_inject_filter_agents($html);
+    $original = $html;
+    $orig_len = strlen($html);
 
-    $main_id = (int) get_main_site_id();
-    $hub_brand = rch_multisite_fetch_raw_option_value_for_blog($main_id, 'rch_rechat_brand_id');
-    $hub_map  = rch_multisite_fetch_raw_option_value_for_blog($main_id, 'rch_rechat_google_map_api_key');
+    try {
+        $html = rch_multisite_ob_inject_filter_agents($html);
 
-    if ($hub_brand !== '') {
-        $html = rch_multisite_ob_patch_open_tag_brand_id($html, 'rechat-root', $hub_brand);
-        $html = rch_multisite_ob_patch_open_tag_brand_id($html, 'rechat-listings', $hub_brand);
+        $main_id = (int) get_main_site_id();
+        $hub_brand = rch_multisite_fetch_raw_option_value_for_blog($main_id, 'rch_rechat_brand_id');
+        $hub_map  = rch_multisite_fetch_raw_option_value_for_blog($main_id, 'rch_rechat_google_map_api_key');
+
+        if ($hub_brand !== '') {
+            $html = rch_multisite_ob_patch_open_tag_brand_id($html, 'rechat-root', $hub_brand);
+            $html = rch_multisite_ob_patch_open_tag_brand_id($html, 'rechat-listings', $hub_brand);
+        }
+
+        if ($hub_map !== '') {
+            $html = rch_multisite_ob_patch_rechat_listings_map_api_key($html, $hub_map);
+        }
+
+        $html = rch_multisite_ob_strip_filter_agents_on_listings_list($html);
+    } catch (Throwable $e) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+            error_log('rch_multisite_ob_patch_rechat_markup: ' . $e->getMessage());
+        }
+
+        return $original;
     }
 
-    if ($hub_map !== '') {
-        $html = rch_multisite_ob_patch_rechat_listings_map_api_key($html, $hub_map);
+    if (! is_string($html)) {
+        return $original;
     }
 
-    $html = rch_multisite_ob_strip_filter_agents_on_listings_list($html);
-    $html = rch_multisite_ob_strip_brand_map_on_listing_child_tags($html);
+    // If output collapsed (e.g. PREG error), keep the original document.
+    if ($orig_len > 200 && strlen($html) < (int) ($orig_len * 0.5)) {
+        return $original;
+    }
 
     return $html;
 }
@@ -722,4 +742,4 @@ function rch_multisite_start_agent_listing_scope_buffer(): void
     $GLOBALS['rch_multisite_listing_scope_buffer_started'] = true;
 }
 
-add_action('template_redirect', 'rch_multisite_start_agent_listing_scope_buffer', 0);
+add_action('template_redirect', 'rch_multisite_start_agent_listing_scope_buffer', 5);
