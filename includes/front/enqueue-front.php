@@ -18,10 +18,63 @@ function rch_enqueue_frontend_styles()
     wp_register_style('rch-rechat-listing', RCH_PLUGIN_ASSETS . 'css/rch-rechat-listing.css', [], RCH_VERSION);
     wp_register_style('rch-rechat-search-listing-shortcode', RCH_PLUGIN_ASSETS . 'css/search-bar-listing-shortcode.css', [], RCH_VERSION);
     wp_register_style('rch-rechat-single-agents', RCH_PLUGIN_ASSETS . 'css/rch-single-agents.css', [], RCH_VERSION);
+    wp_register_style(
+        'rch-latest-listings-shortcode',
+        RCH_PLUGIN_ASSETS . 'css/rch-latest-listings-shortcode.css',
+        [],
+        RCH_VERSION
+    );
 
     // Enqueue JavaScript files with version
     wp_enqueue_script('rch-ajax-front', RCH_PLUGIN_ASSETS . 'js/rch-ajax-front.js', ['jquery'], RCH_VERSION, true);
+    wp_enqueue_script(
+        'rch-listing-hyperlink-fix',
+        RCH_PLUGIN_ASSETS . 'js/rch-listing-hyperlink-fix.js',
+        [],
+        RCH_VERSION,
+        true
+    );
     wp_enqueue_script('rch-swiper-js', RCH_PLUGIN_ASSETS . 'js/swiper-bundle.min.js', [], RCH_VERSION_SWIPER, true);
+    wp_register_script(
+        'rch-latest-listings-swiper',
+        RCH_PLUGIN_ASSETS . 'js/rch-latest-listings-swiper.js',
+        ['rch-swiper-js'],
+        RCH_VERSION,
+        true
+    );
+    wp_register_script(
+        'rch-listings-shortcode-filters',
+        RCH_PLUGIN_ASSETS . 'js/rch-listings-shortcode-filters.js',
+        ['rechat-sdk-js'],
+        RCH_VERSION,
+        true
+    );
+    wp_register_style(
+        'rch-lead-capture-shortcode-css',
+        RCH_PLUGIN_ASSETS . 'css/rch-lead-capture-shortcode.css',
+        [],
+        RCH_VERSION
+    );
+    wp_register_script(
+        'rch-lead-capture-shortcode',
+        RCH_PLUGIN_ASSETS . 'js/rch-lead-capture-shortcode.js',
+        ['rechat-sdk-js'],
+        RCH_VERSION,
+        true
+    );
+    wp_register_style(
+        'rch-search-listing-shortcode',
+        RCH_PLUGIN_ASSETS . 'css/rch-search-listing-shortcode.css',
+        [],
+        RCH_VERSION
+    );
+    wp_register_script(
+        'rch-search-listing-shortcode',
+        RCH_PLUGIN_ASSETS . 'js/rch-search-listing-shortcode.js',
+        ['rechat-sdk-js'],
+        RCH_VERSION,
+        true
+    );
     wp_enqueue_script('rch-gutenberg-ajax', RCH_PLUGIN_ASSETS . 'js/rch-gutenberg-ajax.js', ['jquery'], RCH_VERSION, true);
     wp_enqueue_script('rch-gutenberg-agent-pagination', RCH_PLUGIN_ASSETS . 'js/rch-gutenberg-agent-pagination.js', ['jquery'], RCH_VERSION, true);
 
@@ -55,6 +108,17 @@ function rch_enqueue_frontend_styles()
     if (is_singular('agents')) {
         wp_enqueue_style('rch-rechat-single-agents');
     }
+
+    /*
+     * Rechat SDK is registered in rch_enqueue_block_assets (enqueue_block_assets). It must be
+     * enqueued during wp_enqueue_scripts so it prints in <head> (in_footer false). Shortcodes
+     * that run in the_content enqueue too late for head; theme templates (e.g. index.php) are
+     * not visible to has_shortcode(). Loading SDK on public front avoids null store / FilterContext errors.
+     */
+    if (! is_admin()) {
+        wp_enqueue_style('rechat-sdk-css');
+        wp_enqueue_script('rechat-sdk-js');
+    }
 }
 add_action('wp_enqueue_scripts', 'rch_enqueue_frontend_styles');
 
@@ -85,21 +149,34 @@ function rch_enqueue_block_assets()
     );
 
     // Register Rechat SDK CSS and JS
-    
+    $rch_site_host = wp_parse_url(home_url(), PHP_URL_HOST);
+    $rch_examples_hosts = defined('RCH_RECHAT_SDK_EXAMPLES_HOSTS')
+        ? RCH_RECHAT_SDK_EXAMPLES_HOSTS
+        : ['staging.insanustu.dev', 'localhost', '127.0.0.1'];
+    $rch_is_staging = is_string($rch_site_host) && in_array($rch_site_host, $rch_examples_hosts, true);
+
+    $rch_rechat_sdk_css_url = $rch_is_staging
+        ? 'https://sdk.rechat.com/examples/dist/rechat.min.css'
+        : 'https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.css';
+
+    $rch_rechat_sdk_js_url = $rch_is_staging
+        ? 'https://sdk.rechat.com/examples/dist/rechat.min.js'
+        : 'https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.js';
+
     wp_register_style(
         'rechat-sdk-css',
-        'https://sdk.rechat.com/examples/dist/rechat.min.css',
+        $rch_rechat_sdk_css_url,
         [],
         null
-    );#https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.css
+    );
 
     wp_register_script(
         'rechat-sdk-js',
-        'https://sdk.rechat.com/examples/dist/rechat.min.js',
+        $rch_rechat_sdk_js_url,
         [],
         null,
         false
-    );//https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.js
+    );
 
     // Automatically enqueue script/style only when block is present
     if (has_block('rch-rechat-plugin/listing-block')) {

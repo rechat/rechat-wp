@@ -2,7 +2,7 @@
 /*
 Plugin Name: Rechat Plugin
 Description: Fetches and manages agent, offices, regions, and Listing data from Rechat.
-Version: 6.1.8
+Version: 6.2.7
 Author URI: https://rechat.com/
 Text Domain: rechat-plugin
 License: GPL-2.0-or-later
@@ -18,8 +18,18 @@ if (! defined('ABSPATH')) {
 // define required constants.
 define('RCH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('RCH_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('RCH_VERSION', '6.1.8');
+define('RCH_VERSION', '6.2.7');
 define('RCH_VERSION_SWIPER', '11.2.5');
+if (! defined('RCH_STAGING_DOMAIN')) {
+    define('RCH_STAGING_DOMAIN', 'staging.insanustu.dev');
+}
+if (! defined('RCH_RECHAT_SDK_EXAMPLES_HOSTS')) {
+    define('RCH_RECHAT_SDK_EXAMPLES_HOSTS', [
+        RCH_STAGING_DOMAIN,
+        'localhost',
+        '127.0.0.1',
+    ]);
+}
 const RCH_PLUGIN_INCLUDES = RCH_PLUGIN_DIR . 'includes/';
 const RCH_PLUGIN_ASSETS = RCH_PLUGIN_URL . 'assets/';
 const RCH_PLUGIN_ASSETS_URL_IMG = RCH_PLUGIN_URL . 'assets/images/';
@@ -71,7 +81,18 @@ add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'rch_plugin_actio
 
 function rch_plugin_activate()
 {
-    add_rewrite_rule('^listing-detail/([^/]+)/([a-f0-9\-]+)/?$', 'index.php?listing_detail=1', 'top');
+    // New: /listing-detail/{city}/{street_address}/{id}/
+    add_rewrite_rule(
+        '^listing-detail/([^/]+)/([^/]+)/([a-f0-9\\-]+)/?$',
+        'index.php?listing_detail=1&listing_city=$matches[1]&listing_street=$matches[2]&listing_id=$matches[3]',
+        'top'
+    );
+    // Legacy: /listing-detail/{street_address}/{id}/ (kept for redirects)
+    add_rewrite_rule(
+        '^listing-detail/([^/]+)/([a-f0-9\\-]+)/?$',
+        'index.php?listing_detail=1&listing_street=$matches[1]&listing_id=$matches[2]',
+        'top'
+    );
     flush_rewrite_rules();
 
     if (function_exists('rch_register_agent_user_roles')) {
@@ -84,7 +105,18 @@ register_activation_hook(__FILE__, 'rch_plugin_activate');
 add_action('init', 'rch_add_rewrite_rules');
 function rch_add_rewrite_rules()
 {
-    add_rewrite_rule('^listing-detail/([^/]+)/([a-f0-9\-]+)/?$', 'index.php?listing_detail=1', 'top');
+    // New: /listing-detail/{city}/{street_address}/{id}/
+    add_rewrite_rule(
+        '^listing-detail/([^/]+)/([^/]+)/([a-f0-9\\-]+)/?$',
+        'index.php?listing_detail=1&listing_city=$matches[1]&listing_street=$matches[2]&listing_id=$matches[3]',
+        'top'
+    );
+    // Legacy: /listing-detail/{street_address}/{id}/ (kept for redirects)
+    add_rewrite_rule(
+        '^listing-detail/([^/]+)/([a-f0-9\\-]+)/?$',
+        'index.php?listing_detail=1&listing_street=$matches[1]&listing_id=$matches[2]',
+        'top'
+    );
 }
 // Register the query variable
 add_filter('query_vars', 'rch_plugin_query_vars');
@@ -92,10 +124,15 @@ function rch_plugin_query_vars($vars)
 {
     $vars[] = 'house_detail';
     $vars[] = 'listing_detail';
+    $vars[] = 'listing_id';
+    $vars[] = 'listing_city';
+    $vars[] = 'listing_street';
     return $vars;
 }
 // Add logic seprate in admin or Frontend
 include RCH_PLUGIN_INCLUDES . 'front/enqueue-front.php';
+include RCH_PLUGIN_INCLUDES . 'schema/load-schema.php';
+include RCH_PLUGIN_INCLUDES . 'seo/auto-meta-tags.php';
 include RCH_PLUGIN_INCLUDES . 'front/add-css-in-setting.php';
 if (is_multisite()) {
     require_once RCH_PLUGIN_INCLUDES . 'multisite/subsite-admin-context.php';

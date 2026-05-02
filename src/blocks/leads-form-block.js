@@ -20,11 +20,12 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
         showNote: { type: 'boolean', default: true },
         selectedTagsFrom: { type: 'array', default: [] },
         emailForGetLead: { type: 'string', default: '' },
+        submitButtonText: { type: 'string', default: 'Submit Request' },
     },
     edit({ attributes, setAttributes }) {
         const { 
             formTitle, leadChannel, showFirstName, showLastName, showPhoneNumber, 
-            showEmail, showNote, selectedTagsFrom, emailForGetLead 
+            showEmail, showNote, selectedTagsFrom, emailForGetLead, submitButtonText 
         } = attributes;
         
         const [leadChannels, setLeadChannels] = useState();
@@ -157,6 +158,11 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
                             label="Form Title"
                             value={formTitle}
                             onChange={(value) => setAttributes({ formTitle: value })}
+                        />
+                        <TextControl
+                            label="Submit button text"
+                            value={submitButtonText}
+                            onChange={(value) => setAttributes({ submitButtonText: value })}
                         />
                         <SelectControl
                             label="Lead Channel"

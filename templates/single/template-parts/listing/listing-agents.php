@@ -24,6 +24,8 @@ if (!defined('ABSPATH')) {
 if (!isset($listing_detail) || !is_array($listing_detail)) {
     return;
 }
+
+$rch_listing_context_label = rch_listing_alt_base_label($listing_detail);
 ?>
 
 <?php
@@ -45,7 +47,29 @@ if (is_array($agent_posts) && count($agent_posts) > 0):
                 <li class="rch-agent-item">
                     <a href="<?php echo esc_url($agent_url); ?>" class="rch-agent-link">
                         <?php if ($agent_img) : ?>
-                            <img src="<?php echo esc_url($agent_img); ?>" alt="<?php echo esc_attr($agent_title); ?>" class="rch-agent-photo">
+                            <?php
+                            $rch_agent_photo_alt = $rch_listing_context_label !== ''
+                                ? sprintf(
+                                    /* translators: 1: agent name, 2: property label (address / MLS) */
+                                    __('Photo of %1$s, listing agent — %2$s', 'rechat-plugin'),
+                                    $agent_title,
+                                    $rch_listing_context_label
+                                )
+                                : sprintf(
+                                    /* translators: %s: agent name */
+                                    __('Photo of %s, listing agent', 'rechat-plugin'),
+                                    $agent_title
+                                );
+                            ?>
+                            <img
+                                src="<?php echo esc_url($agent_img); ?>"
+                                alt="<?php echo esc_attr($rch_agent_photo_alt); ?>"
+                                class="rch-agent-photo"
+                                width="150"
+                                height="150"
+                                decoding="async"
+                                loading="lazy"
+                            >
                         <?php endif; ?>
                     </a>
                     <div class="rch-listing-agent-info">
@@ -118,7 +142,29 @@ if (is_array($seller_agent_posts) && count($seller_agent_posts) > 0):
                 <li class="rch-agent-item">
                     <a href="<?php echo esc_url($seller_agent_url); ?>" class="rch-agent-link">
                         <?php if ($seller_agent_img) : ?>
-                            <img src="<?php echo esc_url($seller_agent_img); ?>" alt="<?php echo esc_attr($seller_agent_title); ?>" class="rch-agent-photo">
+                            <?php
+                            $rch_seller_photo_alt = $rch_listing_context_label !== ''
+                                ? sprintf(
+                                    /* translators: 1: agent name, 2: property label (address / MLS) */
+                                    __('Photo of %1$s, selling agent — %2$s', 'rechat-plugin'),
+                                    $seller_agent_title,
+                                    $rch_listing_context_label
+                                )
+                                : sprintf(
+                                    /* translators: %s: agent name */
+                                    __('Photo of %s, selling agent', 'rechat-plugin'),
+                                    $seller_agent_title
+                                );
+                            ?>
+                            <img
+                                src="<?php echo esc_url($seller_agent_img); ?>"
+                                alt="<?php echo esc_attr($rch_seller_photo_alt); ?>"
+                                class="rch-agent-photo"
+                                width="320"
+                                height="320"
+                                decoding="async"
+                                loading="lazy"
+                            >
                         <?php endif; ?>
                     </a>
                     <div class="rch-listing-agent-info">
