@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Multisite: agent subsite listing scope + Rechat credential fallback.
  *
@@ -377,6 +378,48 @@ add_filter('shortcode_atts_listings', static function ($out, $pairs, $atts) {
 
     return $out;
 }, 10, 3);
+
+/**
+ * Gutenberg ServerSideRender (block editor preview) and render_block(): merge filter_agents
+ * into listing block attrs before PHP render_callback runs. Otherwise empty filter_agents is
+ * omitted from the [listings …] string and the editor preview misses agent scoping.
+ *
+ * @param array         $parsed_block Parsed block (see WP_Block_Parser_Block).
+ * @param array         $source_block Unmodified copy (unused).
+ * @param \WP_Block|null $parent_block Parent block (unused).
+ * @return array
+ */
+function rch_multisite_render_block_data_inject_listing_filter_agents($parsed_block, $source_block = null, $parent_block = null)
+{
+    unset($source_block, $parent_block);
+
+    if (! is_array($parsed_block)) {
+        return $parsed_block;
+    }
+
+    if (($parsed_block['blockName'] ?? '') !== 'rch-rechat-plugin/listing-block') {
+        return $parsed_block;
+    }
+
+    if (! rch_multisite_is_agent_listing_scope_active()) {
+        return $parsed_block;
+    }
+
+    $csv = rch_multisite_get_main_site_agent_ids_csv();
+    if ($csv === '') {
+        return $parsed_block;
+    }
+
+    if (! isset($parsed_block['attrs']) || ! is_array($parsed_block['attrs'])) {
+        $parsed_block['attrs'] = [];
+    }
+
+    $parsed_block['attrs']['filter_agents'] = $csv;
+
+    return $parsed_block;
+}
+
+add_filter('render_block_data', 'rch_multisite_render_block_data_inject_listing_filter_agents', 10, 3);
 
 /**
  * [rch_latest_listings] does not pass a shortcode name into shortcode_atts(), so we proxy the handler.
