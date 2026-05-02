@@ -18,6 +18,18 @@ if ($house_id) {
     $access_token = get_option('rch_rechat_access_token');
     $response = rch_api_request($api_url, $access_token);
 
+    // Invalid/expired access token: refresh (same as “Refresh access token now” / cron) and retry once.
+    if (function_exists('rch_single_listing_response_suggests_invalid_token')
+        && function_exists('rch_refresh_access_token')
+        && rch_single_listing_response_suggests_invalid_token($response)
+    ) {
+        $refresh_result = rch_refresh_access_token('listing_detail');
+        if (! is_wp_error($refresh_result)) {
+            $access_token = get_option('rch_rechat_access_token');
+            $response      = rch_api_request($api_url, $access_token);
+        }
+    }
+
     // Check if the API request was successful
     if (isset($response['data']['http']) && $response['data']['http'] === 400) {
         // Check for validation errors
