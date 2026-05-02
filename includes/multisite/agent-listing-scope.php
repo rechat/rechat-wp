@@ -38,25 +38,6 @@ function rch_multisite_is_agent_listing_scope_active(): bool
 }
 
 /**
- * Whether to inject agent listing filters (filter_agents, etc.) on this blog.
- *
- * True when the blog is a recognised agent subsite, or when it is linked to a main-site
- * agent post via `_rch_agent_site_id` (covers REST / block editor before `rch_rechat_subsite_role` exists).
- */
-function rch_multisite_should_apply_agent_listing_filters(): bool
-{
-    if (! is_multisite() || get_current_blog_id() === (int) get_main_site_id()) {
-        return false;
-    }
-
-    if (function_exists('rch_is_rechat_agent_only_subsite') && rch_is_rechat_agent_only_subsite()) {
-        return true;
-    }
-
-    return rch_multisite_resolve_agent_post_id_for_current_blog() > 0;
-}
-
-/**
  * Resolve the main-site agent CPT post ID linked to the current blog.
  */
 function rch_multisite_resolve_agent_post_id_for_current_blog(): int
@@ -154,7 +135,7 @@ function rch_multisite_get_main_site_agent_ids_csv(): string
 
     $csv = '';
 
-    if (! rch_multisite_should_apply_agent_listing_filters()) {
+    if (! rch_multisite_is_agent_listing_scope_active()) {
         return $csv;
     }
 
@@ -378,7 +359,7 @@ add_filter('option_rch_rechat_refresh_token', static function ($value) {
 add_filter('shortcode_atts_listings', static function ($out, $pairs, $atts) {
     unset($pairs, $atts);
 
-    if (! rch_multisite_should_apply_agent_listing_filters()) {
+    if (! rch_multisite_is_agent_listing_scope_active()) {
         return $out;
     }
 
@@ -399,7 +380,7 @@ function rch_multisite_proxy_latest_listings_shortcode($atts)
 {
     $atts = is_array($atts) ? $atts : [];
 
-    if (rch_multisite_should_apply_agent_listing_filters()) {
+    if (rch_multisite_is_agent_listing_scope_active()) {
         $csv = rch_multisite_get_main_site_agent_ids_csv();
         if ($csv !== '') {
             $atts['filter_agents'] = $csv;
@@ -431,7 +412,7 @@ add_action('init', static function () {
  */
 function rch_multisite_prime_agents_for_listing_ajax(): void
 {
-    if (! rch_multisite_should_apply_agent_listing_filters()) {
+    if (! rch_multisite_is_agent_listing_scope_active()) {
         return;
     }
 
@@ -470,7 +451,7 @@ function rch_multisite_ob_inject_filter_agents($html)
         return $html;
     }
 
-    if (! rch_multisite_should_apply_agent_listing_filters()) {
+    if (! rch_multisite_is_agent_listing_scope_active()) {
         return $html;
     }
 
@@ -481,7 +462,7 @@ function rch_multisite_ob_inject_filter_agents($html)
 
     $attr = 'filter_agents="' . esc_attr($csv) . '"';
 
-    $out = preg_replace_callback(
+    return (string) preg_replace_callback(
         rch_multisite_ob_open_custom_element_pattern('rechat-listings'),
         static function ($m) use ($attr) {
             $inner = isset($m[1]) ? (string) $m[1] : '';
@@ -496,14 +477,12 @@ function rch_multisite_ob_inject_filter_agents($html)
                 return '<rechat-listings' . $inner . '>';
             }
 
-            $glue = ($inner === '') ? ' ' : (preg_match('/\s$/', $inner) ? '' : ' ');
+            $prefix = ($inner !== '' && $inner[0] !== ' ') ? ' ' : '';
 
-            return '<rechat-listings' . $inner . $glue . $attr . '>';
+            return '<rechat-listings' . $inner . $prefix . $attr . '>';
         },
         $html
     );
-
-    return ($out === null || $out === '') ? $html : $out;
 }
 
 /**
@@ -696,7 +675,7 @@ function rch_multisite_should_buffer_listing_markup(): bool
     $hub_brand = rch_multisite_fetch_raw_option_value_for_blog($main_id, 'rch_rechat_brand_id');
     $hub_map  = rch_multisite_fetch_raw_option_value_for_blog($main_id, 'rch_rechat_google_map_api_key');
 
-    if (rch_multisite_should_apply_agent_listing_filters()) {
+    if (rch_multisite_is_agent_listing_scope_active()) {
         $csv = rch_multisite_get_main_site_agent_ids_csv();
         if ($csv !== '') {
             return true;
