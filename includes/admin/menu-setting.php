@@ -289,6 +289,7 @@ function rch_render_token_information($access_token_exists, $refresh_token_exist
         'wp_cron' => __('WordPress cron (background / scheduled)', 'rechat-plugin'),
         'manual'   => __('Manual “Refresh access token now” button', 'rechat-plugin'),
         'auto'     => __('Automatic when loading Rechat settings (empty access token)', 'rechat-plugin'),
+        'listing_detail' => __('Single listing page (after API indicated invalid token)', 'rechat-plugin'),
         'other'    => __('Other context', 'rechat-plugin'),
         'initial'  => __('Initial OAuth connect (authorization code exchange)', 'rechat-plugin'),
     );

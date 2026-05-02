@@ -315,9 +315,65 @@ function rch_api_request($url, $token, $brand = null)
     }
     $response = wp_remote_get($url, array('headers' => $headers));
     if (is_wp_error($response)) {
-        return array('success' => false, 'message' => 'Error fetching data');
+        return array(
+            'success'         => false,
+            'message'         => 'Error fetching data',
+            'response_code'   => 0,
+        );
     }
-    return array('success' => true, 'data' => json_decode(wp_remote_retrieve_body($response), true));
+    $response_code = (int) wp_remote_retrieve_response_code($response);
+    $body          = wp_remote_retrieve_body($response);
+    $decoded       = json_decode($body, true);
+
+    return array(
+        'success'         => true,
+        'data'            => is_array($decoded) ? $decoded : null,
+        'response_code'   => $response_code,
+    );
+}
+
+/**
+ * Whether a listings API response likely indicates an invalid/expired access token
+ * (used to trigger OAuth refresh before showing a generic “not found” message).
+ *
+ * @param array $response Return value from {@see rch_api_request()}.
+ * @return bool
+ */
+function rch_single_listing_response_suggests_invalid_token($response)
+{
+    if (! is_array($response) || empty($response['success'])) {
+        return false;
+    }
+    $rc = isset($response['response_code']) ? (int) $response['response_code'] : 0;
+    if (in_array($rc, array(401, 403), true)) {
+        return true;
+    }
+    $d = isset($response['data']) && is_array($response['data']) ? $response['data'] : null;
+    if ($d === null) {
+        return (bool) apply_filters('rch_single_listing_response_suggests_invalid_token', false, $response);
+    }
+    $inner = isset($d['http']) ? (int) $d['http'] : 0;
+    if (in_array($inner, array(401, 403), true)) {
+        return true;
+    }
+    // Some Rechat errors use HTTP 400 in the envelope with a non-Validation code/message for auth issues.
+    if ($inner === 400 && (! isset($d['code']) || $d['code'] !== 'Validation')) {
+        $parts = array();
+        if (isset($d['code'])) {
+            $parts[] = (string) $d['code'];
+        }
+        if (isset($d['message'])) {
+            $parts[] = (string) $d['message'];
+        }
+        $blob = strtolower(implode(' ', $parts));
+        foreach (array('token', 'unauthorized', 'authentication', 'forbidden', 'expired', 'invalid grant', 'oauth') as $needle) {
+            if ($blob !== '' && strpos($blob, $needle) !== false) {
+                return true;
+            }
+        }
+    }
+
+    return (bool) apply_filters('rch_single_listing_response_suggests_invalid_token', false, $response);
 }
 /*******************************
  * Function to insert or update posts and save meta data
