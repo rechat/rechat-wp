@@ -25,7 +25,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         maximum_year_built: { type: 'string', default: '' },
         minimum_bedrooms: { type: 'string', default: '' },
         maximum_bedrooms: { type: 'string', default: '' },
-        listing_per_page: { type: 'string', default: '5' },
+        listing_per_page: { type: 'string', default: '' },
         filterByRegions: { type: 'string', default: '' },
         filterByOffices: { type: 'string', default: '' },
         selectedStatuses: { type: 'array', default: [] },

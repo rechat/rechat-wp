@@ -72,7 +72,7 @@ function rch_render_listing_list($atts)
     'maximum_year_built' => '',
     'minimum_bedrooms' => '',
     'maximum_bedrooms' => '',
-    'listing_per_page' => '5',
+    'listing_per_page' => '',
     'brand' => '',
     'listing_statuses' => '',
     'disable_filter_address' => false,

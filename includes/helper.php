@@ -1140,7 +1140,7 @@ function rch_get_listing_block_attributes()
         'maximum_year_built' => array('type' => 'string', 'default' => ''),
         'minimum_bedrooms' => array('type' => 'string', 'default' => ''),
         'maximum_bedrooms' => array('type' => 'string', 'default' => ''),
-        'listing_per_page' => array('type' => 'string', 'default' => 5),
+        'listing_per_page' => array('type' => 'string', 'default' => ''),
         'filterByRegions' => array('type' => 'string', 'default' => ''),
         'filterByOffices' => array('type' => 'string', 'default' => ''),
         'brand' => array('type' => 'string', 'default' => get_option('rch_rechat_brand_id')),
