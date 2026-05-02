@@ -28,8 +28,24 @@
 
 .rch-listing-block-gutenberg .listings {
   flex: 7;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding-right: 8px;
+}
+.rch-listing-block-gutenberg .listings__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px 8px;
+}
+.rch-listing-block-gutenberg .listings__grid {
+  flex: 1;
   min-height: 0;
   overflow: auto;
+}
+.rch-listing-block-gutenberg .listings__footer {
+  padding: 12px 8px;
 }
 .rch-listing-block-gutenberg .listings .listing-card {
   width: 100%;
