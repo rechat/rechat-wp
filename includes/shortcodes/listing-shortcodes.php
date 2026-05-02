@@ -189,7 +189,7 @@ function rch_render_listing_list($atts)
   ob_start();
 
 ?>
-  <div class="<?php echo esc_attr($wrapper_classes); ?>"<?php echo $wrapper_style_attr; ?>>
+  <div class="<?php echo esc_attr($wrapper_classes); ?>" <?php echo $wrapper_style_attr; ?>>
     <rechat-root <?php echo $rechat_attrs; ?>>
       <rechat-listings <?php echo $rechat_listings_attrs; ?>>
         <div class="container_listing_sdk">
@@ -217,7 +217,17 @@ function rch_render_listing_list($atts)
                 <rechat-map></rechat-map>
               </div>
               <div class="listings">
-                <rechat-map-listings-grid></rechat-map-listings-grid>
+                <div class="listings__header">
+                  <rechat-listings-count></rechat-listings-count>
+                </div>
+
+                <div class="listings__grid">
+                  <rechat-map-listings-grid></rechat-map-listings-grid>
+                </div>
+
+                <div class="listings__footer">
+                  <rechat-listings-pagination></rechat-listings-pagination>
+                </div>
               </div>
             </div>
           <?php endif; ?>
