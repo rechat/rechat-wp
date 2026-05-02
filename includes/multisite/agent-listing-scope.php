@@ -393,40 +393,6 @@ add_filter('shortcode_atts_listings', static function ($out, $pairs, $atts) {
 }, 10, 3);
 
 /**
- * Wrap listing block render_callback so REST / ServerSideRender previews get filter_agents
- * (same markup path as the front end).
- *
- * @param array<string, mixed> $args Block type args.
- * @param string               $name Block name including namespace.
- * @return array<string, mixed>
- */
-function rch_multisite_wrap_listing_block_register_args($args, $name)
-{
-    if (! is_array($args)) {
-        return $args;
-    }
-
-    if ((string) $name !== 'rch-rechat-plugin/listing-block') {
-        return $args;
-    }
-
-    $prev = $args['render_callback'] ?? null;
-    if (! is_callable($prev)) {
-        return $args;
-    }
-
-    $args['render_callback'] = static function (...$cb_args) use ($prev) {
-        $html = call_user_func($prev, ...$cb_args);
-
-        return rch_multisite_ob_inject_filter_agents((string) $html);
-    };
-
-    return $args;
-}
-
-add_filter('register_block_type_args', 'rch_multisite_wrap_listing_block_register_args', 5, 2);
-
-/**
  * [rch_latest_listings] does not pass a shortcode name into shortcode_atts(), so we proxy the handler.
  */
 function rch_multisite_proxy_latest_listings_shortcode($atts)
@@ -515,7 +481,7 @@ function rch_multisite_ob_inject_filter_agents($html)
 
     $attr = 'filter_agents="' . esc_attr($csv) . '"';
 
-    return (string) preg_replace_callback(
+    $out = preg_replace_callback(
         rch_multisite_ob_open_custom_element_pattern('rechat-listings'),
         static function ($m) use ($attr) {
             $inner = isset($m[1]) ? (string) $m[1] : '';
@@ -536,6 +502,8 @@ function rch_multisite_ob_inject_filter_agents($html)
         },
         $html
     );
+
+    return ($out === null || $out === '') ? $html : $out;
 }
 
 /**
