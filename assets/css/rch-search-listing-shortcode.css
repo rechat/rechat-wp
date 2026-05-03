@@ -84,28 +84,3 @@
 .search_address_input__field_wrapper {
   border:none;
 }
-
-/**
- * Double vertical scrollbar (hero + page): themes often use `.hero { overflow-x: hidden }`.
- * In CSS, if one overflow axis is not `visible`, the other axis set to `visible` computes to
- * `auto`, so the hero becomes a scroll container when the address dropdown grows taller.
- * Reset overflow when this shortcode is inside the hero / search header.
- *
- * Uses :has() — supported in current evergreen browsers.
- */
-.hero:has(.rch-search-listing-form) {
-  overflow: visible;
-}
-
-.hero--content:has(.rch-search-listing-form),
-.search-header:has(.rch-search-listing-form) {
-  overflow: visible;
-  max-height: none;
-}
-
-/* Rechat host nodes may default to scrollable overflow in the SDK */
-.rch-search-listing-form rechat-root,
-.rch-search-listing-form rechat-listings {
-  overflow: visible !important;
-  max-height: none !important;
-}
