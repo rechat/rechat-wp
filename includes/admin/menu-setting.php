@@ -14,10 +14,12 @@ function rch_register_my_setting_menu_page()
         return;
     }
 
+    $rechat_cap = function_exists('rch_rechat_settings_capability') ? rch_rechat_settings_capability() : 'manage_options';
+
     add_menu_page(
         __('Rechat Settings', 'rechat-plugin'),
         __('Rechat', 'rechat-plugin'),
-        'manage_options',
+        $rechat_cap,
         'rechat-setting',
         'rch_rechat_menu_page',
         RCH_PLUGIN_URL . 'assets/images/favicon.png'
@@ -31,6 +33,11 @@ add_action('admin_menu', 'rch_register_my_setting_menu_page');
 function rch_get_active_tab()
 {
     $allowed_tabs = ['sync-data', 'connect-to-rechat', 'lead-capture', 'general-settings', 'local-logic'];
+
+    if (is_multisite()) {
+        $allowed_tabs[] = 'multisite';
+    }
+
     $tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'sync-data';
     
     return in_array($tab, $allowed_tabs, true) ? $tab : 'sync-data';
@@ -48,6 +55,10 @@ function rch_render_tab_navigation($active_tab)
         'general-settings' => __('General Settings', 'rechat-plugin'),
         'local-logic' => __('Local Logic Settings', 'rechat-plugin'),
     ];
+
+    if (is_multisite()) {
+        $tabs['multisite'] = __('Multisite', 'rechat-plugin');
+    }
 
     echo '<h2 class="nav-tab-wrapper">';
     
@@ -70,7 +81,7 @@ function rch_render_tab_navigation($active_tab)
 function rch_rechat_menu_page()
 {
     // Check user capabilities
-    if (!current_user_can('manage_options')) {
+    if (! function_exists('rch_current_user_can_manage_rechat') || ! rch_current_user_can_manage_rechat()) {
         wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'rechat-plugin'));
     }
 
@@ -115,6 +126,12 @@ function rch_rechat_menu_page()
                     
                 case 'local-logic':
                     rch_render_local_logic_tab();
+                    break;
+                    
+                case 'multisite':
+                    if (is_multisite() && function_exists('rch_multisite_render_admin_tab')) {
+                        rch_multisite_render_admin_tab();
+                    }
                     break;
             }
             ?>

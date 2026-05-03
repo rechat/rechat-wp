@@ -2,7 +2,7 @@
 /*
 Plugin Name: Rechat Plugin
 Description: Fetches and manages agent, offices, regions, and Listing data from Rechat.
-Version: 6.2.6
+Version: 6.2.10
 Author URI: https://rechat.com/
 Text Domain: rechat-plugin
 License: GPL-2.0-or-later
@@ -18,7 +18,7 @@ if (! defined('ABSPATH')) {
 // define required constants.
 define('RCH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('RCH_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('RCH_VERSION', '6.2.6');
+define('RCH_VERSION', '6.2.10');
 define('RCH_VERSION_SWIPER', '11.2.5');
 if (! defined('RCH_STAGING_DOMAIN')) {
     define('RCH_STAGING_DOMAIN', 'staging.insanustu.dev');
@@ -66,6 +66,8 @@ const RCH_NEIGHBORHOOD_FEATURES = [
     'Match' => 'Neighborhood Match',
 ];
 
+require_once RCH_PLUGIN_INCLUDES . 'roles/agent-user-role.php';
+
 // Add a "Settings" link to the plugin actions
 function rch_plugin_action_links($links)
 {
@@ -92,6 +94,10 @@ function rch_plugin_activate()
         'top'
     );
     flush_rewrite_rules();
+
+    if (function_exists('rch_register_agent_user_roles')) {
+        rch_register_agent_user_roles();
+    }
 }
 register_activation_hook(__FILE__, 'rch_plugin_activate');
 
@@ -128,6 +134,9 @@ include RCH_PLUGIN_INCLUDES . 'front/enqueue-front.php';
 include RCH_PLUGIN_INCLUDES . 'schema/load-schema.php';
 include RCH_PLUGIN_INCLUDES . 'seo/auto-meta-tags.php';
 include RCH_PLUGIN_INCLUDES . 'front/add-css-in-setting.php';
+if (is_multisite()) {
+    require_once RCH_PLUGIN_INCLUDES . 'multisite/subsite-admin-context.php';
+}
 include RCH_PLUGIN_INCLUDES . 'admin/register-custom-post-type.php';
 include RCH_PLUGIN_INCLUDES . 'admin/settings-page/other-settings.php';
 include RCH_PLUGIN_INCLUDES . 'admin/settings-page/local-logic-setting.php';
@@ -149,6 +158,15 @@ include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-agents.php';
 include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-listing.php';
 include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-lead-form.php';
 include RCH_PLUGIN_INCLUDES . 'metabox/load-all-meta-boxes.php';
+// Multisite: Broadcast integration (no-op on single-site installs)
+include RCH_PLUGIN_INCLUDES . 'multisite/broadcast-integration.php';
+// Multisite: agent sub-site management (no-op on single-site installs)
+include RCH_PLUGIN_INCLUDES . 'multisite/agent-sites.php';
+// Multisite: prompt to install & activate Broadcast (ThreeWP) from wordpress.org — admin only
+if (is_multisite() && is_admin()) {
+    require_once RCH_PLUGIN_INCLUDES . 'tgm/class-tgm-plugin-activation.php';
+    require_once RCH_PLUGIN_INCLUDES . 'tgm/register-tgmpa.php';
+}
 if (is_admin()) {
     include RCH_PLUGIN_INCLUDES . 'admin/enqueue-admin.php';
 
