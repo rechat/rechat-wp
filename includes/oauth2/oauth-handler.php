@@ -31,7 +31,7 @@ function rch_handle_oauth_callback()
     }
 
     // Verify user has permission
-    if (!current_user_can('manage_options')) {
+    if (! function_exists('rch_current_user_can_manage_rechat') || ! rch_current_user_can_manage_rechat()) {
         wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'rechat-plugin'));
     }
 
@@ -421,7 +421,7 @@ function rch_disconnect_oauth()
     }
 
     // Check user capabilities
-    if (!current_user_can('manage_options')) {
+    if (! function_exists('rch_current_user_can_manage_rechat') || ! rch_current_user_can_manage_rechat()) {
         wp_die(esc_html__('You do not have sufficient permissions to perform this action.', 'rechat-plugin'));
     }
 

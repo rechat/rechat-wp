@@ -54,6 +54,9 @@ function rch_update_agents_offices_regions_data()
     $current_office_ids = [];
     $office_add_count = 0;
     $office_update_count = 0;
+
+    $GLOBALS['rch_doing_rechat_sync'] = true;
+
     foreach ($offices as $office) {
         // Insert or update the office post with regions, address, and phone
         $result = rch_insert_or_update_post(
@@ -75,6 +78,8 @@ function rch_update_agents_offices_regions_data()
         $current_office_ids[] = $office['id'];
     }
 
+    $GLOBALS['rch_doing_rechat_sync'] = false;
+
     // Delete outdated Region and Office posts
     rch_delete_outdated_posts('regions', $current_region_ids, 'region_id');
     rch_delete_outdated_posts('offices', $current_office_ids, 'office_id');
@@ -92,14 +97,25 @@ function rch_update_agents_offices_regions_data()
     if (!$agents_result) {
         wp_send_json(array('success' => false, 'message' => 'Error processing agents'));
     }
+    // Assemble the sync result data.
+    $sync_data = array(
+        'agents'  => "<b>Agents</b></br> added: {$agents_result['agent_add_count']}, updated: {$agents_result['agent_update_count']}",
+        'regions' => "<b>Regions</b></br> added: $region_add_count, updated: $region_update_count",
+        'offices' => "<b>Offices</b></br> added: $office_add_count, updated: $office_update_count",
+        'branding' => "<b>Branding</b></br> Updated primary color and logos",
+    );
+
+    /**
+     * Allow other modules (e.g. the Multisite module) to append extra entries
+     * to the sync-result data that is returned to the admin JS.
+     *
+     * @param array $sync_data  Associative array of result strings shown in the UI.
+     */
+    $sync_data = apply_filters('rch_sync_response_data', $sync_data);
+
     // Return success message with counts for agents, regions, and offices
     wp_send_json(array(
         'success' => true,
-        'data'    => array(
-            'agents'  => "<b>Agents</b></br> added: {$agents_result['agent_add_count']}, updated: {$agents_result['agent_update_count']}",
-            'regions' => "<b>Regions</b></br> added: $region_add_count, updated: $region_update_count",
-            'offices' => "<b>Offices</b></br> added: $office_add_count, updated: $office_update_count",
-            'branding' => "<b>Branding</b></br> Updated primary color and logos"
-        )
+        'data'    => $sync_data,
     ));
 }

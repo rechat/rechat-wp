@@ -2,6 +2,25 @@
 if (! defined('ABSPATH')) {
     exit();
 }
+
+/**
+ * True while rch_process_agents_data() is running (same HTTP request).
+ * Used to avoid duplicate side effects on save_post during API sync.
+ */
+function rch_is_doing_agent_sync(): bool
+{
+    return ! empty($GLOBALS['rch_doing_agent_sync']);
+}
+
+/**
+ * True while rch_update_agents_offices_regions_data() is processing regions/offices
+ * (before agent sync). Avoids duplicate multisite side effects on save_post.
+ */
+function rch_is_doing_rechat_sync(): bool
+{
+    return ! empty($GLOBALS['rch_doing_rechat_sync']);
+}
+
 /*******************************
  * change to readable Date
  ******************************/
@@ -423,6 +442,16 @@ function rch_insert_or_update_post($post_type, $brand_name, $brand_id, $meta_key
             update_post_meta($post_id, 'office_phone', sanitize_text_field($phone));
         }
 
+        if ($post_type === 'offices') {
+            /**
+             * Fires after an office post is inserted or updated via Rechat sync.
+             *
+             * @param int    $post_id     Office post ID.
+             * @param string $brand_name Office display name.
+             */
+            do_action('rch_after_office_synced', (int) $post_id, (string) $brand_name);
+        }
+
         return 'updated';
     } else {
         // Insert new post
@@ -459,6 +488,16 @@ function rch_insert_or_update_post($post_type, $brand_name, $brand_id, $meta_key
         // Insert office phone if provided and post type is offices
         if ($post_type === 'offices' && !empty($phone)) {
             update_post_meta($post_id, 'office_phone', sanitize_text_field($phone));
+        }
+
+        if ($post_type === 'offices') {
+            /**
+             * Fires after an office post is inserted or updated via Rechat sync.
+             *
+             * @param int    $post_id     Office post ID.
+             * @param string $brand_name Office display name.
+             */
+            do_action('rch_after_office_synced', (int) $post_id, (string) $brand_name);
         }
 
         return 'added';
@@ -583,6 +622,8 @@ function rch_fetch_and_process_brands($api_url_base, $access_token)
  ******************************/
 function rch_process_agents_data($access_token, $api_url_base)
 {
+    $GLOBALS['rch_doing_agent_sync'] = true;
+    try {
     $limit = 100;
     $offset = 0;
     $default_profile_image_url = RCH_PLUGIN_URL . 'assets/images/image-placeholder.svg';
@@ -725,6 +766,13 @@ function rch_process_agents_data($access_token, $api_url_base)
                             update_post_meta($updated_post_id, $key, $value);
                         }
                         $agent_update_count++;
+                        /**
+                         * Fired after an agent post is updated during an API sync.
+                         *
+                         * @param int    $updated_post_id  Agent post ID.
+                         * @param string $full_name        Agent display name.
+                         */
+                        do_action('rch_after_agent_synced', $updated_post_id, $full_name);
                     }
                 } else {
                     // Insert new post
@@ -740,6 +788,13 @@ function rch_process_agents_data($access_token, $api_url_base)
                             update_post_meta($post_id, $key, $value);
                         }
                         $agent_add_count++;
+                        /**
+                         * Fired after a new agent post is inserted during an API sync.
+                         *
+                         * @param int    $post_id    Agent post ID.
+                         * @param string $full_name  Agent display name.
+                         */
+                        do_action('rch_after_agent_synced', $post_id, $full_name);
                     }
                 }
                 $current_menu_order++;
@@ -757,6 +812,9 @@ function rch_process_agents_data($access_token, $api_url_base)
         'agent_add_count' => $agent_add_count,
         'agent_update_count' => $agent_update_count,
     );
+    } finally {
+        $GLOBALS['rch_doing_agent_sync'] = false;
+    }
 }
 /*******************************
  * this function get all filters that use in listing shortcode
