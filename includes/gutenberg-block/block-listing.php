@@ -55,6 +55,8 @@ function rch_render_listing_block($attributes)
     $attributes = array_merge($attributes, array_filter($url_params, function($value) {
         return $value !== '' && $value !== null;
     }));
+
+    $attributes = rch_apply_listing_boundary_site_defaults($attributes);
     
     // Build shortcode attributes string from block attributes
     $shortcode_atts = array();
@@ -124,3 +126,81 @@ function rch_get_fallback_url_parameters()
 
     return $url_params;
 }
+
+/**
+ * REST: country options for block editor (cached Rechat boundaries).
+ *
+ * @return WP_REST_Response|WP_Error
+ */
+function rch_rest_boundary_countries()
+{
+    if (! function_exists('rch_rechat_fetch_boundaries_for_settings')) {
+        return new WP_Error('rch_no_helper', __('Rechat helpers are not available.', 'rechat-plugin'), array('status' => 500));
+    }
+
+    $options = rch_rechat_fetch_boundaries_for_settings('country', '', false);
+
+    return rest_ensure_response(array('options' => $options));
+}
+
+/**
+ * REST: state/province options for a country (block editor).
+ *
+ * @param WP_REST_Request $request Request.
+ * @return WP_REST_Response|WP_Error
+ */
+function rch_rest_boundary_states(WP_REST_Request $request)
+{
+    if (! function_exists('rch_rechat_fetch_boundaries_for_settings')) {
+        return new WP_Error('rch_no_helper', __('Rechat helpers are not available.', 'rechat-plugin'), array('status' => 500));
+    }
+
+    $country = strtoupper(sanitize_text_field((string) $request->get_param('country')));
+    if ($country === '') {
+        return new WP_Error('rch_bad_request', __('Country is required.', 'rechat-plugin'), array('status' => 400));
+    }
+
+    $options = rch_rechat_fetch_boundaries_for_settings('state', $country, false);
+
+    return rest_ensure_response(array('options' => $options));
+}
+
+/**
+ * Register REST routes used by the listing block editor (boundary selects).
+ */
+function rch_register_listing_block_boundary_rest_routes()
+{
+    register_rest_route(
+        'rch/v1',
+        '/boundary-countries',
+        array(
+            'methods'             => 'GET',
+            'callback'            => 'rch_rest_boundary_countries',
+            'permission_callback' => static function () {
+                return current_user_can('edit_posts');
+            },
+        )
+    );
+
+    register_rest_route(
+        'rch/v1',
+        '/boundary-states',
+        array(
+            'methods'             => 'GET',
+            'callback'            => 'rch_rest_boundary_states',
+            'permission_callback' => static function () {
+                return current_user_can('edit_posts');
+            },
+            'args'                => array(
+                'country' => array(
+                    'required'          => true,
+                    'type'              => 'string',
+                    'sanitize_callback' => static function ($param) {
+                        return strtoupper(sanitize_text_field((string) $param));
+                    },
+                ),
+            ),
+        )
+    );
+}
+add_action('rest_api_init', 'rch_register_listing_block_boundary_rest_routes');

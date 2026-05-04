@@ -537,6 +537,35 @@ function rch_rechat_fetch_boundaries_for_settings($boundary_type, $country_iso =
 }
 
 /**
+ * Fill empty filter_boundary_country / filter_boundary_state from General Settings options.
+ *
+ * @param array<string, mixed> $atts
+ * @return array<string, mixed>
+ */
+function rch_apply_listing_boundary_site_defaults($atts)
+{
+    if (! is_array($atts)) {
+        return $atts;
+    }
+
+    if (empty($atts['filter_boundary_country'])) {
+        $country = (string) get_option('rch_selected_country', '');
+        if ($country !== '') {
+            $atts['filter_boundary_country'] = strtoupper($country);
+        }
+    }
+
+    if (empty($atts['filter_boundary_state'])) {
+        $state = (string) get_option('rch_selected_state', '');
+        if ($state !== '' && ! preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $state)) {
+            $atts['filter_boundary_state'] = $state;
+        }
+    }
+
+    return $atts;
+}
+
+/**
  * Whether a listings API response likely indicates an invalid/expired access token
  * (used to trigger OAuth refresh before showing a generic “not found” message).
  *
@@ -1187,11 +1216,16 @@ function get_custom_options()
     $access_token = get_option('rch_rechat_access_token');
     $google_map_api_key = get_option('rch_rechat_google_map_api_key');
 
+    $selected_country = (string) get_option('rch_selected_country', '');
+    $selected_state   = (string) get_option('rch_selected_state', '');
+
     // Return the option as a JSON response
     return new WP_REST_Response(array(
         'rch_rechat_brand_id' => $brand_id,
         'rch_rechat_access_token' => $access_token,
         'rch_rechat_google_map_api_key' => $google_map_api_key,
+        'rch_selected_country' => $selected_country !== '' ? strtoupper($selected_country) : '',
+        'rch_selected_state' => $selected_state,
     ), 200);
 }
 
@@ -1477,6 +1511,8 @@ function rch_get_listing_block_attributes()
         'list_offices' => array('type' => 'string', 'default' => ''),
         'filter_brand_id' => array('type' => 'string', 'default' => ''),
         'disable_filter_loading_indicator' => array('type' => 'boolean', 'default' => false),
+        'filter_boundary_country' => array('type' => 'string', 'default' => ''),
+        'filter_boundary_state' => array('type' => 'string', 'default' => ''),
     );
 }
 

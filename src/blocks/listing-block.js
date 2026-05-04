@@ -1,7 +1,7 @@
 const { registerBlockType } = wp.blocks;
 const { InspectorControls, MediaUpload, MediaUploadCheck } = wp.blockEditor || wp.editor;
 const { PanelBody, RangeControl, SelectControl, TextControl, CheckboxControl, RadioControl, Button } = wp.components;
-import { useEffect, useState } from '@wordpress/element';
+import { useEffect, useState, useRef } from '@wordpress/element';
 import ServerSideRender from '@wordpress/server-side-render';
 import apiFetch from '@wordpress/api-fetch';
 import MapSelector from '../utils/map-selector';
@@ -61,6 +61,8 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         list_offices: { type: 'string', default: '' },
         filter_brand_id: { type: 'string', default: '' },
         disable_filter_loading_indicator: { type: 'boolean', default: false },
+        filter_boundary_country: { type: 'string', default: '' },
+        filter_boundary_state: { type: 'string', default: '' },
     },
     edit({ attributes, setAttributes }) {
         const {
@@ -71,12 +73,17 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             disable_filter_address, disable_filter_price, disable_filter_beds, 
             disable_filter_baths, disable_filter_property_types, disable_filter_advanced,
             layout_style, own_listing, property_types, filter_open_houses, office_exclusive, filter_pool, disable_sort, listing_statuses, map_latitude, map_longitude, map_zoom, map_id,
-            sort_by, filter_address, filter_search_limit, filter_suggestions_limit, filter_pagination_offset, property_subtypes, architectural_styles, filter_baths, minimum_parking_spaces, minimum_sold_date, filter_agents, list_offices, filter_brand_id, disable_filter_loading_indicator
+            sort_by, filter_address, filter_search_limit, filter_suggestions_limit, filter_pagination_offset, property_subtypes, architectural_styles, filter_baths, minimum_parking_spaces, minimum_sold_date, filter_agents, list_offices, filter_brand_id, disable_filter_loading_indicator,
+            filter_boundary_country, filter_boundary_state,
         } = attributes;
 
         const [regions, setRegions] = useState([]);
         const [offices, setOffices] = useState([]);
         const [googleMapsApiKey, setGoogleMapsApiKey] = useState('');
+        const [siteBoundaryDefaults, setSiteBoundaryDefaults] = useState(null);
+        const [boundaryCountryOptions, setBoundaryCountryOptions] = useState([{ label: 'Any', value: '' }]);
+        const [boundaryStateOptions, setBoundaryStateOptions] = useState([{ label: 'Any', value: '' }]);
+        const defaultsSeededRef = useRef(false);
 
         const statusOptions = [
             { label: 'Active', value: 'Active' },
@@ -88,18 +95,91 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         useEffect(() => {
             fetchDataWithMeta('/wp/v2/regions?per_page=100', setRegions);
             fetchDataWithMeta('/wp/v2/offices?per_page=100', setOffices);
-            
-            // Fetch Google Maps API key
+
             apiFetch({ path: '/wp/v2/options' })
-                .then(options => {
+                .then((options) => {
                     if (options.rch_rechat_google_map_api_key) {
                         setGoogleMapsApiKey(options.rch_rechat_google_map_api_key);
                     }
+                    setSiteBoundaryDefaults({
+                        country: options.rch_selected_country ? String(options.rch_selected_country).toUpperCase() : '',
+                        state: options.rch_selected_state ? String(options.rch_selected_state) : '',
+                    });
                 })
-                .catch(error => {
-                    console.error('Error fetching Google Maps API key:', error);
+                .catch((error) => {
+                    console.error('Error fetching editor options:', error);
+                    setSiteBoundaryDefaults({ country: '', state: '' });
+                });
+
+            apiFetch({ path: '/rch/v1/boundary-countries' })
+                .then((res) => {
+                    const rows = Array.isArray(res.options) ? res.options : [];
+                    setBoundaryCountryOptions([
+                        { label: 'Any', value: '' },
+                        ...rows.map((o) => ({ label: o.label, value: o.value })),
+                    ]);
+                })
+                .catch((error) => {
+                    console.error('Error loading boundary countries:', error);
                 });
         }, []);
+
+        useEffect(() => {
+            if (defaultsSeededRef.current || siteBoundaryDefaults === null) {
+                return;
+            }
+            defaultsSeededRef.current = true;
+            const sc = siteBoundaryDefaults.country || '';
+            const ss = siteBoundaryDefaults.state || '';
+            const patch = {};
+            if (!filter_boundary_country && !filter_boundary_state && sc && ss) {
+                patch.filter_boundary_country = sc;
+                patch.filter_boundary_state = ss;
+            } else if (!filter_boundary_country && sc) {
+                patch.filter_boundary_country = sc;
+            } else if (
+                !filter_boundary_state &&
+                ss &&
+                filter_boundary_country &&
+                sc &&
+                filter_boundary_country === sc
+            ) {
+                patch.filter_boundary_state = ss;
+            }
+            if (Object.keys(patch).length) {
+                setAttributes(patch);
+            }
+        }, [siteBoundaryDefaults, filter_boundary_country, filter_boundary_state, setAttributes]);
+
+        useEffect(() => {
+            if (!filter_boundary_country) {
+                setBoundaryStateOptions([{ label: 'Any', value: '' }]);
+                return;
+            }
+            let cancelled = false;
+            apiFetch({
+                path: `/rch/v1/boundary-states?country=${encodeURIComponent(filter_boundary_country)}`,
+            })
+                .then((res) => {
+                    if (cancelled) {
+                        return;
+                    }
+                    const rows = Array.isArray(res.options) ? res.options : [];
+                    setBoundaryStateOptions([
+                        { label: 'Any', value: '' },
+                        ...rows.map((o) => ({ label: o.label, value: o.value })),
+                    ]);
+                })
+                .catch((error) => {
+                    if (!cancelled) {
+                        console.error('Error loading boundary states:', error);
+                        setBoundaryStateOptions([{ label: 'Any', value: '' }]);
+                    }
+                });
+            return () => {
+                cancelled = true;
+            };
+        }, [filter_boundary_country]);
 
         const handleAttributeChange = (attr, value) => {
             setAttributes({ [attr]: value });
@@ -170,6 +250,26 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                             label="Office Exclusive"
                             checked={office_exclusive}
                             onChange={() => setAttributes({ office_exclusive: !office_exclusive })}
+                        />
+                        <SelectControl
+                            label="Boundary country (filter_boundary_country)"
+                            help="Defaults from General Settings; change here to scope this block only. ISO code from Rechat (e.g. US)."
+                            value={filter_boundary_country}
+                            options={boundaryCountryOptions}
+                            onChange={(value) =>
+                                setAttributes({
+                                    filter_boundary_country: value ? String(value).toUpperCase() : '',
+                                    filter_boundary_state: '',
+                                })
+                            }
+                        />
+                        <SelectControl
+                            label="Boundary state / province (filter_boundary_state)"
+                            help={filter_boundary_country ? 'Uses the state title expected by the Rechat SDK (same as General Settings).' : 'Choose a country first, or leave both as Any.'}
+                            value={filter_boundary_state}
+                            options={boundaryStateOptions}
+                            disabled={!filter_boundary_country}
+                            onChange={(value) => setAttributes({ filter_boundary_state: value || '' })}
                         />
                         <SelectControl
                             label="Select a Region"

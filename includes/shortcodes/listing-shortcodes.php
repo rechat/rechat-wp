@@ -106,6 +106,8 @@ function rch_render_listing_list($atts)
     'list_offices' => '',
     'filter_brand_id' => '',
     'sort_by' => '-list_date',
+    'filter_boundary_country' => '',
+    'filter_boundary_state' => '',
   ], $atts);
 
   // Convert boolean attributes from strings
@@ -189,6 +191,8 @@ function rch_render_listing_list($atts)
       $atts['map_longitude'] = $url_params['map_longitude'];
     }
   }
+
+  $atts = rch_apply_listing_boundary_site_defaults($atts);
 
   // listing_statuses: explode comma string to array for rch_sanitize_listing_statuses()
   if (! empty($atts['listing_statuses']) && is_string($atts['listing_statuses'])) {
