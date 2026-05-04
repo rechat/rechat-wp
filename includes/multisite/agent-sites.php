@@ -991,13 +991,22 @@ function rch_multisite_sync_agent_site_editor(int $agent_post_id, int $blog_id, 
 
     $password = wp_generate_password(24, true, true);
 
+    $agent_role = function_exists('rch_agent_site_user_role') ? rch_agent_site_user_role() : 'agent';
+
+    // Create the network user with role on the agent sub-site (not main-site default_role/subscriber).
+    switch_to_blog($blog_id);
+    if (function_exists('rch_register_agent_user_roles')) {
+        rch_register_agent_user_roles();
+    }
+
     $user_id = wp_insert_user([
         'user_login'   => $desired_login,
         'user_email'   => $email,
         'user_pass'    => $password,
         'display_name' => $agent_name,
-        'role'         => get_option('default_role') ?: 'subscriber',
+        'role'         => $agent_role,
     ]);
+    restore_current_blog();
 
     if (is_wp_error($user_id)) {
         error_log('Rechat Multisite: wp_insert_user failed — ' . $user_id->get_error_message());
