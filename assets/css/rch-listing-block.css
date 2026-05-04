@@ -115,7 +115,13 @@
   font-size: 16px;
   font-weight: 500;
 }
-
+.map-listing-grid__list:has(.map-listing-grid__empty-state) {
+  display: flex;
+  flex-direction: column;
+  align-content: unset;
+  grid-template-columns: unset;
+  /* add whatever fixes layout */
+}
 @media screen and (min-width: 1440px) {
 }
 
