@@ -85,6 +85,14 @@ function rch_enqueue_admin_scripts($hook)
         [
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce'    => wp_create_nonce('rch_ajax_nonce'),
+            'boundary_states' => array(
+                'loading'             => __('Loading states…', 'rechat-plugin'),
+                'loading_countries'   => __('Loading countries…', 'rechat-plugin'),
+                'countries_failed'    => __('Could not load countries. Try again.', 'rechat-plugin'),
+                'failed'              => __('Could not load states. Try again.', 'rechat-plugin'),
+                'state_placeholder'   => __('Select a state / province', 'rechat-plugin'),
+                'any_country'         => __('Any', 'rechat-plugin'),
+            ),
         ]
     );
 }

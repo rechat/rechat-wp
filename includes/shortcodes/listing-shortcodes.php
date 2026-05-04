@@ -5,14 +5,14 @@ if (! defined('ABSPATH')) {
 }
 
 /**
- * Enqueue Rechat SDK, listing block layout CSS, and URL/history filter script when [listings] renders.
+ * Enqueue Rechat SDK and listing block layout CSS when [listings] renders.
+ * Query-string filters (e.g. filter_boundary_ids) are applied server-side via {@see rch_get_fallback_url_parameters()}.
  */
 function rch_listings_shortcode_enqueue_assets()
 {
   wp_enqueue_style('rechat-sdk-css');
   wp_enqueue_script('rechat-sdk-js');
   wp_enqueue_style('rch-listing-block-css');
-  wp_enqueue_script('rch-listings-shortcode-filters');
 }
 
 /**
@@ -108,10 +108,6 @@ function rch_render_listing_list($atts)
     'sort_by' => '-list_date',
   ], $atts);
 
-  // Convert listing_statuses string to array if needed
-  if (!empty($atts['listing_statuses']) && is_string($atts['listing_statuses'])) {
-    $atts['listing_statuses'] = array_map('trim', explode(',', $atts['listing_statuses']));
-  }
   // Convert boolean attributes from strings
   $atts['own_listing'] = filter_var($atts['own_listing'], FILTER_VALIDATE_BOOLEAN);
 
@@ -131,25 +127,24 @@ function rch_render_listing_list($atts)
 
   rch_listings_shortcode_enqueue_assets();
 
-  // Sanitize and prepare data
-  $listing_statuses_str = rch_sanitize_listing_statuses($atts['listing_statuses'] ?? []);
-  $map_default_center = rch_get_map_default_center(
-    $atts['map_latitude'] ?? '',
-    $atts['map_longitude'] ?? ''
-  );
   $layout_style = isset($atts['layout_style']) ? sanitize_text_field($atts['layout_style']) : 'default';
   $primary_color = get_option('_rch_primary_color');
 
-  // Get URL parameters from search form
-  $url_params = rch_get_fallback_url_parameters();
+  // Merge GET query into shortcode atts (search redirect, bookmarks) — replaces former JS restore.
+  $url_params = function_exists('rch_get_fallback_url_parameters') ? rch_get_fallback_url_parameters() : array();
+  if (! is_array($url_params)) {
+    $url_params = array();
+  }
 
-  // Merge URL parameters into attributes, giving priority to URL parameters
-  if (!empty($url_params)) {
+  if (! empty($url_params)) {
     if (isset($url_params['content'])) {
       $atts['filter_address'] = $url_params['content'];
     }
     if (isset($url_params['property_type'])) {
       $atts['property_types'] = $url_params['property_type'];
+    }
+    if (isset($url_params['property_types'])) {
+      $atts['property_types'] = $url_params['property_types'];
     }
     if (isset($url_params['minimum_price'])) {
       $atts['minimum_price'] = $url_params['minimum_price'];
@@ -166,6 +161,47 @@ function rch_render_listing_list($atts)
     if (isset($url_params['minimum_bathrooms']) && $url_params['minimum_bathrooms'] !== 'null') {
       $atts['minimum_bathrooms'] = $url_params['minimum_bathrooms'];
     }
+    if (isset($url_params['maximum_bathrooms']) && $url_params['maximum_bathrooms'] !== 'null') {
+      $atts['maximum_bathrooms'] = $url_params['maximum_bathrooms'];
+    }
+    if (isset($url_params['filter_boundary_ids'])) {
+      $atts['filter_boundary_ids'] = $url_params['filter_boundary_ids'];
+    }
+    if (isset($url_params['filter_boundary_country'])) {
+      $atts['filter_boundary_country'] = $url_params['filter_boundary_country'];
+    }
+    if (isset($url_params['filter_boundary_state'])) {
+      $atts['filter_boundary_state'] = $url_params['filter_boundary_state'];
+    }
+    if (isset($url_params['sort_by'])) {
+      $atts['sort_by'] = $url_params['sort_by'];
+    }
+    if (isset($url_params['listing_statuses'])) {
+      $atts['listing_statuses'] = $url_params['listing_statuses'];
+    }
+    if (isset($url_params['map_zoom'])) {
+      $atts['map_zoom'] = $url_params['map_zoom'];
+    }
+    if (isset($url_params['map_latitude'])) {
+      $atts['map_latitude'] = $url_params['map_latitude'];
+    }
+    if (isset($url_params['map_longitude'])) {
+      $atts['map_longitude'] = $url_params['map_longitude'];
+    }
+  }
+
+  // listing_statuses: explode comma string to array for rch_sanitize_listing_statuses()
+  if (! empty($atts['listing_statuses']) && is_string($atts['listing_statuses'])) {
+    $atts['listing_statuses'] = array_map('trim', explode(',', $atts['listing_statuses']));
+  }
+
+  $listing_statuses_str = rch_sanitize_listing_statuses($atts['listing_statuses'] ?? array());
+  $map_default_center = rch_get_map_default_center(
+    $atts['map_latitude'] ?? '',
+    $atts['map_longitude'] ?? ''
+  );
+  if (! empty($url_params['map_center'])) {
+    $map_default_center = sanitize_text_field($url_params['map_center']);
   }
 
   $layout_modifier = rch_listings_shortcode_layout_modifier_class($layout_style);

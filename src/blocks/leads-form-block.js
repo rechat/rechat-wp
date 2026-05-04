@@ -5,6 +5,9 @@ import { useEffect, useState } from '@wordpress/element';
 import ServerSideRender from '@wordpress/server-side-render';
 import apiFetch from '@wordpress/api-fetch';
 
+/** Keep in sync with PHP `RECHAT_API_BASE_URL` in the main plugin file. */
+const RECHAT_API_BASE_URL = 'https://api.rechat.com';
+
 registerBlockType('rch-rechat-plugin/leads-form-block', {
     title: 'Leads Form Block',
     description: 'Block for lead form submission',
@@ -86,7 +89,7 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
             if (isLoggedIn && brandId && accessToken) {
                 const fetchLeadChannels = async () => {
                     try {
-                        const channelResponse = await fetch(`https://api.rechat.com/brands/${brandId}/leads/channels`, {
+                        const channelResponse = await fetch(`${RECHAT_API_BASE_URL}/brands/${brandId}/leads/channels`, {
                             method: 'GET',
                             headers: {
                                 'Authorization': `Bearer ${accessToken}`,
@@ -112,7 +115,7 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
 
                 const fetchTags = async () => {
                     try {
-                        const tagsResponse = await fetch('https://api.rechat.com/contacts/tags', {
+                        const tagsResponse = await fetch(`${RECHAT_API_BASE_URL}/contacts/tags`, {
                             method: 'GET',
                             headers: {
                                 'Authorization': `Bearer ${accessToken}`,

@@ -411,7 +411,12 @@ START: Agent Single Page - Rechat Web Components Display Modes
     height: 20px;
     fill: #333;
 }
-
+.rch-agents-list h2 {
+  margin-block-end: 1rem;
+}
+.rch-agents-sold-section {
+  margin-block-start: 3rem;
+}
 /* Responsive adjustments for slider */
 @media (max-width: 768px) {
     .rch-agents-slider-section rechat-root {

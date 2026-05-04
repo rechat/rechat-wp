@@ -84,6 +84,10 @@ function rch_get_fallback_url_parameters()
 {
     $url_params = array();
     $allowed_params = array(
+        'filter_boundary_ids',
+        'filter_boundary_country',
+        'filter_boundary_state',
+        'sort_by',
         'content',
         'property_type',
         'minimum_price',
@@ -104,13 +108,18 @@ function rch_get_fallback_url_parameters()
         'map_center',
         'map_latitude',
         'map_longitude',
-        'map_zoom'
+        'map_zoom',
     );
 
     foreach ($allowed_params as $param) {
-        if (isset($_GET[$param]) && !empty($_GET[$param])) {
-            $url_params[$param] = sanitize_text_field($_GET[$param]);
+        if (! isset($_GET[$param])) {
+            continue;
         }
+        $raw = wp_unslash($_GET[$param]);
+        if ($raw === '') {
+            continue;
+        }
+        $url_params[$param] = sanitize_text_field((string) $raw);
     }
 
     return $url_params;

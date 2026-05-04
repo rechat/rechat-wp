@@ -14,7 +14,7 @@ if (empty($house_id)) {
 $house_id = sanitize_text_field($house_id);
 if ($house_id) {
     // Define the brand ID and API endpoint
-    $api_url = 'https://api.rechat.com/listings/' . $house_id . '?associations[]=listing.mls_info';
+    $api_url = rtrim(RECHAT_API_BASE_URL, '/') . '/listings/' . rawurlencode((string) $house_id) . '?associations[]=listing.mls_info';
     $access_token = get_option('rch_rechat_access_token');
     $response = rch_api_request($api_url, $access_token);
 

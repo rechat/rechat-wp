@@ -352,6 +352,191 @@ function rch_api_request($url, $token, $brand = null)
 }
 
 /**
+ * GET a Rechat API endpoint (e.g. boundaries/search).
+ *
+ * When {@see get_option()} `rch_rechat_access_token` is non-empty, sends
+ * `Authorization: Bearer <token>` (same pattern as {@see rch_api_request()}).
+ *
+ * @param string $endpoint_path Path after host, e.g. 'boundaries/search'.
+ * @param array  $params        Query string parameters.
+ * @return array{success:bool, data:?array, message?:string, response_code:int}
+ */
+function rch_rechat_public_api_get($endpoint_path, $params = array())
+{
+    $base = defined('RECHAT_API_BASE_URL') ? RECHAT_API_BASE_URL : 'https://api.rechat.com';
+    $path = '/' . ltrim((string) $endpoint_path, '/');
+    $url  = rtrim($base, '/') . $path;
+    if (! empty($params) && is_array($params)) {
+        $url .= '?' . http_build_query($params);
+    }
+
+    $headers = array(
+        'Accept' => 'application/json',
+    );
+    $access_token = (string) get_option('rch_rechat_access_token', '');
+    if ($access_token !== '') {
+        $headers['Authorization'] = 'Bearer ' . $access_token;
+    }
+
+    $response = wp_remote_get(
+        $url,
+        array(
+            'timeout' => 20,
+            'headers' => $headers,
+        )
+    );
+
+    if (is_wp_error($response)) {
+        return array(
+            'success'       => false,
+            'data'          => null,
+            'message'       => $response->get_error_message(),
+            'response_code' => 0,
+        );
+    }
+
+    $response_code = (int) wp_remote_retrieve_response_code($response);
+    $body          = wp_remote_retrieve_body($response);
+    $decoded       = json_decode($body, true);
+
+    if ($response_code < 200 || $response_code >= 300) {
+        return array(
+            'success'       => false,
+            'data'          => is_array($decoded) ? $decoded : null,
+            'message'       => __('Rechat API request failed.', 'rechat-plugin'),
+            'response_code' => $response_code,
+        );
+    }
+
+    return array(
+        'success'       => true,
+        'data'          => is_array($decoded) ? $decoded : null,
+        'response_code' => $response_code,
+    );
+}
+
+/**
+ * Normalize boundaries/search items to value + label for HTML selects.
+ *
+ * @param array $items Raw list from API `data` array.
+ * @param string $boundary_type 'country' or 'state'.
+ * @return array<int, array{value:string, label:string}>
+ */
+function rch_rechat_normalize_boundary_options($items, $boundary_type = 'country')
+{
+    if (! is_array($items)) {
+        return array();
+    }
+
+    $out = array();
+    foreach ($items as $row) {
+        if (! is_array($row)) {
+            continue;
+        }
+        $label = '';
+        if (isset($row['title']) && $row['title'] !== '') {
+            $label = (string) $row['title'];
+        } elseif (isset($row['state']) && $row['state'] !== '') {
+            $label = (string) $row['state'];
+        }
+
+        $value = '';
+        if (isset($row['value']) && $row['value'] !== '') {
+            $value = (string) $row['value'];
+        } elseif ($boundary_type === 'country' && ! empty($row['country'])) {
+            $value = strtoupper((string) $row['country']);
+        } elseif ($boundary_type === 'state' && ! empty($row['title'])) {
+            // SDK filter_boundary_state expects the human-readable name (e.g. "Arkansas").
+            $value = (string) $row['title'];
+        } elseif (! empty($row['state'])) {
+            $value = (string) $row['state'];
+        } elseif (! empty($row['id'])) {
+            $value = (string) $row['id'];
+        }
+
+        if ($value === '' || $label === '') {
+            continue;
+        }
+
+        $out[] = array(
+            'value' => $value,
+            'label' => $label,
+        );
+    }
+
+    usort(
+        $out,
+        static function ($a, $b) {
+            return strcasecmp($a['label'], $b['label']);
+        }
+    );
+
+    return $out;
+}
+
+/**
+ * Fetch boundary rows from Rechat (countries or states).
+ *
+ * Results are cached in transients to keep General Settings responsive.
+ *
+ * @param string $boundary_type   'country' or 'state'.
+ * @param string $country_iso     Required when $boundary_type is 'state' (e.g. US).
+ * @param bool   $force_refresh   When true, bypass cache and refresh from API.
+ * @return array<int, array{value:string, label:string}>
+ */
+function rch_rechat_fetch_boundaries_for_settings($boundary_type, $country_iso = '', $force_refresh = false)
+{
+    $boundary_type = sanitize_key($boundary_type);
+    if ($boundary_type !== 'country' && $boundary_type !== 'state') {
+        return array();
+    }
+
+    $params = array('boundary_type' => $boundary_type);
+    if ($boundary_type === 'state') {
+        $country_iso = strtoupper(sanitize_text_field($country_iso));
+        if ($country_iso === '') {
+            return array();
+        }
+        $params['country'] = $country_iso;
+    }
+
+    $cache_suffix = $boundary_type === 'country'
+        ? 'country'
+        : 'state_' . $country_iso;
+    // v2: ignore empty cached arrays (v1 could return [] and skip the API forever).
+    $cache_key = 'rch_boundary_opts_v2_' . $cache_suffix;
+
+    if (! $force_refresh) {
+        $cached = get_transient($cache_key);
+        if (is_array($cached) && count($cached) > 0) {
+            return $cached;
+        }
+        if ($cached !== false) {
+            delete_transient($cache_key);
+        }
+    }
+
+    $res = rch_rechat_public_api_get('boundaries/search', $params);
+    if (empty($res['success']) || ! is_array($res['data'])) {
+        return array();
+    }
+
+    $list = array();
+    if (isset($res['data']['data']) && is_array($res['data']['data'])) {
+        $list = $res['data']['data'];
+    }
+
+    $out = rch_rechat_normalize_boundary_options($list, $boundary_type);
+
+    $ttl = (int) apply_filters('rch_boundary_transient_ttl', WEEK_IN_SECONDS, $boundary_type, $country_iso);
+    if ($ttl > 0 && ! empty($out)) {
+        set_transient($cache_key, $out, $ttl);
+    }
+
+    return $out;
+}
+
+/**
  * Whether a listings API response likely indicates an invalid/expired access token
  * (used to trigger OAuth refresh before showing a generic “not found” message).
  *
@@ -914,7 +1099,8 @@ function rch_get_primary_color_and_logo()
 {
     $brand_id = get_option('rch_rechat_brand_id');
     // API endpoint to fetch brand settings, including parent brands
-    $palette_url = 'https://api.rechat.com/brands/' . $brand_id . '?associations[]=brand.parent&associations[]=brand.settings';
+    $api_base    = defined('RECHAT_API_BASE_URL') ? RECHAT_API_BASE_URL : 'https://api.rechat.com';
+    $palette_url = rtrim($api_base, '/') . '/brands/' . rawurlencode((string) $brand_id) . '?associations[]=brand.parent&associations[]=brand.settings';
 
     // Make the API request
     $palette_response = wp_remote_get($palette_url);
@@ -1374,6 +1560,18 @@ function rch_get_rechat_listings_attributes($attributes, $map_default_center, $l
 
     if (isset($attributes['filter_address']) && (string) $attributes['filter_address'] !== '') {
         $attrs[] = 'filter_address="' . esc_attr($attributes['filter_address']) . '"';
+    }
+
+    if (! empty($attributes['filter_boundary_country'])) {
+        $attrs[] = 'filter_boundary_country="' . esc_attr($attributes['filter_boundary_country']) . '"';
+    }
+
+    if (! empty($attributes['filter_boundary_state'])) {
+        $attrs[] = 'filter_boundary_state="' . esc_attr($attributes['filter_boundary_state']) . '"';
+    }
+
+    if (! empty($attributes['filter_boundary_ids'])) {
+        $attrs[] = 'filter_boundary_ids="' . esc_attr($attributes['filter_boundary_ids']) . '"';
     }
 
     if (!empty($attributes['filter_search_limit'])) {

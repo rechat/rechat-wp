@@ -4,6 +4,7 @@
  * Multisite: agent subsite listing scope + Rechat credential fallback.
  *
  * - Subsites mapped to an agent post use main-site `agents` post meta as global filter_agents.
+ * - When that meta is empty, <rechat-listings> gets disabled="true" (same as single-agent template).
  * - When this blog has no Rechat OAuth options, brand/access/refresh fall back to the main site.
  *
  * Hub (main site) WordPress options used for fallback and for reading hub values:
@@ -565,6 +566,43 @@ function rch_multisite_ob_inject_filter_agents($html)
 }
 
 /**
+ * When the agent subsite has no main-site `agents` CSV, set disabled="true" on <rechat-listings>
+ * (parity with rch_get_agent_listings_attrs in agents-listings-section.php).
+ *
+ * @param string $html Full page HTML.
+ * @return string
+ */
+function rch_multisite_ob_disable_rechat_listings_when_no_hub_agents(string $html): string
+{
+    if (! is_string($html) || $html === '') {
+        return $html;
+    }
+
+    if (! rch_multisite_is_agent_listing_scope_active()) {
+        return $html;
+    }
+
+    if (rch_multisite_get_main_site_agent_ids_csv() !== '') {
+        return $html;
+    }
+
+    return rch_multisite_preg_replace_callback_safe(
+        '/<rechat-listings\b([^>]*)>/i',
+        static function ($m) {
+            $inner = $m[1];
+            if (preg_match('/\bdisabled\s*=/i', $inner)) {
+                return '<rechat-listings' . $inner . '>';
+            }
+
+            $prefix = ($inner !== '' && $inner[0] !== ' ') ? ' ' : '';
+
+            return '<rechat-listings' . $inner . $prefix . 'disabled="true">';
+        },
+        $html
+    );
+}
+
+/**
  * Fix empty brand_id on rechat-root / rechat-listings using hub option (raw DB).
  *
  * @param string $html     Full page HTML.
@@ -689,6 +727,7 @@ function rch_multisite_ob_patch_rechat_markup(string $html)
 
     try {
         $html = rch_multisite_ob_inject_filter_agents($html);
+        $html = rch_multisite_ob_disable_rechat_listings_when_no_hub_agents($html);
 
         $main_id = (int) get_main_site_id();
         $hub_brand = rch_multisite_fetch_raw_option_value_for_blog($main_id, 'rch_rechat_brand_id');
@@ -739,10 +778,9 @@ function rch_multisite_should_buffer_listing_markup(): bool
     $hub_map  = rch_multisite_fetch_raw_option_value_for_blog($main_id, 'rch_rechat_google_map_api_key');
 
     if (rch_multisite_is_agent_listing_scope_active()) {
-        $csv = rch_multisite_get_main_site_agent_ids_csv();
-        if ($csv !== '') {
-            return true;
-        }
+        // Always buffer agent subsites: inject filter_agents, hub brand/map fallback, and/or
+        // disabled="true" on <rechat-listings> when hub agents meta is empty.
+        return true;
     }
 
     $here = get_current_blog_id();

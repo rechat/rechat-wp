@@ -22,7 +22,7 @@ function rch_fetch_listing($filters, $page, $listingPerPage)
         'X-RECHAT-BRAND' => $brand,
         'Authorization' => 'Bearer ' . get_option('rch_rechat_access_token')
     ];
-    $response = wp_remote_post('https://api.rechat.com/valerts?order_by[]=-price', [
+    $response = wp_remote_post(rtrim(RECHAT_API_BASE_URL, '/') . '/valerts?order_by[]=-price', [
         'method' => 'POST',
         'headers' => $headers,
         'body' => wp_json_encode($requestBody),
@@ -52,7 +52,7 @@ function rch_fetch_total_listing_count($filters = [])
         'X-RECHAT-BRAND' => $brand,
     ];
     // Make the API request
-    $response = wp_remote_post('https://api.rechat.com/valerts/count', [
+    $response = wp_remote_post(rtrim(RECHAT_API_BASE_URL, '/') . '/valerts/count', [
         'method' => 'POST',
         'headers' => $headers,
         'body' => wp_json_encode($requestBody),
