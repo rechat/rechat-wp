@@ -11,7 +11,7 @@ function rch_update_agents_offices_regions_data()
 
     $access_token = get_option('rch_rechat_access_token');
     $brand_token = get_option('rch_rechat_brand_id');
-    $api_url_base = 'https://api.rechat.com/brands/' . $brand_token . '/users?associations[]=brand.parents&associations[]=brand.settings'; // Adjust the URL as needed
+    $api_url_base = rtrim(RECHAT_API_BASE_URL, '/') . '/brands/' . rawurlencode((string) $brand_token) . '/users?associations[]=brand.parents&associations[]=brand.settings';
 
     /*******************************
      * Fetch and process regions and offices
@@ -19,7 +19,12 @@ function rch_update_agents_offices_regions_data()
     $brands_result = rch_fetch_and_process_brands($api_url_base, $access_token);
 
     if (!$brands_result['success']) {
-        wp_send_json(array('success' => false, 'data' => $brands_result['message']));
+        $fail_message = isset($brands_result['message']) ? (string) $brands_result['message'] : __('Could not fetch brands data.', 'rechat-plugin');
+
+        return array(
+            'success' => false,
+            'message' => $fail_message,
+        );
     }
 
     // Debug log - Log the number of regions and offices found
@@ -95,7 +100,10 @@ function rch_update_agents_offices_regions_data()
         'fields' => 'ids',
     ));
     if (!$agents_result) {
-        wp_send_json(array('success' => false, 'message' => 'Error processing agents'));
+        return array(
+            'success' => false,
+            'message' => __('Error processing agents', 'rechat-plugin'),
+        );
     }
     // Assemble the sync result data.
     $sync_data = array(
@@ -113,9 +121,9 @@ function rch_update_agents_offices_regions_data()
      */
     $sync_data = apply_filters('rch_sync_response_data', $sync_data);
 
-    // Return success message with counts for agents, regions, and offices
-    wp_send_json(array(
+    // Return sync summary for callers (AJAX handler sends JSON; cron logs result).
+    return array(
         'success' => true,
         'data'    => $sync_data,
-    ));
+    );
 }

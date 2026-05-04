@@ -9,6 +9,18 @@ if (!defined('ABSPATH')) {
 /*******************************
  * Sanitization callbacks
  ******************************/
+/**
+ * Store ISO country codes uppercase (matches Rechat boundaries API).
+ */
+function rch_sanitize_boundary_country_option($input)
+{
+    $v = sanitize_text_field($input);
+    if ($v === '') {
+        return '';
+    }
+    return strtoupper($v);
+}
+
 function rch_sanitize_lead_channel($input)
 {
     return sanitize_text_field($input);
@@ -178,6 +190,18 @@ function rch_general_setting()
         'sanitize_callback' => 'sanitize_text_field'
     ));
 
+    register_setting('general_settings', 'rch_selected_country', array(
+        'type' => 'string',
+        'default' => '',
+        'sanitize_callback' => 'rch_sanitize_boundary_country_option',
+    ));
+
+    register_setting('general_settings', 'rch_selected_state', array(
+        'type' => 'string',
+        'default' => '',
+        'sanitize_callback' => 'sanitize_text_field',
+    ));
+
     // Section for agent page listing display
     add_settings_section(
         'rch_agents_listing_display_section',
@@ -194,9 +218,96 @@ function rch_general_setting()
         'general_settings',
         'rch_agents_listing_display_section'
     );
+
+    add_settings_section(
+        'rch_country_state_section',
+        __('Country & State', 'rechat-plugin'),
+        'rch_render_country_state_section_description',
+        'general_settings'
+    );
+
+    add_settings_field(
+        'rch_selected_country',
+        __('Country', 'rechat-plugin'),
+        'rch_render_general_country_field',
+        'general_settings',
+        'rch_country_state_section'
+    );
+
+    add_settings_field(
+        'rch_selected_state',
+        __('State / Province', 'rechat-plugin'),
+        'rch_render_general_state_field',
+        'general_settings',
+        'rch_country_state_section'
+    );
 }
 
 add_action('admin_init', 'rch_general_setting');
+
+/**
+ * Section blurb for country / state (General Settings).
+ */
+function rch_render_country_state_section_description()
+{
+    echo '<p>' . esc_html__('Choose Any to search all countries, or pick a country and then a state or province. States load from Rechat after you pick a country.', 'rechat-plugin') . '</p>';
+}
+
+/**
+ * Country: hidden field (submitted on save) + display select filled via AJAX (fast page load + cache).
+ */
+function rch_render_general_country_field()
+{
+    $selected = (string) get_option('rch_selected_country', '');
+
+    printf(
+        '<input type="hidden" name="rch_selected_country" id="rch_selected_country" value="%s" autocomplete="off" />',
+        esc_attr($selected)
+    );
+    echo '<p class="description rch-boundary-country-status" style="margin:0 0 6px;">' . esc_html__('Loading countries…', 'rechat-plugin') . '</p>';
+    echo '<select id="rch_selected_country_display" class="regular-text" autocomplete="off" aria-busy="true">';
+    printf('<option value="">%s</option>', esc_html__('Any', 'rechat-plugin'));
+    echo '</select>';
+    echo '<span class="rch-boundary-country-loading" style="display:inline-block;margin-inline-start:8px;vertical-align:middle;" role="status" aria-live="polite">';
+    echo '<span class="spinner is-active" style="float:none;margin:0 4px 0 0;visibility:visible;"></span>';
+    echo '<span class="rch-boundary-country-loading-text"></span>';
+    echo '</span>';
+}
+
+/**
+ * State: hidden field (always submitted) + display select (no name — synced by JS; avoids disabled fields missing from POST).
+ */
+function rch_render_general_state_field()
+{
+    $country        = (string) get_option('rch_selected_country', '');
+    $selected_state = (string) get_option('rch_selected_state', '');
+
+    printf(
+        '<input type="hidden" name="rch_selected_state" id="rch_selected_state" value="%s" autocomplete="off" />',
+        esc_attr($selected_state)
+    );
+
+    $disabled_attr = ($country === '') ? ' disabled="disabled"' : '';
+
+    printf('<select id="rch_selected_state_display" class="regular-text" autocomplete="off"%s>', $disabled_attr);
+    printf(
+        '<option value="">%s</option>',
+        esc_html__('Select a state / province', 'rechat-plugin')
+    );
+    if ($country !== '' && $selected_state !== '') {
+        printf(
+            '<option value="%1$s" selected="selected">%2$s</option>',
+            esc_attr($selected_state),
+            esc_html($selected_state)
+        );
+    }
+    echo '</select>';
+    echo '<span class="rch-boundary-state-loading" style="display:none;margin-inline-start:8px;vertical-align:middle;" role="status" aria-live="polite">';
+    echo '<span class="spinner is-active" style="float:none;margin:0 4px 0 0;visibility:visible;"></span>';
+    echo '<span class="rch-boundary-state-loading-text"></span>';
+    echo '</span>';
+    echo '<p class="rch-boundary-state-error description" style="display:none;margin-top:8px;color:#b32d2d;"></p>';
+}
 
 /*******************************
  * Render agents listing display description
@@ -251,7 +362,7 @@ function rch_fetch_lead_channels()
         return ['success' => false, 'message' => __('Brand ID not configured.', 'rechat-plugin')];
     }
 
-    $api_url = "https://api.rechat.com/brands/{$brand_id}/leads/channels";
+    $api_url = rtrim(RECHAT_API_BASE_URL, '/') . '/brands/' . rawurlencode((string) $brand_id) . '/leads/channels';
     $access_token = get_option('rch_rechat_access_token');
 
     return rch_api_request($api_url, $access_token);
@@ -259,7 +370,7 @@ function rch_fetch_lead_channels()
 
 function rch_fetch_tags()
 {
-    $api_url = "https://api.rechat.com/contacts/tags";
+    $api_url = rtrim(RECHAT_API_BASE_URL, '/') . '/contacts/tags';
     $access_token = get_option('rch_rechat_access_token');
     $brand_id = get_option('rch_rechat_brand_id');
 
@@ -480,11 +591,70 @@ function rch_update_all_data()
     // Call the function to fetch and update data
     $result = rch_update_agents_offices_regions_data();
 
-    // Return the result
-    if ($result['success']) {
-        wp_send_json_success($result['message']);
-    } else {
-        wp_send_json_error($result['message']);
+    if (!is_array($result) || !array_key_exists('success', $result)) {
+        wp_send_json_error(__('Unexpected sync response.', 'rechat-plugin'));
+        return;
     }
+
+    if ($result['success']) {
+        wp_send_json_success($result['data'] ?? array());
+        return;
+    }
+
+    $error_message = isset($result['message']) ? (string) $result['message'] : __('Sync failed.', 'rechat-plugin');
+    wp_send_json_error($error_message);
 }
 add_action('wp_ajax_rch_update_all_data', 'rch_update_all_data');
+
+/**
+ * AJAX: return state/province options for a country (Rechat boundaries API).
+ */
+function rch_ajax_fetch_boundary_states()
+{
+    if (! check_ajax_referer('rch_ajax_nonce', 'nonce', false)) {
+        wp_send_json_error(array('message' => __('Security check failed.', 'rechat-plugin')));
+    }
+
+    if (! function_exists('rch_current_user_can_manage_rechat') || ! rch_current_user_can_manage_rechat()) {
+        wp_send_json_error(array('message' => __('Insufficient permissions.', 'rechat-plugin')));
+    }
+
+    $country = isset($_POST['country']) ? sanitize_text_field(wp_unslash($_POST['country'])) : '';
+    if ($country === '') {
+        wp_send_json_error(array('message' => __('Select a country first.', 'rechat-plugin')));
+    }
+
+    if (! function_exists('rch_rechat_fetch_boundaries_for_settings')) {
+        wp_send_json_error(array('message' => __('Rechat helpers are not available.', 'rechat-plugin')));
+    }
+
+    $force_refresh = ! empty($_POST['force_refresh']);
+    $options         = rch_rechat_fetch_boundaries_for_settings('state', strtoupper($country), $force_refresh);
+    wp_send_json_success(array('options' => $options));
+}
+
+add_action('wp_ajax_rch_fetch_boundary_states', 'rch_ajax_fetch_boundary_states');
+
+/**
+ * AJAX: return country options (Rechat boundaries API, transient-cached).
+ */
+function rch_ajax_fetch_boundary_countries()
+{
+    if (! check_ajax_referer('rch_ajax_nonce', 'nonce', false)) {
+        wp_send_json_error(array('message' => __('Security check failed.', 'rechat-plugin')));
+    }
+
+    if (! function_exists('rch_current_user_can_manage_rechat') || ! rch_current_user_can_manage_rechat()) {
+        wp_send_json_error(array('message' => __('Insufficient permissions.', 'rechat-plugin')));
+    }
+
+    if (! function_exists('rch_rechat_fetch_boundaries_for_settings')) {
+        wp_send_json_error(array('message' => __('Rechat helpers are not available.', 'rechat-plugin')));
+    }
+
+    $force_refresh = ! empty($_POST['force_refresh']);
+    $options         = rch_rechat_fetch_boundaries_for_settings('country', '', $force_refresh);
+    wp_send_json_success(array('options' => $options));
+}
+
+add_action('wp_ajax_rch_fetch_boundary_countries', 'rch_ajax_fetch_boundary_countries');

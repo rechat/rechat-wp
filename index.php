@@ -33,11 +33,17 @@ if (! defined('RCH_RECHAT_SDK_EXAMPLES_HOSTS')) {
 const RCH_PLUGIN_INCLUDES = RCH_PLUGIN_DIR . 'includes/';
 const RCH_PLUGIN_ASSETS = RCH_PLUGIN_URL . 'assets/';
 const RCH_PLUGIN_ASSETS_URL_IMG = RCH_PLUGIN_URL . 'assets/images/';
+// Rechat REST API host (shared across plugin HTTP calls)
+if (! defined('RECHAT_API_BASE_URL')) {
+    define('RECHAT_API_BASE_URL', 'https://api.rechat.com');
+}
 // OAuth2 Configuration Constants
 const RCH_OAUTH_CLIENT_ID = '65230631-97a6-4fb5-bf32-54aafb1e1b54';
 const RCH_OAUTH_CLIENT_SECRET = 'secret';
 const RCH_OAUTH_AUTH_URL = 'https://app.rechat.com/oauth2/auth';
-const RCH_OAUTH_TOKEN_URL = 'https://api.rechat.com/oauth2/token';
+if (! defined('RCH_OAUTH_TOKEN_URL')) {
+    define('RCH_OAUTH_TOKEN_URL', rtrim(RECHAT_API_BASE_URL, '/') . '/oauth2/token');
+}
 const RCH_TOKEN_REFRESH_HOOK = 'rch_refresh_token_event';
 // Constants for cron configuration
 const RCH_CRON_HOOK = 'rch_data_sync_hook';

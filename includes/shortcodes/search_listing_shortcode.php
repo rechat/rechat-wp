@@ -103,6 +103,17 @@ function rch_search_listing_form_shortcode($atts)
         'disable_filter_beds'   => $disable_filter_beds,
     ];
 
+    $boundary_country = (string) get_option('rch_selected_country', '');
+    if ($boundary_country !== '') {
+        // Match Rechat boundaries / HTML option values (ISO 3166-1 alpha-2 uppercase, e.g. US).
+        $attributes['filter_boundary_country'] = strtoupper($boundary_country);
+        $boundary_state = (string) get_option('rch_selected_state', '');
+        // State options now store the boundary title (e.g. "Arkansas"); skip legacy UUID values.
+        if ($boundary_state !== '' && ! preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $boundary_state)) {
+            $attributes['filter_boundary_state'] = $boundary_state;
+        }
+    }
+
     $rechat_attrs = rch_get_rechat_root_attributes($attributes, $map_default_center, $filter_listing_statuses);
     $rechat_listings_attrs = rch_get_rechat_listings_attributes($attributes, $map_default_center, $filter_listing_statuses);
 

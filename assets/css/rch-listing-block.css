@@ -186,11 +186,11 @@
 }
 
 /* [listings] shortcode / block — theme primary from wrapper CSS variables */
-.rch-listing-block-gutenberg .rechat-component.map__marker {
+/* .rch-listing-block-gutenberg .rechat-component.map__marker {
   background-color: var(--rch-listings-primary, #2563eb) !important;
   color: var(--rch-listings-on-primary, #fff) !important;
   box-sizing: content-box;
-}
+} */
 
 .rch-listing-block-gutenberg.rch-listing-shortcode--layout2 .map {
   flex: 3;

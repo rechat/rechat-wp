@@ -84,6 +84,9 @@ function rch_get_agent_listings_attrs($brand_id, $agents_string, $property_subty
     
     $attrs[] = 'filter_pagination_limit="9"';
     $attrs[] = 'filter_agents="' . esc_attr($agents_string) . '"';
+    if ('' === trim((string) $agents_string)) {
+        $attrs[] = 'disabled="true"';
+    }
     $attrs[] = 'filter_property_subtypes="' . esc_attr($property_subtypes) . '"';
     $attrs[] = 'filter_property_types="' . esc_attr($property_types) . '"';
     $attrs[] = 'filter_listing_statuses="' . esc_attr($listing_statuses) . '"';

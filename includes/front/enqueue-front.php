@@ -42,13 +42,6 @@ function rch_enqueue_frontend_styles()
         RCH_VERSION,
         true
     );
-    wp_register_script(
-        'rch-listings-shortcode-filters',
-        RCH_PLUGIN_ASSETS . 'js/rch-listings-shortcode-filters.js',
-        ['rechat-sdk-js'],
-        RCH_VERSION,
-        true
-    );
     wp_register_style(
         'rch-lead-capture-shortcode-css',
         RCH_PLUGIN_ASSETS . 'css/rch-lead-capture-shortcode.css',
