@@ -22,6 +22,22 @@
   box-sizing: border-box;
 }
 
+/*
+ * Before Swiper runs, the SDK skeleton slides have no inline width — flex items collapse
+ * to slivers. Only apply fixed-ish sizing until .swiper-initialized (then Swiper owns widths).
+ */
+.rch-latest-listings-shortcode-swiper .swiper:not(.swiper-initialized) rechat-listings-list.swiper-wrapper {
+  gap: 32px;
+}
+
+.rch-latest-listings-shortcode-swiper .swiper:not(.swiper-initialized) .rechat-listings-list__item {
+  flex: 0 0 clamp(220px, 28vw, 340px);
+  width: clamp(220px, 28vw, 340px);
+  max-width: min(100%, 340px);
+  min-height: 260px;
+  box-sizing: border-box;
+}
+
 .rch-latest-listings-shortcode-swiper .rechat-listings-list__item {
   /* Width is set inline by Swiper from slidesPerView; a fixed CSS width breaks loop + centeredSlides + fractional SPV. */
   height: auto;
