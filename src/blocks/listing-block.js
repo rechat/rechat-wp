@@ -1,11 +1,81 @@
 const { registerBlockType } = wp.blocks;
 const { InspectorControls, MediaUpload, MediaUploadCheck } = wp.blockEditor || wp.editor;
-const { PanelBody, RangeControl, SelectControl, TextControl, CheckboxControl, RadioControl, Button } = wp.components;
+const { PanelBody, RangeControl, SelectControl, TextControl, CheckboxControl, RadioControl, Button, Spinner } = wp.components;
 import { useEffect, useState, useRef } from '@wordpress/element';
 import ServerSideRender from '@wordpress/server-side-render';
 import apiFetch from '@wordpress/api-fetch';
 import MapSelector from '../utils/map-selector';
 import { fetchDataWithMeta } from '../utils/api-helpers';
+
+/**
+ * Turn boundaries/search-style rows into select options; never keeps geometry / coordinates.
+ *
+ * @param {unknown} row
+ * @param {'country'|'state'} kind
+ * @returns {{ label: string, value: string }|null}
+ */
+function boundaryApiRowToSelectOption(row, kind) {
+    if (!row || typeof row !== 'object') {
+        return null;
+    }
+    const o = /** @type {Record<string, unknown>} */ (row);
+    if (o.label != null && o.value != null && String(o.label) !== '' && String(o.value) !== '') {
+        return { label: String(o.label), value: String(o.value) };
+    }
+    let label = '';
+    if (o.title != null && String(o.title) !== '') {
+        label = String(o.title);
+    } else if (o.state != null && String(o.state) !== '') {
+        label = String(o.state);
+    }
+    let value = '';
+    if (o.value != null && String(o.value) !== '') {
+        value = String(o.value);
+    } else if (kind === 'country' && o.country != null && String(o.country) !== '') {
+        value = String(o.country).toUpperCase();
+    } else if (kind === 'state' && o.title != null && String(o.title) !== '') {
+        value = String(o.title);
+    } else if (o.state != null && String(o.state) !== '') {
+        value = String(o.state);
+    } else if (o.id != null && String(o.id) !== '') {
+        value = String(o.id);
+    }
+    if (label === '' || value === '') {
+        return null;
+    }
+    return { label, value };
+}
+
+/**
+ * @param {unknown} res REST or raw Rechat envelope
+ * @param {'country'|'state'} kind
+ * @returns {{ label: string, value: string }[]}
+ */
+function mapBoundaryResponseToSelectOptions(res, kind) {
+    let raw = [];
+    if (res && typeof res === 'object') {
+        const r = /** @type {Record<string, unknown>} */ (res);
+        if (Array.isArray(r.options)) {
+            raw = r.options;
+        } else if (
+            r.data &&
+            typeof r.data === 'object' &&
+            Array.isArray(/** @type {Record<string, unknown>} */ (r.data).data)
+        ) {
+            raw = /** @type {Record<string, unknown>} */ (r.data).data;
+        }
+    } else if (Array.isArray(res)) {
+        raw = res;
+    }
+    const out = [];
+    for (const row of raw) {
+        const opt = boundaryApiRowToSelectOption(row, kind);
+        if (opt) {
+            out.push(opt);
+        }
+    }
+    return out;
+}
 
 registerBlockType('rch-rechat-plugin/listing-block', {
     title: 'Listing Block',
@@ -83,6 +153,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         const [siteBoundaryDefaults, setSiteBoundaryDefaults] = useState(null);
         const [boundaryCountryOptions, setBoundaryCountryOptions] = useState([{ label: 'Any', value: '' }]);
         const [boundaryStateOptions, setBoundaryStateOptions] = useState([{ label: 'Any', value: '' }]);
+        const [boundaryStatesLoading, setBoundaryStatesLoading] = useState(false);
         const defaultsSeededRef = useRef(false);
 
         const statusOptions = [
@@ -113,11 +184,8 @@ registerBlockType('rch-rechat-plugin/listing-block', {
 
             apiFetch({ path: '/rch/v1/boundary-countries' })
                 .then((res) => {
-                    const rows = Array.isArray(res.options) ? res.options : [];
-                    setBoundaryCountryOptions([
-                        { label: 'Any', value: '' },
-                        ...rows.map((o) => ({ label: o.label, value: o.value })),
-                    ]);
+                    const rows = mapBoundaryResponseToSelectOptions(res, 'country');
+                    setBoundaryCountryOptions([{ label: 'Any', value: '' }, ...rows]);
                 })
                 .catch((error) => {
                     console.error('Error loading boundary countries:', error);
@@ -153,10 +221,12 @@ registerBlockType('rch-rechat-plugin/listing-block', {
 
         useEffect(() => {
             if (!filter_boundary_country) {
+                setBoundaryStatesLoading(false);
                 setBoundaryStateOptions([{ label: 'Any', value: '' }]);
                 return;
             }
             let cancelled = false;
+            setBoundaryStatesLoading(true);
             apiFetch({
                 path: `/rch/v1/boundary-states?country=${encodeURIComponent(filter_boundary_country)}`,
             })
@@ -164,16 +234,18 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                     if (cancelled) {
                         return;
                     }
-                    const rows = Array.isArray(res.options) ? res.options : [];
-                    setBoundaryStateOptions([
-                        { label: 'Any', value: '' },
-                        ...rows.map((o) => ({ label: o.label, value: o.value })),
-                    ]);
+                    const rows = mapBoundaryResponseToSelectOptions(res, 'state');
+                    setBoundaryStateOptions([{ label: 'Any', value: '' }, ...rows]);
                 })
                 .catch((error) => {
                     if (!cancelled) {
                         console.error('Error loading boundary states:', error);
                         setBoundaryStateOptions([{ label: 'Any', value: '' }]);
+                    }
+                })
+                .finally(() => {
+                    if (!cancelled) {
+                        setBoundaryStatesLoading(false);
                     }
                 });
             return () => {
@@ -263,12 +335,27 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                                 })
                             }
                         />
+                        {filter_boundary_country && boundaryStatesLoading ? (
+                            <p
+                                className="components-base-control__help"
+                                style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}
+                            >
+                                <Spinner />
+                                Loading states for this country…
+                            </p>
+                        ) : null}
                         <SelectControl
                             label="Boundary state / province (filter_boundary_state)"
-                            help={filter_boundary_country ? 'Uses the state title expected by the Rechat SDK (same as General Settings).' : 'Choose a country first, or leave both as Any.'}
+                            help={
+                                !filter_boundary_country
+                                    ? 'Choose a country first, or leave both as Any.'
+                                    : boundaryStatesLoading
+                                      ? ''
+                                      : 'Uses the state title expected by the Rechat SDK (same as General Settings).'
+                            }
                             value={filter_boundary_state}
                             options={boundaryStateOptions}
-                            disabled={!filter_boundary_country}
+                            disabled={!filter_boundary_country || boundaryStatesLoading}
                             onChange={(value) => setAttributes({ filter_boundary_state: value || '' })}
                         />
                         <SelectControl
