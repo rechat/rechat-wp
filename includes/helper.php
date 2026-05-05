@@ -37,32 +37,9 @@ function rch_get_token_expiry_date($seconds_until_expire)
 }
 
 /*******************************
- * disconnect handler from rechat oauth
+ * OAuth disconnect: handled in includes/oauth2/oauth-handler.php (admin_init).
  ******************************/
 
-function rch_handle_disconnect_rechat()
-{
-    // Check if the form was submitted
-    if (isset($_POST['action']) && $_POST['action'] === 'disconnect_rechat') {
-        // Verify nonce for security
-        // Unsash the value to make sure it is sanitized properly
-        if (!isset($_POST['disconnect_rechat_nonce_field']) || !wp_verify_nonce(wp_unslash($_POST['disconnect_rechat_nonce_field']), 'disconnect_rechat_nonce')) {
-            wp_die('Nonce verification failed');
-        }
-
-        // Delete the access token option
-        if (false === delete_option('rch_rechat_access_token')) {
-            wp_die('Failed to delete the access token');
-        }
-
-        // Optionally redirect to the same page or a different page
-        $redirect_url = add_query_arg('status', 'disconnected', admin_url('admin.php?page=rechat-setting'));
-        wp_redirect($redirect_url);
-        exit;
-    }
-}
-
-add_action('init', 'rch_handle_disconnect_rechat');
 /*******************************
  * Helper function to filter brands by type
  ******************************/

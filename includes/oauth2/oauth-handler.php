@@ -168,6 +168,140 @@ function rch_save_oauth_tokens($data)
     return true;
 }
 
+/**
+ * Max stored length for raw response snippet (settings UI + option size).
+ */
+function rch_oauth_refresh_log_preview_max_length(): int
+{
+    return (int) apply_filters('rch_oauth_refresh_log_preview_max_length', 1200);
+}
+
+/**
+ * Build optional structured fields when refresh_token grant fails (stored + shown under Token status).
+ *
+ * @param int               $response_code HTTP status.
+ * @param string            $raw_body      Response body.
+ * @param array|string|null $decoded       json_decode array or null if not JSON.
+ * @return array{oauth_error?:string,oauth_error_description?:string,oauth_error_uri?:string,diagnostic?:string,response_preview?:string,token_endpoint?:string}
+ */
+function rch_oauth_refresh_failure_extra_fields($response_code, $raw_body, $decoded)
+{
+    $raw_body = is_string($raw_body) ? $raw_body : '';
+    $json_ok  = is_array($decoded);
+    $data     = $json_ok ? $decoded : array();
+
+    $oauth_error = '';
+    if (! empty($data['error']) && is_string($data['error'])) {
+        $oauth_error = sanitize_text_field($data['error']);
+    }
+
+    $oauth_error_description = '';
+    if (! empty($data['error_description']) && is_string($data['error_description'])) {
+        $oauth_error_description = sanitize_text_field($data['error_description']);
+    } elseif (! empty($data['message']) && is_string($data['message'])) {
+        // Some APIs use top-level "message" instead of OAuth error_description.
+        $oauth_error_description = sanitize_text_field($data['message']);
+    }
+
+    $oauth_error_uri = '';
+    if (! empty($data['error_uri']) && is_string($data['error_uri'])) {
+        $oauth_error_uri = esc_url_raw($data['error_uri']);
+    }
+
+    $preview = '';
+    $trim    = trim(wp_strip_all_tags($raw_body));
+    if ($trim !== '') {
+        $max = rch_oauth_refresh_log_preview_max_length();
+        if (function_exists('mb_strlen') && function_exists('mb_substr')) {
+            if (mb_strlen($trim, 'UTF-8') > $max) {
+                $preview = mb_substr($trim, 0, $max, 'UTF-8') . ' …';
+            } else {
+                $preview = $trim;
+            }
+        } elseif (strlen($trim) > $max) {
+            $preview = substr($trim, 0, $max) . ' …';
+        } else {
+            $preview = $trim;
+        }
+    }
+
+    $diagnostic = rch_oauth_diagnostic_for_refresh_failure((int) $response_code, $oauth_error, $json_ok, $oauth_error_description);
+
+    $extra = array(
+        'token_endpoint' => defined('RCH_OAUTH_TOKEN_URL') ? (string) RCH_OAUTH_TOKEN_URL : '',
+    );
+
+    if ($oauth_error !== '') {
+        $extra['oauth_error'] = $oauth_error;
+    }
+    if ($oauth_error_description !== '') {
+        $extra['oauth_error_description'] = $oauth_error_description;
+    }
+    if ($oauth_error_uri !== '') {
+        $extra['oauth_error_uri'] = $oauth_error_uri;
+    }
+    if ($diagnostic !== '') {
+        $extra['diagnostic'] = $diagnostic;
+    }
+    if ($preview !== '') {
+        $extra['response_preview'] = $preview;
+    }
+
+    return $extra;
+}
+
+/**
+ * Plain-language hint for admins (shown on Connect tab).
+ *
+ * @param int    $http_code HTTP status (0 if unknown).
+ * @param string $oauth_error OAuth "error" field when JSON error payload present.
+ * @param bool   $body_was_json Whether response parsed as JSON object/array.
+ * @param string $oauth_error_description Optional OAuth error_description.
+ */
+function rch_oauth_diagnostic_for_refresh_failure($http_code, $oauth_error, $body_was_json, $oauth_error_description = '')
+{
+    $code = strtolower((string) $oauth_error);
+    $desc = strtolower((string) $oauth_error_description);
+
+    if ((int) $http_code === 200 && ! $body_was_json) {
+        return __('The server returned HTTP 200 but the body was not JSON containing access_token (unexpected). Inspect response snippet or a reverse proxy in front of this site.', 'rechat-plugin');
+    }
+
+    if ($code === 'invalid_grant'
+        || (strpos($desc, 'invalid refresh') !== false)
+        || (strpos($desc, 'refresh token') !== false)) {
+        return __('The server refused this refresh token. Typical reasons: it was revoked, expired, rotated (replaced by a new one), or the user removed app access in Rechat. Use Disconnect, then Connect to Rechat again.', 'rechat-plugin');
+    }
+    if ($code === 'invalid_client') {
+        return __('The token endpoint rejected this OAuth client (often wrong client_id or client_secret). Confirm credentials match your Rechat OAuth application.', 'rechat-plugin');
+    }
+    if ($code === 'unauthorized_client') {
+        return __('This OAuth client is not allowed to use the refresh_token grant. Check app configuration with Rechat.', 'rechat-plugin');
+    }
+    if ($code === 'invalid_request') {
+        return __('The refresh request was rejected as malformed (missing or invalid parameters). If this persists after reconnecting, contact support with this log.', 'rechat-plugin');
+    }
+    if ($code === 'unsupported_grant_type') {
+        return __('The authorization server does not accept refresh_token for this client or endpoint.', 'rechat-plugin');
+    }
+
+    if (! $body_was_json && $http_code >= 400 && trim((string) $oauth_error_description) === '') {
+        return __('The response was not a JSON OAuth error payload (often HTML or a proxy page). Check server/network SSL and that requests reach the real Rechat token URL.', 'rechat-plugin');
+    }
+
+    if ($http_code === 401) {
+        return __('HTTP 401: authentication failed at the token endpoint (credentials or token invalid).', 'rechat-plugin');
+    }
+    if ($http_code === 403) {
+        return __('HTTP 403: forbidden — the stored refresh token or client may no longer be authorized. Try Disconnect and Connect again.', 'rechat-plugin');
+    }
+    if ($http_code >= 500) {
+        return __('The authorization server returned a server error. Retry later; if it continues, Rechat may be having an outage.', 'rechat-plugin');
+    }
+
+    return __('See OAuth error fields and response snippet below if present; reconnect if the refresh token is no longer valid.', 'rechat-plugin');
+}
+
 /*******************************
  * Log OAuth refresh attempts for the settings screen
  *
@@ -175,8 +309,9 @@ function rch_save_oauth_tokens($data)
  * @param string      $message   Human-readable result.
  * @param int|null    $http_code      HTTP response code if applicable.
  * @param string      $source         How refresh ran: wp_cron, manual, auto, other, initial.
+ * @param array|null  $extra       Optional: oauth_error, oauth_error_description, oauth_error_uri, diagnostic, response_preview, token_endpoint.
  ******************************/
-function rch_oauth_save_refresh_log($ok, $message, $http_code = null, $source = '')
+function rch_oauth_save_refresh_log($ok, $message, $http_code = null, $source = '', $extra = null)
 {
     $entry = array(
         'ok'         => (bool) $ok,
@@ -186,13 +321,35 @@ function rch_oauth_save_refresh_log($ok, $message, $http_code = null, $source = 
         'time'       => current_time('mysql'),
         'time_gmt'   => gmdate('Y-m-d H:i:s'),
     );
+
+    $allowed_extra = array(
+        'oauth_error',
+        'oauth_error_description',
+        'oauth_error_uri',
+        'diagnostic',
+        'response_preview',
+        'token_endpoint',
+    );
+    if (is_array($extra)) {
+        foreach ($allowed_extra as $key) {
+            if (! isset($extra[ $key ]) || $extra[ $key ] === null || $extra[ $key ] === '') {
+                continue;
+            }
+            $entry[ $key ] = is_string($extra[ $key ]) ? $extra[ $key ] : '';
+        }
+    }
+
     update_option('rch_oauth_last_refresh', $entry, false);
     $message_text = (string) $message;
-    $src = $source !== '' ? '[' . $source . '] ' : '';
+    $src          = $source !== '' ? '[' . $source . '] ' : '';
+    $oauth_part   = '';
+    if (is_array($extra) && ! empty($extra['oauth_error'])) {
+        $oauth_part = ' [oauth_error=' . $extra['oauth_error'] . ']';
+    }
     if ($ok) {
         error_log('Rechat Plugin: OAuth token refresh OK ' . $src . '— ' . $message_text);
     } else {
-        error_log('Rechat Plugin: OAuth token refresh FAILED ' . $src . '— ' . $message_text);
+        error_log('Rechat Plugin: OAuth token refresh FAILED ' . $src . '— ' . $message_text . $oauth_part);
     }
 }
 
@@ -321,6 +478,7 @@ function rch_refresh_access_token($source = null)
 
     if (is_wp_error($response)) {
         $err = $response->get_error_message();
+        $transport_diag = __('WordPress could not complete HTTPS to the token URL (DNS, firewall, SSL, or timeout). Check outbound connectivity from this server.', 'rechat-plugin');
         rch_oauth_save_refresh_log(
             false,
             sprintf(
@@ -329,7 +487,11 @@ function rch_refresh_access_token($source = null)
                 $err
             ),
             null,
-            $source
+            $source,
+            array(
+                'diagnostic'      => $transport_diag,
+                'token_endpoint' => defined('RCH_OAUTH_TOKEN_URL') ? (string) RCH_OAUTH_TOKEN_URL : '',
+            )
         );
         error_log('Rechat Plugin: Error refreshing access token - ' . $err);
         return new WP_Error('oauth_request_failed', $err);
@@ -350,7 +512,8 @@ function rch_refresh_access_token($source = null)
             (string) $response_code,
             $detail
         );
-        rch_oauth_save_refresh_log(false, $message, $response_code, $source);
+        $failure_extra = rch_oauth_refresh_failure_extra_fields($response_code, $raw_body, is_array($data) ? $data : null);
+        rch_oauth_save_refresh_log(false, $message, $response_code, $source, $failure_extra);
         error_log('Rechat Plugin: Failed to refresh access token. Response code: ' . $response_code . ' Body: ' . $raw_body);
         // Do not clear refresh token here; only access may be wrong — user can reconnect
         update_option('rch_rechat_access_token', '');
@@ -414,9 +577,13 @@ function rch_unschedule_token_refresh()
  ******************************/
 function rch_disconnect_oauth()
 {
+    if (! isset($_POST['action']) || $_POST['action'] !== 'disconnect_rechat') {
+        return;
+    }
+
     // Verify nonce
     if (!isset($_POST['disconnect_rechat_nonce_field']) || 
-        !wp_verify_nonce($_POST['disconnect_rechat_nonce_field'], 'disconnect_rechat_nonce')) {
+        !wp_verify_nonce(wp_unslash($_POST['disconnect_rechat_nonce_field']), 'disconnect_rechat_nonce')) {
         wp_die(esc_html__('Security check failed.', 'rechat-plugin'));
     }
 
@@ -443,10 +610,7 @@ function rch_disconnect_oauth()
     exit;
 }
 
-// Handle disconnect request
-if (isset($_POST['action']) && $_POST['action'] === 'disconnect_rechat') {
-    add_action('admin_init', 'rch_disconnect_oauth');
-}
+add_action('admin_init', 'rch_disconnect_oauth');
 
 /*******************************
  * Register activation/deactivation hooks
@@ -462,7 +626,7 @@ if (defined('RCH_PLUGIN_DIR')) {
  */
 function rch_handle_manual_oauth_refresh()
 {
-    if (!current_user_can('manage_options')) {
+    if (! function_exists('rch_current_user_can_manage_rechat') || ! rch_current_user_can_manage_rechat()) {
         wp_die(esc_html__('You do not have sufficient permissions to perform this action.', 'rechat-plugin'));
     }
     check_admin_referer('rch_manual_oauth_refresh', 'rch_manual_oauth_refresh_nonce');
@@ -500,7 +664,7 @@ add_action('admin_post_rch_manual_oauth_refresh', 'rch_handle_manual_oauth_refre
  */
 function rch_maybe_show_oauth_manual_refresh_notice()
 {
-    if (!is_admin() || !current_user_can('manage_options')) {
+    if (! is_admin() || ! function_exists('rch_current_user_can_manage_rechat') || ! rch_current_user_can_manage_rechat()) {
         return;
     }
     if (!isset($_GET['page'], $_GET['tab']) || $_GET['page'] !== 'rechat-setting' || $_GET['tab'] !== 'connect-to-rechat') {
@@ -537,7 +701,7 @@ function rch_oauth_handle_dismiss_fail_notice()
     if ((string) $_GET['rch_oauth_dismiss_fail'] !== '1') {
         return;
     }
-    if (!current_user_can('manage_options')) {
+    if (! function_exists('rch_current_user_can_manage_rechat') || ! rch_current_user_can_manage_rechat()) {
         return;
     }
     if (!isset($_GET['_wpnonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['_wpnonce'])), 'rch_dismiss_oauth_fail')) {
@@ -560,7 +724,7 @@ add_action('admin_init', 'rch_oauth_handle_dismiss_fail_notice', 1);
  */
 function rch_oauth_admin_notice_last_refresh_failed()
 {
-    if (!is_admin() || !current_user_can('manage_options')) {
+    if (! is_admin() || ! function_exists('rch_current_user_can_manage_rechat') || ! rch_current_user_can_manage_rechat()) {
         return;
     }
     if (!isset($_GET['page']) || $_GET['page'] !== 'rechat-setting') {
