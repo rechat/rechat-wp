@@ -24,6 +24,7 @@ function rch_multisite_render_admin_tab(): void
     $bulk_theme_nonce   = wp_create_nonce('rch_multisite_bulk_theme');
     $row_theme_nonce   = wp_create_nonce('rch_multisite_row_theme');
     $reassign_roles_nonce = wp_create_nonce('rch_multisite_reassign_agent_roles');
+    $resync_themes_nonce   = wp_create_nonce('rch_multisite_resync_themes');
     $saved_agent_theme  = (string) get_site_option('rch_multisite_agent_theme_stylesheet', '');
     $saved_office_theme = (string) get_site_option('rch_multisite_office_theme_stylesheet', '');
     $theme_choices      = rch_multisite_get_theme_choices();
@@ -145,7 +146,7 @@ function rch_multisite_render_admin_tab(): void
                             <?php endforeach; ?>
                         </select>
                         <p class="description">
-                            <?php esc_html_e('Used for new agent sites and for “Apply theme to all agent sub-sites” below when no per-agent override is set. Enable themes in Network Admin → Themes if a theme does not activate.', 'rechat-plugin'); ?>
+                            <?php esc_html_e('Used for new agent sites, for “Sync sub-site themes” (each row: network default or override), and for “Apply theme to all agent sub-sites” when that action uses the dropdown value. Save Multisite Settings before syncing so the saved default is applied. Enable themes in Network Admin → Themes if a theme does not activate.', 'rechat-plugin'); ?>
                         </p>
                     </td>
                 </tr>
@@ -325,6 +326,16 @@ function rch_multisite_render_admin_tab(): void
         </button>
 
         <button
+            id="rch-multisite-resync-themes-btn"
+            type="button"
+            class="button"
+            style="margin-left:8px;"
+            data-nonce="<?php echo esc_attr($resync_themes_nonce); ?>"
+        >
+            <?php esc_html_e('Sync sub-site themes (defaults + row overrides)', 'rechat-plugin'); ?>
+        </button>
+
+        <button
             id="rch-multisite-reassign-agent-roles-btn"
             type="button"
             class="button"
@@ -339,6 +350,11 @@ function rch_multisite_render_admin_tab(): void
         <div id="rch-multisite-provision-result" style="margin-top:12px;"></div>
 
         <p class="description" style="max-width:900px;margin-top:10px;">
+            <?php esc_html_e('“Fix Theme on Existing Sites” only fills sub-sites that have no theme yet (empty template). It does not change sites that already activated a theme.', 'rechat-plugin'); ?>
+            <?php esc_html_e(' After you change the default theme dropdowns above, click “Save Multisite Settings”, then use “Sync sub-site themes” so every linked agent and office site gets the theme resolved for that row (network default or per-row override).', 'rechat-plugin'); ?>
+        </p>
+
+        <p class="description" style="max-width:900px;margin-top:10px;">
             <?php esc_html_e('“Reassign agent sub-site role for all agents” walks every agent profile that has a sub-site and a valid email, finds the WordPress user with that email, and sets their role on that sub-site to the current agent role (e.g. Agent). No login emails are sent. Use this after changing role names or capabilities.', 'rechat-plugin'); ?>
         </p>
 
@@ -346,7 +362,7 @@ function rch_multisite_render_admin_tab(): void
             <strong><?php esc_html_e('Bulk apply theme (agents vs offices)', 'rechat-plugin'); ?></strong>
         </p>
         <p class="description" style="max-width:720px;">
-            <?php esc_html_e('Each row uses its own default theme dropdown above. You do not need to save the form first. Only sites that already exist are updated.', 'rechat-plugin'); ?>
+            <?php esc_html_e('Forces the theme chosen in the dropdown on every sub-site of that type, ignoring per-row overrides in the table below. You do not need to save the form first. Only sites that already exist are updated. To respect row overrides while updating everyone on the network default, use “Sync sub-site themes” instead.', 'rechat-plugin'); ?>
         </p>
         <p style="margin-top:10px;">
             <button
@@ -744,6 +760,51 @@ function rch_multisite_render_admin_tab(): void
                         '<div class="notice notice-success inline"><p>' +
                         response.data.message + '</p></div>'
                     );
+                } else {
+                    $result.html(
+                        '<div class="notice notice-error inline"><p>' +
+                        (response.data || '<?php echo esc_js(__('An error occurred.', 'rechat-plugin')); ?>') +
+                        '</p></div>'
+                    );
+                }
+            }).fail(function () {
+                $btn.prop('disabled', false);
+                $spinner.removeClass('is-active');
+                $result.html(
+                    '<div class="notice notice-error inline"><p><?php echo esc_js(__('Request failed. Please try again.', 'rechat-plugin')); ?></p></div>'
+                );
+            });
+        });
+
+        // ── Resync resolved themes (network default + row overrides) ─────────
+        $('#rch-multisite-resync-themes-btn').on('click', function () {
+            var $btn     = $(this);
+            var $spinner = $('#rch-multisite-provision-spinner');
+            var $result  = $('#rch-multisite-provision-result');
+
+            $btn.prop('disabled', true);
+            $spinner.addClass('is-active');
+            $result.html('');
+
+            $.post(ajaxurl, {
+                action: 'rch_multisite_resync_themes',
+                _nonce: $btn.data('nonce'),
+            }, function (response) {
+                $btn.prop('disabled', false);
+                $spinner.removeClass('is-active');
+
+                if (response.success) {
+                    var d    = response.data;
+                    var html = '<div class="notice notice-success inline"><p>' + d.message + '</p>';
+
+                    if (d.errors && d.errors.length) {
+                        html += '<p><strong><?php echo esc_js(__('Warnings:', 'rechat-plugin')); ?></strong></p><ul>';
+                        $.each(d.errors, function (i, err) { html += '<li>' + err + '</li>'; });
+                        html += '</ul>';
+                    }
+
+                    html += '</div>';
+                    $result.html(html);
                 } else {
                     $result.html(
                         '<div class="notice notice-error inline"><p>' +

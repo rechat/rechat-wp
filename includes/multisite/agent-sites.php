@@ -1402,6 +1402,74 @@ function rch_multisite_fix_themes_on_existing_sites(): array
 }
 
 /**
+ * For every agent/office with a linked blog, activate the theme from
+ * rch_multisite_resolve_theme_for_post() (network default + per-row override).
+ *
+ * Use after saving a new network default so agents without a row override get the new theme.
+ * Rows with a per-site theme override keep that theme.
+ *
+ * @return array{updated:int,unchanged:int,skipped:int,errors:string[]}
+ */
+function rch_multisite_resync_subsite_themes_from_resolved(): array
+{
+    $updated   = 0;
+    $unchanged = 0;
+    $skipped   = 0;
+    $errors    = [];
+
+    $sync_posts = static function (array $posts, callable $blog_id_cb) use (&$updated, &$unchanged, &$skipped, &$errors): void {
+        foreach ($posts as $post) {
+            $blog_id = (int) $blog_id_cb($post->ID);
+            if (! $blog_id) {
+                $skipped++;
+                continue;
+            }
+
+            $resolved = rch_multisite_resolve_theme_for_post((int) $post->ID);
+            $target   = $resolved['stylesheet'] !== '' ? $resolved['stylesheet'] : $resolved['template'];
+
+            if ($target === '') {
+                $skipped++;
+                continue;
+            }
+
+            $current = (string) get_blog_option($blog_id, 'stylesheet');
+
+            if ($current === $target) {
+                $unchanged++;
+                continue;
+            }
+
+            $result = rch_multisite_activate_theme_on_blog($blog_id, $target);
+            if (is_wp_error($result)) {
+                $errors[] = $post->post_title . ': ' . $result->get_error_message();
+            } else {
+                $updated++;
+            }
+        }
+    };
+
+    $agents = get_posts([
+        'post_type'   => 'agents',
+        'numberposts' => -1,
+        'post_status' => 'publish',
+        'fields'      => 'all',
+    ]);
+
+    $offices = get_posts([
+        'post_type'   => 'offices',
+        'numberposts' => -1,
+        'post_status' => 'publish',
+        'fields'      => 'all',
+    ]);
+
+    $sync_posts($agents, 'rch_multisite_get_agent_blog_id');
+    $sync_posts($offices, 'rch_multisite_get_office_blog_id');
+
+    return compact('updated', 'unchanged', 'skipped', 'errors');
+}
+
+/**
  * Resolve stylesheet for bulk apply (explicit slug or network default for entity).
  *
  * @param  string|null $stylesheet Raw stylesheet or null/empty to use network default.
@@ -1552,6 +1620,37 @@ function rch_multisite_ajax_fix_themes(): void
     ]);
 }
 add_action('wp_ajax_rch_multisite_fix_themes', 'rch_multisite_ajax_fix_themes');
+
+/**
+ * AJAX: push resolved theme (network default + per-row overrides) to all linked sub-sites.
+ *
+ * @return void
+ */
+function rch_multisite_ajax_resync_themes(): void
+{
+    check_ajax_referer('rch_multisite_resync_themes', '_nonce');
+
+    if (! current_user_can('manage_network_options')) {
+        wp_send_json_error(__('Insufficient permissions.', 'rechat-plugin'));
+        return;
+    }
+
+    $result = rch_multisite_resync_subsite_themes_from_resolved();
+
+    $message = sprintf(
+        /* translators: 1: updated count, 2: unchanged count, 3: skipped count */
+        __('Done. Updated %1$d sub-site(s). %2$d already matched. %3$d skipped (no linked site or no theme resolved).', 'rechat-plugin'),
+        $result['updated'],
+        $result['unchanged'],
+        $result['skipped']
+    );
+
+    wp_send_json_success([
+        'message' => $message,
+        'errors'  => $result['errors'],
+    ]);
+}
+add_action('wp_ajax_rch_multisite_resync_themes', 'rch_multisite_ajax_resync_themes');
 
 /**
  * AJAX: bulk-reassign the agent sub-site role for every provisioned agent user (no emails).
