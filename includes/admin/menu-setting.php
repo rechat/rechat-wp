@@ -412,6 +412,42 @@ function rch_render_token_information($access_token_exists, $refresh_token_exist
                 <td><?php echo esc_html((string) $last['http_code']); ?></td>
             </tr>
             <?php endif; ?>
+            <?php if (! empty($last['diagnostic'])) : ?>
+            <tr valign="top">
+                <th scope="row"><?php esc_html_e('Why refresh failed (hint)', 'rechat-plugin'); ?></th>
+                <td><?php echo esc_html((string) $last['diagnostic']); ?></td>
+            </tr>
+            <?php endif; ?>
+            <?php if (! empty($last['oauth_error'])) : ?>
+            <tr valign="top">
+                <th scope="row"><?php esc_html_e('OAuth error code', 'rechat-plugin'); ?></th>
+                <td><code><?php echo esc_html((string) $last['oauth_error']); ?></code></td>
+            </tr>
+            <?php endif; ?>
+            <?php if (! empty($last['oauth_error_description'])) : ?>
+            <tr valign="top">
+                <th scope="row"><?php esc_html_e('OAuth error description', 'rechat-plugin'); ?></th>
+                <td><code style="word-break:break-all;display:block;white-space:pre-wrap;"><?php echo esc_html((string) $last['oauth_error_description']); ?></code></td>
+            </tr>
+            <?php endif; ?>
+            <?php if (! empty($last['oauth_error_uri'])) : ?>
+            <tr valign="top">
+                <th scope="row"><?php esc_html_e('OAuth error URI', 'rechat-plugin'); ?></th>
+                <td><a href="<?php echo esc_url((string) $last['oauth_error_uri']); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html((string) $last['oauth_error_uri']); ?></a></td>
+            </tr>
+            <?php endif; ?>
+            <?php if (! empty($last['token_endpoint'])) : ?>
+            <tr valign="top">
+                <th scope="row"><?php esc_html_e('Token endpoint called', 'rechat-plugin'); ?></th>
+                <td><code style="word-break:break-all;"><?php echo esc_html((string) $last['token_endpoint']); ?></code></td>
+            </tr>
+            <?php endif; ?>
+            <?php if (! empty($last['response_preview'])) : ?>
+            <tr valign="top">
+                <th scope="row"><?php esc_html_e('Response body (snippet)', 'rechat-plugin'); ?></th>
+                <td><code style="word-break:break-all;display:block;white-space:pre-wrap;max-height:12em;overflow:auto;"><?php echo esc_html((string) $last['response_preview']); ?></code></td>
+            </tr>
+            <?php endif; ?>
             <tr valign="top">
                 <th scope="row">
                     <?php esc_html_e('Permissions', 'rechat-plugin'); ?>
