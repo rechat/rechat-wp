@@ -53,9 +53,12 @@ function rch_search_listing_form_shortcode($atts)
         'map_zoom'                  => '',
         'map_api_key'               => get_option('rch_rechat_google_map_api_key'),
         'map_default_center'        => '',
-        'filter_address'            => '',
-        'disable_filter_price'      => 'false',
-        'disable_filter_beds'       => 'false',
+        'filter_address'                => '',
+        'disable_filter_address'        => 'false',
+        'disable_filter_price'          => 'false',
+        'disable_filter_beds'           => 'false',
+        'disable_filter_baths'          => 'false',
+        'disable_filter_property_types' => 'false',
         'filter_minimum_price'      => '',
         'filter_minimum_bathrooms'  => '',
         'filter_minimum_bedrooms'   => '',
@@ -78,8 +81,11 @@ function rch_search_listing_form_shortcode($atts)
     $map_api_key = sanitize_text_field($atts['map_api_key']);
     $map_default_center = sanitize_text_field($atts['map_default_center']);
     $filter_address = sanitize_text_field($atts['filter_address']);
-    $disable_filter_price = sanitize_text_field($atts['disable_filter_price']);
-    $disable_filter_beds = sanitize_text_field($atts['disable_filter_beds']);
+    $disable_filter_address = filter_var($atts['disable_filter_address'], FILTER_VALIDATE_BOOLEAN);
+    $disable_filter_price = filter_var($atts['disable_filter_price'], FILTER_VALIDATE_BOOLEAN);
+    $disable_filter_beds = filter_var($atts['disable_filter_beds'], FILTER_VALIDATE_BOOLEAN);
+    $disable_filter_baths = filter_var($atts['disable_filter_baths'], FILTER_VALIDATE_BOOLEAN);
+    $disable_filter_property_types = filter_var($atts['disable_filter_property_types'], FILTER_VALIDATE_BOOLEAN);
     $filter_minimum_price = sanitize_text_field($atts['filter_minimum_price']);
     $filter_minimum_bathrooms = sanitize_text_field($atts['filter_minimum_bathrooms']);
     $filter_minimum_bedrooms = sanitize_text_field($atts['filter_minimum_bedrooms']);
@@ -97,10 +103,13 @@ function rch_search_listing_form_shortcode($atts)
         'minimum_price'         => $filter_minimum_price,
         'minimum_bathrooms'     => $filter_minimum_bathrooms,
         'minimum_bedrooms'      => $filter_minimum_bedrooms,
-        'maximum_bedrooms'      => $filter_maximum_bedrooms,
-        'maximum_year_built'    => $filter_maximum_year_built,
-        'disable_filter_price'  => $disable_filter_price,
-        'disable_filter_beds'   => $disable_filter_beds,
+        'maximum_bedrooms'              => $filter_maximum_bedrooms,
+        'maximum_year_built'            => $filter_maximum_year_built,
+        'disable_filter_address'        => $disable_filter_address,
+        'disable_filter_price'          => $disable_filter_price,
+        'disable_filter_beds'           => $disable_filter_beds,
+        'disable_filter_baths'          => $disable_filter_baths,
+        'disable_filter_property_types' => $disable_filter_property_types,
     ];
 
     $boundary_country = (string) get_option('rch_selected_country', '');
