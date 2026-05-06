@@ -36,6 +36,7 @@ function rch_get_active_tab()
 
     if (is_multisite()) {
         $allowed_tabs[] = 'multisite';
+        $allowed_tabs[] = 'agent-site-wizard';
     }
 
     $tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'sync-data';
@@ -57,7 +58,8 @@ function rch_render_tab_navigation($active_tab)
     ];
 
     if (is_multisite()) {
-        $tabs['multisite'] = __('Multisite', 'rechat-plugin');
+        $tabs['multisite']          = __('Multisite', 'rechat-plugin');
+        $tabs['agent-site-wizard'] = __('Agent site wizard', 'rechat-plugin');
     }
 
     echo '<h2 class="nav-tab-wrapper">';
@@ -131,6 +133,12 @@ function rch_rechat_menu_page()
                 case 'multisite':
                     if (is_multisite() && function_exists('rch_multisite_render_admin_tab')) {
                         rch_multisite_render_admin_tab();
+                    }
+                    break;
+
+                case 'agent-site-wizard':
+                    if (is_multisite() && function_exists('rch_agent_wizard_render_tab')) {
+                        rch_agent_wizard_render_tab();
                     }
                     break;
             }

@@ -2,13 +2,13 @@
 /*
 Plugin Name: Rechat Plugin
 Description: Fetches and manages agent, offices, regions, and Listing data from Rechat.
-Version: 6.3.7
+Version: 6.3.8
 Author URI: https://rechat.com/
 Text Domain: rechat-plugin
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 GitHub Plugin URI: https://github.com/rechat/rechat-wp
-GitHub Branch: dev
+GitHub Branch: master
 */
 // Exit if accessed directly
 if (! defined('ABSPATH')) {
@@ -18,7 +18,7 @@ if (! defined('ABSPATH')) {
 // define required constants.
 define('RCH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('RCH_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('RCH_VERSION', '6.3.7');
+define('RCH_VERSION', '6.3.8');
 define('RCH_VERSION_SWIPER', '11.2.5');
 if (! defined('RCH_STAGING_DOMAIN')) {
     define('RCH_STAGING_DOMAIN', 'staging.insanustu.dev');
@@ -168,6 +168,10 @@ include RCH_PLUGIN_INCLUDES . 'metabox/load-all-meta-boxes.php';
 include RCH_PLUGIN_INCLUDES . 'multisite/broadcast-integration.php';
 // Multisite: agent sub-site management (no-op on single-site installs)
 include RCH_PLUGIN_INCLUDES . 'multisite/agent-sites.php';
+// Multisite: agent → sub-site theme options wizard (AJAX + tab UI)
+if (is_multisite()) {
+    require_once RCH_PLUGIN_INCLUDES . 'multisite/agent-site-deploy-wizard.php';
+}
 // Multisite: prompt to install & activate Broadcast (ThreeWP) from wordpress.org — admin only
 if (is_multisite() && is_admin()) {
     require_once RCH_PLUGIN_INCLUDES . 'tgm/class-tgm-plugin-activation.php';

@@ -136,7 +136,8 @@ function rch_latest_listings_get_property_type_mappings()
 function rch_latest_listings_get_status_mappings()
 {
     return [
-        'Active' => 'Active,Incoming,Coming Soon,Pending',
+        'Active' => 'Active,Incoming,Coming Soon',
+        'Pending' => 'Pending',
         'Closed' => 'Sold,Leased',
         'Archived' => 'Withdrawn,Expired',
     ];
