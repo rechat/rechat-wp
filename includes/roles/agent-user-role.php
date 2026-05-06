@@ -174,3 +174,65 @@ function rch_filter_option_page_capability(string $capability): string
 add_filter('option_page_capability_appearance_settings', 'rch_filter_option_page_capability');
 add_filter('option_page_capability_general_settings', 'rch_filter_option_page_capability');
 add_filter('option_page_capability_local_logic_settings', 'rch_filter_option_page_capability');
+
+/**
+ * Ensure agent role can access theme "Theme Setting" submenu (theme-options) even if theme registers it with manage_options.
+ *
+ * Theme file typically uses add_theme_page(..., 'manage_options', 'theme-options', 'theme_option_page').
+ * We remove and re-add same slug with Rechat capability, so agents see it across theme switches.
+ */
+function rch_agent_fix_theme_options_menu_capability(): void
+{
+    if (! is_admin()) {
+        return;
+    }
+
+    if (! function_exists('theme_option_page')) {
+        return;
+    }
+
+    $cap = rch_rechat_settings_capability();
+
+    remove_submenu_page('themes.php', 'theme-options');
+
+    add_submenu_page(
+        'themes.php',
+        'Theme Setting',
+        'Theme Setting',
+        $cap,
+        'theme-options',
+        'theme_option_page',
+        99
+    );
+}
+
+add_action('admin_menu', 'rch_agent_fix_theme_options_menu_capability', 1000);
+
+/**
+ * Gate theme options saving callback behind Rechat capability.
+ *
+ * Theme option pages usually call do_action('pentama_option_panel') on POST. We wrap this action.
+ */
+function rch_agent_gate_pentama_option_panel(): void
+{
+    if (! is_admin()) {
+        return;
+    }
+
+    if (! function_exists('pentama_handler_option')) {
+        return;
+    }
+
+    remove_action('pentama_option_panel', 'pentama_handler_option');
+
+    add_action('pentama_option_panel', static function (): void {
+        $cap = rch_rechat_settings_capability();
+        if (! current_user_can($cap) && ! current_user_can('manage_options')) {
+            return;
+        }
+
+        pentama_handler_option();
+    }, 10);
+}
+
+add_action('after_setup_theme', 'rch_agent_gate_pentama_option_panel', 20);

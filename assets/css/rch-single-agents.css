@@ -417,6 +417,14 @@ START: Agent Single Page - Rechat Web Components Display Modes
 .rch-agents-sold-section {
   margin-block-start: 3rem;
 }
+.rch-agents-combined-section rechat-listings-list, .rch-agents-active-section rechat-listings-list:has(.map-listing-grid__empty-state),
+ .rch-agents-sold-section rechat-listings-list:has(.map-listing-grid__empty-state){
+  display: flex;
+  flex-direction: column;
+  align-content: unset;
+  grid-template-columns: unset;
+  /* add whatever fixes layout */
+}
 /* Responsive adjustments for slider */
 @media (max-width: 768px) {
     .rch-agents-slider-section rechat-root {
