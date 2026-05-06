@@ -40,6 +40,8 @@ $wz_storage    = function_exists('rch_agent_wizard_resolve_storage_config')
 $wz_opt_primary = isset($wz_storage['primary']) ? (string) $wz_storage['primary'] : '';
 $wz_opt_mirror  = (isset($wz_storage['mirror']) && is_string($wz_storage['mirror'])) ? $wz_storage['mirror'] : '';
 
+$wz_broadcast_step = function_exists('rch_agent_wizard_broadcast_step_enabled') && rch_agent_wizard_broadcast_step_enabled();
+
 ?>
 <div class="tab-content rch-agent-wizard" id="rch-agent-site-wizard">
     <div class="rch-wz-shell">
@@ -100,13 +102,44 @@ $wz_opt_mirror  = (isset($wz_storage['mirror']) && is_string($wz_storage['mirror
                         <span class="rch-wz-stepnav__label"><?php esc_html_e('Theme options', 'rechat-plugin'); ?></span>
                     </button>
                 </li>
+                <?php if ($wz_broadcast_step) : ?>
                 <li class="rch-wz-stepnav__item rch-wz-stepnav__item--sep" aria-hidden="true"></li>
                 <li class="rch-wz-stepnav__item">
                     <button type="button" class="rch-wz-stepnav__btn rch-wz-goto" data-step="3">
                         <span class="rch-wz-stepnav__num" aria-hidden="true">3</span>
+                        <span class="rch-wz-stepnav__label"><?php esc_html_e('Broadcast content', 'rechat-plugin'); ?></span>
+                    </button>
+                </li>
+                <li class="rch-wz-stepnav__item rch-wz-stepnav__item--sep" aria-hidden="true"></li>
+                <li class="rch-wz-stepnav__item">
+                    <button type="button" class="rch-wz-stepnav__btn rch-wz-goto" data-step="4">
+                        <span class="rch-wz-stepnav__num" aria-hidden="true">4</span>
+                        <span class="rch-wz-stepnav__label"><?php esc_html_e('Menus & widgets', 'rechat-plugin'); ?></span>
+                    </button>
+                </li>
+                <li class="rch-wz-stepnav__item rch-wz-stepnav__item--sep" aria-hidden="true"></li>
+                <li class="rch-wz-stepnav__item">
+                    <button type="button" class="rch-wz-stepnav__btn rch-wz-goto" data-step="5">
+                        <span class="rch-wz-stepnav__num" aria-hidden="true">5</span>
                         <span class="rch-wz-stepnav__label"><?php esc_html_e('Preview & deploy', 'rechat-plugin'); ?></span>
                     </button>
                 </li>
+                <?php else : ?>
+                <li class="rch-wz-stepnav__item rch-wz-stepnav__item--sep" aria-hidden="true"></li>
+                <li class="rch-wz-stepnav__item">
+                    <button type="button" class="rch-wz-stepnav__btn rch-wz-goto" data-step="3">
+                        <span class="rch-wz-stepnav__num" aria-hidden="true">3</span>
+                        <span class="rch-wz-stepnav__label"><?php esc_html_e('Menus & widgets', 'rechat-plugin'); ?></span>
+                    </button>
+                </li>
+                <li class="rch-wz-stepnav__item rch-wz-stepnav__item--sep" aria-hidden="true"></li>
+                <li class="rch-wz-stepnav__item">
+                    <button type="button" class="rch-wz-stepnav__btn rch-wz-goto" data-step="4">
+                        <span class="rch-wz-stepnav__num" aria-hidden="true">4</span>
+                        <span class="rch-wz-stepnav__label"><?php esc_html_e('Preview & deploy', 'rechat-plugin'); ?></span>
+                    </button>
+                </li>
+                <?php endif; ?>
             </ol>
         </nav>
 
@@ -222,7 +255,33 @@ $wz_opt_mirror  = (isset($wz_storage['mirror']) && is_string($wz_storage['mirror
                                         <p class="rch-wz-meta-preview rch-wz-hint"></p>
                                     </div>
                                     <div class="rch-wz-row-manual-wrap rch-wz-stack" hidden>
-                                        <?php if ($mr['type'] === 'textarea' || $mr['type'] === 'textarea_json') : ?>
+                                        <?php if ($mr['type'] === 'select') : ?>
+                                            <select
+                                                class="rch-wz-select rch-wz-row-value"
+                                                id="<?php echo esc_attr($fid); ?>"
+                                                data-theme-key="<?php echo esc_attr($mr['key']); ?>"
+                                            >
+                                                <option value=""><?php esc_html_e('— Select —', 'rechat-plugin'); ?></option>
+                                                <?php foreach ($mr['options'] ?? [] as $opt) : ?>
+                                                    <?php if (! isset($opt['value'], $opt['label'])) { continue; } ?>
+                                                    <option value="<?php echo esc_attr((string) $opt['value']); ?>"><?php echo esc_html((string) $opt['label']); ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                            <p class="rch-wz-hint"><?php esc_html_e('Same choices as the theme option panel (Rechat API).', 'rechat-plugin'); ?></p>
+                                        <?php elseif ($mr['type'] === 'tags') : ?>
+                                            <div class="rch-wz-tags-wrap" id="<?php echo esc_attr($fid); ?>-tags-wrap">
+                                                <select class="rch-wz-select rch-wz-tag-add" aria-label="<?php esc_attr_e('Add tag', 'rechat-plugin'); ?>">
+                                                    <option value=""><?php esc_html_e('— Add tag —', 'rechat-plugin'); ?></option>
+                                                    <?php foreach ($mr['options'] ?? [] as $opt) : ?>
+                                                        <?php if (! isset($opt['value'], $opt['label'])) { continue; } ?>
+                                                        <option value="<?php echo esc_attr((string) $opt['value']); ?>"><?php echo esc_html((string) $opt['label']); ?></option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                                <div class="rch-wz-tag-chips" aria-live="polite"></div>
+                                                <input type="hidden" class="rch-wz-row-value" id="<?php echo esc_attr($fid); ?>" data-theme-key="<?php echo esc_attr($mr['key']); ?>" value="[]" />
+                                                <p class="rch-wz-hint"><?php esc_html_e('Pick tags like the theme panel; stored as a JSON array of strings.', 'rechat-plugin'); ?></p>
+                                            </div>
+                                        <?php elseif ($mr['type'] === 'textarea' || $mr['type'] === 'textarea_json') : ?>
                                             <textarea
                                                 class="rch-wz-textarea rch-wz-row-value"
                                                 rows="<?php echo $mr['type'] === 'textarea_json' ? '3' : '4'; ?>"
@@ -245,6 +304,19 @@ $wz_opt_mirror  = (isset($wz_storage['mirror']) && is_string($wz_storage['mirror
                                         <?php elseif ($mr['media'] === 'video') : ?>
                                             <button type="button" class="button rch-wz-btn-secondary rch-wz-media rch-wz-media-video" data-target="<?php echo esc_attr($fid); ?>"><?php esc_html_e('Media library', 'rechat-plugin'); ?></button>
                                         <?php endif; ?>
+                                        <?php if (in_array($mr['type'], ['text', 'textarea'], true)) : ?>
+                                            <div class="rch-wz-tokens" aria-label="<?php esc_attr_e('Insert agent placeholders', 'rechat-plugin'); ?>">
+                                                <div class="rch-wz-tokens__label"><?php esc_html_e('Placeholders', 'rechat-plugin'); ?></div>
+                                                <div class="rch-wz-tokens__list">
+                                                    <button type="button" class="rch-wz-token" data-token="{$post_title}"><?php esc_html_e('Agent name', 'rechat-plugin'); ?></button>
+                                                    <?php foreach ($metabox_defs as $mk => $md) : ?>
+                                                        <button type="button" class="rch-wz-token" data-token="<?php echo esc_attr('{$' . $mk . '}'); ?>">
+                                                            <?php echo esc_html($md['label']); ?>
+                                                        </button>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </div>
@@ -259,7 +331,204 @@ $wz_opt_mirror  = (isset($wz_storage['mirror']) && is_string($wz_storage['mirror
             </div>
         </div>
 
+        <?php if ($wz_broadcast_step) : ?>
         <div class="rch-agent-wizard-panel rch-wz-card" data-step-panel="3" hidden>
+            <div class="rch-wz-card__head">
+                <h3 class="rch-wz-card__title"><?php esc_html_e('Broadcast content', 'rechat-plugin'); ?></h3>
+                <p class="rch-wz-card__subtitle"><?php esc_html_e('Push selected posts and pages from the main Broadcast source site to your sub-sites. Pick a target scope below; use “All sub-sites” only when you intend every site.', 'rechat-plugin'); ?></p>
+            </div>
+            <div class="rch-wz-card__body">
+                <fieldset class="rch-wz-fieldset rch-wz-bc-targets">
+                    <legend class="rch-wz-field__label"><?php esc_html_e('Target blogs', 'rechat-plugin'); ?></legend>
+                    <label class="rch-wz-choice rch-wz-choice--compact">
+                        <input type="radio" name="rch_wz_bc_target" id="rch-wz-bc-target-agent" value="agent_only" checked class="rch-wz-choice__input" />
+                        <span class="rch-wz-choice__box">
+                            <span class="rch-wz-choice__title"><?php esc_html_e('Agent sub-sites only', 'rechat-plugin'); ?></span>
+                        </span>
+                    </label>
+                    <label class="rch-wz-choice rch-wz-choice--compact">
+                        <input type="radio" name="rch_wz_bc_target" id="rch-wz-bc-target-office" value="office_only" class="rch-wz-choice__input" />
+                        <span class="rch-wz-choice__box">
+                            <span class="rch-wz-choice__title"><?php esc_html_e('Office sub-sites only', 'rechat-plugin'); ?></span>
+                        </span>
+                    </label>
+                    <label class="rch-wz-choice rch-wz-choice--compact">
+                        <input type="radio" name="rch_wz_bc_target" id="rch-wz-bc-target-all" value="all_subsites" class="rch-wz-choice__input" />
+                        <span class="rch-wz-choice__box">
+                            <span class="rch-wz-choice__title"><?php esc_html_e('All sub-sites (except source)', 'rechat-plugin'); ?></span>
+                        </span>
+                    </label>
+                </fieldset>
+                <p class="rch-wz-hint" id="rch-wz-bc-target-summary"></p>
+                <div class="rch-wz-field rch-wz-bc-search-row">
+                    <label class="rch-wz-field__label" for="rch-wz-bc-search"><?php esc_html_e('Search', 'rechat-plugin'); ?></label>
+                    <div class="rch-wz-field__row">
+                        <input type="search" id="rch-wz-bc-search" class="rch-wz-input rch-wz-input--grow" placeholder="<?php esc_attr_e('Search titles…', 'rechat-plugin'); ?>" />
+                        <button type="button" class="button rch-wz-btn-secondary" id="rch-wz-bc-load"><?php esc_html_e('Load list', 'rechat-plugin'); ?></button>
+                        <span class="spinner" id="rch-wz-bc-spinner"></span>
+                    </div>
+                </div>
+                <p class="rch-wz-hint" id="rch-wz-bc-pageinfo"></p>
+                <div class="rch-wz-bc-table-wrap">
+                    <table class="rch-wz-bc-table widefat striped" id="rch-wz-bc-table">
+                        <thead>
+                            <tr>
+                                <th class="rch-wz-bc-col-check" scope="col"><span class="screen-reader-text"><?php esc_html_e('Select', 'rechat-plugin'); ?></span></th>
+                                <th scope="col"><?php esc_html_e('Title', 'rechat-plugin'); ?></th>
+                                <th scope="col"><?php esc_html_e('Type', 'rechat-plugin'); ?></th>
+                                <th scope="col"><?php esc_html_e('Status', 'rechat-plugin'); ?></th>
+                                <th scope="col"><?php esc_html_e('Modified', 'rechat-plugin'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody id="rch-wz-bc-tbody">
+                            <tr class="rch-wz-bc-placeholder"><td colspan="5"><?php esc_html_e('Click “Load list” to show posts and pages from the source site.', 'rechat-plugin'); ?></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="rch-wz-bc-pager">
+                    <button type="button" class="button" id="rch-wz-bc-prev" disabled><?php esc_html_e('Previous', 'rechat-plugin'); ?></button>
+                    <button type="button" class="button" id="rch-wz-bc-next" disabled><?php esc_html_e('Next', 'rechat-plugin'); ?></button>
+                    <button type="button" class="button rch-wz-btn-secondary" id="rch-wz-bc-selall"><?php esc_html_e('Select all on page', 'rechat-plugin'); ?></button>
+                    <button type="button" class="button rch-wz-btn-secondary" id="rch-wz-bc-selnone"><?php esc_html_e('Clear page', 'rechat-plugin'); ?></button>
+                </div>
+                <div id="rch-wz-bc-result" class="rch-wz-deploy-result" aria-live="polite"></div>
+            </div>
+            <div class="rch-wz-card__footer rch-wz-card__footer--split">
+                <button type="button" class="button rch-wz-btn-ghost rch-wz-prev" data-prev="2"><?php esc_html_e('Back', 'rechat-plugin'); ?></button>
+                <div class="rch-wz-card__footer-actions">
+                    <button type="button" class="button button-primary rch-wz-btn-primary" id="rch-wz-bc-run"><?php esc_html_e('Broadcast selected', 'rechat-plugin'); ?></button>
+                    <span class="spinner" id="rch-wz-bc-run-spinner"></span>
+                    <button type="button" class="button rch-wz-btn-secondary rch-wz-next" data-next="4"><?php esc_html_e('Continue to menus & widgets', 'rechat-plugin'); ?></button>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <div class="rch-agent-wizard-panel rch-wz-card" data-step-panel="<?php echo esc_attr($wz_broadcast_step ? '4' : '3'); ?>" hidden>
+            <div class="rch-wz-card__head">
+                <h3 class="rch-wz-card__title"><?php esc_html_e('Menus & widgets', 'rechat-plugin'); ?></h3>
+                <p class="rch-wz-card__subtitle"><?php esc_html_e('Copy navigation menus from the template site to many sub-sites, optionally replace all widget areas with the same configuration. Menu links that pointed to pages on the template site become custom URLs.', 'rechat-plugin'); ?></p>
+            </div>
+            <div class="rch-wz-card__body">
+                <fieldset class="rch-wz-fieldset rch-wz-mw-targets">
+                    <legend class="rch-wz-field__label"><?php esc_html_e('Target blogs', 'rechat-plugin'); ?></legend>
+                    <label class="rch-wz-choice rch-wz-choice--compact">
+                        <input type="radio" name="rch_wz_mw_target" id="rch-wz-mw-target-agent" value="agent_only" checked class="rch-wz-choice__input" />
+                        <span class="rch-wz-choice__box">
+                            <span class="rch-wz-choice__title"><?php esc_html_e('Agent sub-sites only', 'rechat-plugin'); ?></span>
+                        </span>
+                    </label>
+                    <label class="rch-wz-choice rch-wz-choice--compact">
+                        <input type="radio" name="rch_wz_mw_target" id="rch-wz-mw-target-office" value="office_only" class="rch-wz-choice__input" />
+                        <span class="rch-wz-choice__box">
+                            <span class="rch-wz-choice__title"><?php esc_html_e('Office sub-sites only', 'rechat-plugin'); ?></span>
+                        </span>
+                    </label>
+                    <label class="rch-wz-choice rch-wz-choice--compact">
+                        <input type="radio" name="rch_wz_mw_target" id="rch-wz-mw-target-all" value="all_subsites" class="rch-wz-choice__input" />
+                        <span class="rch-wz-choice__box">
+                            <span class="rch-wz-choice__title"><?php esc_html_e('All sub-sites (except template)', 'rechat-plugin'); ?></span>
+                        </span>
+                    </label>
+                </fieldset>
+                <p class="rch-wz-hint" id="rch-wz-mw-target-summary"></p>
+                <div class="rch-wz-field rch-wz-field__row">
+                    <button type="button" class="button rch-wz-btn-secondary" id="rch-wz-mw-load"><?php esc_html_e('Load menus & sidebars', 'rechat-plugin'); ?></button>
+                    <span class="spinner" id="rch-wz-mw-spinner"></span>
+                </div>
+
+                <div class="rch-wz-mb-panel">
+                    <h4 class="rch-wz-mb-heading"><?php esc_html_e('Build new menu for targets', 'rechat-plugin'); ?></h4>
+                    <p class="rch-wz-hint"><?php esc_html_e('Add links from template posts/pages or custom URLs, choose display locations from the template theme, then create the same menu on every site in the target scope above.', 'rechat-plugin'); ?></p>
+                    <?php if ($wz_broadcast_step) : ?>
+                    <div class="rch-wz-mb-broadcast-picks" id="rch-wz-mb-broadcast-picks-wrap">
+                        <p class="rch-wz-field__label"><?php esc_html_e('From broadcast selection', 'rechat-plugin'); ?></p>
+                        <p class="rch-wz-hint"><?php esc_html_e('Posts and pages you checked on the Broadcast step appear here with an Add button. After you run Broadcast, “Create menu on all targets” adds a real Page/Post menu entry on each site (that site’s URL), not the main site link.', 'rechat-plugin'); ?></p>
+                        <div id="rch-wz-mb-broadcast-picks" class="rch-wz-mb-search-results" aria-live="polite"></div>
+                    </div>
+                    <?php endif; ?>
+                    <div class="rch-wz-field">
+                        <label class="rch-wz-field__label" for="rch-wz-mb-name"><?php esc_html_e('New menu name', 'rechat-plugin'); ?></label>
+                        <input type="text" id="rch-wz-mb-name" class="rch-wz-input rch-wz-input--grow" maxlength="100" placeholder="<?php esc_attr_e('e.g. Main navigation', 'rechat-plugin'); ?>" autocomplete="off" />
+                    </div>
+                    <div class="rch-wz-mb-two-col">
+                        <div class="rch-wz-mb-col">
+                            <p class="rch-wz-field__label"><?php esc_html_e('Add from template content', 'rechat-plugin'); ?></p>
+                            <div class="rch-wz-field__row">
+                                <input type="search" id="rch-wz-mb-search" class="rch-wz-input rch-wz-input--grow" placeholder="<?php esc_attr_e('Search titles…', 'rechat-plugin'); ?>" />
+                                <button type="button" class="button rch-wz-btn-secondary" id="rch-wz-mb-search-btn"><?php esc_html_e('Search', 'rechat-plugin'); ?></button>
+                            </div>
+                            <div id="rch-wz-mb-search-results" class="rch-wz-mb-search-results" aria-live="polite"></div>
+                            <div class="rch-wz-mb-pager">
+                                <button type="button" class="button" id="rch-wz-mb-search-prev" disabled><?php esc_html_e('Previous', 'rechat-plugin'); ?></button>
+                                <button type="button" class="button" id="rch-wz-mb-search-next" disabled><?php esc_html_e('Next', 'rechat-plugin'); ?></button>
+                            </div>
+                        </div>
+                        <div class="rch-wz-mb-col">
+                            <p class="rch-wz-field__label"><?php esc_html_e('Custom link', 'rechat-plugin'); ?></p>
+                            <input type="url" id="rch-wz-mb-custom-url" class="rch-wz-input" placeholder="<?php esc_attr_e('https://…', 'rechat-plugin'); ?>" />
+                            <input type="text" id="rch-wz-mb-custom-title" class="rch-wz-input" placeholder="<?php esc_attr_e('Link text', 'rechat-plugin'); ?>" />
+                            <button type="button" class="button rch-wz-btn-secondary" id="rch-wz-mb-custom-add"><?php esc_html_e('Add custom link', 'rechat-plugin'); ?></button>
+                        </div>
+                    </div>
+                    <fieldset class="rch-wz-fieldset">
+                        <legend class="rch-wz-field__label"><?php esc_html_e('Menu structure', 'rechat-plugin'); ?></legend>
+                        <div class="rch-wz-mb-table-wrap">
+                            <table class="rch-wz-mb-table widefat">
+                                <thead>
+                                    <tr>
+                                        <th scope="col"><?php esc_html_e('Link text', 'rechat-plugin'); ?></th>
+                                        <th scope="col"><?php esc_html_e('URL', 'rechat-plugin'); ?></th>
+                                        <th class="rch-wz-mb-col-actions" scope="col"><?php esc_html_e('Actions', 'rechat-plugin'); ?></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rch-wz-mb-items"></tbody>
+                            </table>
+                            <p class="rch-wz-hint" id="rch-wz-mb-items-empty"><?php esc_html_e('No links yet. Search or add a custom link.', 'rechat-plugin'); ?></p>
+                        </div>
+                    </fieldset>
+                    <fieldset class="rch-wz-fieldset">
+                        <legend class="rch-wz-field__label"><?php esc_html_e('Theme display locations (template)', 'rechat-plugin'); ?></legend>
+                        <p class="rch-wz-hint" id="rch-wz-mb-locs-empty"><?php esc_html_e('Load menus & sidebars above to load locations, or your theme may not register menu locations.', 'rechat-plugin'); ?></p>
+                        <div id="rch-wz-mb-locs" class="rch-wz-mw-checklist"></div>
+                    </fieldset>
+                    <div class="rch-wz-field rch-wz-field__row">
+                        <button type="button" class="button button-primary" id="rch-wz-mb-create"><?php esc_html_e('Create menu on all targets', 'rechat-plugin'); ?></button>
+                        <span class="spinner" id="rch-wz-mb-spinner"></span>
+                    </div>
+                    <div id="rch-wz-mb-result" class="rch-wz-deploy-result" aria-live="polite"></div>
+                </div>
+
+                <fieldset class="rch-wz-fieldset">
+                    <legend class="rch-wz-field__label"><?php esc_html_e('Navigation menus to copy', 'rechat-plugin'); ?></legend>
+                    <div id="rch-wz-mw-menus" class="rch-wz-mw-checklist">
+                        <p class="rch-wz-hint"><?php esc_html_e('Click “Load menus & sidebars” first.', 'rechat-plugin'); ?></p>
+                    </div>
+                </fieldset>
+                <fieldset class="rch-wz-fieldset">
+                    <legend class="rch-wz-field__label"><?php esc_html_e('Widgets', 'rechat-plugin'); ?></legend>
+                    <label class="rch-wz-choice rch-wz-choice--compact">
+                        <input type="checkbox" id="rch-wz-mw-copy-widgets" class="rch-wz-choice__input" />
+                        <span class="rch-wz-choice__box">
+                            <span class="rch-wz-choice__title"><?php esc_html_e('Copy all widget settings from the template site', 'rechat-plugin'); ?></span>
+                            <span class="rch-wz-choice__desc"><?php esc_html_e('Overwrites sidebars_widgets and every widget_* option on each target. Media URLs may still point at the template site until you adjust widgets.', 'rechat-plugin'); ?></span>
+                        </span>
+                    </label>
+                    <div id="rch-wz-mw-sidebars-note" class="rch-wz-hint" hidden></div>
+                </fieldset>
+                <div id="rch-wz-mw-result" class="rch-wz-deploy-result" aria-live="polite"></div>
+            </div>
+            <div class="rch-wz-card__footer rch-wz-card__footer--split">
+                <button type="button" class="button rch-wz-btn-ghost rch-wz-prev" data-prev="<?php echo esc_attr($wz_broadcast_step ? '3' : '2'); ?>"><?php esc_html_e('Back', 'rechat-plugin'); ?></button>
+                <div class="rch-wz-card__footer-actions">
+                    <button type="button" class="button button-primary rch-wz-btn-primary" id="rch-wz-mw-apply"><?php esc_html_e('Apply to target sites', 'rechat-plugin'); ?></button>
+                    <span class="spinner" id="rch-wz-mw-apply-spinner"></span>
+                    <button type="button" class="button rch-wz-btn-secondary rch-wz-next" data-next="<?php echo esc_attr($wz_broadcast_step ? '5' : '4'); ?>"><?php esc_html_e('Continue to preview & deploy', 'rechat-plugin'); ?></button>
+                </div>
+            </div>
+        </div>
+
+        <div class="rch-agent-wizard-panel rch-wz-card" data-step-panel="<?php echo esc_attr($wz_broadcast_step ? '5' : '4'); ?>" hidden>
             <div class="rch-wz-card__head">
                 <h3 class="rch-wz-card__title"><?php esc_html_e('Preview & deploy', 'rechat-plugin'); ?></h3>
                 <p class="rch-wz-card__subtitle"><?php esc_html_e('Review what will be written, then save to each target sub-site.', 'rechat-plugin'); ?></p>
@@ -273,7 +542,7 @@ $wz_opt_mirror  = (isset($wz_storage['mirror']) && is_string($wz_storage['mirror
                 </details>
             </div>
             <div class="rch-wz-card__footer rch-wz-card__footer--split">
-                <button type="button" class="button rch-wz-btn-ghost rch-wz-prev" data-prev="2"><?php esc_html_e('Back', 'rechat-plugin'); ?></button>
+                <button type="button" class="button rch-wz-btn-ghost rch-wz-prev" data-prev="<?php echo esc_attr($wz_broadcast_step ? '4' : '3'); ?>"><?php esc_html_e('Back', 'rechat-plugin'); ?></button>
                 <div class="rch-wz-card__footer-actions">
                     <button type="button" class="button rch-wz-btn-secondary" id="rch-wz-refresh-preview"><?php esc_html_e('Refresh preview', 'rechat-plugin'); ?></button>
                     <button type="button" class="button rch-wz-btn-secondary" id="rch-wz-save-draft"><?php esc_html_e('Save draft', 'rechat-plugin'); ?></button>

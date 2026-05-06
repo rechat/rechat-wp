@@ -4,6 +4,14 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+/**
+ * Multisite hub-only tabs (Multisite, Agent site wizard): main site Rechat settings only.
+ */
+function rch_rechat_settings_is_multisite_hub_admin_context(): bool
+{
+    return is_multisite() && (int) get_current_blog_id() === (int) get_main_site_id();
+}
+
 /*******************************
  * Register a custom menu settings page
  ******************************/
@@ -34,7 +42,7 @@ function rch_get_active_tab()
 {
     $allowed_tabs = ['sync-data', 'connect-to-rechat', 'lead-capture', 'general-settings', 'local-logic'];
 
-    if (is_multisite()) {
+    if (rch_rechat_settings_is_multisite_hub_admin_context()) {
         $allowed_tabs[] = 'multisite';
         $allowed_tabs[] = 'agent-site-wizard';
     }
@@ -57,7 +65,7 @@ function rch_render_tab_navigation($active_tab)
         'local-logic' => __('Local Logic Settings', 'rechat-plugin'),
     ];
 
-    if (is_multisite()) {
+    if (rch_rechat_settings_is_multisite_hub_admin_context()) {
         $tabs['multisite']          = __('Multisite', 'rechat-plugin');
         $tabs['agent-site-wizard'] = __('Agent site wizard', 'rechat-plugin');
     }

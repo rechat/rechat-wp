@@ -196,21 +196,6 @@ function rch_agent_wizard_resolve_storage_config(string $stylesheet): array
         ];
     }
 
-    if (function_exists('rch_agent_wizard_get_legacy_theme_profile_raw')) {
-        // Only apply legacy defaults for themes we explicitly know.
-        $known = in_array($stylesheet, ['Acropolis-agent', 'rechat-theme-one', 'rechat-theme-two'], true);
-        if ($known) {
-            $legacy = rch_agent_wizard_get_legacy_theme_profile_raw($stylesheet);
-
-            return [
-                'primary' => isset($legacy['storage_primary']) ? (string) $legacy['storage_primary'] : '',
-                'mirror'  => array_key_exists('storage_mirror', $legacy) && is_string($legacy['storage_mirror']) && $legacy['storage_mirror'] !== ''
-                    ? $legacy['storage_mirror']
-                    : null,
-            ];
-        }
-    }
-
     // Unknown theme: no safe default. Caller should show empty state or configure mapping.
     return ['primary' => '', 'mirror' => null];
 }
@@ -243,10 +228,27 @@ function rch_agent_wizard_infer_field_shape(string $key, $sample_value): array
         'color'         => [],
         'image_media'   => [],
         'video_media'   => [],
+        'select'        => [],
     ];
 
     $type  = 'text';
     $media = '';
+
+    if (rch_agent_wizard_str_contains_ci($kl, 'lead-channel') || rch_agent_wizard_str_contains_ci($kl, 'lead_channel')) {
+        $b['select'][] = $key;
+
+        return ['type' => 'select', 'media' => '', 'buckets' => $b];
+    }
+
+    if (
+        rch_agent_wizard_str_contains_ci($kl, 'selected-tags')
+        || rch_agent_wizard_str_contains_ci($kl, 'selected_tags')
+        || strtolower((string) $key) === 'rch_selected_tags'
+    ) {
+        $b['textarea_json'][] = $key;
+
+        return ['type' => 'textarea_json', 'media' => '', 'buckets' => $b];
+    }
 
     if (is_array($sample_value)) {
         $b['textarea_json'][] = $key;
@@ -416,7 +418,10 @@ function rch_agent_wizard_build_dynamic_profile_from_data(
         'color'           => [],
         'image_media'     => [],
         'video_media'     => [],
+        'select'          => [],
     ];
+
+    $select_options_by_key = [];
 
     $from_manifest = is_array($manifest) && isset($manifest['fields']) && is_array($manifest['fields']) && $manifest['fields'] !== [];
 
@@ -441,6 +446,24 @@ function rch_agent_wizard_build_dynamic_profile_from_data(
                 $buckets['textareas'][] = $k;
             } elseif ($type === 'textarea_json') {
                 $buckets['textarea_json'][] = $k;
+            } elseif ($type === 'select') {
+                $buckets['select'][] = $k;
+                if (! empty($field['options']) && is_array($field['options'])) {
+                    $opts = [];
+                    foreach ($field['options'] as $opt) {
+                        if (! is_array($opt)) {
+                            continue;
+                        }
+                        $ov = isset($opt['value']) ? (string) $opt['value'] : '';
+                        $ol = isset($opt['label']) && is_string($opt['label']) && $opt['label'] !== '' ? (string) $opt['label'] : $ov;
+                        if ($ov !== '') {
+                            $opts[] = ['value' => $ov, 'label' => $ol];
+                        }
+                    }
+                    if ($opts !== []) {
+                        $select_options_by_key[ $k ] = $opts;
+                    }
+                }
             } elseif ($type === 'url') {
                 $buckets['urls'][] = $k;
             } elseif ($type === 'number') {
@@ -499,6 +522,10 @@ function rch_agent_wizard_build_dynamic_profile_from_data(
             : array_merge($keys, ['rch-wizard-agent-email', 'rch-wizard-agent-post-id', 'rch-wizard-agent-api-id', 'rch-wizard-agent-designation']);
     }
 
+    $select_keys = isset($buckets['select']) && is_array($buckets['select'])
+        ? array_values(array_unique(array_filter($buckets['select'], 'is_string')))
+        : [];
+
     return [
         'keys'            => $merged_keys,
         'labels'          => array_merge($labels, $wizard_labels),
@@ -510,6 +537,8 @@ function rch_agent_wizard_build_dynamic_profile_from_data(
         'color'           => $buckets['color'],
         'image_media'     => $buckets['image_media'],
         'video_media'     => $buckets['video_media'],
+        'select_keys'     => $select_keys,
+        'select_options'  => $select_options_by_key,
         'import_defaults' => $import_defaults,
         'storage_primary' => $storage['primary'],
         'storage_mirror'  => $storage['mirror'],
@@ -535,7 +564,7 @@ function rch_agent_wizard_merge_option_snapshots(array $storage): array
 }
 
 /**
- * @return array<string, mixed>|null Full profile or null to use legacy
+ * @return array<string, mixed>|null Full profile or null (wizard shows empty until manifest/options exist)
  */
 function rch_agent_wizard_try_build_dynamic_theme_profile(string $stylesheet): ?array
 {

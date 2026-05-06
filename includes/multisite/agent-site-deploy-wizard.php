@@ -9,6 +9,8 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
+require_once RCH_PLUGIN_INCLUDES . 'multisite/agent-wizard-menus-widgets-sync.php';
+
 /**
  * User meta key for draft wizard state (JSON).
  */
@@ -59,320 +61,10 @@ function rch_agent_wizard_merge_wizard_keys(array $theme_keys): array
     return array_values(array_unique(array_merge($theme_keys, $wizard)));
 }
 
-/**
- * Acropolis-agent profile (pentama_options_v2 + pentama_options_agent_website).
- *
- * @return array<string, mixed>
- */
-function rch_agent_wizard_profile_acropolis(): array
-{
-    $theme_keys = [
-        'rch-theme-phone',
-        'rch-theme-logo-one',
-        'rch-theme-menu-image',
-        'rch-theme-title-main-hero',
-        'rch-theme-hero-description',
-        'rch-theme-hero-video',
-        'rch-counter-1-value',
-        'rch-counter-1-text',
-        'rch-counter-2-value',
-        'rch-counter-2-text',
-        'rch-counter-3-value',
-        'rch-counter-3-text',
-        'rch-counter-4-value',
-        'rch-counter-4-text',
-        'rch-theme-results-description',
-        'rch-theme-title-listing',
-        'rch-theme-description-listing',
-        'rch-theme-title-listing-button',
-        'rch-theme-url-listing-button',
-        'rch-theme-title-agents',
-        'rch-theme-title-blog',
-        'rch-theme-title-testimonial',
-        'rch-theme-talk-title',
-        'rch-theme-talk-description',
-        'rch-theme-address-line-1',
-        'rch-theme-address-line-2',
-        'rch-theme-talk-shortcode',
-        'rch-theme-talk-image',
-        'rch-theme-telegram-url',
-        'rch-theme-whatsapp-url',
-        'rch-theme-instagram-url',
-        'rch-village-theme-lead-channel',
-        'rch_selected_tags',
-    ];
-
-    $labels = [
-        'rch-theme-phone'               => __('Phone Number', 'rechat-plugin'),
-        'rch-theme-logo-one'            => __('Logo', 'rechat-plugin'),
-        'rch-theme-menu-image'          => __('Image For Section 2', 'rechat-plugin'),
-        'rch-theme-hero-video'          => __('Hero Section Video', 'rechat-plugin'),
-        'rch-theme-title-main-hero'     => __('Main Title For Hero Section', 'rechat-plugin'),
-        'rch-theme-hero-description'    => __('Hero Section Description', 'rechat-plugin'),
-        'rch-counter-1-value'           => __('Counter 1 — value', 'rechat-plugin'),
-        'rch-counter-1-text'            => __('Counter 1 — label text', 'rechat-plugin'),
-        'rch-counter-2-value'           => __('Counter 2 — value', 'rechat-plugin'),
-        'rch-counter-2-text'            => __('Counter 2 — label text', 'rechat-plugin'),
-        'rch-counter-3-value'           => __('Counter 3 — value', 'rechat-plugin'),
-        'rch-counter-3-text'            => __('Counter 3 — label text', 'rechat-plugin'),
-        'rch-counter-4-value'           => __('Counter 4 — value', 'rechat-plugin'),
-        'rch-counter-4-text'            => __('Counter 4 — label text', 'rechat-plugin'),
-        'rch-theme-results-description' => __('Description For Results', 'rechat-plugin'),
-        'rch-theme-title-listing'       => __('Title For Listing', 'rechat-plugin'),
-        'rch-theme-description-listing' => __('Description For Listing', 'rechat-plugin'),
-        'rch-theme-title-listing-button'=> __('Title For Listing Button', 'rechat-plugin'),
-        'rch-theme-url-listing-button'  => __('Url For Listing Button', 'rechat-plugin'),
-        'rch-theme-title-agents'        => __('Title For Agents', 'rechat-plugin'),
-        'rch-theme-title-blog'          => __('Title For Blog', 'rechat-plugin'),
-        'rch-theme-title-testimonial'   => __('Title For Testimonial', 'rechat-plugin'),
-        'rch-theme-talk-title'          => __('Title For Talk Section', 'rechat-plugin'),
-        'rch-theme-talk-description'    => __('Description For Talk Section', 'rechat-plugin'),
-        'rch-theme-address-line-1'      => __('First Line Address', 'rechat-plugin'),
-        'rch-theme-address-line-2'      => __('Second Line Address', 'rechat-plugin'),
-        'rch-theme-talk-shortcode'      => __('Shortcode For Talk Section', 'rechat-plugin'),
-        'rch-village-theme-lead-channel'=> __('Lead Channels For index Form', 'rechat-plugin'),
-        'rch_selected_tags'             => __('Tags For Index Form Lead capture', 'rechat-plugin'),
-        'rch-theme-talk-image'          => __('Image For Talk Section', 'rechat-plugin'),
-        'rch-theme-telegram-url'        => __('Telegram URL', 'rechat-plugin'),
-        'rch-theme-whatsapp-url'        => __('whatsapp URL', 'rechat-plugin'),
-        'rch-theme-instagram-url'       => __('Instagram URL', 'rechat-plugin'),
-    ];
-
-    return [
-        'keys'            => rch_agent_wizard_merge_wizard_keys($theme_keys),
-        'labels'          => array_merge($labels, rch_agent_wizard_wizard_only_labels()),
-        'urls'            => [
-            'rch-theme-logo-one',
-            'rch-theme-menu-image',
-            'rch-theme-hero-video',
-            'rch-theme-talk-image',
-            'rch-theme-url-listing-button',
-        ],
-        'textareas'       => [
-            'rch-theme-hero-description',
-            'rch-theme-results-description',
-            'rch-theme-description-listing',
-            'rch-theme-talk-description',
-        ],
-        'textarea_json'   => ['rch_selected_tags'],
-        'numbers'         => ['rch-counter-1-value', 'rch-counter-2-value', 'rch-counter-3-value', 'rch-counter-4-value'],
-        'wp_kses'         => [
-            'rch-theme-title-agents',
-            'rch-theme-title-blog',
-            'rch-theme-title-testimonial',
-            'rch-theme-address-line-1',
-            'rch-theme-address-line-2',
-        ],
-        'color'           => [],
-        'image_media'     => ['rch-theme-logo-one', 'rch-theme-menu-image', 'rch-theme-talk-image'],
-        'video_media'     => ['rch-theme-hero-video'],
-        'import_defaults' => [],
-        'storage_primary' => 'pentama_options_v2',
-        'storage_mirror'  => 'pentama_options_agent_website',
-    ];
-}
-
-/**
- * rechat-theme-one profile (single get_option('pentama_options')).
- *
- * @return array<string, mixed>
- */
-function rch_agent_wizard_profile_rechat_theme_one(): array
-{
-    $theme_keys = [
-        'rch-theme-phone',
-        'rch-theme-logo-one',
-        'rch-theme-linkedin',
-        'rch-theme-instagram',
-        'rch-theme-x',
-        'rch-theme-title-main-hero',
-        'rch-theme-hero-description',
-        'rch-theme-title-listing',
-        'rch-theme-listing-page-link',
-        'rch-theme-title-on-big-img',
-        'rch-theme-big-title-image',
-        'rch-theme-title-for-start-conversation',
-        'rch-theme-description-for-start-conversation',
-        'rch-theme-title-for-our-agents',
-        'rch-theme-title-for-meet-agents',
-        'rch-theme-description-for-meet-agents',
-        'rch-theme-title-for-local-office',
-        'rch-theme-description-for-local-office',
-        'rch-theme-local-office-image',
-        'rch-theme-local-office-video',
-        'rch-theme-local-office-bg-color',
-        'rch-theme-brand-name-footer',
-        'rch-theme-description-in-footer',
-        'rch-theme-menu-image-1',
-        'rch-theme-menu-image-2',
-        'rch-theme-menu-image-3',
-        'rch-theme-menu-image-4',
-        'rch-theme-hero-video',
-    ];
-
-    $labels = [
-        'rch-theme-phone'                            => __('Phone Number', 'rechat-plugin'),
-        'rch-theme-logo-one'                         => __('Logo', 'rechat-plugin'),
-        'rch-theme-linkedin'                         => __('LinkedIn URL', 'rechat-plugin'),
-        'rch-theme-instagram'                        => __('Instagram URL', 'rechat-plugin'),
-        'rch-theme-x'                                => __('X URL', 'rechat-plugin'),
-        'rch-theme-title-main-hero'                  => __('Main Title For Hero Section', 'rechat-plugin'),
-        'rch-theme-hero-description'               => __('Hero Section Description', 'rechat-plugin'),
-        'rch-theme-title-listing'                  => __('Title For Latest Listing', 'rechat-plugin'),
-        'rch-theme-listing-page-link'              => __('Link of Listing Page', 'rechat-plugin'),
-        'rch-theme-title-on-big-img'               => __('Title on Big image in Main Page', 'rechat-plugin'),
-        'rch-theme-big-title-image'                => __('Image for Big Title', 'rechat-plugin'),
-        'rch-theme-title-for-start-conversation'   => __('Title For Start the Conversation', 'rechat-plugin'),
-        'rch-theme-description-for-start-conversation' => __('Description For Start the Conversation', 'rechat-plugin'),
-        'rch-theme-title-for-our-agents'           => __('Title For Our Agents', 'rechat-plugin'),
-        'rch-theme-title-for-meet-agents'          => __('Title For Meet Our Expert Agents', 'rechat-plugin'),
-        'rch-theme-description-for-meet-agents'    => __('Description For Meet Our Expert Agents', 'rechat-plugin'),
-        'rch-theme-title-for-local-office'         => __('Title For Our Local Office', 'rechat-plugin'),
-        'rch-theme-description-for-local-office'   => __('Description For Our Local Office', 'rechat-plugin'),
-        'rch-theme-local-office-image'             => __('Image for Local Office', 'rechat-plugin'),
-        'rch-theme-local-office-video'             => __('Video URL for Local Office', 'rechat-plugin'),
-        'rch-theme-local-office-bg-color'          => __('Background Color for Local Office Box', 'rechat-plugin'),
-        'rch-theme-brand-name-footer'              => __('Brand Name in Footer', 'rechat-plugin'),
-        'rch-theme-description-in-footer'          => __('Description in Footer', 'rechat-plugin'),
-        'rch-theme-menu-image-1'                   => __('Menu Image 1', 'rechat-plugin'),
-        'rch-theme-menu-image-2'                   => __('Menu Image 2', 'rechat-plugin'),
-        'rch-theme-menu-image-3'                   => __('Menu Image 3', 'rechat-plugin'),
-        'rch-theme-menu-image-4'                   => __('Menu Image 4', 'rechat-plugin'),
-        'rch-theme-hero-video'                     => __('Hero Section Video', 'rechat-plugin'),
-    ];
-
-    $menu_images = ['rch-theme-menu-image-1', 'rch-theme-menu-image-2', 'rch-theme-menu-image-3', 'rch-theme-menu-image-4'];
-
-    return [
-        'keys'            => rch_agent_wizard_merge_wizard_keys($theme_keys),
-        'labels'          => array_merge($labels, rch_agent_wizard_wizard_only_labels()),
-        'urls'            => array_merge(
-            ['rch-theme-logo-one', 'rch-theme-linkedin', 'rch-theme-instagram', 'rch-theme-x', 'rch-theme-listing-page-link', 'rch-theme-big-title-image', 'rch-theme-local-office-image', 'rch-theme-local-office-video', 'rch-theme-hero-video'],
-            $menu_images
-        ),
-        'textareas'       => [
-            'rch-theme-hero-description',
-            'rch-theme-description-for-meet-agents',
-            'rch-theme-description-for-local-office',
-            'rch-theme-description-in-footer',
-        ],
-        'textarea_json'   => [],
-        'numbers'         => [],
-        'wp_kses'         => [
-            'rch-theme-title-main-hero',
-            'rch-theme-description-for-start-conversation',
-        ],
-        'color'           => ['rch-theme-local-office-bg-color'],
-        'image_media'     => array_merge(['rch-theme-logo-one', 'rch-theme-big-title-image', 'rch-theme-local-office-image'], $menu_images),
-        'video_media'     => ['rch-theme-hero-video', 'rch-theme-local-office-video'],
-        'import_defaults' => [
-            'instagram'         => 'rch-theme-instagram',
-            'website'           => 'rch-theme-listing-page-link',
-            'linkedin'          => 'rch-theme-linkedin',
-            'twitter'           => 'rch-theme-x',
-            'profile_image_url' => 'rch-theme-menu-image-1',
-        ],
-        'storage_primary' => 'pentama_options',
-        'storage_mirror'  => null,
-    ];
-}
-
-/**
- * rechat-theme-two profile (get_option('pentama_options'), Acropolis-like subset).
- *
- * @return array<string, mixed>
- */
-function rch_agent_wizard_profile_rechat_theme_two(): array
-{
-    $theme_keys = [
-        'rch-theme-phone',
-        'rch-theme-logo-one',
-        'rch-theme-menu-image',
-        'rch-theme-title-main-hero',
-        'rch-theme-hero-description',
-        'rch-theme-hero-video',
-        'rch-counter-1-value',
-        'rch-counter-1-text',
-        'rch-counter-2-value',
-        'rch-counter-2-text',
-        'rch-counter-3-value',
-        'rch-counter-3-text',
-        'rch-theme-results-description',
-        'rch-theme-title-listing',
-        'rch-theme-description-listing',
-        'rch-theme-title-listing-button',
-        'rch-theme-url-listing-button',
-        'rch-theme-title-agents',
-        'rch-theme-title-blog',
-        'rch-theme-title-testimonial',
-        'rch-theme-talk-title',
-        'rch-theme-talk-description',
-        'rch-theme-talk-shortcode',
-        'rch-theme-talk-image',
-        'rch-theme-telegram-url',
-        'rch-theme-whatsapp-url',
-        'rch-theme-instagram-url',
-    ];
-
-    $p = rch_agent_wizard_profile_acropolis();
-    $labels = array_intersect_key($p['labels'], array_flip($theme_keys));
-
-    return [
-        'keys'            => rch_agent_wizard_merge_wizard_keys($theme_keys),
-        'labels'          => array_merge($labels, rch_agent_wizard_wizard_only_labels()),
-        'urls'            => [
-            'rch-theme-logo-one',
-            'rch-theme-menu-image',
-            'rch-theme-hero-video',
-            'rch-theme-talk-image',
-            'rch-theme-url-listing-button',
-        ],
-        'textareas'       => [
-            'rch-theme-hero-description',
-            'rch-theme-results-description',
-            'rch-theme-description-listing',
-            'rch-theme-talk-description',
-        ],
-        'textarea_json'   => [],
-        'numbers'         => ['rch-counter-1-value', 'rch-counter-2-value', 'rch-counter-3-value'],
-        'wp_kses'         => [
-            'rch-theme-title-agents',
-            'rch-theme-title-blog',
-            'rch-theme-title-testimonial',
-        ],
-        'color'           => [],
-        'image_media'     => ['rch-theme-logo-one', 'rch-theme-menu-image', 'rch-theme-talk-image'],
-        'video_media'     => ['rch-theme-hero-video'],
-        'import_defaults' => [],
-        'storage_primary' => 'pentama_options',
-        'storage_mirror'  => null,
-    ];
-}
-
-/**
- * Legacy field metadata (hardcoded per known theme) without filters.
- *
- * @return array<string, mixed>
- */
-function rch_agent_wizard_get_legacy_theme_profile_raw(string $stylesheet): array
-{
-    $stylesheet = is_string($stylesheet) ? $stylesheet : '';
-
-    if ($stylesheet === 'rechat-theme-one') {
-        return rch_agent_wizard_profile_rechat_theme_one();
-    }
-
-    if ($stylesheet === 'rechat-theme-two') {
-        return rch_agent_wizard_profile_rechat_theme_two();
-    }
-
-    return rch_agent_wizard_profile_acropolis();
-}
-
 require_once __DIR__ . '/agent-wizard-dynamic-options.php';
 
 /**
- * Field metadata + storage: dynamic (option snapshot / manifest) when available, else legacy.
+ * Field metadata + storage from the active agent theme only (manifest, themeoption.php, option snapshot). No hardcoded per-theme profiles.
  *
  * @return array<string, mixed>
  */
@@ -383,41 +75,28 @@ function rch_agent_wizard_get_theme_profile(string $stylesheet): array
         return apply_filters('rch_agent_wizard_theme_profile', $dynamic, $stylesheet);
     }
 
-    // If theme has no option storage and no manifest, show empty (do not fall back to Acropolis).
-    $storage = rch_agent_wizard_resolve_storage_config($stylesheet);
-    $disc    = function_exists('rch_agent_wizard_discover_from_themeoption_php')
-        ? rch_agent_wizard_discover_from_themeoption_php($stylesheet)
-        : null;
-    $has_themeoption = is_array($disc) && ! empty($disc['fields']);
+    $stylesheet = is_string($stylesheet) ? $stylesheet : '';
+    $empty       = [
+        'keys'            => [],
+        'labels'          => rch_agent_wizard_wizard_only_labels(),
+        'urls'            => [],
+        'textareas'       => [],
+        'textarea_json'   => [],
+        'numbers'         => [],
+        'wp_kses'         => [],
+        'color'           => [],
+        'image_media'     => [],
+        'video_media'     => [],
+        'select_keys'     => [],
+        'select_options'  => [],
+        'import_defaults' => [],
+        'storage_primary' => '',
+        'storage_mirror'  => null,
+        'dynamic'         => false,
+        'stylesheet'      => $stylesheet,
+    ];
 
-    $known = in_array($stylesheet, ['Acropolis-agent', 'rechat-theme-one', 'rechat-theme-two'], true);
-    if (! $known && ! $has_themeoption && ($storage['primary'] ?? '') === '') {
-        $empty = [
-            'keys'            => [],
-            'labels'          => rch_agent_wizard_wizard_only_labels(),
-            'urls'            => [],
-            'textareas'       => [],
-            'textarea_json'   => [],
-            'numbers'         => [],
-            'wp_kses'         => [],
-            'color'           => [],
-            'image_media'     => [],
-            'video_media'     => [],
-            'import_defaults' => [],
-            'storage_primary' => '',
-            'storage_mirror'  => null,
-            'dynamic'         => false,
-            'stylesheet'      => $stylesheet,
-        ];
-
-        return apply_filters('rch_agent_wizard_theme_profile', $empty, $stylesheet);
-    }
-
-    $legacy = rch_agent_wizard_get_legacy_theme_profile_raw($stylesheet);
-    $legacy['storage_primary'] = is_string($storage['primary'] ?? null) ? $storage['primary'] : '';
-    $legacy['storage_mirror']  = $storage['mirror'] ?? null;
-
-    return apply_filters('rch_agent_wizard_theme_profile', $legacy, $stylesheet);
+    return apply_filters('rch_agent_wizard_theme_profile', $empty, $stylesheet);
 }
 
 /**
@@ -446,15 +125,96 @@ function rch_agent_wizard_theme_key_labels(): array
 }
 
 /**
+ * Whether a theme option key should use the tag-picker UI (JSON string[] like theme option panel).
+ */
+function rch_agent_wizard_key_uses_tags_multiselect_ui(string $key): bool
+{
+    $k = strtolower($key);
+
+    return $k === 'rch_selected_tags'
+        || rch_agent_wizard_str_contains_ci($k, 'selected-tags')
+        || rch_agent_wizard_str_contains_ci($k, 'selected_tags');
+}
+
+/**
+ * Lead channel choices for wizard select (same API as Rechat settings).
+ *
+ * @return list<array{value:string,label:string}>
+ */
+function rch_agent_wizard_fetch_lead_channel_select_options(): array
+{
+    if (! function_exists('rch_fetch_lead_channels')) {
+        return [];
+    }
+
+    $response = rch_fetch_lead_channels();
+    if (empty($response['success']) || empty($response['data']['data']) || ! is_array($response['data']['data'])) {
+        return [];
+    }
+
+    $out = [];
+    foreach ($response['data']['data'] as $channel) {
+        if (! is_array($channel) || ! isset($channel['id'])) {
+            continue;
+        }
+        $id    = (string) $channel['id'];
+        $label = isset($channel['title']) && is_string($channel['title']) && $channel['title'] !== ''
+            ? (string) $channel['title']
+            : $id;
+        $out[] = ['value' => $id, 'label' => $label];
+    }
+
+    /**
+     * @param list<array{value:string,label:string}> $out
+     */
+    return apply_filters('rch_agent_wizard_lead_channel_select_options', $out);
+}
+
+/**
+ * Tag labels from Rechat API (theme option panel uses same pool).
+ *
+ * @return list<string>
+ */
+function rch_agent_wizard_fetch_tag_choice_strings(): array
+{
+    if (! function_exists('rch_fetch_tags')) {
+        return [];
+    }
+
+    $response = rch_fetch_tags();
+    if (empty($response['success']) || empty($response['data']['data']) || ! is_array($response['data']['data'])) {
+        return [];
+    }
+
+    $out = [];
+    foreach ($response['data']['data'] as $tag) {
+        if (! is_array($tag)) {
+            continue;
+        }
+        $name = $tag['tag'] ?? $tag['text'] ?? '';
+        $name = is_string($name) ? trim($name) : '';
+        if ($name !== '' && ! in_array($name, $out, true)) {
+            $out[] = $name;
+        }
+    }
+    sort($out, SORT_STRING);
+
+    /** @param list<string> $out */
+    return apply_filters('rch_agent_wizard_tag_choice_strings', $out);
+}
+
+/**
  * Manual step: all theme keys with UI type (matches theme option panel).
  *
- * @return list<array{key:string,label:string,type:string,media:string}>
+ * @return list<array{key:string,label:string,type:string,media:string,options?:list<array{value:string,label:string}>}>
  */
 function rch_agent_wizard_manual_field_defs(): array
 {
-    $profile = rch_agent_wizard_get_theme_profile(rch_agent_wizard_wizard_ui_stylesheet());
-    $labels  = $profile['labels'];
-    $rows    = [];
+    $profile         = rch_agent_wizard_get_theme_profile(rch_agent_wizard_wizard_ui_stylesheet());
+    $labels          = $profile['labels'];
+    $select_keys     = isset($profile['select_keys']) && is_array($profile['select_keys']) ? $profile['select_keys'] : [];
+    $select_opts_map = isset($profile['select_options']) && is_array($profile['select_options']) ? $profile['select_options'] : [];
+    $rows            = [];
 
     foreach ($profile['keys'] as $key) {
         $type  = 'text';
@@ -473,12 +233,36 @@ function rch_agent_wizard_manual_field_defs(): array
         } elseif (in_array($key, $profile['video_media'], true)) {
             $media = 'video';
         }
-        $rows[] = [
+
+        $options = [];
+        if (in_array($key, $select_keys, true)) {
+            $type = 'select';
+            $opts = isset($select_opts_map[ $key ]) && is_array($select_opts_map[ $key ]) ? $select_opts_map[ $key ] : [];
+            if ($opts === [] && function_exists('rch_fetch_lead_channels')) {
+                $opts = rch_agent_wizard_fetch_lead_channel_select_options();
+            }
+            foreach ($opts as $opt) {
+                if (is_array($opt) && isset($opt['value'], $opt['label'])) {
+                    $options[] = ['value' => (string) $opt['value'], 'label' => (string) $opt['label']];
+                }
+            }
+        } elseif (($type === 'textarea_json' || $key === 'rch_selected_tags') && rch_agent_wizard_key_uses_tags_multiselect_ui($key)) {
+            $type = 'tags';
+            foreach (rch_agent_wizard_fetch_tag_choice_strings() as $t) {
+                $options[] = ['value' => $t, 'label' => $t];
+            }
+        }
+
+        $row = [
             'key'   => $key,
             'label' => $labels[ $key ] ?? $key,
             'type'  => $type,
             'media' => $media,
         ];
+        if ($options !== []) {
+            $row['options'] = $options;
+        }
+        $rows[] = $row;
     }
     usort(
         $rows,
@@ -587,6 +371,14 @@ function rch_agent_wizard_importable_field_defs(): array
         'post_title' => [
             'label'               => __('Agent name (post title)', 'rechat-plugin'),
             'default_theme_key'   => 'rch-theme-title-main-hero',
+        ],
+        'post_content' => [
+            'label'               => __('Agent content (post editor)', 'rechat-plugin'),
+            'default_theme_key'   => '',
+        ],
+        'first_name' => [
+            'label'               => __('First name', 'rechat-plugin'),
+            'default_theme_key'   => '',
         ],
         'api_id' => [
             'label'               => __('Rechat / API ID', 'rechat-plugin'),
@@ -768,7 +560,7 @@ function rch_agent_wizard_sanitize_theme_options_row(array $row, ?array $profile
 }
 
 /**
- * Read agent field value for import (post title or meta).
+ * Read agent field value for import (post title, post body, or post meta).
  *
  * @return string
  */
@@ -779,9 +571,56 @@ function rch_agent_wizard_get_import_source_value(int $agent_id, string $field):
         return $post ? (string) $post->post_title : '';
     }
 
+    if ($field === 'post_content') {
+        $post = get_post($agent_id);
+        if (! $post || ! is_string($post->post_content)) {
+            return '';
+        }
+        $raw = $post->post_content;
+        /**
+         * Text pushed into theme options (often textarea). Default: strip block markup, keep breaks.
+         *
+         * @param string $text    Processed post_content.
+         * @param int    $agent_id Agent post ID.
+         * @param WP_Post $post   Agent post object.
+         */
+        return (string) apply_filters('rch_agent_wizard_import_post_content_value', wp_strip_all_tags($raw, false), $agent_id, $post);
+    }
+
     $raw = get_post_meta($agent_id, $field, true);
 
     return is_scalar($raw) ? (string) $raw : '';
+}
+
+/**
+ * Manual text templates: replace {$meta_key} with agent meta values.
+ *
+ * Supported tokens: any key from rch_agent_wizard_importable_field_defs(), plus {$post_title} and {$post_content}.
+ *
+ * Example: "Buy & Sell Home in {$timezone} With Confidence"
+ */
+function rch_agent_wizard_apply_placeholders(int $agent_id, string $text): string
+{
+    if ($text === '' || strpos($text, '{$') === false) {
+        return $text;
+    }
+
+    $allowed = array_flip(array_keys(rch_agent_wizard_importable_field_defs()));
+    $allowed['post_title'] = true;
+
+    $out = preg_replace_callback(
+        '/\{\$([a-zA-Z0-9_]+)\}/',
+        static function (array $m) use ($agent_id, $allowed): string {
+            $key = isset($m[1]) ? sanitize_key((string) $m[1]) : '';
+            if ($key === '' || ! isset($allowed[ $key ])) {
+                return $m[0];
+            }
+            return rch_agent_wizard_get_import_source_value($agent_id, $key);
+        },
+        $text
+    );
+
+    return is_string($out) ? $out : $text;
 }
 
 /**
@@ -813,7 +652,11 @@ function rch_agent_wizard_build_row_from_theme_rows(int $agent_id, array $theme_
         }
 
         if ($mode === 'manual') {
-            $row[ $theme_key ] = $cfg['value'] ?? '';
+            $v = $cfg['value'] ?? '';
+            if (is_string($v)) {
+                $v = rch_agent_wizard_apply_placeholders($agent_id, $v);
+            }
+            $row[ $theme_key ] = $v;
             continue;
         }
 
@@ -982,7 +825,7 @@ function rch_agent_wizard_ajax_save_draft(): void
     }
 
     $raw = isset($_POST['draft']) ? wp_unslash($_POST['draft']) : '';
-    if (! is_string($raw) || strlen($raw) > 200000) {
+    if (! is_string($raw) || strlen($raw) > 500000) {
         wp_send_json_error(['message' => __('Draft too large or invalid.', 'rechat-plugin')]);
     }
 
@@ -991,7 +834,96 @@ function rch_agent_wizard_ajax_save_draft(): void
         wp_send_json_error(['message' => __('Draft must be JSON object.', 'rechat-plugin')]);
     }
 
-    update_user_meta(get_current_user_id(), RCH_AGENT_WIZARD_DRAFT_META, wp_json_encode($decoded));
+    $save_src = isset($decoded['_draftSaveSrc']) && (string) $decoded['_draftSaveSrc'] === 'auto' ? 'auto' : 'user';
+    unset($decoded['_draftSaveSrc']);
+
+    $uid      = get_current_user_id();
+    $existing = get_user_meta($uid, RCH_AGENT_WIZARD_DRAFT_META, true);
+    $prev     = is_string($existing) && $existing !== '' ? json_decode($existing, true) : null;
+
+    // Autosave must not wipe stored row config (empty collectThemeRows from a second tab, race before hydrate, etc.).
+    if (
+        $save_src === 'auto'
+        && isset($decoded['themeRows'])
+        && is_array($decoded['themeRows'])
+        && $decoded['themeRows'] === []
+        && is_array($prev)
+        && isset($prev['themeRows'])
+        && is_array($prev['themeRows'])
+        && $prev['themeRows'] !== []
+    ) {
+        $decoded['themeRows'] = $prev['themeRows'];
+    }
+
+    if (
+        $save_src === 'auto'
+        && is_array($prev)
+        && ! empty($prev['meta'])
+        && is_array($prev['meta'])
+    ) {
+        $incoming_meta = isset($decoded['meta']) && is_array($decoded['meta']) ? $decoded['meta'] : [];
+        if ($incoming_meta === []) {
+            $decoded['meta'] = $prev['meta'];
+        }
+    }
+
+    if (
+        $save_src === 'auto'
+        && is_array($prev)
+        && isset($prev['broadcastPostIds'])
+        && is_array($prev['broadcastPostIds'])
+        && $prev['broadcastPostIds'] !== []
+    ) {
+        $inc_bc = isset($decoded['broadcastPostIds']) && is_array($decoded['broadcastPostIds'])
+            ? $decoded['broadcastPostIds']
+            : [];
+        if ($inc_bc === []) {
+            $decoded['broadcastPostIds'] = $prev['broadcastPostIds'];
+        }
+    }
+
+    if (
+        $save_src === 'auto'
+        && is_array($prev)
+        && isset($prev['mwMenuTermIds'])
+        && is_array($prev['mwMenuTermIds'])
+        && $prev['mwMenuTermIds'] !== []
+    ) {
+        $inc_mw = isset($decoded['mwMenuTermIds']) && is_array($decoded['mwMenuTermIds'])
+            ? $decoded['mwMenuTermIds']
+            : [];
+        if ($inc_mw === []) {
+            $decoded['mwMenuTermIds'] = $prev['mwMenuTermIds'];
+        }
+    }
+
+    if (
+        $save_src === 'auto'
+        && is_array($prev)
+        && isset($prev['menuBuilderItems'])
+        && is_array($prev['menuBuilderItems'])
+        && $prev['menuBuilderItems'] !== []
+    ) {
+        $inc_mb = isset($decoded['menuBuilderItems']) && is_array($decoded['menuBuilderItems'])
+            ? $decoded['menuBuilderItems']
+            : [];
+        if ($inc_mb === []) {
+            $decoded['menuBuilderItems'] = $prev['menuBuilderItems'];
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $decoded Draft about to be stored.
+     * @param array<string, mixed>|null $prev  Previous decoded draft or null.
+     * @param string                 $save_src `auto` or `user`.
+     */
+    $decoded = apply_filters('rch_agent_wizard_save_draft_data', $decoded, $prev, $save_src);
+
+    if (! is_array($decoded)) {
+        wp_send_json_error(['message' => __('Draft save was rejected.', 'rechat-plugin')]);
+    }
+
+    update_user_meta($uid, RCH_AGENT_WIZARD_DRAFT_META, wp_json_encode($decoded));
 
     wp_send_json_success(['message' => __('Draft saved.', 'rechat-plugin')]);
 }
@@ -1097,10 +1029,770 @@ function rch_agent_wizard_ajax_deploy(): void
     ]);
 }
 
+/**
+ * Whether the wizard should show the Broadcast content step (ThreeWP Broadcast network-active).
+ */
+function rch_agent_wizard_broadcast_step_enabled(): bool
+{
+    if (! is_multisite()) {
+        return false;
+    }
+
+    return function_exists('rch_multisite_broadcast_plugin_active') && rch_multisite_broadcast_plugin_active();
+}
+
+/**
+ * Blog IDs linked from published agent posts (excludes template $source).
+ *
+ * @return int[]
+ */
+function rch_agent_wizard_collect_agent_site_blog_ids(int $source): array
+{
+    $ids = [];
+    if (! function_exists('rch_multisite_get_agent_blog_id')) {
+        return $ids;
+    }
+    $agent_ids = get_posts(
+        [
+            'post_type'      => 'agents',
+            'post_status'    => 'any',
+            'posts_per_page' => -1,
+            'fields'         => 'ids',
+        ]
+    );
+    foreach ($agent_ids as $aid) {
+        $bid = rch_multisite_get_agent_blog_id((int) $aid);
+        if ($bid > 0 && $bid !== $source) {
+            $ids[] = $bid;
+        }
+    }
+
+    return $ids;
+}
+
+/**
+ * Blog IDs linked from published office posts (excludes template $source).
+ *
+ * @return int[]
+ */
+function rch_agent_wizard_collect_office_site_blog_ids(int $source): array
+{
+    $ids = [];
+    if (! post_type_exists('offices') || ! function_exists('rch_multisite_get_office_blog_id')) {
+        return $ids;
+    }
+    $office_ids = get_posts(
+        [
+            'post_type'      => 'offices',
+            'post_status'    => 'any',
+            'posts_per_page' => -1,
+            'fields'         => 'ids',
+        ]
+    );
+    foreach ($office_ids as $oid) {
+        $bid = rch_multisite_get_office_blog_id((int) $oid);
+        if ($bid > 0 && $bid !== $source) {
+            $ids[] = $bid;
+        }
+    }
+
+    return $ids;
+}
+
+/**
+ * Target blog IDs for wizard Broadcast / menus-widgets actions.
+ *
+ * @param string $target_mode `agent_only` | `office_only` | `all_subsites` | `agent_office` (legacy: agents + offices).
+ * @return int[]
+ */
+function rch_agent_wizard_broadcast_target_blog_ids(string $target_mode): array
+{
+    $source = function_exists('rch_multisite_broadcast_source_blog_id')
+        ? rch_multisite_broadcast_source_blog_id()
+        : (int) get_main_site_id();
+    $ids = [];
+
+    switch ($target_mode) {
+        case 'all_subsites':
+            $sites = get_sites(
+                [
+                    'number'   => 5000,
+                    'spam'     => 0,
+                    'deleted'  => 0,
+                    'archived' => 0,
+                ]
+            );
+            foreach ($sites as $site) {
+                $bid = (int) $site->blog_id;
+                if ($bid > 0 && $bid !== $source) {
+                    $ids[] = $bid;
+                }
+            }
+            break;
+        case 'office_only':
+            $ids = rch_agent_wizard_collect_office_site_blog_ids($source);
+            break;
+        case 'agent_office':
+            $ids = array_merge(
+                rch_agent_wizard_collect_agent_site_blog_ids($source),
+                rch_agent_wizard_collect_office_site_blog_ids($source)
+            );
+            break;
+        case 'agent_only':
+        default:
+            $ids = rch_agent_wizard_collect_agent_site_blog_ids($source);
+            break;
+    }
+
+    $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+
+    /**
+     * @param int[]  $ids
+     * @param string $target_mode
+     * @param int    $source
+     */
+    return (array) apply_filters('rch_agent_wizard_broadcast_target_blog_ids', $ids, $target_mode, $source);
+}
+
+/**
+ * Run Broadcast API for posts/pages on the source blog toward many targets.
+ *
+ * @param int[]  $post_ids    Parent post IDs on the source blog.
+ * @param string $target_mode See rch_agent_wizard_broadcast_target_blog_ids().
+ * @return array{ok:int,fail:int,errors:string[],target_count:int}
+ */
+function rch_agent_wizard_broadcast_posts_to_targets(array $post_ids, string $target_mode): array
+{
+    $out = [
+        'ok'           => 0,
+        'fail'         => 0,
+        'errors'       => [],
+        'target_count' => 0,
+    ];
+
+    if (! rch_agent_wizard_broadcast_step_enabled() || ! function_exists('ThreeWP_Broadcast')) {
+        $out['errors'][] = __('Broadcast is not available.', 'rechat-plugin');
+
+        return $out;
+    }
+
+    $post_ids = array_values(
+        array_unique(
+            array_filter(
+                array_map('absint', $post_ids),
+                static function (int $id): bool {
+                    return $id > 0;
+                }
+            )
+        )
+    );
+
+    if ($post_ids === []) {
+        $out['errors'][] = __('No posts selected.', 'rechat-plugin');
+
+        return $out;
+    }
+
+    $targets = rch_agent_wizard_broadcast_target_blog_ids($target_mode);
+    $out['target_count'] = count($targets);
+
+    if ($targets === []) {
+        $out['errors'][] = __('No target blogs found for this mode.', 'rechat-plugin');
+
+        return $out;
+    }
+
+    $max_targets = (int) apply_filters('rch_agent_wizard_broadcast_max_targets', 500);
+    if ($max_targets > 0 && count($targets) > $max_targets) {
+        $out['errors'][] = sprintf(
+            /* translators: 1: current target count, 2: max allowed */
+            __('Too many target sites (%1$d). Maximum is %2$d. Use the agent/office mode, raise the limit via filter, or split the network.', 'rechat-plugin'),
+            count($targets),
+            $max_targets
+        );
+
+        return $out;
+    }
+
+    $source = rch_multisite_broadcast_source_blog_id();
+    $runner  = rch_multisite_broadcast_runner_user_id();
+    $prev    = get_current_user_id();
+
+    wp_set_current_user($runner);
+
+    switch_to_blog($source);
+
+    /** @var \threewp_broadcast\ThreeWP_Broadcast $broadcast */
+    $broadcast = ThreeWP_Broadcast();
+    $api       = $broadcast->api();
+
+    if (apply_filters('rch_multisite_broadcast_use_low_priority', false)) {
+        $api->low_priority();
+    }
+
+    foreach ($post_ids as $pid) {
+        $post = get_post($pid);
+        if (! $post || ! in_array($post->post_type, ['post', 'page'], true)) {
+            $out['fail']++;
+            $out['errors'][] = sprintf(
+                /* translators: %d: post ID */
+                __('Skipped invalid post or page (ID %d).', 'rechat-plugin'),
+                $pid
+            );
+            continue;
+        }
+
+        try {
+            $api->broadcast_children($pid, $targets);
+            $out['ok']++;
+        } catch (Throwable $e) {
+            $out['fail']++;
+            $out['errors'][] = sprintf(
+                /* translators: 1: post ID, 2: error message */
+                __('Post %1$d: %2$s', 'rechat-plugin'),
+                $pid,
+                $e->getMessage()
+            );
+        }
+    }
+
+    restore_current_blog();
+    wp_set_current_user($prev);
+
+    return $out;
+}
+
+/**
+ * AJAX: paginated posts/pages on Broadcast source blog for picker.
+ */
+function rch_agent_wizard_ajax_list_broadcast_posts(): void
+{
+    check_ajax_referer(RCH_AGENT_WIZARD_NONCE_ACTION, 'nonce');
+
+    if (is_wp_error(rch_agent_wizard_user_can_run())) {
+        wp_send_json_error(['message' => __('Permission denied.', 'rechat-plugin')], 403);
+    }
+
+    if (! rch_agent_wizard_broadcast_step_enabled()) {
+        wp_send_json_error(['message' => __('Broadcast step is not available.', 'rechat-plugin')]);
+    }
+
+    $source = rch_multisite_broadcast_source_blog_id();
+    $paged  = isset($_POST['paged']) ? max(1, absint($_POST['paged'])) : 1;
+    $per    = isset($_POST['per_page']) ? min(50, max(5, absint($_POST['per_page']))) : 20;
+    $search = isset($_POST['search']) ? sanitize_text_field(wp_unslash($_POST['search'])) : '';
+
+    switch_to_blog($source);
+
+    $q = new WP_Query(
+        [
+            'post_type'              => ['post', 'page'],
+            'post_status'            => ['publish', 'future', 'draft', 'private'],
+            'posts_per_page'         => $per,
+            'paged'                  => $paged,
+            's'                      => $search,
+            'orderby'                => 'modified',
+            'order'                  => 'DESC',
+            'no_found_rows'          => false,
+            'update_post_meta_cache' => false,
+            'update_term_meta_cache' => false,
+        ]
+    );
+
+    $items = [];
+    foreach ($q->posts as $p) {
+        if (! $p instanceof WP_Post) {
+            continue;
+        }
+        $items[] = [
+            'id'         => (int) $p->ID,
+            'title'      => get_the_title($p),
+            'type'       => $p->post_type,
+            'type_label' => $p->post_type === 'page' ? __('Page', 'rechat-plugin') : __('Post', 'rechat-plugin'),
+            'status'     => $p->post_status,
+            'modified'   => mysql2date('Y-m-d H:i', $p->post_modified, false),
+        ];
+    }
+
+    $max_pages = (int) $q->max_num_pages;
+    $found     = (int) $q->found_posts;
+
+    restore_current_blog();
+
+    wp_send_json_success(
+        [
+            'items'      => $items,
+            'paged'      => $paged,
+            'max_pages'  => $max_pages,
+            'found'      => $found,
+            'source_id'  => $source,
+            'source_url' => get_site_url($source, '/'),
+        ]
+    );
+}
+
+/**
+ * AJAX: broadcast selected post/page IDs from source blog to targets.
+ */
+function rch_agent_wizard_ajax_broadcast_posts(): void
+{
+    check_ajax_referer(RCH_AGENT_WIZARD_NONCE_ACTION, 'nonce');
+
+    if (is_wp_error(rch_agent_wizard_user_can_run())) {
+        wp_send_json_error(['message' => __('Permission denied.', 'rechat-plugin')], 403);
+    }
+
+    if (! rch_agent_wizard_broadcast_step_enabled()) {
+        wp_send_json_error(['message' => __('Broadcast step is not available.', 'rechat-plugin')]);
+    }
+
+    $raw = isset($_POST['post_ids']) ? wp_unslash($_POST['post_ids']) : '';
+    if (! is_string($raw) || $raw === '') {
+        wp_send_json_error(['message' => __('No posts selected.', 'rechat-plugin')]);
+    }
+
+    $post_ids = json_decode($raw, true);
+    if (! is_array($post_ids)) {
+        wp_send_json_error(['message' => __('Invalid post list.', 'rechat-plugin')]);
+    }
+
+    $max_batch = (int) apply_filters('rch_agent_wizard_broadcast_max_posts_per_request', 15);
+    if ($max_batch < 1) {
+        $max_batch = 15;
+    }
+    if (count($post_ids) > $max_batch) {
+        wp_send_json_error(
+            [
+                'message' => sprintf(
+                    /* translators: %d: maximum posts per request */
+                    __('Too many items in one request (max %d). Run again for the rest.', 'rechat-plugin'),
+                    $max_batch
+                ),
+            ]
+        );
+    }
+
+    $mode = isset($_POST['target_mode']) ? sanitize_key(wp_unslash($_POST['target_mode'])) : 'agent_only';
+    $allowed_modes = ['agent_only', 'office_only', 'all_subsites', 'agent_office'];
+    if (! in_array($mode, $allowed_modes, true)) {
+        $mode = 'agent_only';
+    }
+
+    $result = rch_agent_wizard_broadcast_posts_to_targets($post_ids, $mode);
+
+    $msg = sprintf(
+        /* translators: 1: success count, 2: failure count, 3: target blog count */
+        __('Finished: %1$d succeeded, %2$d failed, across %3$d target site(s).', 'rechat-plugin'),
+        $result['ok'],
+        $result['fail'],
+        $result['target_count']
+    );
+
+    wp_send_json_success(
+        [
+            'message'      => $msg,
+            'ok'           => $result['ok'],
+            'fail'         => $result['fail'],
+            'target_count' => $result['target_count'],
+            'errors'       => $result['errors'],
+        ]
+    );
+}
+
+/**
+ * AJAX: list nav menus + sidebar summary on source blog for menus/widgets step.
+ */
+function rch_agent_wizard_ajax_list_menus_widgets(): void
+{
+    check_ajax_referer(RCH_AGENT_WIZARD_NONCE_ACTION, 'nonce');
+
+    if (is_wp_error(rch_agent_wizard_user_can_run())) {
+        wp_send_json_error(['message' => __('Permission denied.', 'rechat-plugin')], 403);
+    }
+
+    if (! function_exists('rch_agent_wizard_menus_widgets_source_blog_id')) {
+        wp_send_json_error(['message' => __('Menus/widgets sync is unavailable.', 'rechat-plugin')]);
+    }
+
+    $source = rch_agent_wizard_menus_widgets_source_blog_id();
+
+    switch_to_blog($source);
+
+    $menus = [];
+    foreach (wp_get_nav_menus() as $m) {
+        $menus[] = [
+            'term_id' => (int) $m->term_id,
+            'name'    => $m->name,
+            'slug'    => $m->slug,
+            'count'   => (int) $m->count,
+        ];
+    }
+
+    global $wp_registered_sidebars;
+    $sidebars_widgets = get_option('sidebars_widgets', []);
+    if (! is_array($sidebars_widgets)) {
+        $sidebars_widgets = [];
+    }
+
+    $sidebars = [];
+    foreach ($sidebars_widgets as $sid => $widgets) {
+        if ($sid === 'wp_inactive_widgets') {
+            continue;
+        }
+        $label = isset($wp_registered_sidebars[ $sid ]['name'])
+            ? (string) $wp_registered_sidebars[ $sid ]['name']
+            : (string) $sid;
+        $n = is_array($widgets) ? count($widgets) : 0;
+        $sidebars[] = [
+            'id'    => (string) $sid,
+            'label' => $label,
+            'count' => $n,
+        ];
+    }
+
+    restore_current_blog();
+
+    $nav_locations = function_exists('rch_agent_wizard_get_nav_menu_locations_catalog')
+        ? rch_agent_wizard_get_nav_menu_locations_catalog($source)
+        : [];
+
+    wp_send_json_success(
+        [
+            'source_id'     => $source,
+            'source_url'    => get_site_url($source, '/'),
+            'menus'         => $menus,
+            'sidebars'      => $sidebars,
+            'nav_locations' => $nav_locations,
+        ]
+    );
+}
+
+/**
+ * AJAX: search template-site posts/pages for menu builder (title + permalink).
+ */
+function rch_agent_wizard_ajax_menu_builder_search_posts(): void
+{
+    check_ajax_referer(RCH_AGENT_WIZARD_NONCE_ACTION, 'nonce');
+
+    if (is_wp_error(rch_agent_wizard_user_can_run())) {
+        wp_send_json_error(['message' => __('Permission denied.', 'rechat-plugin')], 403);
+    }
+
+    if (! function_exists('rch_agent_wizard_menus_widgets_source_blog_id')) {
+        wp_send_json_error(['message' => __('Menu builder is unavailable.', 'rechat-plugin')]);
+    }
+
+    $source = rch_agent_wizard_menus_widgets_source_blog_id();
+    $paged  = isset($_POST['paged']) ? max(1, absint($_POST['paged'])) : 1;
+    $per    = isset($_POST['per_page']) ? min(30, max(5, absint($_POST['per_page']))) : 15;
+    $search = isset($_POST['search']) ? sanitize_text_field(wp_unslash($_POST['search'])) : '';
+
+    $types = (array) apply_filters('rch_agent_wizard_menu_builder_post_types', ['post', 'page']);
+
+    switch_to_blog($source);
+
+    $q = new WP_Query(
+        [
+            'post_type'              => $types,
+            'post_status'            => 'publish',
+            'posts_per_page'         => $per,
+            'paged'                  => $paged,
+            's'                      => $search,
+            'orderby'                => 'title',
+            'order'                  => 'ASC',
+            'no_found_rows'          => false,
+            'update_post_meta_cache' => false,
+            'update_term_meta_cache' => false,
+        ]
+    );
+
+    $items = [];
+    foreach ($q->posts as $p) {
+        if (! $p instanceof WP_Post) {
+            continue;
+        }
+        $items[] = [
+            'id'    => (int) $p->ID,
+            'title' => get_the_title($p),
+            'type'  => $p->post_type,
+            'url'   => (string) get_permalink($p),
+        ];
+    }
+
+    restore_current_blog();
+
+    wp_send_json_success(
+        [
+            'items'     => $items,
+            'paged'     => $paged,
+            'max_pages' => (int) $q->max_num_pages,
+            'found'     => (int) $q->found_posts,
+        ]
+    );
+}
+
+/**
+ * AJAX: resolve post IDs on the menus/widgets source blog for menu builder (same shape as search).
+ */
+function rch_agent_wizard_ajax_menu_builder_posts_by_ids(): void
+{
+    check_ajax_referer(RCH_AGENT_WIZARD_NONCE_ACTION, 'nonce');
+
+    if (is_wp_error(rch_agent_wizard_user_can_run())) {
+        wp_send_json_error(['message' => __('Permission denied.', 'rechat-plugin')], 403);
+    }
+
+    if (! function_exists('rch_agent_wizard_menus_widgets_source_blog_id')) {
+        wp_send_json_error(['message' => __('Menu builder is unavailable.', 'rechat-plugin')]);
+    }
+
+    $raw = isset($_POST['post_ids']) ? wp_unslash($_POST['post_ids']) : '';
+    $arr = is_string($raw) && $raw !== '' ? json_decode($raw, true) : [];
+    if (! is_array($arr)) {
+        wp_send_json_error(['message' => __('Invalid request.', 'rechat-plugin')]);
+    }
+
+    $ids = [];
+    foreach ($arr as $id) {
+        $n = absint($id);
+        if ($n > 0) {
+            $ids[] = $n;
+        }
+    }
+    $ids = array_values(array_unique($ids));
+    $max  = (int) apply_filters('rch_agent_wizard_menu_builder_max_items', 80);
+    $ids  = array_slice($ids, 0, max(1, $max));
+
+    if ($ids === []) {
+        wp_send_json_success(['items' => []]);
+    }
+
+    $source = rch_agent_wizard_menus_widgets_source_blog_id();
+    $types  = (array) apply_filters('rch_agent_wizard_menu_builder_post_types', ['post', 'page']);
+
+    switch_to_blog($source);
+
+    $q = new WP_Query(
+        [
+            'post_type'              => $types,
+            'post_status'            => 'publish',
+            'post__in'               => $ids,
+            'posts_per_page'         => count($ids),
+            'orderby'                => 'post__in',
+            'no_found_rows'          => true,
+            'update_post_meta_cache' => false,
+            'update_term_meta_cache' => false,
+        ]
+    );
+
+    $items = [];
+    foreach ($q->posts as $p) {
+        if (! $p instanceof WP_Post) {
+            continue;
+        }
+        $items[] = [
+            'id'    => (int) $p->ID,
+            'title' => get_the_title($p),
+            'type'  => $p->post_type,
+            'url'   => (string) get_permalink($p),
+        ];
+    }
+
+    restore_current_blog();
+
+    wp_send_json_success(['items' => $items]);
+}
+
+/**
+ * AJAX: create flat menu from builder items + assign locations on all targets.
+ */
+function rch_agent_wizard_ajax_create_builder_menu(): void
+{
+    check_ajax_referer(RCH_AGENT_WIZARD_NONCE_ACTION, 'nonce');
+
+    if (is_wp_error(rch_agent_wizard_user_can_run())) {
+        wp_send_json_error(['message' => __('Permission denied.', 'rechat-plugin')], 403);
+    }
+
+    if (! function_exists('rch_agent_wizard_push_builder_menu_to_targets')) {
+        wp_send_json_error(['message' => __('Menu builder is unavailable.', 'rechat-plugin')]);
+    }
+
+    $menu_name = isset($_POST['menu_name']) ? sanitize_text_field(wp_unslash($_POST['menu_name'])) : '';
+    $raw_items = isset($_POST['items']) ? wp_unslash($_POST['items']) : '';
+    $raw_locs  = isset($_POST['location_slugs']) ? wp_unslash($_POST['location_slugs']) : '';
+
+    $items = is_string($raw_items) && $raw_items !== '' ? json_decode($raw_items, true) : [];
+    if (! is_array($items)) {
+        wp_send_json_error(['message' => __('Invalid menu items JSON.', 'rechat-plugin')]);
+    }
+
+    $location_slugs = is_string($raw_locs) && $raw_locs !== '' ? json_decode($raw_locs, true) : [];
+    if (! is_array($location_slugs)) {
+        $location_slugs = [];
+    }
+    $location_slugs = array_values(
+        array_filter(
+            array_map('sanitize_key', $location_slugs),
+            static function (string $s): bool {
+                return $s !== '';
+            }
+        )
+    );
+
+    $mode = isset($_POST['target_mode']) ? sanitize_key(wp_unslash($_POST['target_mode'])) : 'agent_only';
+    $allowed_modes = ['agent_only', 'office_only', 'all_subsites', 'agent_office'];
+    if (! in_array($mode, $allowed_modes, true)) {
+        $mode = 'agent_only';
+    }
+
+    $result = rch_agent_wizard_push_builder_menu_to_targets($mode, $menu_name, $items, $location_slugs);
+
+    if ($result['ok'] === 0 && $result['fail'] === 0 && $result['errors'] !== []) {
+        wp_send_json_error(['message' => implode(' ', $result['errors'])]);
+    }
+
+    wp_send_json_success(
+        [
+            'message' => sprintf(
+                /* translators: 1: success count, 2: fail count */
+                __('Created menu on %1$d site(s). Failed: %2$d.', 'rechat-plugin'),
+                $result['ok'],
+                $result['fail']
+            ),
+            'ok'     => $result['ok'],
+            'failed' => $result['fail'],
+            'errors' => $result['errors'],
+        ]
+    );
+}
+
+/**
+ * AJAX: clone selected menus + optionally all widget options to target blogs.
+ */
+function rch_agent_wizard_ajax_apply_menus_widgets(): void
+{
+    check_ajax_referer(RCH_AGENT_WIZARD_NONCE_ACTION, 'nonce');
+
+    if (is_wp_error(rch_agent_wizard_user_can_run())) {
+        wp_send_json_error(['message' => __('Permission denied.', 'rechat-plugin')], 403);
+    }
+
+    if (! function_exists('rch_agent_wizard_menus_widgets_source_blog_id')) {
+        wp_send_json_error(['message' => __('Menus/widgets sync is unavailable.', 'rechat-plugin')]);
+    }
+
+    $raw = isset($_POST['menu_term_ids']) ? wp_unslash($_POST['menu_term_ids']) : '';
+    $menu_ids = [];
+    if (is_string($raw) && $raw !== '') {
+        $decoded = json_decode($raw, true);
+        if (! is_array($decoded)) {
+            wp_send_json_error(['message' => __('Invalid menu list.', 'rechat-plugin')]);
+        }
+        $menu_ids = $decoded;
+    }
+
+    $menu_ids = array_values(
+        array_unique(
+            array_filter(
+                array_map('absint', $menu_ids),
+                static function (int $id): bool {
+                    return $id > 0;
+                }
+            )
+        )
+    );
+
+    $copy_widgets = ! empty($_POST['copy_widgets']);
+
+    if ($menu_ids === [] && ! $copy_widgets) {
+        wp_send_json_error(['message' => __('Select at least one menu, or enable widget copy.', 'rechat-plugin')]);
+    }
+
+    $mode = isset($_POST['target_mode']) ? sanitize_key(wp_unslash($_POST['target_mode'])) : 'agent_only';
+    $allowed_modes = ['agent_only', 'office_only', 'all_subsites', 'agent_office'];
+    if (! in_array($mode, $allowed_modes, true)) {
+        $mode = 'agent_only';
+    }
+
+    $targets = rch_agent_wizard_broadcast_target_blog_ids($mode);
+    $source  = rch_agent_wizard_menus_widgets_source_blog_id();
+
+    $targets = array_values(
+        array_filter(
+            $targets,
+            static function (int $bid) use ($source): bool {
+                return $bid > 0 && $bid !== $source;
+            }
+        )
+    );
+
+    if ($targets === []) {
+        wp_send_json_error(['message' => __('No target blogs found for this mode.', 'rechat-plugin')]);
+    }
+
+    $max_targets = (int) apply_filters('rch_agent_wizard_menus_widgets_max_targets', 500);
+    if ($max_targets > 0 && count($targets) > $max_targets) {
+        wp_send_json_error(
+            [
+                'message' => sprintf(
+                    /* translators: 1: target count, 2: max */
+                    __('Too many target sites (%1$d). Maximum is %2$d.', 'rechat-plugin'),
+                    count($targets),
+                    $max_targets
+                ),
+            ]
+        );
+    }
+
+    $widget_export = $copy_widgets ? rch_agent_wizard_export_widget_options($source) : [];
+
+    $ok     = 0;
+    $failed = 0;
+    $errors = [];
+
+    foreach ($targets as $blog_id) {
+        $r = rch_agent_wizard_sync_menus_widgets_to_blog($source, $blog_id, $menu_ids, $copy_widgets, $widget_export);
+        if (is_wp_error($r)) {
+            $failed++;
+            $errors[] = sprintf(
+                /* translators: 1: blog ID, 2: error message */
+                __('Blog %1$d: %2$s', 'rechat-plugin'),
+                $blog_id,
+                $r->get_error_message()
+            );
+        } else {
+            $ok++;
+        }
+    }
+
+    wp_send_json_success(
+        [
+            'message' => sprintf(
+                /* translators: 1: success count, 2: fail count */
+                __('Updated %1$d site(s). Failed: %2$d.', 'rechat-plugin'),
+                $ok,
+                $failed
+            ),
+            'ok'      => $ok,
+            'failed'  => $failed,
+            'errors'  => $errors,
+            'targets' => count($targets),
+        ]
+    );
+}
+
 add_action('wp_ajax_rch_agent_wizard_load_agent', 'rch_agent_wizard_ajax_load_agent');
 add_action('wp_ajax_rch_agent_wizard_save_draft', 'rch_agent_wizard_ajax_save_draft');
 add_action('wp_ajax_rch_agent_wizard_load_draft', 'rch_agent_wizard_ajax_load_draft');
 add_action('wp_ajax_rch_agent_wizard_deploy', 'rch_agent_wizard_ajax_deploy');
+add_action('wp_ajax_rch_agent_wizard_list_broadcast_posts', 'rch_agent_wizard_ajax_list_broadcast_posts');
+add_action('wp_ajax_rch_agent_wizard_broadcast_posts', 'rch_agent_wizard_ajax_broadcast_posts');
+add_action('wp_ajax_rch_agent_wizard_list_menus_widgets', 'rch_agent_wizard_ajax_list_menus_widgets');
+add_action('wp_ajax_rch_agent_wizard_apply_menus_widgets', 'rch_agent_wizard_ajax_apply_menus_widgets');
+add_action('wp_ajax_rch_agent_wizard_menu_builder_search', 'rch_agent_wizard_ajax_menu_builder_search_posts');
+add_action('wp_ajax_rch_agent_wizard_menu_builder_posts_by_ids', 'rch_agent_wizard_ajax_menu_builder_posts_by_ids');
+add_action('wp_ajax_rch_agent_wizard_create_builder_menu', 'rch_agent_wizard_ajax_create_builder_menu');
 
 /**
  * Enqueue wizard assets on Rechat settings tab.
@@ -1174,6 +1866,27 @@ function rch_agent_wizard_enqueue_assets(string $hook): void
     $stor    = $ui_prof['storage_primary'] ?? 'pentama_options_v2';
     $stor_m  = isset($ui_prof['storage_mirror']) && is_string($ui_prof['storage_mirror']) ? $ui_prof['storage_mirror'] : '';
 
+    $bc_step   = rch_agent_wizard_broadcast_step_enabled();
+    $bc_source = $bc_step && function_exists('rch_multisite_broadcast_source_blog_id')
+        ? rch_multisite_broadcast_source_blog_id()
+        : 0;
+    $bc_name   = $bc_source ? (string) get_blog_option($bc_source, 'blogname', '') : '';
+    $bc_counts = [
+        'agent_only'   => $bc_step ? count(rch_agent_wizard_broadcast_target_blog_ids('agent_only')) : 0,
+        'office_only'  => $bc_step ? count(rch_agent_wizard_broadcast_target_blog_ids('office_only')) : 0,
+        'all_subsites' => $bc_step ? count(rch_agent_wizard_broadcast_target_blog_ids('all_subsites')) : 0,
+    ];
+
+    $mw_source = function_exists('rch_agent_wizard_menus_widgets_source_blog_id')
+        ? rch_agent_wizard_menus_widgets_source_blog_id()
+        : (int) get_main_site_id();
+    $mw_name   = $mw_source ? (string) get_blog_option($mw_source, 'blogname', '') : '';
+    $mw_counts = [
+        'agent_only'   => count(rch_agent_wizard_broadcast_target_blog_ids('agent_only')),
+        'office_only'  => count(rch_agent_wizard_broadcast_target_blog_ids('office_only')),
+        'all_subsites' => count(rch_agent_wizard_broadcast_target_blog_ids('all_subsites')),
+    ];
+
     wp_localize_script(
         'rch-agent-site-wizard',
         'rchAgentWizard',
@@ -1183,6 +1896,17 @@ function rch_agent_wizard_enqueue_assets(string $hook): void
             'themeKeys'      => $theme_keys,
             'metaboxLabels'  => $metabox_labels,
             'bulkCount'      => rch_agent_wizard_count_agents_with_subsites(),
+            'broadcastStep'  => $bc_step,
+            'broadcastSource' => [
+                'blog_id' => $bc_source,
+                'label'   => $bc_name !== '' ? $bc_name : sprintf(/* translators: %d: blog ID */ __('Blog %d', 'rechat-plugin'), $bc_source),
+            ],
+            'broadcastTargetCounts' => $bc_counts,
+            'menusWidgetsTargetCounts' => $mw_counts,
+            'menusWidgetsSource' => [
+                'blog_id' => $mw_source,
+                'label'   => $mw_name !== '' ? $mw_name : sprintf(/* translators: %d: blog ID */ __('Blog %d', 'rechat-plugin'), $mw_source),
+            ],
             'targetTheme'    => [
                 'stylesheet'      => $ui_ss,
                 'name'            => $ui_name,
@@ -1205,6 +1929,58 @@ function rch_agent_wizard_enqueue_assets(string $hook): void
                 'scopeSingle'     => __('Single agent', 'rechat-plugin'),
                 'scopeAll'        => __('All agent sub-sites', 'rechat-plugin'),
                 'sitesCount'      => /* translators: %d: count */ __('%d sites will be updated.', 'rechat-plugin'),
+                'bcStepTitle'     => __('Broadcast content', 'rechat-plugin'),
+                'bcStepLead'      => __('Choose posts and pages on the Broadcast source site, then push copies to the selected target blogs using ThreeWP Broadcast.', 'rechat-plugin'),
+                'bcSourceLine'     => __('Source: %s (blog ID %d)', 'rechat-plugin'),
+                'bcTargetAgents'   => __('Agent sub-sites only (%d blogs)', 'rechat-plugin'),
+                'bcTargetOffices'  => __('Office sub-sites only (%d blogs)', 'rechat-plugin'),
+                'bcTargetAll'      => __('All network sub-sites except source (%d blogs)', 'rechat-plugin'),
+                'bcSearch'        => __('Search titles…', 'rechat-plugin'),
+                'bcLoad'          => __('Load list', 'rechat-plugin'),
+                'bcPrev'          => __('Previous page', 'rechat-plugin'),
+                'bcNext'          => __('Next page', 'rechat-plugin'),
+                'bcSelectAll'     => __('Select all on this page', 'rechat-plugin'),
+                'bcClearPage'     => __('Clear page selection', 'rechat-plugin'),
+                'bcRun'           => __('Broadcast selected', 'rechat-plugin'),
+                'bcNoneSelected'  => __('Select at least one post or page.', 'rechat-plugin'),
+                'bcLoading'       => __('Loading…', 'rechat-plugin'),
+                'bcEmpty'         => __('No posts or pages found.', 'rechat-plugin'),
+                'bcColTitle'      => __('Title', 'rechat-plugin'),
+                'bcColType'       => __('Type', 'rechat-plugin'),
+                'bcColStatus'     => __('Status', 'rechat-plugin'),
+                'bcColModified'   => __('Modified', 'rechat-plugin'),
+                'mwSourceLine'     => __('Template site: %s (blog ID %d)', 'rechat-plugin'),
+                'mwTargetAgents'   => __('Agent sub-sites only (%d blogs)', 'rechat-plugin'),
+                'mwTargetOffices'  => __('Office sub-sites only (%d blogs)', 'rechat-plugin'),
+                'mwTargetAll'      => __('All network sub-sites except template (%d blogs)', 'rechat-plugin'),
+                'mwLoad'          => __('Load menus & sidebars', 'rechat-plugin'),
+                'mwApplyNone'     => __('Select at least one menu, or tick “Copy all widget settings”.', 'rechat-plugin'),
+                'mwMenusLegend'   => __('Menus', 'rechat-plugin'),
+                'mwSidebarLine'   => __('Sidebars on template: %s', 'rechat-plugin'),
+                'mbHeading'       => __('Build new menu for targets', 'rechat-plugin'),
+                'mbLead'          => __('Add links from template posts/pages, custom URLs, then pick theme display locations. Uses the same target scope as above. Links use the template permalink (works best with Broadcast-matched content).', 'rechat-plugin'),
+                'mbNameLabel'     => __('New menu name', 'rechat-plugin'),
+                'mbNamePh'        => __('e.g. Main navigation', 'rechat-plugin'),
+                'mbSearchLabel'   => __('Add from template content', 'rechat-plugin'),
+                'mbSearchBtn'     => __('Search', 'rechat-plugin'),
+                'mbCustomLabel'   => __('Custom link', 'rechat-plugin'),
+                'mbUrlPh'         => __('https://…', 'rechat-plugin'),
+                'mbLinkTextPh'    => __('Link text', 'rechat-plugin'),
+                'mbAddCustom'     => __('Add custom link', 'rechat-plugin'),
+                'mbItemsLabel'    => __('Menu structure', 'rechat-plugin'),
+                'mbItemsEmpty'    => __('No links yet. Search or add a custom link.', 'rechat-plugin'),
+                'mbLocLabel'      => __('Theme display locations (template)', 'rechat-plugin'),
+                'mbLocEmpty'      => __('Load menus & sidebars above to load locations, or your theme may not register menu locations.', 'rechat-plugin'),
+                'mbCreate'        => __('Create menu on all targets', 'rechat-plugin'),
+                'mbNeedName'      => __('Enter a menu name.', 'rechat-plugin'),
+                'mbNeedItem'      => __('Add at least one link (title and URL, or title and a template post from Add / broadcast list so each site can use its own page link).', 'rechat-plugin'),
+                'mbAdd'           => __('Add', 'rechat-plugin'),
+                'mbBroadcastPicksEmpty' => __('No posts or pages are checked on the Broadcast step yet.', 'rechat-plugin'),
+                'mbRemove'        => __('Remove', 'rechat-plugin'),
+                'mbUp'            => __('Move up', 'rechat-plugin'),
+                'mbDown'          => __('Move down', 'rechat-plugin'),
+                'mbPrev'          => __('Previous', 'rechat-plugin'),
+                'mbNext'          => __('Next', 'rechat-plugin'),
             ],
         ]
     );
