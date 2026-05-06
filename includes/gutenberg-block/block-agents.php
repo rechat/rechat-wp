@@ -200,6 +200,7 @@ function rch_load_more_agents()
             $profile_image_url = get_post_meta($post_id, 'profile_image_url', true);
             $timezone = get_post_meta($post_id, 'timezone', true);
             $phone_number = get_post_meta($post_id, 'phone_number', true);
+            $designation = get_post_meta($post_id, 'designation', true);
             $theme_template = locate_template('rechat/rch-agents-block-template.php');
 
             if ($theme_template) {

@@ -1,16 +1,16 @@
 <?php
 
 /**
- * Multisite: agent subsite listing scope + Rechat credential fallback.
+ * Multisite: hub brand/map fallback + markup patching on subsites.
  *
- * - Subsites mapped to an agent post use main-site `agents` post meta as global filter_agents.
- * - When that meta is empty, <rechat-listings> gets disabled="true" (same as single-agent template).
- * - When this blog has no Rechat OAuth options, brand/access/refresh fall back to the main site.
+ * - OAuth tokens (`rch_rechat_access_token`, `rch_rechat_refresh_token`) are per-blog only; subsites
+ *   do not inherit the main site connection — each site uses Connect To Rechat on that blog.
+ * - When local brand or map API key is empty, those options still fall back to the main site DB value.
+ * - Output buffer on subsites with empty local brand or map patches `<rechat-root>` / `<rechat-listings>`.
  *
- * Hub (main site) WordPress options used for fallback and for reading hub values:
+ * Hub options used for non-OAuth fallback / raw markup patch:
  * - `rch_rechat_brand_id`
  * - `rch_rechat_google_map_api_key`
- * (also: `rch_rechat_access_token`, `rch_rechat_refresh_token`)
  *
  * Requires a real WordPress multisite network (`is_multisite()`). Separate single-site installs
  * are not supported here. You do not need to recreate agent subsites when hub options exist;
@@ -25,136 +25,6 @@ if (! defined('ABSPATH')) {
 
 if (! function_exists('is_multisite') || ! is_multisite()) {
     return;
-}
-
-/**
- * Whether this request should apply agent-only listing scoping (not main hub, not office-only).
- */
-function rch_multisite_is_agent_listing_scope_active(): bool
-{
-    if (! is_multisite() || get_current_blog_id() === (int) get_main_site_id()) {
-        return false;
-    }
-
-    return function_exists('rch_is_rechat_agent_only_subsite') && rch_is_rechat_agent_only_subsite();
-}
-
-/**
- * Resolve the main-site agent CPT post ID linked to the current blog.
- */
-function rch_multisite_resolve_agent_post_id_for_current_blog(): int
-{
-    static $cached = null;
-
-    if ($cached !== null) {
-        return $cached;
-    }
-
-    $cached = 0;
-
-    if (! is_multisite()) {
-        return $cached;
-    }
-
-    $blog_id = get_current_blog_id();
-    $main_id  = (int) get_main_site_id();
-
-    if ($blog_id <= 0 || $blog_id === $main_id) {
-        return $cached;
-    }
-
-    switch_to_blog($main_id);
-
-    $agent_match = new WP_Query([
-        'post_type'              => 'agents',
-        'post_status'            => 'any',
-        'posts_per_page'         => 1,
-        'fields'                 => 'ids',
-        'no_found_rows'          => true,
-        'update_post_meta_cache' => false,
-        'update_post_term_cache' => false,
-        'meta_query'             => [
-            [
-                'key'   => '_rch_agent_site_id',
-                'value' => (string) $blog_id,
-            ],
-        ],
-    ]);
-
-    if ($agent_match->have_posts()) {
-        $cached = (int) $agent_match->posts[0];
-    }
-
-    restore_current_blog();
-
-    return $cached;
-}
-
-/**
- * Normalize main-site `agents` post meta to a comma-separated string for SDK / API.
- *
- * @param mixed $raw Value from get_post_meta(…, 'agents', true).
- */
-function rch_multisite_normalize_agents_meta_to_csv($raw): string
-{
-    if (is_array($raw)) {
-        $parts = array_filter(array_map('trim', $raw), static function ($v) {
-            return $v !== '' && $v !== null;
-        });
-
-        return implode(',', $parts);
-    }
-
-    if (is_string($raw)) {
-        $raw = trim($raw);
-        if ($raw !== '' && $raw[0] === '[') {
-            $decoded = json_decode($raw, true);
-            if (is_array($decoded)) {
-                return rch_multisite_normalize_agents_meta_to_csv($decoded);
-            }
-        }
-
-        return $raw;
-    }
-
-    if (is_scalar($raw) && (string) $raw !== '') {
-        return trim((string) $raw);
-    }
-
-    return '';
-}
-
-/**
- * Comma-separated Rechat agent IDs for the current agent subsite (from main site meta `agents`).
- */
-function rch_multisite_get_main_site_agent_ids_csv(): string
-{
-    static $csv = null;
-
-    if ($csv !== null) {
-        return $csv;
-    }
-
-    $csv = '';
-
-    if (! rch_multisite_is_agent_listing_scope_active()) {
-        return $csv;
-    }
-
-    $agent_post_id = rch_multisite_resolve_agent_post_id_for_current_blog();
-
-    if ($agent_post_id <= 0) {
-        return $csv;
-    }
-
-    $main_id = (int) get_main_site_id();
-    switch_to_blog($main_id);
-    $raw = get_post_meta($agent_post_id, 'agents', true);
-    restore_current_blog();
-
-    $csv = rch_multisite_normalize_agents_meta_to_csv($raw);
-
-    return $csv;
 }
 
 /**
@@ -252,20 +122,8 @@ add_filter('pre_option_rch_rechat_google_map_api_key', static function ($pre, $o
     return rch_multisite_pre_option_hub_fallback($pre, 'rch_rechat_google_map_api_key');
 }, 5, 3);
 
-add_filter('pre_option_rch_rechat_access_token', static function ($pre, $option, $default) {
-    unset($option, $default);
-
-    return rch_multisite_pre_option_hub_fallback($pre, 'rch_rechat_access_token');
-}, 5, 3);
-
-add_filter('pre_option_rch_rechat_refresh_token', static function ($pre, $option, $default) {
-    unset($option, $default);
-
-    return rch_multisite_pre_option_hub_fallback($pre, 'rch_rechat_refresh_token');
-}, 5, 3);
-
 /**
- * Fallback main-site Rechat option for subsites with missing credentials.
+ * Fallback main-site Rechat option for subsites when local value empty (brand / map only; not OAuth).
  *
  * @param mixed  $value Local option value.
  * @param string $option Option name.
@@ -329,14 +187,6 @@ add_filter('option_rch_rechat_brand_id', static function ($value) {
     return rch_multisite_fallback_rechat_option($value, 'rch_rechat_brand_id');
 }, 5);
 
-add_filter('option_rch_rechat_access_token', static function ($value) {
-    return rch_multisite_fallback_rechat_option($value, 'rch_rechat_access_token');
-}, 5);
-
-add_filter('option_rch_rechat_refresh_token', static function ($value) {
-    return rch_multisite_fallback_rechat_option($value, 'rch_rechat_refresh_token');
-}, 5);
-
 add_filter('option_rch_rechat_google_map_api_key', static function ($value) {
     return rch_multisite_fallback_rechat_option($value, 'rch_rechat_google_map_api_key');
 }, 5);
@@ -351,132 +201,6 @@ add_filter('option_rch_rechat_brand_id', static function ($value) {
 add_filter('option_rch_rechat_google_map_api_key', static function ($value) {
     return rch_multisite_fallback_rechat_option($value, 'rch_rechat_google_map_api_key');
 }, 999);
-
-add_filter('option_rch_rechat_access_token', static function ($value) {
-    return rch_multisite_fallback_rechat_option($value, 'rch_rechat_access_token');
-}, 999);
-
-add_filter('option_rch_rechat_refresh_token', static function ($value) {
-    return rch_multisite_fallback_rechat_option($value, 'rch_rechat_refresh_token');
-}, 999);
-
-/**
- * [listings] and Gutenberg block (via [listings]): inject filter_agents after shortcode_atts merge.
- */
-add_filter('shortcode_atts_listings', static function ($out, $pairs, $atts) {
-    unset($pairs, $atts);
-
-    if (! rch_multisite_is_agent_listing_scope_active()) {
-        return $out;
-    }
-
-    $csv = rch_multisite_get_main_site_agent_ids_csv();
-    if ($csv === '') {
-        return $out;
-    }
-
-    $out['filter_agents'] = $csv;
-
-    return $out;
-}, 10, 3);
-
-/**
- * Gutenberg ServerSideRender (block editor preview) and render_block(): merge filter_agents
- * into listing block attrs before PHP render_callback runs. Otherwise empty filter_agents is
- * omitted from the [listings …] string and the editor preview misses agent scoping.
- *
- * @param array         $parsed_block Parsed block (see WP_Block_Parser_Block).
- * @param array         $source_block Unmodified copy (unused).
- * @param \WP_Block|null $parent_block Parent block (unused).
- * @return array
- */
-function rch_multisite_render_block_data_inject_listing_filter_agents($parsed_block, $source_block = null, $parent_block = null)
-{
-    unset($source_block, $parent_block);
-
-    if (! is_array($parsed_block)) {
-        return $parsed_block;
-    }
-
-    if (($parsed_block['blockName'] ?? '') !== 'rch-rechat-plugin/listing-block') {
-        return $parsed_block;
-    }
-
-    if (! rch_multisite_is_agent_listing_scope_active()) {
-        return $parsed_block;
-    }
-
-    $csv = rch_multisite_get_main_site_agent_ids_csv();
-    if ($csv === '') {
-        return $parsed_block;
-    }
-
-    if (! isset($parsed_block['attrs']) || ! is_array($parsed_block['attrs'])) {
-        $parsed_block['attrs'] = [];
-    }
-
-    $parsed_block['attrs']['filter_agents'] = $csv;
-
-    return $parsed_block;
-}
-
-add_filter('render_block_data', 'rch_multisite_render_block_data_inject_listing_filter_agents', 10, 3);
-
-/**
- * [rch_latest_listings] does not pass a shortcode name into shortcode_atts(), so we proxy the handler.
- */
-function rch_multisite_proxy_latest_listings_shortcode($atts)
-{
-    $atts = is_array($atts) ? $atts : [];
-
-    if (rch_multisite_is_agent_listing_scope_active()) {
-        $csv = rch_multisite_get_main_site_agent_ids_csv();
-        if ($csv !== '') {
-            $atts['filter_agents'] = $csv;
-        }
-    }
-
-    if (! function_exists('rch_display_latest_listings_shortcode')) {
-        return '';
-    }
-
-    return rch_display_latest_listings_shortcode($atts);
-}
-
-add_action('init', static function () {
-    if (! is_multisite()) {
-        return;
-    }
-
-    if (! function_exists('rch_display_latest_listings_shortcode')) {
-        return;
-    }
-
-    remove_shortcode('rch_latest_listings');
-    add_shortcode('rch_latest_listings', 'rch_multisite_proxy_latest_listings_shortcode');
-}, 20);
-
-/**
- * Legacy archive AJAX: ensure valerts body includes agents[] for this subsite.
- */
-function rch_multisite_prime_agents_for_listing_ajax(): void
-{
-    if (! rch_multisite_is_agent_listing_scope_active()) {
-        return;
-    }
-
-    $csv = rch_multisite_get_main_site_agent_ids_csv();
-    if ($csv === '') {
-        return;
-    }
-
-    $_POST['agents'] = $csv;
-}
-
-add_action('wp_ajax_rch_fetch_listing', 'rch_multisite_prime_agents_for_listing_ajax', 0);
-add_action('wp_ajax_nopriv_rch_fetch_listing', 'rch_multisite_prime_agents_for_listing_ajax', 0);
-add_action('wp_ajax_rch_fetch_total_listing_count', 'rch_multisite_prime_agents_for_listing_ajax', 0);
-add_action('wp_ajax_nopriv_rch_fetch_total_listing_count', 'rch_multisite_prime_agents_for_listing_ajax', 0);
 
 /**
  * Safe preg_replace_callback: never return null (avoids wiping the whole page on PCRE / UTF-8 errors).
@@ -517,89 +241,6 @@ function rch_multisite_preg_replace_safe($pattern, $replacement, $subject, int $
         : @preg_replace($pattern, $replacement, $subject);
 
     return is_string($result) ? $result : $subject;
-}
-
-/**
- * Inject or replace filter_agents on all <rechat-listings> tags (search form, widgets, FSE, etc.).
- *
- * @param string $html Full page HTML.
- * @return string
- */
-function rch_multisite_ob_inject_filter_agents($html)
-{
-    if (! is_string($html) || $html === '') {
-        return $html;
-    }
-
-    if (! rch_multisite_is_agent_listing_scope_active()) {
-        return $html;
-    }
-
-    $csv = rch_multisite_get_main_site_agent_ids_csv();
-    if ($csv === '') {
-        return $html;
-    }
-
-    $attr = 'filter_agents="' . esc_attr($csv) . '"';
-
-    return rch_multisite_preg_replace_callback_safe(
-        '/<rechat-listings\b([^>]*)>/i',
-        static function ($m) use ($attr) {
-            $inner = $m[1];
-            if (preg_match('/\bfilter_agents\s*=/i', $inner)) {
-                $inner = rch_multisite_preg_replace_safe(
-                    '/\sfilter_agents\s*=\s*(["\'])[^"\']*\1/i',
-                    ' ' . $attr,
-                    $inner,
-                    1
-                );
-
-                return '<rechat-listings' . $inner . '>';
-            }
-
-            $prefix = ($inner !== '' && $inner[0] !== ' ') ? ' ' : '';
-
-            return '<rechat-listings' . $inner . $prefix . $attr . '>';
-        },
-        $html
-    );
-}
-
-/**
- * When the agent subsite has no main-site `agents` CSV, set disabled="true" on <rechat-listings>
- * (parity with rch_get_agent_listings_attrs in agents-listings-section.php).
- *
- * @param string $html Full page HTML.
- * @return string
- */
-function rch_multisite_ob_disable_rechat_listings_when_no_hub_agents(string $html): string
-{
-    if (! is_string($html) || $html === '') {
-        return $html;
-    }
-
-    if (! rch_multisite_is_agent_listing_scope_active()) {
-        return $html;
-    }
-
-    if (rch_multisite_get_main_site_agent_ids_csv() !== '') {
-        return $html;
-    }
-
-    return rch_multisite_preg_replace_callback_safe(
-        '/<rechat-listings\b([^>]*)>/i',
-        static function ($m) {
-            $inner = $m[1];
-            if (preg_match('/\bdisabled\s*=/i', $inner)) {
-                return '<rechat-listings' . $inner . '>';
-            }
-
-            $prefix = ($inner !== '' && $inner[0] !== ' ') ? ' ' : '';
-
-            return '<rechat-listings' . $inner . $prefix . 'disabled="true">';
-        },
-        $html
-    );
 }
 
 /**
@@ -707,7 +348,7 @@ function rch_multisite_ob_strip_filter_agents_on_listings_list(string $html): st
 }
 
 /**
- * Full-page output filter: filter_agents + hub brand/map on live markup.
+ * Full-page output filter: hub brand/map on live markup; strip stray filter_agents on list child.
  *
  * @param string $html Full page HTML.
  * @return string
@@ -726,9 +367,6 @@ function rch_multisite_ob_patch_rechat_markup(string $html)
     $orig_len = strlen($html);
 
     try {
-        $html = rch_multisite_ob_inject_filter_agents($html);
-        $html = rch_multisite_ob_disable_rechat_listings_when_no_hub_agents($html);
-
         $main_id = (int) get_main_site_id();
         $hub_brand = rch_multisite_fetch_raw_option_value_for_blog($main_id, 'rch_rechat_brand_id');
         $hub_map  = rch_multisite_fetch_raw_option_value_for_blog($main_id, 'rch_rechat_google_map_api_key');
@@ -776,12 +414,6 @@ function rch_multisite_should_buffer_listing_markup(): bool
     $main_id = (int) get_main_site_id();
     $hub_brand = rch_multisite_fetch_raw_option_value_for_blog($main_id, 'rch_rechat_brand_id');
     $hub_map  = rch_multisite_fetch_raw_option_value_for_blog($main_id, 'rch_rechat_google_map_api_key');
-
-    if (rch_multisite_is_agent_listing_scope_active()) {
-        // Always buffer agent subsites: inject filter_agents, hub brand/map fallback, and/or
-        // disabled="true" on <rechat-listings> when hub agents meta is empty.
-        return true;
-    }
 
     $here = get_current_blog_id();
     $local_brand = rch_multisite_fetch_raw_option_value_for_blog($here, 'rch_rechat_brand_id');

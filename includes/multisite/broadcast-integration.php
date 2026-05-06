@@ -101,6 +101,73 @@ function rch_multisite_broadcast_source_blog_id(): int
 }
 
 /**
+ * Child post ID on a target blog for a parent post (ThreeWP Broadcast), or the parent ID when target is the parent blog.
+ *
+ * @param int $parent_blog_id Blog where $parent_post_id exists.
+ * @param int $parent_post_id Post ID on that blog.
+ * @param int $target_blog_id  Sub-site to resolve onto.
+ * @return int 0 if Broadcast is unavailable or there is no linked child on the target.
+ */
+function rch_multisite_broadcast_child_post_id_on_blog(int $parent_blog_id, int $parent_post_id, int $target_blog_id): int
+{
+    if ($parent_post_id <= 0 || $target_blog_id <= 0 || $parent_blog_id <= 0) {
+        return 0;
+    }
+
+    if ($target_blog_id === $parent_blog_id) {
+        switch_to_blog($parent_blog_id);
+        $p = get_post($parent_post_id);
+        restore_current_blog();
+
+        return $p instanceof WP_Post ? $parent_post_id : 0;
+    }
+
+    if (! function_exists('ThreeWP_Broadcast')) {
+        return 0;
+    }
+
+    /** @var mixed $bcd */
+    $bcd = null;
+
+    switch_to_blog($parent_blog_id);
+
+    try {
+        $broadcast = ThreeWP_Broadcast();
+        $bcd       = $broadcast->get_post_broadcast_data($parent_blog_id, $parent_post_id);
+    } catch (Throwable $e) {
+        $bcd = null;
+    }
+
+    restore_current_blog();
+
+    if (! is_object($bcd) || ! method_exists($bcd, 'get_linked_children')) {
+        return 0;
+    }
+
+    $children = $bcd->get_linked_children();
+    if (! is_array($children) || $children === []) {
+        return 0;
+    }
+
+    $child_id = 0;
+    if (isset($children[ $target_blog_id ])) {
+        $child_id = (int) $children[ $target_blog_id ];
+    } elseif (isset($children[ (string) $target_blog_id ])) {
+        $child_id = (int) $children[ (string) $target_blog_id ];
+    }
+
+    if ($child_id <= 0) {
+        return 0;
+    }
+
+    switch_to_blog($target_blog_id);
+    $child = get_post($child_id);
+    restore_current_blog();
+
+    return $child instanceof WP_Post ? $child_id : 0;
+}
+
+/**
  * User ID used while running Broadcast API (capabilities). Default: first super admin, else multisite owner option, else 1.
  */
 function rch_multisite_broadcast_runner_user_id(): int
