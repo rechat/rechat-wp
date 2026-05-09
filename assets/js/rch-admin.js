@@ -492,4 +492,216 @@ jQuery(document).ready(function ($) {
 
         rchLoadCountries(false);
     }
+
+    /*******************************
+     * General settings: lead sources + tags (AJAX; one shared request per resource)
+     *******************************/
+    if (typeof rch_ajax_object !== 'undefined') {
+        var LC = rch_ajax_object.lead_capture || {};
+
+        var rchLeadChannelsPromise = null;
+        function rchFetchLeadChannelsOnce() {
+            if (!rchLeadChannelsPromise) {
+                rchLeadChannelsPromise = jQuery.ajax({
+                    url: rch_ajax_object.ajax_url,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        action: 'rch_fetch_lead_channels_settings',
+                        nonce: rch_ajax_object.nonce
+                    }
+                });
+            }
+            return rchLeadChannelsPromise;
+        }
+
+        var rchTagsSettingsPromise = null;
+        function rchFetchTagsSettingsOnce() {
+            if (!rchTagsSettingsPromise) {
+                rchTagsSettingsPromise = jQuery.ajax({
+                    url: rch_ajax_object.ajax_url,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        action: 'rch_fetch_tags_settings',
+                        nonce: rch_ajax_object.nonce
+                    }
+                });
+            }
+            return rchTagsSettingsPromise;
+        }
+
+        function rchBindTagChips($select, $container, $hidden) {
+            var selectedTagNames = [];
+            try {
+                selectedTagNames = JSON.parse($hidden.val() || '[]');
+            } catch (e1) {
+                selectedTagNames = [];
+            }
+            if (!Array.isArray(selectedTagNames)) {
+                selectedTagNames = [];
+            }
+
+            function updateHiddenInput() {
+                $hidden.val(JSON.stringify(selectedTagNames));
+            }
+
+            function renderChips() {
+                $container.empty();
+                selectedTagNames.forEach(function (tagName) {
+                    var $chip = jQuery('<span class="rch-tag-chip"></span>').text(tagName).css({
+                        display: 'inline-block',
+                        margin: '0 5px 5px 0',
+                        padding: '5px 10px',
+                        backgroundColor: '#ddd',
+                        borderRadius: '3px'
+                    });
+                    var $close = jQuery('<span>&times;</span>')
+                        .css({ marginLeft: '5px', cursor: 'pointer', fontWeight: 'bold' })
+                        .attr('aria-label', 'Remove tag')
+                        .on('click', function () {
+                            selectedTagNames = selectedTagNames.filter(function (t) {
+                                return t !== tagName;
+                            });
+                            updateHiddenInput();
+                            renderChips();
+                        });
+                    $chip.append($close);
+                    $container.append($chip);
+                });
+            }
+
+            $select.off('change.rchTags').on('change.rchTags', function () {
+                var v = $select.val();
+                if (v && selectedTagNames.indexOf(v) === -1) {
+                    selectedTagNames.push(v);
+                    updateHiddenInput();
+                    renderChips();
+                }
+                $select.val('');
+            });
+
+            renderChips();
+        }
+
+        jQuery('.rch-async-lead-channel').each(function () {
+            var $wrap = jQuery(this);
+            if ($wrap.data('rchLeadInit')) {
+                return;
+            }
+            $wrap.data('rchLeadInit', true);
+            var selected = String($wrap.attr('data-selected') || '');
+            var $msg = $wrap.find('.rch-lead-channel-loading-msg');
+            var $sel = $wrap.find('select');
+            var $empty = $wrap.find('.rch-lead-channel-empty');
+            var $err = $wrap.find('.rch-lead-channel-error');
+
+            rchFetchLeadChannelsOnce()
+                .done(function (response) {
+                    $msg.hide();
+                    if (!response || !response.success) {
+                        var m =
+                            response && response.data && response.data.message
+                                ? response.data.message
+                                : LC.channels_failed || '';
+                        $err.text(m).show();
+                        return;
+                    }
+                    var channels =
+                        response.data && jQuery.isArray(response.data.channels)
+                            ? response.data.channels
+                            : [];
+                    $sel.empty();
+                    $sel.append(
+                        jQuery('<option></option>').attr('value', '').text(LC.select_channel || '')
+                    );
+                    if (!channels.length) {
+                        $empty.show();
+                        $sel.prop('disabled', false).show();
+                        return;
+                    }
+                    jQuery.each(channels, function (_, ch) {
+                        if (!ch || typeof ch.id === 'undefined') {
+                            return;
+                        }
+                        var id = String(ch.id);
+                        var $opt = jQuery('<option></option>')
+                            .attr('value', id)
+                            .text(ch.title || id);
+                        if (id === selected) {
+                            $opt.prop('selected', true);
+                        }
+                        $sel.append($opt);
+                    });
+                    $sel.prop('disabled', false).show();
+                })
+                .fail(function () {
+                    $msg.hide();
+                    $err.text(LC.channels_failed || '').show();
+                });
+        });
+
+        jQuery('.rch-async-tags').each(function () {
+            var $wrap = jQuery(this);
+            if ($wrap.data('rchTagsInit')) {
+                return;
+            }
+            var sid = $wrap.attr('data-select-id');
+            var cid = $wrap.attr('data-container-id');
+            var hid = $wrap.attr('data-hidden-input-id');
+            var $msg = $wrap.find('.rch-tags-loading-msg');
+            var elSel = sid ? document.getElementById(sid) : null;
+            var elC = cid ? document.getElementById(cid) : null;
+            var elH = hid ? document.getElementById(hid) : null;
+            var $sel = elSel ? jQuery(elSel) : jQuery();
+            var $container = elC ? jQuery(elC) : jQuery();
+            var $hidden = elH ? jQuery(elH) : jQuery();
+            if (!$sel.length || !$container.length || !$hidden.length) {
+                return;
+            }
+            $wrap.data('rchTagsInit', true);
+            var $empty = $wrap.find('.rch-tags-empty');
+            var $err = $wrap.find('.rch-tags-error');
+
+            rchFetchTagsSettingsOnce()
+                .done(function (response) {
+                    $msg.hide();
+                    if (!response || !response.success) {
+                        var m =
+                            response && response.data && response.data.message
+                                ? response.data.message
+                                : LC.tags_failed || '';
+                        $err.text(m).show();
+                        return;
+                    }
+                    var tags =
+                        response.data && jQuery.isArray(response.data.tags) ? response.data.tags : [];
+                    $sel.empty();
+                    $sel.append(
+                        jQuery('<option></option>')
+                            .attr('value', '')
+                            .text(LC.select_tag || '')
+                    );
+                    if (!tags.length) {
+                        $empty.show();
+                        $sel.prop('disabled', false).show();
+                        return;
+                    }
+                    jQuery.each(tags, function (_, t) {
+                        if (t && t.tag) {
+                            $sel.append(
+                                jQuery('<option></option>').attr('value', t.tag).text(t.tag)
+                            );
+                        }
+                    });
+                    $sel.prop('disabled', false).show();
+                    $container.show();
+                    rchBindTagChips($sel, $container, $hidden);
+                })
+                .fail(function () {
+                    $msg.hide();
+                    $err.text(LC.tags_failed || '').show();
+                });
+        });
+    }
 });

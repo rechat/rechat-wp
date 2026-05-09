@@ -93,6 +93,12 @@ function rch_enqueue_admin_scripts($hook)
                 'state_placeholder'   => __('Select a state / province', 'rechat-plugin'),
                 'any_country'         => __('Any', 'rechat-plugin'),
             ),
+            'lead_capture'    => array(
+                'select_channel'   => __('Select Lead Channel', 'rechat-plugin'),
+                'select_tag'       => __('Please select a tag', 'rechat-plugin'),
+                'channels_failed'  => __('Could not load lead sources.', 'rechat-plugin'),
+                'tags_failed'      => __('Could not load tags.', 'rechat-plugin'),
+            ),
         ]
     );
 }
