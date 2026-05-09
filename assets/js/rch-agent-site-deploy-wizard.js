@@ -1209,32 +1209,25 @@
                 });
         }
 
-        // Auto-restore last draft on load.
-        loadDraft(true);
-
-        $('input[name="rch_wz_scope"]').on('change', function () {
-            $('#rch-wz-single-agent-wrap').toggle(getScope() === 'single');
-            $('.rch-wz-theme-row').each(function () {
-                updateMetaPreview($(this));
-            });
-        });
-
-        $('#rch-wz-load-agent').on('click', function () {
-            var id = parseInt($('#rch-wz-agent-select').val(), 10);
-            if (!id) {
-                alert(rchAgentWizard.strings.pickAgent);
-                return;
-            }
-            spin($('#rch-wz-agent-spinner'), true);
-            $.post(rchAgentWizard.ajaxurl, {
+        /**
+         * Load agent meta + repaint theme rows with last-deployment config (or current values).
+         * Used by the explicit Load Agent button, the agent dropdown change, and the auto-load on init.
+         */
+        function loadAgentAndRepaint(agent_id, opts) {
+            opts = opts || {};
+            var $spin = $('#rch-wz-agent-spinner');
+            spin($spin, true);
+            return $.post(rchAgentWizard.ajaxurl, {
                 action: 'rch_agent_wizard_load_agent',
                 nonce: rchAgentWizard.nonce,
-                agent_id: id,
+                agent_id: agent_id,
             })
                 .done(function (res) {
-                    spin($('#rch-wz-agent-spinner'), false);
+                    spin($spin, false);
                     if (!res.success) {
-                        alert(res.data && res.data.message ? res.data.message : 'Error');
+                        if (!opts.silent) {
+                            alert(res.data && res.data.message ? res.data.message : 'Error');
+                        }
                         return;
                     }
                     var d = res.data;
@@ -1262,9 +1255,62 @@
                     });
                 })
                 .fail(function () {
-                    spin($('#rch-wz-agent-spinner'), false);
-                    alert('Request failed');
+                    spin($spin, false);
+                    if (!opts.silent) {
+                        alert('Request failed');
+                    }
                 });
+        }
+
+        /**
+         * Auto-restore last draft on load.
+         * If there's no draft (or draft has no agentId), fall back to the per-user last-loaded agent
+         * so opening the wizard in a new tab after a deploy still shows the previously deployed data.
+         */
+        loadDraft(true);
+
+        (function pollHydrate() {
+            if (!draftHydrationDone) {
+                setTimeout(pollHydrate, 80);
+                return;
+            }
+            if (state.agentId || getScope() !== 'single') {
+                return;
+            }
+            var lastId = parseInt(rchAgentWizard.lastAgentId || 0, 10);
+            if (lastId <= 0) {
+                return;
+            }
+            $('#rch-wz-agent-select').val(String(lastId));
+            loadAgentAndRepaint(lastId, { silent: true });
+        })();
+
+        $('input[name="rch_wz_scope"]').on('change', function () {
+            $('#rch-wz-single-agent-wrap').toggle(getScope() === 'single');
+            $('.rch-wz-theme-row').each(function () {
+                updateMetaPreview($(this));
+            });
+        });
+
+        $('#rch-wz-load-agent').on('click', function () {
+            var id = parseInt($('#rch-wz-agent-select').val(), 10);
+            if (!id) {
+                alert(rchAgentWizard.strings.pickAgent);
+                return;
+            }
+            loadAgentAndRepaint(id, { silent: false });
+        });
+
+        // Auto-load when the user picks an agent from the dropdown (no need to click Load Agent).
+        $('#rch-wz-agent-select').on('change', function () {
+            if (getScope() !== 'single') {
+                return;
+            }
+            var id = parseInt($(this).val(), 10);
+            if (!id || id === state.agentId) {
+                return;
+            }
+            loadAgentAndRepaint(id, { silent: true });
         });
 
         $(document)

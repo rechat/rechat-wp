@@ -857,6 +857,8 @@ function rch_agent_wizard_ajax_load_agent(): void
     $current_theme   = rch_agent_wizard_read_destination_theme_options((int) $blog_id);
     $last_deployment = rch_agent_wizard_read_destination_last_deployment((int) $blog_id);
 
+    update_user_meta(get_current_user_id(), 'rch_agent_wizard_last_agent_id', $agent_id);
+
     wp_send_json_success([
         'agent_id'        => $agent_id,
         'title'           => get_the_title($post),
@@ -1198,6 +1200,8 @@ function rch_agent_wizard_ajax_deploy(): void
     if (is_wp_error($result)) {
         wp_send_json_error(['message' => $result->get_error_message()]);
     }
+
+    update_user_meta(get_current_user_id(), 'rch_agent_wizard_last_agent_id', $agent_id);
 
     wp_send_json_success([
         'message' => __('Theme options were saved on the agent sub-site.', 'rechat-plugin'),
@@ -2063,6 +2067,14 @@ function rch_agent_wizard_enqueue_assets(string $hook): void
         'all_subsites' => count(rch_agent_wizard_broadcast_target_blog_ids('all_subsites')),
     ];
 
+    $last_agent_id = (int) get_user_meta(get_current_user_id(), 'rch_agent_wizard_last_agent_id', true);
+    if ($last_agent_id > 0) {
+        $last_post = get_post($last_agent_id);
+        if (! $last_post || $last_post->post_type !== 'agents') {
+            $last_agent_id = 0;
+        }
+    }
+
     wp_localize_script(
         'rch-agent-site-wizard',
         'rchAgentWizard',
@@ -2072,6 +2084,7 @@ function rch_agent_wizard_enqueue_assets(string $hook): void
             'themeKeys'      => $theme_keys,
             'metaboxLabels'  => $metabox_labels,
             'bulkCount'      => rch_agent_wizard_count_agents_with_subsites(),
+            'lastAgentId'    => $last_agent_id,
             'broadcastStep'  => $bc_step,
             'broadcastSource' => [
                 'blog_id' => $bc_source,
