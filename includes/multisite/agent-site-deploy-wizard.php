@@ -751,9 +751,60 @@ function rch_agent_wizard_deploy_to_agent_blog(int $agent_id, array $theme_rows)
         update_option($mirror, $merged, false);
     }
 
+    rch_agent_wizard_record_last_deployment_in_blog($agent_id, $theme_rows);
+
     restore_current_blog();
 
     return true;
+}
+
+/**
+ * Record the last wizard deployment row config + raw deployed values on the agent sub-site so the
+ * wizard can repaint with the exact modes (skip/manual/meta) and values the user picked.
+ *
+ * Must be called inside `switch_to_blog($blog_id)`.
+ *
+ * @param array<string, array{mode:string, value?:mixed, meta_key?:string}> $theme_rows
+ */
+function rch_agent_wizard_record_last_deployment_in_blog(int $agent_id, array $theme_rows): void
+{
+    $allowed_meta = array_flip(array_keys(rch_agent_wizard_importable_field_defs_resolved()));
+    $clean_rows   = [];
+
+    foreach ($theme_rows as $key => $cfg) {
+        if (! is_string($key) || ! is_array($cfg)) {
+            continue;
+        }
+
+        $mode = isset($cfg['mode']) ? sanitize_key((string) $cfg['mode']) : 'skip';
+        if (! in_array($mode, ['skip', 'manual', 'meta'], true)) {
+            continue;
+        }
+
+        $entry = ['mode' => $mode];
+
+        if ($mode === 'manual') {
+            $entry['value'] = $cfg['value'] ?? '';
+        }
+
+        if ($mode === 'meta') {
+            $mk = isset($cfg['meta_key']) ? sanitize_key((string) $cfg['meta_key']) : '';
+            if ($mk === '' || ! isset($allowed_meta[$mk])) {
+                continue;
+            }
+            $entry['meta_key'] = $mk;
+        }
+
+        $clean_rows[$key] = $entry;
+    }
+
+    $payload = [
+        'agent_id'   => $agent_id,
+        'theme_rows' => $clean_rows,
+        'updated_at' => time(),
+    ];
+
+    update_option('rch_agent_wizard_last_deployment', wp_json_encode($payload), false);
 }
 
 /**
@@ -803,14 +854,139 @@ function rch_agent_wizard_ajax_load_agent(): void
 
     $blog_id = function_exists('rch_multisite_get_agent_blog_id') ? rch_multisite_get_agent_blog_id($agent_id) : 0;
 
+    $current_theme   = rch_agent_wizard_read_destination_theme_options((int) $blog_id);
+    $last_deployment = rch_agent_wizard_read_destination_last_deployment((int) $blog_id);
+
     wp_send_json_success([
-        'agent_id'   => $agent_id,
-        'title'      => get_the_title($post),
-        'blog_id'    => $blog_id,
-        'meta'       => $meta,
-        'defs'       => $defs,
-        'theme_keys' => rch_agent_wizard_theme_key_labels(),
+        'agent_id'        => $agent_id,
+        'title'           => get_the_title($post),
+        'blog_id'         => $blog_id,
+        'meta'            => $meta,
+        'defs'            => $defs,
+        'theme_keys'      => rch_agent_wizard_theme_key_labels(),
+        'current_theme'   => $current_theme,
+        'last_deployment' => $last_deployment,
     ]);
+}
+
+/**
+ * Read the last wizard deployment row config from the agent sub-site (for re-edit in the wizard).
+ *
+ * Returns the row config exactly as the user picked it (mode = skip/manual/meta + value/meta_key).
+ *
+ * @return array{theme_rows: array<string, array{mode:string, value?:mixed, meta_key?:string}>, updated_at: int}|null
+ */
+function rch_agent_wizard_read_destination_last_deployment(int $blog_id): ?array
+{
+    if ($blog_id <= 0 || ! is_multisite()) {
+        return null;
+    }
+
+    switch_to_blog($blog_id);
+    $raw = get_option('rch_agent_wizard_last_deployment', '');
+    restore_current_blog();
+
+    if (! is_string($raw) || $raw === '') {
+        return null;
+    }
+
+    $decoded = json_decode($raw, true);
+    if (! is_array($decoded) || empty($decoded['theme_rows']) || ! is_array($decoded['theme_rows'])) {
+        return null;
+    }
+
+    $allowed_themes = array_flip(rch_agent_wizard_allowed_theme_option_keys());
+    $allowed_meta   = array_flip(array_keys(rch_agent_wizard_importable_field_defs_resolved()));
+    $clean          = [];
+
+    foreach ($decoded['theme_rows'] as $key => $cfg) {
+        if (! is_string($key) || ! isset($allowed_themes[$key]) || ! is_array($cfg)) {
+            continue;
+        }
+
+        $mode = isset($cfg['mode']) ? sanitize_key((string) $cfg['mode']) : 'skip';
+        if (! in_array($mode, ['skip', 'manual', 'meta'], true)) {
+            continue;
+        }
+
+        $entry = ['mode' => $mode];
+
+        if ($mode === 'manual') {
+            $entry['value'] = $cfg['value'] ?? '';
+        }
+
+        if ($mode === 'meta') {
+            $mk = isset($cfg['meta_key']) ? sanitize_key((string) $cfg['meta_key']) : '';
+            if ($mk === '' || ! isset($allowed_meta[$mk])) {
+                continue;
+            }
+            $entry['meta_key'] = $mk;
+        }
+
+        $clean[$key] = $entry;
+    }
+
+    return [
+        'theme_rows' => $clean,
+        'updated_at' => isset($decoded['updated_at']) ? (int) $decoded['updated_at'] : 0,
+    ];
+}
+
+/**
+ * Read the agent sub-site's currently saved theme options (for re-edit in the wizard).
+ *
+ * Reads `storage_primary` (e.g. `pentama_options_v2`), then merges from `storage_mirror`
+ * (e.g. `pentama_options_agent_website`). Only keys allowed by the wizard profile are returned.
+ *
+ * Tag arrays are returned as PHP arrays — wp_send_json encodes them as JSON arrays.
+ *
+ * @return array<string, mixed>
+ */
+function rch_agent_wizard_read_destination_theme_options(int $blog_id): array
+{
+    if ($blog_id <= 0 || ! is_multisite()) {
+        return [];
+    }
+
+    $allowed = array_flip(rch_agent_wizard_allowed_theme_option_keys());
+
+    switch_to_blog($blog_id);
+
+    $dest_stylesheet = (string) get_option('stylesheet');
+    $profile         = rch_agent_wizard_get_theme_profile($dest_stylesheet);
+
+    $primary = isset($profile['storage_primary']) && is_string($profile['storage_primary'])
+        ? $profile['storage_primary']
+        : 'pentama_options_v2';
+    $mirror  = array_key_exists('storage_mirror', $profile) ? $profile['storage_mirror'] : 'pentama_options_agent_website';
+
+    $primary_data = get_option($primary, []);
+    if (! is_array($primary_data)) {
+        $primary_data = [];
+    }
+
+    $mirror_data = [];
+    if (is_string($mirror) && $mirror !== '' && $mirror !== $primary) {
+        $maybe = get_option($mirror, []);
+        if (is_array($maybe)) {
+            $mirror_data = $maybe;
+        }
+    }
+
+    restore_current_blog();
+
+    // Primary wins on key conflict; mirror fills missing keys (legacy data).
+    $merged = array_merge($mirror_data, $primary_data);
+
+    $out = [];
+    foreach ($merged as $key => $value) {
+        if (! is_string($key) || ! isset($allowed[$key])) {
+            continue;
+        }
+        $out[$key] = $value;
+    }
+
+    return $out;
 }
 
 /**

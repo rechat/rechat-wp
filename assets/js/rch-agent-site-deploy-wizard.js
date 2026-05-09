@@ -875,6 +875,88 @@
         refreshWizardTagChips();
     }
 
+    /**
+     * Apply the last deployed row config (modes + values + meta_key) to rows still on `skip`.
+     * Lets us repaint the wizard with manual/meta modes the user originally chose.
+     */
+    function applyLastDeploymentRowsToEmptyRows(rows) {
+        if (!rows || typeof rows !== 'object') {
+            return;
+        }
+        $.each(rows, function (key, cfg) {
+            if (!cfg || typeof cfg !== 'object') {
+                return;
+            }
+            var $row = $rowForKey(key);
+            if (!$row.length) {
+                return;
+            }
+            var $mode = $row.find('.rch-wz-row-mode');
+            var currentMode = String($mode.val() || 'skip');
+            if (currentMode !== 'skip') {
+                return;
+            }
+            var mode = String(cfg.mode || 'skip');
+            if (mode !== 'manual' && mode !== 'meta') {
+                return;
+            }
+            $mode.val(mode);
+            if (cfg.meta_key) {
+                $row.find('.rch-wz-row-meta').val(cfg.meta_key);
+            }
+            if (mode === 'manual' && cfg.value !== undefined && cfg.value !== null) {
+                $row.find('.rch-wz-row-value').val(cfg.value).trigger('change');
+            }
+            syncRowVisibility($row);
+            updateMetaPreview($row);
+        });
+        refreshWizardTagChips();
+    }
+
+    /**
+     * Seed rows still in `skip` (no draft override) from the agent sub-site's saved theme options.
+     * Tag arrays are JSON-stringified so the hidden input round-trips chip rendering.
+     */
+    function applyCurrentThemeOptionsToEmptyRows(opts) {
+        if (!opts || typeof opts !== 'object') {
+            return;
+        }
+        $.each(opts, function (key, value) {
+            var $row = $rowForKey(key);
+            if (!$row.length) {
+                return;
+            }
+            var $mode = $row.find('.rch-wz-row-mode');
+            var currentMode = String($mode.val() || 'skip');
+            if (currentMode !== 'skip') {
+                return;
+            }
+            var serialized = '';
+            if ($.isArray(value)) {
+                try {
+                    serialized = JSON.stringify(value);
+                } catch (e) {
+                    serialized = '[]';
+                }
+                if (serialized === '[]') {
+                    return;
+                }
+            } else if (value === null || value === undefined) {
+                return;
+            } else {
+                serialized = String(value);
+                if (serialized === '') {
+                    return;
+                }
+            }
+            $mode.val('manual');
+            $row.find('.rch-wz-row-value').val(serialized).trigger('change');
+            syncRowVisibility($row);
+            updateMetaPreview($row);
+        });
+        refreshWizardTagChips();
+    }
+
     function buildDraftPayload(saveSrc) {
         var payload = {
             draftVersion: 4,
@@ -1088,12 +1170,19 @@
                         agent_id: dr.agentId,
                     })
                         .done(function (ar) {
+                            var current_theme = null;
+                            var last_deployment_rows = null;
                             if (ar.success && ar.data) {
                                 var d = ar.data;
                                 state.agentId = d.agent_id;
                                 state.blogId = d.blog_id;
                                 state.title = d.title;
                                 state.meta = d.meta || {};
+                                current_theme = d.current_theme || null;
+                                last_deployment_rows =
+                                    d.last_deployment && d.last_deployment.theme_rows
+                                        ? d.last_deployment.theme_rows
+                                        : null;
                                 $('#rch-wz-agent-summary')
                                     .removeAttr('hidden')
                                     .html(
@@ -1105,6 +1194,8 @@
                                     );
                             }
                             applyRestOfDraft();
+                            applyLastDeploymentRowsToEmptyRows(last_deployment_rows);
+                            applyCurrentThemeOptionsToEmptyRows(current_theme);
                         })
                         .fail(function () {
                             applyRestOfDraft();
@@ -1160,6 +1251,12 @@
                                 d.blog_id +
                                 '</p>'
                         );
+                    applyLastDeploymentRowsToEmptyRows(
+                        d.last_deployment && d.last_deployment.theme_rows
+                            ? d.last_deployment.theme_rows
+                            : null
+                    );
+                    applyCurrentThemeOptionsToEmptyRows(d.current_theme || null);
                     $('.rch-wz-theme-row').each(function () {
                         updateMetaPreview($(this));
                     });
