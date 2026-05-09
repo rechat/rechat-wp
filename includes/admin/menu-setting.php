@@ -40,7 +40,7 @@ add_action('admin_menu', 'rch_register_my_setting_menu_page');
  ******************************/
 function rch_get_active_tab()
 {
-    $allowed_tabs = ['sync-data', 'connect-to-rechat', 'lead-capture', 'general-settings', 'local-logic'];
+    $allowed_tabs = ['sync-data', 'connect-to-rechat', 'general-settings', 'local-logic'];
 
     if (rch_rechat_settings_is_multisite_hub_admin_context()) {
         $allowed_tabs[] = 'multisite';
@@ -48,7 +48,12 @@ function rch_get_active_tab()
     }
 
     $tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'sync-data';
-    
+
+    // Lead Capture tab merged into General Settings (preserve old links).
+    if ($tab === 'lead-capture') {
+        $tab = 'general-settings';
+    }
+
     return in_array($tab, $allowed_tabs, true) ? $tab : 'sync-data';
 }
 
@@ -60,9 +65,8 @@ function rch_render_tab_navigation($active_tab)
     $tabs = [
         'sync-data' => __('Sync Your Data', 'rechat-plugin'),
         'connect-to-rechat' => __('Connect To Rechat', 'rechat-plugin'),
-        'lead-capture' => __('Lead Capture', 'rechat-plugin'),
         'general-settings' => __('General Settings', 'rechat-plugin'),
-        'local-logic' => __('Local Logic Settings', 'rechat-plugin'),
+        'local-logic' => __('Local Logic and Google Map Setting', 'rechat-plugin'),
     ];
 
     if (rch_rechat_settings_is_multisite_hub_admin_context()) {
@@ -124,10 +128,6 @@ function rch_rechat_menu_page()
                     
                 case 'connect-to-rechat':
                     rch_render_connect_tab($auth_url, $access_token_exists, $refresh_token_exists, $has_oauth_credentials);
-                    break;
-                    
-                case 'lead-capture':
-                    rch_render_lead_capture_tab();
                     break;
                     
                 case 'general-settings':
@@ -504,34 +504,19 @@ function rch_render_disconnect_modal()
 }
 
 /*******************************
- * Render Lead Capture tab
- ******************************/
-function rch_render_lead_capture_tab()
-{
-    ?>
-    <div class="tab-content">
-        <form method="POST" action="options.php">
-            <?php
-            settings_fields('appearance_settings');
-            do_settings_sections('appearance_setting');
-            submit_button();
-            ?>
-        </form>
-    </div>
-    <?php
-}
-
-/*******************************
- * Render General Settings tab
+ * Render General Settings tab (includes lead capture / appearance options)
  ******************************/
 function rch_render_general_settings_tab()
 {
+    $appearance_group = defined('RCH_APPEARANCE_SETTINGS_GROUP') ? RCH_APPEARANCE_SETTINGS_GROUP : 'appearance_settings';
     ?>
     <div class="tab-content">
         <form method="POST" action="options.php">
             <?php
             settings_fields('general_settings');
             do_settings_sections('general_settings');
+            settings_fields($appearance_group);
+            do_settings_sections('appearance_setting');
             submit_button();
             ?>
         </form>

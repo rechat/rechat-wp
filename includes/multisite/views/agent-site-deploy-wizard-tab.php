@@ -69,11 +69,6 @@ $wz_broadcast_step = function_exists('rch_agent_wizard_broadcast_step_enabled') 
                     if ($wz_opt_mirror !== '') {
                         $opts .= ' + ' . $wz_opt_mirror;
                     }
-                    printf(
-                        /* translators: 1: comma-separated option names (e.g. pentama_options_v2) */
-                        esc_html__('On this network default, values merge into: %s.', 'rechat-plugin'),
-                        esc_html($opts)
-                    );
                     ?>
                 </p>
             <?php endif; ?>

@@ -409,38 +409,19 @@ function rch_render_lead_capture_field($args)
  ******************************/
 function rch_render_lead_channel_select($option_name)
 {
-    $response = rch_fetch_lead_channels();
-
-    if (!$response['success']) {
-        echo '<p class="description error">' . esc_html($response['message']) . '</p>';
-        return;
-    }
-
-    $data = $response['data'];
-    if (empty($data['data'])) {
-        echo '<p class="description">' . esc_html__('No channels available', 'rechat-plugin') . '</p>';
-        return;
-    }
-
-    $selected_channel = get_option($option_name, '');
     $field_id = esc_attr($option_name);
-
-    printf('<select id="%s" name="%s">', $field_id, $field_id);
-    printf('<option value="">%s</option>', esc_html__('Select Lead Channel', 'rechat-plugin'));
-
-    foreach ($data['data'] as $channel) {
-        $id = esc_attr($channel['id']);
-        $title = !empty($channel['title']) ? esc_html($channel['title']) : esc_html__('Unnamed', 'rechat-plugin');
-
-        printf(
-            '<option value="%s"%s>%s</option>',
-            $id,
-            selected($id, $selected_channel, false),
-            $title
-        );
-    }
-
-    echo '</select>';
+    $saved     = (string) get_option($option_name, '');
+    ?>
+    <div class="rch-async-lead-channel" data-rch-lead-channel-async="1" data-selected="<?php echo esc_attr($saved); ?>">
+        <p class="description rch-lead-channel-loading-msg" style="margin:0 0 8px;">
+            <span class="spinner is-active" style="float:none;margin:0 6px 0 0;vertical-align:middle;visibility:visible;"></span>
+            <?php esc_html_e('Loading lead sources…', 'rechat-plugin'); ?>
+        </p>
+        <select id="<?php echo $field_id; ?>" name="<?php echo $field_id; ?>" class="rch-lead-channel-select regular-text" disabled style="display:none;"></select>
+        <p class="description rch-lead-channel-empty" style="display:none;margin-top:6px;"><?php esc_html_e('No lead sources available.', 'rechat-plugin'); ?></p>
+        <p class="description rch-lead-channel-error" style="display:none;margin-top:6px;color:#b32d2d;"></p>
+    </div>
+    <?php
 }
 
 /*******************************
@@ -448,124 +429,31 @@ function rch_render_lead_channel_select($option_name)
  ******************************/
 function rch_render_tags_select($option_name, $select_id, $container_id, $hidden_input_id)
 {
-    $response = rch_fetch_tags();
-
-    if (!$response['success']) {
-        echo '<p class="description error">' . esc_html($response['message']) . '</p>';
-        return;
-    }
-
-    $data = $response['data'];
-    if (empty($data['data'])) {
-        echo '<p class="description">' . esc_html__('No tags available', 'rechat-plugin') . '</p>';
-        return;
-    }
-
     $selected_tags_json = get_option($option_name, '[]');
-    $selected_tags = json_decode($selected_tags_json, true);
-
-    if (!is_array($selected_tags)) {
+    $selected_tags     = json_decode((string) $selected_tags_json, true);
+    if (! is_array($selected_tags)) {
         $selected_tags = [];
     }
-
-    // Render select dropdown
-    printf('<select id="%s" style="width:100%%; margin-bottom:10px;">', esc_attr($select_id));
-    printf('<option value="" disabled selected>%s</option>', esc_html__('Please select a tag', 'rechat-plugin'));
-
-    foreach ($data['data'] as $tag) {
-        $name = !empty($tag['tag']) ? esc_html($tag['tag']) : esc_html__('Unnamed', 'rechat-plugin');
-        printf('<option value="%s">%s</option>', esc_attr($name), $name);
-    }
-
-    echo '</select>';
-
-    // Container for selected tags chips
-    printf('<div id="%s" style="margin-bottom:10px;"></div>', esc_attr($container_id));
-
-    // Hidden input to store selected tags
-    printf(
-        '<input type="hidden" name="%s" id="%s" value="%s">',
-        esc_attr($option_name),
-        esc_attr($hidden_input_id),
-        esc_attr(wp_json_encode($selected_tags))
-    );
-
-    // Enqueue inline JavaScript for tag chips functionality
-    rch_render_tags_script($select_id, $container_id, $hidden_input_id);
-}
-
-/*******************************
- * Render JavaScript for tag chips
- ******************************/
-function rch_render_tags_script($select_id, $container_id, $hidden_input_id)
-{
-?>
-    <script>
-        (function() {
-            'use strict';
-
-            document.addEventListener('DOMContentLoaded', function() {
-                const selectBox = document.getElementById(<?php echo wp_json_encode($select_id); ?>);
-                const selectedTagsContainer = document.getElementById(<?php echo wp_json_encode($container_id); ?>);
-                const hiddenInput = document.getElementById(<?php echo wp_json_encode($hidden_input_id); ?>);
-
-                if (!selectBox || !selectedTagsContainer || !hiddenInput) {
-                    return;
-                }
-
-                let selectedTagNames = [];
-
-                try {
-                    selectedTagNames = hiddenInput.value ? JSON.parse(hiddenInput.value) : [];
-                } catch (e) {
-                    selectedTagNames = [];
-                }
-
-                function renderChips() {
-                    selectedTagsContainer.innerHTML = '';
-
-                    selectedTagNames.forEach(function(tagName) {
-                        const chip = document.createElement('span');
-                        chip.textContent = tagName;
-                        chip.className = 'tag-chip';
-                        chip.style.cssText = 'display: inline-block; margin: 0 5px 5px 0; padding: 5px 10px; background-color: #ddd; border-radius: 3px; cursor: default;';
-
-                        const closeBtn = document.createElement('span');
-                        closeBtn.textContent = ' ×';
-                        closeBtn.style.cssText = 'margin-left: 5px; cursor: pointer; font-weight: bold;';
-                        closeBtn.setAttribute('aria-label', 'Remove tag');
-                        closeBtn.onclick = function() {
-                            selectedTagNames = selectedTagNames.filter(tag => tag !== tagName);
-                            updateHiddenInput();
-                            renderChips();
-                        };
-
-                        chip.appendChild(closeBtn);
-                        selectedTagsContainer.appendChild(chip);
-                    });
-                }
-
-                function updateHiddenInput() {
-                    hiddenInput.value = JSON.stringify(selectedTagNames);
-                }
-
-                selectBox.addEventListener('change', function() {
-                    const selectedTagName = selectBox.value;
-
-                    if (selectedTagName && selectedTagNames.indexOf(selectedTagName) === -1) {
-                        selectedTagNames.push(selectedTagName);
-                        updateHiddenInput();
-                        renderChips();
-                    }
-
-                    selectBox.value = '';
-                });
-
-                renderChips();
-            });
-        })();
-    </script>
-<?php
+    $hidden_value = wp_json_encode($selected_tags, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+    ?>
+    <div
+        class="rch-async-tags"
+        data-rch-tags-async="1"
+        data-select-id="<?php echo esc_attr($select_id); ?>"
+        data-container-id="<?php echo esc_attr($container_id); ?>"
+        data-hidden-input-id="<?php echo esc_attr($hidden_input_id); ?>"
+    >
+        <p class="description rch-tags-loading-msg" style="margin:0 0 8px;">
+            <span class="spinner is-active" style="float:none;margin:0 6px 0 0;vertical-align:middle;visibility:visible;"></span>
+            <?php esc_html_e('Loading tags…', 'rechat-plugin'); ?>
+        </p>
+        <select id="<?php echo esc_attr($select_id); ?>" style="width:100%;margin-bottom:10px;display:none;" disabled></select>
+        <div id="<?php echo esc_attr($container_id); ?>" class="rch-tags-chip-wrap" style="margin-bottom:10px;display:none;"></div>
+        <input type="hidden" name="<?php echo esc_attr($option_name); ?>" id="<?php echo esc_attr($hidden_input_id); ?>" value="<?php echo esc_attr($hidden_value); ?>">
+        <p class="description rch-tags-empty" style="display:none;"><?php esc_html_e('No tags available.', 'rechat-plugin'); ?></p>
+        <p class="description rch-tags-error" style="display:none;color:#b32d2d;"></p>
+    </div>
+    <?php
 }
 
 /*******************************
@@ -658,3 +546,79 @@ function rch_ajax_fetch_boundary_countries()
 }
 
 add_action('wp_ajax_rch_fetch_boundary_countries', 'rch_ajax_fetch_boundary_countries');
+
+/**
+ * AJAX: lead channels for Rechat settings (async UI).
+ */
+function rch_ajax_fetch_lead_channels_settings()
+{
+    if (! check_ajax_referer('rch_ajax_nonce', 'nonce', false)) {
+        wp_send_json_error(['message' => __('Security check failed.', 'rechat-plugin')]);
+    }
+
+    if (! function_exists('rch_current_user_can_manage_rechat') || ! rch_current_user_can_manage_rechat()) {
+        wp_send_json_error(['message' => __('Insufficient permissions.', 'rechat-plugin')]);
+    }
+
+    $response = rch_fetch_lead_channels();
+    if (empty($response['success'])) {
+        $msg = isset($response['message']) ? (string) $response['message'] : __('Could not load lead sources.', 'rechat-plugin');
+        wp_send_json_error(['message' => $msg]);
+    }
+
+    $data = isset($response['data']) && is_array($response['data']) ? $response['data'] : [];
+    $rows = isset($data['data']) && is_array($data['data']) ? $data['data'] : [];
+    $out  = [];
+
+    foreach ($rows as $channel) {
+        if (! is_array($channel)) {
+            continue;
+        }
+        $out[] = [
+            'id'    => isset($channel['id']) ? (string) $channel['id'] : '',
+            'title' => isset($channel['title']) ? (string) $channel['title'] : '',
+        ];
+    }
+
+    wp_send_json_success(['channels' => $out]);
+}
+
+add_action('wp_ajax_rch_fetch_lead_channels_settings', 'rch_ajax_fetch_lead_channels_settings');
+
+/**
+ * AJAX: contact tags for Rechat settings (async UI).
+ */
+function rch_ajax_fetch_tags_settings()
+{
+    if (! check_ajax_referer('rch_ajax_nonce', 'nonce', false)) {
+        wp_send_json_error(['message' => __('Security check failed.', 'rechat-plugin')]);
+    }
+
+    if (! function_exists('rch_current_user_can_manage_rechat') || ! rch_current_user_can_manage_rechat()) {
+        wp_send_json_error(['message' => __('Insufficient permissions.', 'rechat-plugin')]);
+    }
+
+    $response = rch_fetch_tags();
+    if (empty($response['success'])) {
+        $msg = isset($response['message']) ? (string) $response['message'] : __('Could not load tags.', 'rechat-plugin');
+        wp_send_json_error(['message' => $msg]);
+    }
+
+    $data = isset($response['data']) && is_array($response['data']) ? $response['data'] : [];
+    $rows = isset($data['data']) && is_array($data['data']) ? $data['data'] : [];
+    $out  = [];
+
+    foreach ($rows as $tag) {
+        if (! is_array($tag)) {
+            continue;
+        }
+        $name = isset($tag['tag']) ? trim((string) $tag['tag']) : '';
+        if ($name !== '') {
+            $out[] = ['tag' => $name];
+        }
+    }
+
+    wp_send_json_success(['tags' => $out]);
+}
+
+add_action('wp_ajax_rch_fetch_tags_settings', 'rch_ajax_fetch_tags_settings');
