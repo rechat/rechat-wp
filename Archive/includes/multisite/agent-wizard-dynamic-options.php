@@ -1,0 +1,612 @@
+<?php
+/**
+ * Dynamic theme option resolution + wizard field discovery for agent deploy wizard.
+ *
+ * @package Rechat
+ */
+
+if (! defined('ABSPATH')) {
+    exit;
+}
+
+/**
+ * @param string $haystack ASCII-safe substring search for option keys.
+ */
+function rch_agent_wizard_str_contains_ci(string $haystack, string $needle): bool
+{
+    if ($needle === '') {
+        return true;
+    }
+
+    return strpos(strtolower($haystack), strtolower($needle)) !== false;
+}
+
+/**
+ * @param string $haystack
+ */
+function rch_agent_wizard_str_ends_with(string $haystack, string $suffix): bool
+{
+    $len = strlen($suffix);
+
+    return $len === 0 || substr($haystack, -$len) === $suffix;
+}
+
+/**
+ * Optional JSON in theme root: rechat-agent-wizard.json
+ *
+ * @return array<string, mixed>|null
+ */
+function rch_agent_wizard_load_theme_manifest(string $stylesheet): ?array
+{
+    $stylesheet = is_string($stylesheet) ? preg_replace('/[^a-zA-Z0-9._\-]/', '', $stylesheet) : '';
+    if ($stylesheet === '') {
+        return null;
+    }
+
+    $path = trailingslashit(get_theme_root()) . $stylesheet . '/rechat-agent-wizard.json';
+    if (! is_readable($path)) {
+        return null;
+    }
+
+    $json = file_get_contents($path);
+    if (! is_string($json) || $json === '') {
+        return null;
+    }
+
+    $data = json_decode($json, true);
+
+    return is_array($data) ? $data : null;
+}
+
+/**
+ * Heuristic: discover option key + fields from a theme's includes/themeoption.php.
+ *
+ * Looks for update_option('option_name', ...) and array keys in $pentama_options = [ ... ].
+ *
+ * @return array{storage:array{primary:string,mirror:?string},fields:list<array{key:string,label:string,type:string,media:string}>}|null
+ */
+function rch_agent_wizard_discover_from_themeoption_php(string $stylesheet): ?array
+{
+    $stylesheet = is_string($stylesheet) ? preg_replace('/[^a-zA-Z0-9._\-]/', '', $stylesheet) : '';
+    if ($stylesheet === '') {
+        return null;
+    }
+
+    $path = trailingslashit(get_theme_root()) . $stylesheet . '/includes/themeoption.php';
+    if (! is_readable($path)) {
+        return null;
+    }
+
+    $src = file_get_contents($path);
+    if (! is_string($src) || $src === '') {
+        return null;
+    }
+
+    $primary = '';
+    if (preg_match("/update_option\\(\\s*['\\\"]([^'\\\"]+)['\\\"]\\s*,/i", $src, $m)) {
+        $primary = (string) $m[1];
+    } elseif (preg_match("/get_option\\(\\s*['\\\"]([^'\\\"]+)['\\\"]\\s*\\)/i", $src, $m2)) {
+        $primary = (string) $m2[1];
+    }
+
+    if ($primary === '') {
+        return null;
+    }
+
+    $keys = [];
+    if (preg_match_all("/['\\\"]([a-zA-Z0-9_\\-]+)['\\\"]\\s*=>/m", $src, $mm)) {
+        $keys = array_values(array_unique(array_filter($mm[1], static function ($v) {
+            return is_string($v) && $v !== '';
+        })));
+    }
+
+    if (count($keys) === 0) {
+        return null;
+    }
+
+    $fields = [];
+    foreach ($keys as $k) {
+        $infer = rch_agent_wizard_infer_field_shape($k, '');
+        $fields[] = [
+            'key'   => $k,
+            'label' => rch_agent_wizard_humanize_option_key($k),
+            'type'  => $infer['type'],
+            'media' => $infer['media'],
+        ];
+    }
+
+    return [
+        'storage' => ['primary' => $primary, 'mirror' => null],
+        'fields'  => $fields,
+    ];
+}
+
+/**
+ * Read a WordPress option as an associative array on the current blog.
+ *
+ * @return array<string, mixed>
+ */
+function rch_agent_wizard_get_option_array_current_blog(string $option_name): array
+{
+    $option_name = is_string($option_name) ? $option_name : '';
+    if ($option_name === '') {
+        return [];
+    }
+
+    $raw = get_option($option_name, []);
+
+    return is_array($raw) ? $raw : [];
+}
+
+/**
+ * Resolve primary + optional mirror option names for a theme stylesheet.
+ *
+ * @return array{primary:string, mirror:?string}
+ */
+function rch_agent_wizard_resolve_storage_config(string $stylesheet): array
+{
+    $stylesheet = is_string($stylesheet) ? $stylesheet : '';
+
+    $filtered = apply_filters('rch_agent_wizard_storage_config', null, $stylesheet);
+    if (is_array($filtered) && ! empty($filtered['primary']) && is_string($filtered['primary'])) {
+        $mirror = isset($filtered['mirror']) && is_string($filtered['mirror']) && $filtered['mirror'] !== ''
+            ? $filtered['mirror']
+            : null;
+
+        return [
+            'primary' => $filtered['primary'],
+            'mirror'  => $mirror,
+        ];
+    }
+
+    $map = get_site_option('rch_agent_wizard_theme_storage_map', []);
+    if (is_string($map) && $map !== '') {
+        $decoded = json_decode($map, true);
+        $map     = is_array($decoded) ? $decoded : [];
+    }
+    if (! is_array($map)) {
+        $map = [];
+    }
+
+    if (isset($map[ $stylesheet ]) && is_array($map[ $stylesheet ]) && ! empty($map[ $stylesheet ]['primary'])) {
+        $p = (string) $map[ $stylesheet ]['primary'];
+        $m = isset($map[ $stylesheet ]['mirror']) && is_string($map[ $stylesheet ]['mirror']) && $map[ $stylesheet ]['mirror'] !== ''
+            ? (string) $map[ $stylesheet ]['mirror']
+            : null;
+
+        return ['primary' => $p, 'mirror' => $m];
+    }
+
+    $manifest = rch_agent_wizard_load_theme_manifest($stylesheet);
+    if (is_array($manifest) && isset($manifest['storage']) && is_array($manifest['storage']) && ! empty($manifest['storage']['primary'])) {
+        $p = (string) $manifest['storage']['primary'];
+        $m = isset($manifest['storage']['mirror']) && is_string($manifest['storage']['mirror']) && $manifest['storage']['mirror'] !== ''
+            ? (string) $manifest['storage']['mirror']
+            : null;
+
+        return ['primary' => $p, 'mirror' => $m];
+    }
+
+    // Best-effort: most bundled themes declare update_option() in includes/themeoption.php.
+    $disc = rch_agent_wizard_discover_from_themeoption_php($stylesheet);
+    if (is_array($disc) && ! empty($disc['storage']['primary']) && is_string($disc['storage']['primary'])) {
+        return [
+            'primary' => (string) $disc['storage']['primary'],
+            'mirror'  => null,
+        ];
+    }
+
+    // Unknown theme: no safe default. Caller should show empty state or configure mapping.
+    return ['primary' => '', 'mirror' => null];
+}
+
+/**
+ * Human-readable label from option key slug.
+ */
+function rch_agent_wizard_humanize_option_key(string $key): string
+{
+    $key = str_replace(['rch-', 'rch_'], '', $key);
+    $key = str_replace(['-', '_'], ' ', $key);
+
+    return ucwords(trim($key));
+}
+
+/**
+ * Infer field UI + sanitize buckets from key name and sample value.
+ *
+ * @return array{type:string, media:string, buckets:array<string, list<string>>}
+ */
+function rch_agent_wizard_infer_field_shape(string $key, $sample_value): array
+{
+    $kl = strtolower($key);
+    $b  = [
+        'urls'          => [],
+        'textareas'     => [],
+        'textarea_json' => [],
+        'numbers'       => [],
+        'wp_kses'       => [],
+        'color'         => [],
+        'image_media'   => [],
+        'video_media'   => [],
+        'select'        => [],
+    ];
+
+    $type  = 'text';
+    $media = '';
+
+    if (rch_agent_wizard_str_contains_ci($kl, 'lead-channel') || rch_agent_wizard_str_contains_ci($kl, 'lead_channel')) {
+        $b['select'][] = $key;
+
+        return ['type' => 'select', 'media' => '', 'buckets' => $b];
+    }
+
+    if (
+        rch_agent_wizard_str_contains_ci($kl, 'selected-tags')
+        || rch_agent_wizard_str_contains_ci($kl, 'selected_tags')
+        || strtolower((string) $key) === 'rch_selected_tags'
+    ) {
+        $b['textarea_json'][] = $key;
+
+        return ['type' => 'textarea_json', 'media' => '', 'buckets' => $b];
+    }
+
+    if (is_array($sample_value)) {
+        $b['textarea_json'][] = $key;
+
+        return ['type' => 'textarea_json', 'media' => '', 'buckets' => $b];
+    }
+
+    if (rch_agent_wizard_str_contains_ci($kl, 'shortcode')) {
+        $b['wp_kses'][] = $key;
+
+        return ['type' => 'text', 'media' => '', 'buckets' => $b];
+    }
+
+    if (rch_agent_wizard_str_contains_ci($kl, 'color')) {
+        $b['color'][] = $key;
+
+        return ['type' => 'text', 'media' => '', 'buckets' => $b];
+    }
+
+    if (preg_match('/(^|-)video($|-)/', $kl) || rch_agent_wizard_str_contains_ci($kl, '-video')) {
+        $b['urls'][]         = $key;
+        $b['video_media'][]  = $key;
+
+        return ['type' => 'url', 'media' => 'video', 'buckets' => $b];
+    }
+
+    if (
+        rch_agent_wizard_str_contains_ci($kl, 'image')
+        || rch_agent_wizard_str_contains_ci($kl, 'logo')
+        || rch_agent_wizard_str_contains_ci($kl, 'thumb')
+        || rch_agent_wizard_str_contains_ci($kl, 'avatar')
+    ) {
+        $b['urls'][]        = $key;
+        $b['image_media'][] = $key;
+
+        return ['type' => 'url', 'media' => 'image', 'buckets' => $b];
+    }
+
+    if (
+        rch_agent_wizard_str_contains_ci($kl, 'url')
+        || rch_agent_wizard_str_contains_ci($kl, 'link')
+        || rch_agent_wizard_str_contains_ci($kl, 'href')
+        || rch_agent_wizard_str_ends_with($kl, '-uri')
+    ) {
+        $b['urls'][] = $key;
+
+        return ['type' => 'url', 'media' => '', 'buckets' => $b];
+    }
+
+    if (rch_agent_wizard_str_contains_ci($kl, 'description') || rch_agent_wizard_str_contains_ci($kl, 'content') || rch_agent_wizard_str_contains_ci($kl, 'bio')) {
+        $b['textareas'][] = $key;
+
+        return ['type' => 'textarea', 'media' => '', 'buckets' => $b];
+    }
+
+    if (is_string($sample_value) && strlen($sample_value) > 200) {
+        $b['textareas'][] = $key;
+
+        return ['type' => 'textarea', 'media' => '', 'buckets' => $b];
+    }
+
+    if (is_string($sample_value) && $sample_value !== '' && is_numeric($sample_value)) {
+        $b['numbers'][] = $key;
+
+        return ['type' => 'number', 'media' => '', 'buckets' => $b];
+    }
+
+    if (preg_match('/(^|-)value$/', $kl) && preg_match('/counter|count|number/i', $kl)) {
+        $b['numbers'][] = $key;
+
+        return ['type' => 'number', 'media' => '', 'buckets' => $b];
+    }
+
+    if (is_string($sample_value) && preg_match('/<[a-z][\s\S]*>/i', $sample_value)) {
+        $b['wp_kses'][] = $key;
+
+        return ['type' => 'text', 'media' => '', 'buckets' => $b];
+    }
+
+    return ['type' => 'text', 'media' => '', 'buckets' => $b];
+}
+
+/**
+ * Merge bucket lists from infer into profile arrays.
+ *
+ * @param array<string, list<string>> $acc
+ * @param array<string, list<string>> $buckets
+ */
+function rch_agent_wizard_merge_buckets(array &$acc, array $buckets): void
+{
+    foreach ($buckets as $name => $list) {
+        if (! isset($acc[ $name ])) {
+            $acc[ $name ] = [];
+        }
+        foreach ($list as $k) {
+            if (is_string($k) && $k !== '' && ! in_array($k, $acc[ $name ], true)) {
+                $acc[ $name ][] = $k;
+            }
+        }
+    }
+}
+
+/**
+ * Heuristic import_defaults (meta => theme key) from discovered keys.
+ *
+ * @param list<string> $keys
+ * @return array<string, string>
+ */
+function rch_agent_wizard_dynamic_heuristic_import_defaults(array $keys): array
+{
+    $out = [];
+    foreach ($keys as $k) {
+        if (! is_string($k)) {
+            continue;
+        }
+        $kl = strtolower($k);
+        if (rch_agent_wizard_str_contains_ci($kl, 'instagram') && ! isset($out['instagram'])) {
+            $out['instagram'] = $k;
+        }
+        if ((rch_agent_wizard_str_contains_ci($kl, 'phone') || rch_agent_wizard_str_contains_ci($kl, 'tel')) && ! isset($out['phone_number'])) {
+            $out['phone_number'] = $k;
+        }
+        if (rch_agent_wizard_str_contains_ci($kl, 'listing') && (rch_agent_wizard_str_contains_ci($kl, 'url') || rch_agent_wizard_str_contains_ci($kl, 'link')) && ! isset($out['website'])) {
+            $out['website'] = $k;
+        }
+        if (
+            (rch_agent_wizard_str_contains_ci($kl, 'menu-image') || (rch_agent_wizard_str_contains_ci($kl, 'profile') && rch_agent_wizard_str_contains_ci($kl, 'image')))
+            && ! isset($out['profile_image_url'])
+        ) {
+            $out['profile_image_url'] = $k;
+        }
+        if ((rch_agent_wizard_str_contains_ci($kl, 'linkedin') || rch_agent_wizard_str_contains_ci($kl, 'linked-in')) && ! isset($out['linkedin'])) {
+            $out['linkedin'] = $k;
+        }
+        if ((rch_agent_wizard_str_contains_ci($kl, 'twitter') || $kl === 'rch-theme-x' || rch_agent_wizard_str_contains_ci($kl, '-x')) && ! isset($out['twitter'])) {
+            $out['twitter'] = $k;
+        }
+    }
+
+    /**
+     * @param array<string, string> $out
+     */
+    return apply_filters('rch_agent_wizard_dynamic_import_defaults', $out, $keys);
+}
+
+/**
+ * Build profile array (same shape as legacy) from manifest "fields" or option snapshot.
+ *
+ * @param array<string, mixed> $snapshot Merged key => sample value
+ * @return array<string, mixed>
+ */
+function rch_agent_wizard_build_dynamic_profile_from_data(
+    string $stylesheet,
+    array $storage,
+    array $snapshot,
+    ?array $manifest
+): array {
+    $keys   = [];
+    $labels = [];
+
+    $buckets = [
+        'urls'            => [],
+        'textareas'       => [],
+        'textarea_json'   => [],
+        'numbers'         => [],
+        'wp_kses'         => [],
+        'color'           => [],
+        'image_media'     => [],
+        'video_media'     => [],
+        'select'          => [],
+    ];
+
+    $select_options_by_key = [];
+
+    $from_manifest = is_array($manifest) && isset($manifest['fields']) && is_array($manifest['fields']) && $manifest['fields'] !== [];
+
+    if ($from_manifest) {
+        foreach ($manifest['fields'] as $field) {
+            if (! is_array($field) || empty($field['key']) || ! is_string($field['key'])) {
+                continue;
+            }
+            $k = sanitize_key($field['key']);
+            if ($k === '') {
+                continue;
+            }
+            $keys[]       = $k;
+            $labels[ $k ] = isset($field['label']) && is_string($field['label']) && $field['label'] !== ''
+                ? $field['label']
+                : rch_agent_wizard_humanize_option_key($k);
+            $type  = isset($field['type']) ? sanitize_key((string) $field['type']) : 'text';
+            $media = isset($field['media']) ? sanitize_key((string) $field['media']) : '';
+            $sample = $snapshot[ $k ] ?? '';
+
+            if ($type === 'textarea') {
+                $buckets['textareas'][] = $k;
+            } elseif ($type === 'textarea_json') {
+                $buckets['textarea_json'][] = $k;
+            } elseif ($type === 'select') {
+                $buckets['select'][] = $k;
+                if (! empty($field['options']) && is_array($field['options'])) {
+                    $opts = [];
+                    foreach ($field['options'] as $opt) {
+                        if (! is_array($opt)) {
+                            continue;
+                        }
+                        $ov = isset($opt['value']) ? (string) $opt['value'] : '';
+                        $ol = isset($opt['label']) && is_string($opt['label']) && $opt['label'] !== '' ? (string) $opt['label'] : $ov;
+                        if ($ov !== '') {
+                            $opts[] = ['value' => $ov, 'label' => $ol];
+                        }
+                    }
+                    if ($opts !== []) {
+                        $select_options_by_key[ $k ] = $opts;
+                    }
+                }
+            } elseif ($type === 'url') {
+                $buckets['urls'][] = $k;
+            } elseif ($type === 'number') {
+                $buckets['numbers'][] = $k;
+            } elseif ($type === 'html' || $type === 'kses') {
+                $buckets['wp_kses'][] = $k;
+            } elseif ($type === 'color') {
+                $buckets['color'][] = $k;
+            } else {
+                $infer = rch_agent_wizard_infer_field_shape($k, $sample);
+                rch_agent_wizard_merge_buckets($buckets, $infer['buckets']);
+            }
+
+            if ($media === 'image') {
+                $buckets['image_media'][] = $k;
+                if (! in_array($k, $buckets['urls'], true)) {
+                    $buckets['urls'][] = $k;
+                }
+            } elseif ($media === 'video') {
+                $buckets['video_media'][] = $k;
+                if (! in_array($k, $buckets['urls'], true)) {
+                    $buckets['urls'][] = $k;
+                }
+            }
+        }
+        $keys = array_values(array_unique($keys));
+    } else {
+        foreach ($snapshot as $k => $v) {
+            if (! is_string($k) || $k === '') {
+                continue;
+            }
+            $sk = sanitize_key($k);
+            if ($sk === '' || $sk !== $k) {
+                continue;
+            }
+            $keys[]       = $k;
+            $labels[ $k ] = rch_agent_wizard_humanize_option_key($k);
+            $infer        = rch_agent_wizard_infer_field_shape($k, $v);
+            rch_agent_wizard_merge_buckets($buckets, $infer['buckets']);
+        }
+        $keys = array_values(array_unique($keys));
+        sort($keys);
+    }
+
+    $import_defaults = rch_agent_wizard_dynamic_heuristic_import_defaults($keys);
+
+    $wizard_labels = function_exists('rch_agent_wizard_wizard_only_labels')
+        ? rch_agent_wizard_wizard_only_labels()
+        : [];
+
+    // If the theme has zero discoverable theme keys, show zero fields (per requirement).
+    $merged_keys = [];
+    if (count($keys) > 0) {
+        $merged_keys = function_exists('rch_agent_wizard_merge_wizard_keys')
+            ? rch_agent_wizard_merge_wizard_keys($keys)
+            : array_merge($keys, ['rch-wizard-agent-email', 'rch-wizard-agent-post-id', 'rch-wizard-agent-api-id', 'rch-wizard-agent-designation']);
+    }
+
+    $select_keys = isset($buckets['select']) && is_array($buckets['select'])
+        ? array_values(array_unique(array_filter($buckets['select'], 'is_string')))
+        : [];
+
+    return [
+        'keys'            => $merged_keys,
+        'labels'          => array_merge($labels, $wizard_labels),
+        'urls'            => $buckets['urls'],
+        'textareas'       => $buckets['textareas'],
+        'textarea_json'   => $buckets['textarea_json'],
+        'numbers'         => $buckets['numbers'],
+        'wp_kses'         => $buckets['wp_kses'],
+        'color'           => $buckets['color'],
+        'image_media'     => $buckets['image_media'],
+        'video_media'     => $buckets['video_media'],
+        'select_keys'     => $select_keys,
+        'select_options'  => $select_options_by_key,
+        'import_defaults' => $import_defaults,
+        'storage_primary' => $storage['primary'],
+        'storage_mirror'  => $storage['mirror'],
+        'dynamic'         => true,
+        'stylesheet'      => $stylesheet,
+    ];
+}
+
+/**
+ * Merge snapshots from primary + mirror options for discovery.
+ *
+ * @return array<string, mixed>
+ */
+function rch_agent_wizard_merge_option_snapshots(array $storage): array
+{
+    $a = rch_agent_wizard_get_option_array_current_blog($storage['primary']);
+    $b = [];
+    if (! empty($storage['mirror']) && is_string($storage['mirror'])) {
+        $b = rch_agent_wizard_get_option_array_current_blog($storage['mirror']);
+    }
+
+    return array_merge($b, $a);
+}
+
+/**
+ * @return array<string, mixed>|null Full profile or null (wizard shows empty until manifest/options exist)
+ */
+function rch_agent_wizard_try_build_dynamic_theme_profile(string $stylesheet): ?array
+{
+    $stylesheet = is_string($stylesheet) ? $stylesheet : '';
+
+    $enabled = apply_filters('rch_agent_wizard_use_dynamic_options', true, $stylesheet);
+    if (! $enabled) {
+        return null;
+    }
+
+    $storage   = rch_agent_wizard_resolve_storage_config($stylesheet);
+    if (($storage['primary'] ?? '') === '') {
+        return null;
+    }
+
+    $manifest  = rch_agent_wizard_load_theme_manifest($stylesheet);
+    $snapshot  = rch_agent_wizard_merge_option_snapshots($storage);
+
+    // Authoritative structure source: manifest fields > themeoption.php fields > stored snapshot.
+    $disc = rch_agent_wizard_discover_from_themeoption_php($stylesheet);
+    if (is_array($disc) && ! empty($disc['fields']) && is_array($disc['fields'])) {
+        $storage  = $disc['storage'];
+        $manifest = array_merge(is_array($manifest) ? $manifest : [], ['storage' => $storage, 'fields' => $disc['fields']]);
+        // refresh snapshot using discovered storage (different themes share pentama_options; we must not show leftover keys)
+        $snapshot = rch_agent_wizard_merge_option_snapshots($storage);
+    }
+
+    $has_manifest_fields = is_array($manifest)
+        && isset($manifest['fields'])
+        && is_array($manifest['fields'])
+        && $manifest['fields'] !== [];
+
+    if (! $has_manifest_fields && count($snapshot) === 0) {
+        return null;
+    }
+
+    $profile = rch_agent_wizard_build_dynamic_profile_from_data($stylesheet, $storage, $snapshot, $manifest);
+
+    /**
+     * Adjust auto-built profile before the global {@see 'rch_agent_wizard_theme_profile'} filter runs.
+     *
+     * @param array<string, mixed> $profile
+     */
+    return apply_filters('rch_agent_wizard_dynamic_theme_profile', $profile, $stylesheet, $snapshot, $manifest);
+}

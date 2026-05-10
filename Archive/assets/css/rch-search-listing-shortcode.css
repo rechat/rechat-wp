@@ -1,0 +1,86 @@
+/**
+ * [rch_search_listing_form] — layout and Rechat accent colors via wrapper CSS variables.
+ */
+
+.rch-search-listing-form {
+  position: relative;
+  z-index: 100;
+  padding: 0;
+  margin: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.rch-search-listing-form .listing-filter__dropdown_trigger,
+.rch-search-listing-form .search_address_input {
+  background-color: #fff;
+}
+
+.rch-search-listing-form .listing-filter__dropdown_trigger:hover,
+.rch-search-listing-form .search_address_input:hover {
+  background-color: #fff;
+}
+
+.rch-search-listing-form .rch-search-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  /* overflow: visible — overflow:hidden clips Rechat address suggestions (absolute dropdowns). */
+  overflow: visible;
+  max-width: 100% !important;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  align-items: stretch;
+  justify-content: center;
+  isolation: isolate;
+  z-index: 1;
+}
+
+/**
+ * Width shim for flex children (Rechat toolbar). Do not set overflow:auto/scroll here: pairing
+ * overflow-x with overflow-y:visible makes the other axis compute to auto (CSS spec), which adds
+ * a vertical scrollbar and clips the address suggestions — the “ruined UI” scrollbar.
+ */
+.rch-search-listing-form .rch-search-inner {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Suggestions panel above following sections */
+.rch-search-listing-form .search_address_input__dropdown_content {
+  z-index: 30;
+}
+
+.rch-search-listing-form .rechat-button.color-accent {
+  background-color: var(--rch-search-primary, #2563eb) !important;
+  border-color: var(--rch-search-primary, #2563eb) !important;
+  color: var(--rch-search-on-primary, #fff) !important;
+}
+
+.rch-search-listing-form .rechat-button.color-accent p {
+  color: var(--rch-search-on-primary, #fff) !important;
+}
+
+.rch-search-listing-form .rechat-switch-button input:checked + .rechat-switch-button__slider {
+  background: var(--rch-search-primary, #2563eb);
+}
+
+.rch-search-listing-form.rch-search-listing-form--with-bg .rch-search-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  background-image: var(--rch-search-bg-image);
+  background-size: contain;
+  filter: blur(3px) grayscale(0.1) brightness(70%);
+}
+
+.search_address_input__field_wrapper {
+  border:none;
+}

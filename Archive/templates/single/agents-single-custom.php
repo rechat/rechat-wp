@@ -1,0 +1,222 @@
+<?php
+/**
+ * Agent Single Page Template
+ * 
+ * This template can be overridden by copying it to yourtheme/rechat/agents-single-custom.php
+ * 
+ * IMPORTANT: This template focuses on layout/markup only. 
+ * The listing logic is loaded from the plugin to ensure you always get updates.
+ * You can customize the HTML structure below, but the core listing functionality
+ * will remain up-to-date through plugin updates.
+ * 
+ * @package Rechat
+ */
+
+get_header();
+
+// Get the current post ID
+$post_id = get_the_ID();
+
+// Retrieve the meta values
+$website = get_post_meta($post_id, 'website', true);
+$instagram = get_post_meta($post_id, 'instagram', true);
+$twitter = get_post_meta($post_id, 'twitter', true);
+$linkedin = get_post_meta($post_id, 'linkedin', true);
+$youtube = get_post_meta($post_id, 'youtube', true);
+$facebook = get_post_meta($post_id, 'facebook', true);
+$phone_number = get_post_meta($post_id, 'phone_number', true);
+$email = get_post_meta($post_id, 'email', true);
+$profile_image_url = get_post_meta($post_id, 'profile_image_url', true);
+$timezone = get_post_meta($post_id, 'timezone', true);
+$agents = get_post_meta($post_id, 'agents', true);
+$license_number = get_post_meta($post_id, 'license_number', true);
+
+?>
+
+<div id="primary" class="content-area rch-primary-content">
+    <main id="main" class="site-main content-container site-container">
+
+        <?php
+        while (have_posts()) : the_post();
+        ?>
+            <div class="rch-main-layout-single-agent">
+                <div class="rch-left-main-layout-single-agent">
+                    <div class="rch-top-single-agent">
+                        <div class="rch-left-top-single-agent">
+                            <?php
+                            // Use profile image URL if available, otherwise fall back to post thumbnail
+                            $image_url = $profile_image_url ?: get_the_post_thumbnail_url(get_the_ID(), 'full');
+                            if ($image_url) :
+                            ?>
+                                <div class="rch-image-container">
+                                    <picture>
+                                        <a href="<?php the_permalink() ?>">
+                                            <div class="rch-loader"></div>
+                                            <img src="<?php echo esc_url($image_url); ?>" alt="<?php echo esc_attr(get_the_title()); ?>" class="rch-profile-image">
+                                        </a>
+                                    </picture>
+                                </div>
+                            <?php endif; ?>
+                            <div class="rch-data-agent">
+                                <?php the_title('<h1>', '</h1>') ?>
+                                <?php if ($license_number) : ?>
+                                    <span>
+                                        License Number:
+                                        <?php echo esc_html($license_number); ?>
+                                    </span>
+                                <?php endif; ?>
+                                <?php if ($phone_number) : ?>
+                                    <span>
+                                        Phone:
+                                        <?php echo esc_html($phone_number); ?>
+                                    </span>
+                                <?php endif; ?>
+
+                                <?php if ($email) : ?>
+                                    <span>
+                                        Email:
+                                        <?php echo esc_html($email); ?>
+                                    </span>
+                                <?php endif; ?>
+
+                                <?php if ($website) : ?>
+                                    <span>
+                                        Website:
+                                        <a href="<?php echo esc_url($website); ?>" target="_blank"><?php echo esc_html($website); ?></a>
+                                    </span>
+                                <?php endif; ?>
+
+                                <?php if ($instagram || $twitter || $linkedin || $youtube || $facebook) : ?>
+                                    <span>
+                                        Social Media:
+                                    </span>
+                                    <ul class="rch-single-agents-social">
+                                        <?php if ($instagram) : ?>
+                                            <li>
+                                                <a href="<?php echo esc_url($instagram); ?>" target="_blank">
+                                                    <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'instagram.svg'); ?>" alt="Instagram">
+                                                </a>
+                                            </li>
+                                        <?php endif; ?>
+
+                                        <?php if ($twitter) : ?>
+                                            <li>
+                                                <a href="<?php echo esc_url($twitter); ?>" target="_blank">
+                                                    <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'x.svg'); ?>" alt="Twitter">
+                                                </a>
+                                            </li>
+                                        <?php endif; ?>
+
+                                        <?php if ($linkedin) : ?>
+                                            <li>
+                                                <a href="<?php echo esc_url($linkedin); ?>" target="_blank">
+                                                    <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'linkedin.svg'); ?>" alt="LinkedIn">
+                                                </a>
+                                            </li>
+                                        <?php endif; ?>
+
+                                        <?php if ($youtube) : ?>
+                                            <li>
+                                                <a href="<?php echo esc_url($youtube); ?>" target="_blank">
+                                                    <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'youtube.svg'); ?>" alt="YouTube">
+                                                </a>
+                                            </li>
+                                        <?php endif; ?>
+
+                                        <?php if ($facebook) : ?>
+                                            <li>
+                                                <a href="<?php echo esc_url($facebook); ?>" target="_blank">
+                                                    <img src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'facebook.svg'); ?>" alt="Facebook">
+                                                </a>
+                                            </li>
+                                        <?php endif; ?>
+                                    </ul>
+                                <?php endif; ?>
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="rch-main-content">
+                        <?php the_content(); ?>
+                    </div>
+                </div>
+                <div class="rch-right-main-layout-single-agent">
+                    <div class="rch-inner-right-agents" id="leadCaptureForm">
+                        <form action="" method="post">
+                            <h2>Get in Touch with <?php echo esc_html(get_the_title()); ?></h2>
+                            <!-- First Name -->
+                            <div class="form-group">
+                                <label for="first_name">First Name</label>
+                                <input type="text" id="first_name" name="first_name" placeholder="Enter your first name" required>
+                            </div>
+
+                            <!-- Last Name -->
+                            <div class="form-group">
+                                <label for="last_name">Last Name</label>
+                                <input type="text" id="last_name" name="last_name" placeholder="Enter your last name" required>
+                            </div>
+
+                            <!-- Phone Number -->
+                            <div class="form-group">
+                                <label for="phone_number">Phone Number</label>
+                                <input type="tel" id="phone_number" name="phone_number" placeholder="Enter your phone number" required>
+                            </div>
+
+                            <!-- Email Address -->
+                            <div class="form-group">
+                                <label for="email">Email Address</label>
+                                <input type="email" id="email" name="email" placeholder="Enter your email address" required>
+                            </div>
+
+                            <!-- Note -->
+                            <div class="form-group">
+                                <label for="note">Note</label>
+                                <textarea id="note" name="note" placeholder="Write your note here" required></textarea>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <button type="submit">Submit Request</button>
+                            <div id="loading-spinner" class="rch-loading-spinner-form" style="display: none;"></div>
+                            <div id="rch-listing-success-sdk" class="rch-success-box-listing">
+                                Thank you! Your data has been successfully sent.
+                            </div>
+                            <div id="rch-listing-cancel-sdk" class="rch-error-box-listing">
+                                Something went wrong. Please try again.
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <?php
+            /**
+             * Render Agent Listings Section
+             * 
+             * The listing logic is loaded from the plugin to ensure updates are applied
+             * even when this template is overridden in the theme.
+             */
+            $listings_section_file = RCH_PLUGIN_DIR . 'templates/single/template-parts/agents-listings-section.php';
+            if (file_exists($listings_section_file)) {
+                require_once $listings_section_file;
+                rch_render_agent_listings_section($post_id);
+            }
+            ?>
+        <?php endwhile; ?>
+
+    </main><!-- #main -->
+</div><!-- #primary -->
+
+<?php
+/**
+ * Enqueue agent single page scripts
+ * 
+ * Scripts are loaded from the plugin to ensure updates are applied
+ * even when this template is overridden in the theme.
+ */
+$scripts_file = RCH_PLUGIN_DIR . 'templates/single/template-parts/agents-scripts.php';
+if (file_exists($scripts_file)) {
+    require_once $scripts_file;
+    rch_enqueue_agent_single_scripts($email);
+}
+
+get_footer();
+?>
