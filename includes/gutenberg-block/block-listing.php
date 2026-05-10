@@ -128,7 +128,7 @@ function rch_get_fallback_url_parameters()
 }
 
 /**
- * REST: country options for block editor (cached Rechat boundaries).
+ * REST: country options for block editor (cached Rechat boundaries/search + omit[]=boundary.geometry).
  *
  * @return WP_REST_Response|WP_Error
  */
@@ -144,7 +144,7 @@ function rch_rest_boundary_countries()
 }
 
 /**
- * REST: state/province options for a country (block editor).
+ * REST: state/province options for a country (block editor; same boundaries/search omit as countries).
  *
  * @param WP_REST_Request $request Request.
  * @return WP_REST_Response|WP_Error

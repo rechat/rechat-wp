@@ -329,125 +329,13 @@ function rch_api_request($url, $token, $brand = null)
 }
 
 /**
- * Closing index for a JSON object starting at $open (byte must be '{').
- *
- * @param string $json Raw JSON.
- * @param int    $open Index of '{'.
- * @return int|null Closing '}' index or null if unbalanced.
- */
-function rch_rechat_json_object_closing_index($json, $open)
-{
-    $n = strlen($json);
-    if ($open < 0 || $open >= $n || $json[$open] !== '{') {
-        return null;
-    }
-    $depth   = 0;
-    $in_str  = false;
-    $escape  = false;
-    for ($i = $open; $i < $n; $i++) {
-        $c = $json[$i];
-        if ($in_str) {
-            if ($escape) {
-                $escape = false;
-                continue;
-            }
-            if ($c === '\\') {
-                $escape = true;
-                continue;
-            }
-            if ($c === '"') {
-                $in_str = false;
-            }
-            continue;
-        }
-        if ($c === '"') {
-            $in_str = true;
-            continue;
-        }
-        if ($c === '{') {
-            $depth++;
-        } elseif ($c === '}') {
-            $depth--;
-            if ($depth === 0) {
-                return $i;
-            }
-        }
-    }
-    return null;
-}
-
-/**
- * Replace every top-level JSON property "geometry":{...} with "geometry":null.
- *
- * boundaries/search returns huge GeoJSON; settings only need title/country/state/id.
- * Stripping before json_decode avoids exhausting PHP memory on json_decode().
- *
- * @param string $json Raw response body.
- * @return string Possibly smaller JSON string.
- */
-function rch_rechat_boundary_response_strip_geometry_json($json)
-{
-    if (! is_string($json) || $json === '') {
-        return $json;
-    }
-    $key     = '"geometry"';
-    $key_len = strlen($key);
-    $n       = strlen($json);
-    $out     = '';
-    $i       = 0;
-
-    while ($i < $n) {
-        $p = strpos($json, $key, $i);
-        if ($p === false) {
-            $out .= substr($json, $i);
-            break;
-        }
-        $out .= substr($json, $i, $p - $i);
-        $before = $p - 1;
-        while ($before >= 0 && ctype_space($json[$before])) {
-            $before--;
-        }
-        if ($before < 0 || ($json[$before] !== ',' && $json[$before] !== '{')) {
-            $out .= $key;
-            $i    = $p + $key_len;
-            continue;
-        }
-        $j = $p + $key_len;
-        while ($j < $n && ctype_space($json[$j])) {
-            $j++;
-        }
-        if ($j >= $n || $json[$j] !== ':') {
-            $out .= $key;
-            $i    = $p + $key_len;
-            continue;
-        }
-        $j++;
-        while ($j < $n && ctype_space($json[$j])) {
-            $j++;
-        }
-        if ($j >= $n || $json[$j] !== '{') {
-            $out .= $key;
-            $i    = $p + $key_len;
-            continue;
-        }
-        $close = rch_rechat_json_object_closing_index($json, $j);
-        if ($close === null) {
-            $out .= $key;
-            $i    = $p + $key_len;
-            continue;
-        }
-        $out .= '"geometry":null';
-        $i    = $close + 1;
-    }
-
-    return $out;
-}
-
-/**
  * GET a Rechat API endpoint (e.g. boundaries/search).
  *
  * When {@see get_option()} `rch_rechat_access_token` is non-empty, sends
  * `Authorization: Bearer <token>` (same pattern as {@see rch_api_request()}).
+ *
+ * For `boundaries/search`, appends `omit[]=boundary.geometry` to the query string
+ * (after $params) so country/state picker payloads stay small.
  *
  * @param string $endpoint_path Path after host, e.g. 'boundaries/search'.
  * @param array  $params        Query string parameters.
@@ -457,9 +345,21 @@ function rch_rechat_public_api_get($endpoint_path, $params = array())
 {
     $base = defined('RECHAT_API_BASE_URL') ? RECHAT_API_BASE_URL : 'https://api.rechat.com';
     $path = '/' . ltrim((string) $endpoint_path, '/');
-    $url  = rtrim($base, '/') . $path;
+    $path_lower = strtolower($path);
+    $url = rtrim($base, '/') . $path;
+
+    $query_segments = array();
     if (! empty($params) && is_array($params)) {
-        $url .= '?' . http_build_query($params);
+        $built = http_build_query($params, '', '&');
+        if (is_string($built) && $built !== '') {
+            $query_segments[] = $built;
+        }
+    }
+    if (strpos($path_lower, 'boundaries/search') !== false) {
+        $query_segments[] = 'omit[]=' . rawurlencode('boundary.geometry');
+    }
+    if (! empty($query_segments)) {
+        $url .= '?' . implode('&', $query_segments);
     }
 
     $headers = array(
@@ -489,18 +389,6 @@ function rch_rechat_public_api_get($endpoint_path, $params = array())
 
     $response_code = (int) wp_remote_retrieve_response_code($response);
     $body          = wp_remote_retrieve_body($response);
-
-    $path_lower = strtolower($path);
-    if (strpos($path_lower, 'boundaries/search') !== false) {
-        $strip_threshold = (int) apply_filters('rch_boundary_response_strip_geometry_threshold', 524288);
-        if ($strip_threshold > 0 && strlen($body) > $strip_threshold) {
-            $mem = apply_filters('rch_boundary_decode_memory_limit', '512M');
-            if (is_string($mem) && $mem !== '') {
-                @ini_set('memory_limit', $mem);
-            }
-            $body = rch_rechat_boundary_response_strip_geometry_json($body);
-        }
-    }
 
     $decoded = json_decode($body, true);
 
@@ -582,6 +470,7 @@ function rch_rechat_normalize_boundary_options($items, $boundary_type = 'country
 /**
  * Fetch boundary rows from Rechat (countries or states).
  *
+ * Calls `boundaries/search` with `omit[]=boundary.geometry` via {@see rch_rechat_public_api_get()}.
  * Results are cached in transients to keep General Settings responsive.
  *
  * @param string $boundary_type   'country' or 'state'.

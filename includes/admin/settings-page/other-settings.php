@@ -495,7 +495,7 @@ function rch_update_all_data()
 add_action('wp_ajax_rch_update_all_data', 'rch_update_all_data');
 
 /**
- * AJAX: return state/province options for a country (Rechat boundaries API).
+ * AJAX: return state/province options for a country (Rechat boundaries/search with omit[]=boundary.geometry).
  */
 function rch_ajax_fetch_boundary_states()
 {
@@ -524,7 +524,7 @@ function rch_ajax_fetch_boundary_states()
 add_action('wp_ajax_rch_fetch_boundary_states', 'rch_ajax_fetch_boundary_states');
 
 /**
- * AJAX: return country options (Rechat boundaries API, transient-cached).
+ * AJAX: return country options (Rechat boundaries/search with omit[]=boundary.geometry; transient-cached).
  */
 function rch_ajax_fetch_boundary_countries()
 {
