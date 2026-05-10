@@ -141,31 +141,19 @@ function rch_enqueue_block_assets()
         RCH_VERSION
     );
 
-    // Register Rechat SDK CSS and JS
-    $rch_site_host = wp_parse_url(home_url(), PHP_URL_HOST);
-    $rch_examples_hosts = defined('RCH_RECHAT_SDK_EXAMPLES_HOSTS')
-        ? RCH_RECHAT_SDK_EXAMPLES_HOSTS
-        : ['staging.insanustu.dev', 'localhost', '127.0.0.1'];
-    $rch_is_staging = is_string($rch_site_host) && in_array($rch_site_host, $rch_examples_hosts, true);
-
-    $rch_rechat_sdk_css_url = $rch_is_staging
-        ? 'https://sdk.rechat.com/examples/dist/rechat.min.css'
-        : 'https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.css';
-
-    $rch_rechat_sdk_js_url = $rch_is_staging
-        ? 'https://sdk.rechat.com/examples/dist/rechat.min.js'
-        : 'https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.js';
+    $rch_sdk_css = defined('RCH_RECHAT_SDK_CSS_URL') ? RCH_RECHAT_SDK_CSS_URL : 'https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.css';
+    $rch_sdk_js = defined('RCH_RECHAT_SDK_JS_URL') ? RCH_RECHAT_SDK_JS_URL : 'https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.js';
 
     wp_register_style(
         'rechat-sdk-css',
-        $rch_rechat_sdk_css_url,
+        $rch_sdk_css,
         [],
         null
     );
 
     wp_register_script(
         'rechat-sdk-js',
-        $rch_rechat_sdk_js_url,
+        $rch_sdk_js,
         [],
         null,
         false
