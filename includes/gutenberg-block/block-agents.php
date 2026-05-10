@@ -80,19 +80,21 @@ function rch_render_agents_block($attributes)
         );
     }
 
-    $orderby = ($sort_by === 'name') ? 'title' : 'date'; // Determine the order by field
-    $order = ($sort_order === 'asc') ? 'ASC' : 'DESC'; // Determine the order direction
-
     $args = array(
         'post_type'      => 'agents',
         'posts_per_page' => $posts_per_page,
         'paged'          => 1,
         'meta_query'     => $meta_query,
-        'orderby'        => $orderby,
-        'order'          => $order,
     );
 
-    $query = new WP_Query($args);
+    if ($sort_by === 'display_order') {
+        $numeric_dir = ($sort_order === 'desc') ? 'DESC' : 'ASC';
+        $query = rch_wp_query_agents_display_order($args, $numeric_dir);
+    } else {
+        $args['orderby'] = ($sort_by === 'name') ? 'title' : 'date';
+        $args['order'] = ($sort_order === 'asc') ? 'ASC' : 'DESC';
+        $query = new WP_Query($args);
+    }
     $total_pages = $query->max_num_pages; // Get total number of pages
 
     ob_start();
@@ -180,18 +182,21 @@ function rch_load_more_agents()
         );
     }
 
-    $orderby = ($sort_by === 'name') ? 'title' : 'date'; // Determine the order by field
-    $order = ($sort_order === 'asc') ? 'ASC' : 'DESC'; // Determine the order direction
     $args = array(
         'post_type'      => 'agents',
         'posts_per_page' => $posts_per_page,
         'paged'          => $page,
         'meta_query'     => $meta_query, // Apply the meta query filters
-        'orderby'        => $orderby,
-        'order'          => $order,
     );
 
-    $query = new WP_Query($args);
+    if ($sort_by === 'display_order') {
+        $numeric_dir = ($sort_order === 'desc') ? 'DESC' : 'ASC';
+        $query = rch_wp_query_agents_display_order($args, $numeric_dir);
+    } else {
+        $args['orderby'] = ($sort_by === 'name') ? 'title' : 'date';
+        $args['order'] = ($sort_order === 'asc') ? 'ASC' : 'DESC';
+        $query = new WP_Query($args);
+    }
 
     ob_start();
     if ($query->have_posts()) :

@@ -48,9 +48,18 @@ function agents_meta_box_html($post)
     $timezone = get_post_meta($post->ID, 'timezone', true);
     $profile_image_url = get_post_meta($post->ID, 'profile_image_url', true);
     $license_number = get_post_meta($post->ID, 'license_number', true);
+    $display_order_raw = get_post_meta($post->ID, RCH_AGENT_DISPLAY_ORDER_META_KEY, true);
+    $display_order_show = '';
+    if (! rch_agent_display_order_meta_is_empty($display_order_raw)) {
+        $display_order_show = (string) (int) $display_order_raw;
+    }
 ?>
     <label for="api_id_field">Rechat ID (not available for locally added agents): </label>
     <input type="text" id="api_id_field" name="api_id_field" value="<?php echo esc_attr($api_id); ?>" class="widefat" readonly />
+    <br>
+    <label for="agents_display_order">Display order</label>
+    <input type="number" id="agents_display_order" name="agents_display_order" value="<?php echo esc_attr($display_order_show); ?>" class="small-text" min="0" step="1" />
+    <p class="description">Set 0, 1, 2… to pin order at the top of lists. Leave empty for no number — those agents appear after all numbered ones. Meta key: <code><?php echo esc_html(RCH_AGENT_DISPLAY_ORDER_META_KEY); ?></code></p>
     <br>
     <label for="agents_profile_image_url">Profile Image URL</label>
     <input type="text" id="agents_profile_image_url" name="agents_profile_image_url" value="<?php echo esc_attr($profile_image_url); ?>" class="widefat" />
@@ -155,6 +164,10 @@ function save_agents_meta_box($post_id)
         return $post_id;
     }
 
+    if (get_post_type($post_id) !== 'agents') {
+        return $post_id;
+    }
+
     // Sanitize and save each field
     $fields = array(
         'agents_profile_image_url' => 'profile_image_url',
@@ -177,6 +190,18 @@ function save_agents_meta_box($post_id)
             $value = sanitize_text_field($_POST[$input_name]);
             update_post_meta($post_id, $meta_key, $value);
         }
+    }
+
+    $order_input = isset($_POST['agents_display_order']) ? sanitize_text_field(wp_unslash($_POST['agents_display_order'])) : '';
+    $order_input = trim((string) $order_input);
+    if ($order_input === '') {
+        delete_post_meta($post_id, RCH_AGENT_DISPLAY_ORDER_META_KEY);
+    } else {
+        $n = absint($order_input);
+        if ($n >= RCH_AGENT_DISPLAY_ORDER_EMPTY_SORT) {
+            $n = RCH_AGENT_DISPLAY_ORDER_EMPTY_SORT - 1;
+        }
+        update_post_meta($post_id, RCH_AGENT_DISPLAY_ORDER_META_KEY, (string) $n);
     }
     
     // Save agent visibility
@@ -209,6 +234,7 @@ function add_api_id_columns($columns)
     $columns['api_id'] = 'Rechat ID (not available for locally added agents)';
     // Add visibility column
     $columns['agent_visibility'] = 'Visibility';
+    $columns['agent_display_order'] = 'Order';
     return $columns;
 }
 add_filter('manage_agents_posts_columns', 'add_api_id_columns');
@@ -233,6 +259,15 @@ function show_api_id_column_data($column, $post_id)
             echo '<span style="color: green; font-weight: bold;">● Show</span>';
         } else {
             echo '<span style="color: red; font-weight: bold;">● Hide</span>';
+        }
+    }
+
+    if ($column === 'agent_display_order') {
+        $ord = get_post_meta($post_id, RCH_AGENT_DISPLAY_ORDER_META_KEY, true);
+        if (rch_agent_display_order_meta_is_empty($ord)) {
+            echo '&mdash;';
+        } else {
+            echo esc_html((string) (int) $ord);
         }
     }
 }

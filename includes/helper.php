@@ -1135,6 +1135,81 @@ function rch_process_agents_data($access_token, $api_url_base)
         $GLOBALS['rch_doing_agent_sync'] = false;
     }
 }
+
+/**
+ * Whether agent_display_order meta counts as “unset” (no sort number).
+ *
+ * @param  mixed $raw Raw meta value.
+ * @return bool
+ */
+function rch_agent_display_order_meta_is_empty($raw)
+{
+    if ($raw === null || $raw === false) {
+        return true;
+    }
+    $s = trim((string) $raw);
+    if ($s === '') {
+        return true;
+    }
+    return (string) (int) $raw === (string) (int) RCH_AGENT_DISPLAY_ORDER_EMPTY_SORT;
+}
+
+/**
+ * WP_Query args for agents: rows with numeric agent_display_order first (0,1,2…),
+ * then posts with no meta / empty meta. Uses a scoped posts_clauses filter.
+ *
+ * @param  array  $args       WP_Query arguments (post_type should be agents).
+ * @param  string $numeric_dir ASC or DESC for the numeric key among ordered posts.
+ * @return \WP_Query
+ */
+function rch_wp_query_agents_display_order(array $args, $numeric_dir = 'ASC')
+{
+    $numeric_dir = strtoupper((string) $numeric_dir) === 'DESC' ? 'DESC' : 'ASC';
+    $GLOBALS['rch_agents_display_order_sort_active'] = true;
+    $GLOBALS['rch_agents_display_order_sort_dir'] = $numeric_dir;
+    add_filter('posts_clauses', 'rch_agents_posts_clauses_display_order_sort', 10, 2);
+    $query = new WP_Query($args);
+    remove_filter('posts_clauses', 'rch_agents_posts_clauses_display_order_sort', 10, 2);
+    unset($GLOBALS['rch_agents_display_order_sort_active'], $GLOBALS['rch_agents_display_order_sort_dir']);
+    return $query;
+}
+
+/**
+ * @param  array<string, string> $clauses SQL fragments (fields, join, where, groupby, orderby).
+ * @param  \WP_Query              $query   Query object.
+ * @return array<string, string>
+ */
+function rch_agents_posts_clauses_display_order_sort($clauses, $query)
+{
+    if (empty($GLOBALS['rch_agents_display_order_sort_active'])) {
+        return $clauses;
+    }
+    $post_type = $query->get('post_type');
+    if ($post_type !== 'agents' && (! is_array($post_type) || ! in_array('agents', $post_type, true))) {
+        return $clauses;
+    }
+
+    global $wpdb;
+    $alias = 'rch_ord_sort';
+    $key = esc_sql(RCH_AGENT_DISPLAY_ORDER_META_KEY);
+    $sentinel = esc_sql((string) (int) RCH_AGENT_DISPLAY_ORDER_EMPTY_SORT);
+
+    if (strpos($clauses['join'], $alias) === false) {
+        $clauses['join'] .= " LEFT JOIN {$wpdb->postmeta} AS {$alias} ON ({$wpdb->posts}.ID = {$alias}.post_id AND {$alias}.meta_key = '{$key}') ";
+    }
+
+    $dir = ! empty($GLOBALS['rch_agents_display_order_sort_dir']) && strtoupper((string) $GLOBALS['rch_agents_display_order_sort_dir']) === 'DESC'
+        ? 'DESC'
+        : 'ASC';
+
+    // 0 = has a real order number first; 1 = missing/empty/legacy sentinel last.
+    $bucket = "CASE WHEN ({$alias}.meta_id IS NULL OR TRIM(IFNULL({$alias}.meta_value,'')) = '' OR {$alias}.meta_value = '{$sentinel}') THEN 1 ELSE 0 END";
+
+    $clauses['orderby'] = "{$bucket} ASC, CAST({$alias}.meta_value AS UNSIGNED) {$dir}, {$wpdb->posts}.post_title ASC";
+
+    return $clauses;
+}
+
 /*******************************
  * this function get all filters that use in listing shortcode
  ******************************/

@@ -58,6 +58,7 @@ registerBlockType('rch-rechat-plugin/agents-block', {
                             options={[
                                 { label: 'Date', value: 'date' },
                                 { label: 'Name', value: 'name' },
+                                { label: 'Display order', value: 'display_order' },
                             ]}
                             onChange={(selectedSort) => setAttributes({ sortBy: selectedSort })}
                         />

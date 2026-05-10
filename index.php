@@ -2,7 +2,7 @@
 /*
 Plugin Name: Rechat Plugin
 Description: Fetches and manages agent, offices, regions, and Listing data from Rechat.
-Version: 6.3.13
+Version: 6.3.14
 Author URI: https://rechat.com/
 Text Domain: rechat-plugin
 License: GPL-2.0-or-later
@@ -18,7 +18,7 @@ if (! defined('ABSPATH')) {
 // define required constants.
 define('RCH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('RCH_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('RCH_VERSION', '6.3.13');
+define('RCH_VERSION', '6.3.14');
 define('RCH_VERSION_SWIPER', '11.2.5');
 if (! defined('RCH_STAGING_DOMAIN')) {
     define('RCH_STAGING_DOMAIN', 'staging.insanustu.dev');
@@ -31,6 +31,13 @@ if (! defined('RCH_RECHAT_SDK_EXAMPLES_HOSTS')) {
     ]);
 }
 const RCH_PLUGIN_INCLUDES = RCH_PLUGIN_DIR . 'includes/';
+/** Post meta: manual sort position for agents (lower first). Legacy DB rows may still equal RCH_AGENT_DISPLAY_ORDER_EMPTY_SORT (treated like empty). */
+if (! defined('RCH_AGENT_DISPLAY_ORDER_META_KEY')) {
+    define('RCH_AGENT_DISPLAY_ORDER_META_KEY', 'agent_display_order');
+}
+if (! defined('RCH_AGENT_DISPLAY_ORDER_EMPTY_SORT')) {
+    define('RCH_AGENT_DISPLAY_ORDER_EMPTY_SORT', 999999);
+}
 const RCH_PLUGIN_ASSETS = RCH_PLUGIN_URL . 'assets/';
 const RCH_PLUGIN_ASSETS_URL_IMG = RCH_PLUGIN_URL . 'assets/images/';
 // Rechat REST API host (shared across plugin HTTP calls)
