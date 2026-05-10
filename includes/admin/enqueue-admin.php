@@ -104,18 +104,19 @@ function rch_enqueue_custom_gutenberg_assets()
         RCH_VERSION
     );
 
-    // Enqueue Rechat SDK CSS
+    $rch_sdk_css = defined('RCH_RECHAT_SDK_CSS_URL') ? RCH_RECHAT_SDK_CSS_URL : 'https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.css';
+    $rch_sdk_js = defined('RCH_RECHAT_SDK_JS_URL') ? RCH_RECHAT_SDK_JS_URL : 'https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.js';
+
     wp_enqueue_style(
         'rechat-sdk-css',
-        'https://sdk.rechat.com/examples/dist/rechat.min.css',
+        $rch_sdk_css,
         [],
         null
     );
 
-    // Enqueue Rechat SDK JavaScript
     wp_enqueue_script(
         'rechat-sdk-js',
-        'https://sdk.rechat.com/examples/dist/rechat.min.js',
+        $rch_sdk_js,
         [],
         null,
         false
