@@ -68,7 +68,38 @@ function rch_enqueue_admin_scripts($hook)
     if ($hook !== 'toplevel_page_rechat-setting') {
         return;
     }
+    // Enqueue admin AJAX script
+    wp_enqueue_script(
+        'rch-ajax-script',
+        RCH_PLUGIN_URL . 'assets/js/rch-admin.js',
+        ['jquery'],
+        RCH_VERSION,
+        true
+    );
 
+    // Localize script with AJAX data
+    wp_localize_script(
+        'rch-ajax-script',
+        'rch_ajax_object',
+        [
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'nonce'    => wp_create_nonce('rch_ajax_nonce'),
+            'boundary_states' => array(
+                'loading'             => __('Loading states…', 'rechat-plugin'),
+                'loading_countries'   => __('Loading countries…', 'rechat-plugin'),
+                'countries_failed'    => __('Could not load countries. Try again.', 'rechat-plugin'),
+                'failed'              => __('Could not load states. Try again.', 'rechat-plugin'),
+                'state_placeholder'   => __('Select a state / province', 'rechat-plugin'),
+                'any_country'         => __('Any', 'rechat-plugin'),
+            ),
+            'lead_capture'    => array(
+                'select_channel'   => __('Select Lead Channel', 'rechat-plugin'),
+                'select_tag'       => __('Please select a tag', 'rechat-plugin'),
+                'channels_failed'  => __('Could not load lead sources.', 'rechat-plugin'),
+                'tags_failed'      => __('Could not load tags.', 'rechat-plugin'),
+            ),
+        ]
+    );
     
 }
 add_action('admin_enqueue_scripts', 'rch_enqueue_admin_scripts');
