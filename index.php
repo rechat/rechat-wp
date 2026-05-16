@@ -2,7 +2,7 @@
 /*
 Plugin Name: Rechat Plugin
 Description: Fetches and manages agent, offices, regions, and Listing data from Rechat.
-Version: 6.3.17
+Version: 6.3.18
 Author URI: https://rechat.com/
 Text Domain: rechat-plugin
 License: GPL-2.0-or-later
@@ -18,7 +18,7 @@ if (! defined('ABSPATH')) {
 // define required constants.
 define('RCH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('RCH_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('RCH_VERSION', '6.3.17');
+define('RCH_VERSION', '6.3.18');
 define('RCH_VERSION_SWIPER', '11.2.5');
 if (! defined('RCH_RECHAT_SDK_CSS_URL')) {
     define('RCH_RECHAT_SDK_CSS_URL', 'https://unpkg.com/@rechat/sdk@1.3.9/dist/rechat.min.css');

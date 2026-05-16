@@ -3,267 +3,377 @@ if (! defined('ABSPATH')) {
     exit();
 }
 /*******************************
- * this code for Lead Form gutenbberg block
+ * Lead Form Gutenberg block + Rechat POST /leads (server-side token).
  ******************************/
+
+/**
+ * REST: agents with email for block editor dropdown (editors only).
+ *
+ * @return WP_REST_Response
+ */
+function rch_rest_leads_form_agents()
+{
+    $query = new WP_Query(
+        array(
+            'post_type'      => 'agents',
+            'post_status'    => 'publish',
+            'posts_per_page' => 500,
+            'orderby'        => 'title',
+            'order'          => 'ASC',
+        )
+    );
+
+    $agents = array();
+    foreach ($query->posts as $post) {
+        if (! $post instanceof WP_Post) {
+            continue;
+        }
+        $email = get_post_meta($post->ID, 'email', true);
+        $email = is_string($email) ? trim($email) : '';
+        if ($email === '' || ! is_email($email)) {
+            continue;
+        }
+        $agents[] = array(
+            'id'    => (string) $post->ID,
+            'name'  => get_the_title($post->ID),
+            'email' => $email,
+        );
+    }
+
+    return rest_ensure_response(array('agents' => $agents));
+}
+
+/**
+ * @return void
+ */
+function rch_register_leads_form_rest_routes()
+{
+    register_rest_route(
+        'rch/v1',
+        '/leads-form-agents',
+        array(
+            'methods'             => 'GET',
+            'callback'            => 'rch_rest_leads_form_agents',
+            'permission_callback' => static function () {
+                return current_user_can('edit_posts');
+            },
+        )
+    );
+}
+add_action('rest_api_init', 'rch_register_leads_form_rest_routes');
+
+/**
+ * AJAX: submit lead to Rechat API (keeps OAuth token server-side).
+ *
+ * @return void
+ */
+function rch_ajax_submit_lead_rechat_api()
+{
+    if (! isset($_POST['rch_lead_nonce_field']) || ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['rch_lead_nonce_field'])), 'rch_lead_form')) {
+        wp_send_json_error(array('message' => 'Invalid security token.'), 403);
+    }
+
+    $lead_channel = isset($_POST['lead_channel']) ? sanitize_text_field(wp_unslash($_POST['lead_channel'])) : '';
+    if ($lead_channel === '') {
+        wp_send_json_error(array('message' => 'Lead channel is required.'), 400);
+    }
+
+    $assignee_email = isset($_POST['assignee_email']) ? sanitize_email(wp_unslash($_POST['assignee_email'])) : '';
+    if ($assignee_email === '' || ! is_email($assignee_email)) {
+        wp_send_json_error(array('message' => 'A valid agent assignee email is required.'), 400);
+    }
+
+    $first_name   = isset($_POST['first_name']) ? sanitize_text_field(wp_unslash($_POST['first_name'])) : '';
+    $last_name    = isset($_POST['last_name']) ? sanitize_text_field(wp_unslash($_POST['last_name'])) : '';
+    $phone_number = isset($_POST['phone_number']) ? sanitize_text_field(wp_unslash($_POST['phone_number'])) : '';
+    $email        = isset($_POST['email']) ? sanitize_email(wp_unslash($_POST['email'])) : '';
+    $note         = isset($_POST['note']) ? sanitize_textarea_field(wp_unslash($_POST['note'])) : '';
+
+    $use_mortgage_lead_source = isset($_POST['use_mortgage_question_lead_source'])
+        && sanitize_text_field(wp_unslash((string) $_POST['use_mortgage_question_lead_source'])) === '1';
+    if ($use_mortgage_lead_source) {
+        $lead_source = 'Mortgage Question From';
+    } else {
+        $lead_source = isset($_POST['lead_source_custom'])
+            ? sanitize_text_field(wp_unslash((string) $_POST['lead_source_custom']))
+            : '';
+    }
+
+    $tags = array();
+    if (isset($_POST['tags_json'])) {
+        $decoded = json_decode(wp_unslash((string) $_POST['tags_json']), true);
+        if (is_array($decoded)) {
+            foreach ($decoded as $t) {
+                $t = sanitize_text_field((string) $t);
+                if ($t !== '') {
+                    $tags[] = $t;
+                }
+            }
+        }
+    }
+
+    $access_token = (string) get_option('rch_rechat_access_token', '');
+    $brand_id     = (string) get_option('rch_rechat_brand_id', '');
+    if ($access_token === '' || $brand_id === '') {
+        wp_send_json_error(array('message' => 'Rechat is not connected (missing token or brand).'), 503);
+    }
+
+    $body = array(
+        'metadata' => array(
+            'lead_channel' => $lead_channel,
+        ),
+        'lead'     => array(
+            'first_name'   => $first_name,
+            'last_name'    => $last_name,
+            'email'        => $email,
+            'phone_number' => $phone_number,
+            'source_type'  => 'Website',
+            'lead_source'  => $lead_source,
+            'note'         => $note,
+            'tag'          => $tags,
+            'assignees'    => array(
+                array(
+                    'email' => $assignee_email,
+                ),
+            ),
+        ),
+    );
+
+    $response = wp_remote_post(
+        rtrim(RECHAT_API_BASE_URL, '/') . '/leads',
+        array(
+            'timeout' => 25,
+            'headers' => array(
+                'Content-Type'  => 'application/json',
+                'Authorization' => 'Bearer ' . $access_token,
+                'X-RECHAT-BRAND' => $brand_id,
+            ),
+            'body'    => wp_json_encode($body),
+        )
+    );
+
+    if (is_wp_error($response)) {
+        wp_send_json_error(array('message' => $response->get_error_message()), 502);
+    }
+
+    $code = (int) wp_remote_retrieve_response_code($response);
+    $raw  = (string) wp_remote_retrieve_body($response);
+    $data = json_decode($raw, true);
+
+    if ($code >= 200 && $code < 300) {
+        wp_send_json_success(
+            array(
+                'status' => $code,
+                'data'   => is_array($data) ? $data : null,
+            )
+        );
+    }
+
+    $message = is_array($data) && isset($data['message']) ? (string) $data['message'] : $raw;
+    wp_send_json_error(
+        array(
+            'message' => $message !== '' ? $message : 'Lead request failed.',
+            'status'  => $code,
+        ),
+        $code >= 400 && $code < 600 ? $code : 502
+    );
+}
+add_action('wp_ajax_rch_submit_lead_rechat_api', 'rch_ajax_submit_lead_rechat_api');
+add_action('wp_ajax_nopriv_rch_submit_lead_rechat_api', 'rch_ajax_submit_lead_rechat_api');
+
 /*******************************
  * Register Leads form block in php
  ******************************/
 function rch_register_block_assets_leads_form()
 {
-    register_block_type('rch-rechat-plugin/leads-form-block', array(
-        'editor_script' => 'rch-gutenberg-js', // JavaScript file for the block editor
-        'attributes' => array(
-            'formTitle' => array(
-                'type' => 'string',
-                'default' => '',
+    register_block_type(
+        'rch-rechat-plugin/leads-form-block',
+        array(
+            'editor_script'   => 'rch-gutenberg-js',
+            'attributes'      => array(
+                'formTitle'           => array(
+                    'type'    => 'string',
+                    'default' => '',
+                ),
+                'leadChannel'         => array(
+                    'type'    => 'string',
+                    'default' => '',
+                ),
+                'assigneeAgentEmail'  => array(
+                    'type'    => 'string',
+                    'default' => '',
+                ),
+                'useMortgageQuestionLeadSource' => array(
+                    'type'    => 'boolean',
+                    'default' => true,
+                ),
+                'leadSource'          => array(
+                    'type'    => 'string',
+                    'default' => '',
+                ),
+                'showFirstName'       => array(
+                    'type'    => 'boolean',
+                    'default' => true,
+                ),
+                'showLastName'        => array(
+                    'type'    => 'boolean',
+                    'default' => true,
+                ),
+                'showPhoneNumber'     => array(
+                    'type'    => 'boolean',
+                    'default' => true,
+                ),
+                'showEmail'           => array(
+                    'type'    => 'boolean',
+                    'default' => true,
+                ),
+                'showNote'            => array(
+                    'type'    => 'boolean',
+                    'default' => true,
+                ),
+                'selectedTagsFrom'    => array(
+                    'type'    => 'array',
+                    'default' => array(),
+                ),
+                'submitButtonText'    => array(
+                    'type'    => 'string',
+                    'default' => 'Submit Request',
+                ),
             ),
-            'leadChannel' => array(
-                'type' => 'string',
-                'default' => '',
-            ),
-            'emailForGetLead' => array(
-                'type' => 'string',
-                'default' => '',
-            ),
-            'showFirstName' => array(
-                'type' => 'boolean',
-                'default' => true,
-            ),
-            'showLastName' => array(
-                'type' => 'boolean',
-                'default' => true,
-            ),
-            'showPhoneNumber' => array(
-                'type' => 'boolean',
-                'default' => true,
-            ),
-            'showEmail' => array(
-                'type' => 'boolean',
-                'default' => true,
-            ),
-            'showNote' => array(
-                'type' => 'boolean',
-                'default' => true,
-            ),
-            'selectedTagsFrom' => array(
-                'type' => 'array',
-                'default' => array(),
-            ),
-            'submitButtonText' => array(
-                'type' => 'string',
-                'default' => 'Submit Request',
-            ),
-        ),
-        'render_callback' => 'rch_render_leads_form_block', // Callback function for rendering the block
-    ));
+            'render_callback' => 'rch_render_leads_form_block',
+        )
+    );
 }
 add_action('init', 'rch_register_block_assets_leads_form');
 
-/*******************************
- * Callback function for leads form block
- ******************************/
+/**
+ * @param array<string,mixed> $attributes Block attributes.
+ * @return string
+ */
 function rch_render_leads_form_block($attributes)
 {
-    // Extract attributes
-    $form_title = isset($attributes['formTitle']) ? $attributes['formTitle'] : '';
-    $lead_channel = isset($attributes['leadChannel']) ? $attributes['leadChannel'] : '';
-    $email_get_lead = isset($attributes['emailForGetLead']) ? $attributes['emailForGetLead'] : '';
-    $show_first_name = isset($attributes['showFirstName']) ? $attributes['showFirstName'] : true;
-    $show_last_name = isset($attributes['showLastName']) ? $attributes['showLastName'] : true;
-    $show_phone_number = isset($attributes['showPhoneNumber']) ? $attributes['showPhoneNumber'] : true;
-    $show_email = isset($attributes['showEmail']) ? $attributes['showEmail'] : true;
-    $show_note = isset($attributes['showNote']) ? $attributes['showNote'] : true;
-    $selected_tags = isset($attributes['selectedTagsFrom']) ? $attributes['selectedTagsFrom'] : array();
-    $submit_button_text = isset($attributes['submitButtonText']) && $attributes['submitButtonText'] !== ''
+    $form_title          = isset($attributes['formTitle']) ? $attributes['formTitle'] : '';
+    $lead_channel        = isset($attributes['leadChannel']) ? $attributes['leadChannel'] : '';
+    $assignee_agent_email = isset($attributes['assigneeAgentEmail']) ? $attributes['assigneeAgentEmail'] : '';
+    $use_mortgage_question_lead_source = isset($attributes['useMortgageQuestionLeadSource'])
+        ? (bool) $attributes['useMortgageQuestionLeadSource']
+        : true;
+    $lead_source_custom  = isset($attributes['leadSource']) ? (string) $attributes['leadSource'] : '';
+    $show_first_name     = isset($attributes['showFirstName']) ? (bool) $attributes['showFirstName'] : true;
+    $show_last_name      = isset($attributes['showLastName']) ? (bool) $attributes['showLastName'] : true;
+    $show_phone_number   = isset($attributes['showPhoneNumber']) ? (bool) $attributes['showPhoneNumber'] : true;
+    $show_email          = isset($attributes['showEmail']) ? (bool) $attributes['showEmail'] : true;
+    $show_note           = isset($attributes['showNote']) ? (bool) $attributes['showNote'] : true;
+    $selected_tags       = isset($attributes['selectedTagsFrom']) && is_array($attributes['selectedTagsFrom'])
+        ? $attributes['selectedTagsFrom']
+        : array();
+    $submit_button_text  = isset($attributes['submitButtonText']) && $attributes['submitButtonText'] !== ''
         ? $attributes['submitButtonText']
         : 'Submit Request';
+
     $is_editor = defined('REST_REQUEST') && REST_REQUEST && isset($_GET['context']) && $_GET['context'] === 'edit';
 
-    // Start output buffering
-    ob_start();
+    $form_uid = wp_unique_id('rch-lead-form-');
+    $nonce    = wp_create_nonce('rch_lead_form');
 
-    // HTML for the form
-?>
-    <div class="rch-leads-form-block">
-        <form id="leadCaptureForm" method="post">
-            <?php if ($form_title): ?>
-                <h2><?php echo esc_html($form_title); ?></h2>
+    ob_start();
+    ?>
+    <div class="rch-leads-form-block" data-rch-lead-form="1">
+        <form id="<?php echo esc_attr($form_uid); ?>" class="rch-leads-form-block__form" method="post" action="<?php echo esc_url(admin_url('admin-ajax.php')); ?>">
+            <input type="hidden" name="action" value="rch_submit_lead_rechat_api" />
+            <input type="hidden" name="rch_lead_nonce_field" value="<?php echo esc_attr($nonce); ?>" />
+            <input type="hidden" name="lead_channel" value="<?php echo esc_attr($lead_channel); ?>" />
+            <input type="hidden" name="assignee_email" value="<?php echo esc_attr($assignee_agent_email); ?>" />
+            <input type="hidden" name="use_mortgage_question_lead_source" value="<?php echo $use_mortgage_question_lead_source ? '1' : '0'; ?>" />
+            <input type="hidden" name="lead_source_custom" value="<?php echo esc_attr($lead_source_custom); ?>" />
+            <input type="hidden" name="tags_json" value="<?php echo esc_attr(wp_json_encode(array_values($selected_tags))); ?>" />
+
+            <?php if ($form_title) : ?>
+                <h2 class="rch-leads-form-block__title"><?php echo esc_html($form_title); ?></h2>
             <?php endif; ?>
-            <?php if ($show_first_name): ?>
+
+            <?php if ($show_first_name) : ?>
                 <div class="form-group">
-                    <label for="first_name">First Name</label>
-                    <input type="text" id="first_name" name="first_name" placeholder="Enter your first name" required>
+                    <label for="<?php echo esc_attr($form_uid); ?>-first_name"><?php esc_html_e('First Name', 'rechat-plugin'); ?></label>
+                    <input type="text" id="<?php echo esc_attr($form_uid); ?>-first_name" name="first_name" placeholder="<?php esc_attr_e('Enter your first name', 'rechat-plugin'); ?>" required />
                 </div>
             <?php endif; ?>
-            <?php if ($show_last_name): ?>
+            <?php if ($show_last_name) : ?>
                 <div class="form-group">
-                    <label for="last_name">Last Name</label>
-                    <input type="text" id="last_name" name="last_name" placeholder="Enter your last name" required>
+                    <label for="<?php echo esc_attr($form_uid); ?>-last_name"><?php esc_html_e('Last Name', 'rechat-plugin'); ?></label>
+                    <input type="text" id="<?php echo esc_attr($form_uid); ?>-last_name" name="last_name" placeholder="<?php esc_attr_e('Enter your last name', 'rechat-plugin'); ?>" required />
                 </div>
             <?php endif; ?>
-            <?php if ($show_phone_number): ?>
+            <?php if ($show_phone_number) : ?>
                 <div class="form-group">
-                    <label for="phone_number">Phone Number</label>
-                    <input type="tel" id="phone_number" name="phone_number" placeholder="Enter your phone number" required>
+                    <label for="<?php echo esc_attr($form_uid); ?>-phone_number"><?php esc_html_e('Phone Number', 'rechat-plugin'); ?></label>
+                    <input type="tel" id="<?php echo esc_attr($form_uid); ?>-phone_number" name="phone_number" placeholder="<?php esc_attr_e('Enter your phone number', 'rechat-plugin'); ?>" required />
                 </div>
             <?php endif; ?>
-            <?php if ($show_email): ?>
+            <?php if ($show_email) : ?>
                 <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email" placeholder="Enter your email address" required>
+                    <label for="<?php echo esc_attr($form_uid); ?>-email"><?php esc_html_e('Email Address', 'rechat-plugin'); ?></label>
+                    <input type="email" id="<?php echo esc_attr($form_uid); ?>-email" name="email" placeholder="<?php esc_attr_e('Enter your email address', 'rechat-plugin'); ?>" required />
                 </div>
             <?php endif; ?>
-            <?php if ($show_note): ?>
+            <?php if ($show_note) : ?>
                 <div class="form-group">
-                    <label for="note">Note</label>
-                    <textarea id="note" name="note" placeholder="Write your note here" required></textarea>
+                    <label for="<?php echo esc_attr($form_uid); ?>-note"><?php esc_html_e('Note', 'rechat-plugin'); ?></label>
+                    <textarea id="<?php echo esc_attr($form_uid); ?>-note" name="note" placeholder="<?php esc_attr_e('Write your note here', 'rechat-plugin'); ?>" required></textarea>
                 </div>
             <?php endif; ?>
-            <button type="submit" <?php echo $is_editor ? 'disabled' : ''; ?>><?php echo esc_html($submit_button_text); ?></button>
+
+            <button type="submit" class="rch-leads-form-block__submit" <?php echo $is_editor ? 'disabled' : ''; ?>><?php echo esc_html($submit_button_text); ?></button>
         </form>
-        <div id="loading-spinner" class="rch-loading-spinner-form" style="display: none;"></div>
-        <div id="rch-listing-success-sdk" class="rch-success-box-listing">
-            Thank you! Your data has been successfully sent.
+        <div id="<?php echo esc_attr($form_uid); ?>-loading" class="rch-loading-spinner-form" style="display: none;" aria-hidden="true"></div>
+        <div id="<?php echo esc_attr($form_uid); ?>-success" class="rch-success-box-listing" style="display: none;" role="status">
+            <?php esc_html_e('Thank you! Your data has been successfully sent.', 'rechat-plugin'); ?>
         </div>
-        <div id="rch-listing-cancel-sdk" class="rch-error-box-listing">
-            Something went wrong. Please try again.
+        <div id="<?php echo esc_attr($form_uid); ?>-error" class="rch-error-box-listing" style="display: none;" role="alert">
+            <?php esc_html_e('Something went wrong. Please try again.', 'rechat-plugin'); ?>
         </div>
     </div>
 
-    <?php if (!$is_editor): ?>
-        <script src="https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.js"></script>
+    <?php if (! $is_editor) : ?>
         <script>
-            const sdk = new Rechat.Sdk();
+        (function () {
+            var form = document.getElementById(<?php echo wp_json_encode($form_uid); ?>);
+            if (!form) { return; }
+            var loading = document.getElementById(<?php echo wp_json_encode($form_uid . '-loading'); ?>);
+            var successEl = document.getElementById(<?php echo wp_json_encode($form_uid . '-success'); ?>);
+            var errorEl = document.getElementById(<?php echo wp_json_encode($form_uid . '-error'); ?>);
+            var ajaxUrl = <?php echo wp_json_encode(admin_url('admin-ajax.php')); ?>;
 
-            const channel = {
-                lead_channel: '<?php echo esc_js(sanitize_text_field($lead_channel)); ?>'
-            };
-
-            document.getElementById('leadCaptureForm').addEventListener('submit', function(event) {
+            form.addEventListener('submit', function (event) {
                 event.preventDefault();
+                if (loading) { loading.style.display = 'block'; }
+                if (successEl) { successEl.style.display = 'none'; }
+                if (errorEl) { errorEl.style.display = 'none'; }
 
-                const input = {
-                    first_name: document.getElementById('first_name')?.value.trim(),
-                    last_name: document.getElementById('last_name')?.value.trim(),
-                    phone_number: document.getElementById('phone_number')?.value.trim(),
-                    email: document.getElementById('email')?.value.trim(),
-                    note: document.getElementById('note')?.value.trim(),
-                    tag: <?php echo wp_json_encode($selected_tags); ?>,
-                    source_type: 'Website',
-                    referer_url: window.location.href
-                };
-
-                // Show loading spinner and hide success/error alerts
-                document.getElementById('loading-spinner').style.display = 'block';
-                document.getElementById('rch-listing-success-sdk').style.display = 'none';
-                document.getElementById('rch-listing-cancel-sdk').style.display = 'none';
-
-                sdk.Leads.capture(channel, input)
-                    .then(() => {
-                        document.getElementById('loading-spinner').style.display = 'none';
-                        document.getElementById('rch-listing-success-sdk').style.display = 'block';
+                var fd = new FormData(form);
+                fetch(ajaxUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
+                    .then(function (res) { return res.json(); })
+                    .then(function (json) {
+                        if (loading) { loading.style.display = 'none'; }
+                        if (json && json.success) {
+                            if (successEl) { successEl.style.display = 'block'; }
+                            form.reset();
+                        } else {
+                            if (errorEl) { errorEl.style.display = 'block'; }
+                            if (window.console && json && json.data && json.data.message) {
+                                console.error(json.data.message);
+                            }
+                        }
                     })
-                    .catch((e) => {
-                        document.getElementById('loading-spinner').style.display = 'none';
-                        document.getElementById('rch-listing-cancel-sdk').style.display = 'block';
-                        console.error('Error:', e);
+                    .catch(function (err) {
+                        if (loading) { loading.style.display = 'none'; }
+                        if (errorEl) { errorEl.style.display = 'block'; }
+                        if (window.console) { console.error(err); }
                     });
             });
+        })();
         </script>
     <?php endif; ?>
-
-<?php
+    <?php
     return ob_get_clean();
 }
-function handle_lead_submission()
-{
-    // Get the form data
-    $first_name = '';
-    $last_name = '';
-    $phone_number = '';
-    $email = '';
-    $note = '';
-    $tags = '';
-    $lead_channel = '';
-    if (isset($_POST['first_name'])) {
-        $first_name = sanitize_text_field(wp_unslash($_POST['first_name']));
-    }
-    // Validate and sanitize last_name
-    if (isset($_POST['last_name'])) {
-        $last_name = sanitize_text_field(wp_unslash($_POST['last_name']));
-    }
-
-    // Validate and sanitize phone_number
-    if (isset($_POST['phone_number'])) {
-        $phone_number = sanitize_text_field(wp_unslash($_POST['phone_number']));
-    }
-
-    // Validate and sanitize email
-    if (isset($_POST['email'])) {
-        $email = sanitize_email(wp_unslash($_POST['email']));
-    }
-
-    // Validate and sanitize note
-    if (isset($_POST['note'])) {
-        $note = sanitize_textarea_field(wp_unslash($_POST['note']));
-    }
-
-    // Validate and sanitize tags (array)
-    if (isset($_POST['tag']) && is_array($_POST['tag'])) {
-        $tags = implode(', ', array_map('sanitize_text_field', wp_unslash($_POST['tag'])));
-    }
-
-    // Validate and sanitize lead_channel
-    if (isset($_POST['lead_channel'])) {
-        $lead_channel = sanitize_text_field(wp_unslash($_POST['lead_channel']));
-    }
-
-    // Email data
-    $to = 'mseiedmiri@gmail.com'; // The email address to send the lead data to
-    $subject = 'New Lead Submission';
-    $message = "First Name: $first_name\n";
-    $message .= "Last Name: $last_name\n";
-    $message .= "Phone Number: $phone_number\n";
-    $message .= "Email: $email\n";
-    $message .= "Note: $note\n";
-    $message .= "Tags: $tags\n";
-    $message .= "Lead Channel: $lead_channel\n";
-
-    // Email headers
-    $headers = array(
-        'Content-Type' => 'text/plain; charset=UTF-8',
-        'From' => 'no-reply@example.com',
-    );
-
-    // Send the email
-    $mail_sent = wp_mail($to, $subject, $message, $headers);
-
-    // Prepare the response data
-    $response_data = array(
-        'first_name' => $first_name,
-        'last_name' => $last_name,
-        'phone_number' => $phone_number,
-        'email' => $email,
-        'note' => $note,
-        'tags' => $tags,
-        'lead_channel' => $lead_channel,
-        'mail_sent' => $mail_sent ? 'Yes' : 'No' // Ensure it is a string
-    );
-
-    // Capture debug output
-    ob_start();
-    $debug_output = ob_get_clean();
-
-    // Prepare the debug output in the response data
-    $response_data['debug_output'] = $debug_output;
-
-    // Return the response as JSON
-    header('Content-Type: application/json');
-    echo wp_json_encode(array('success' => true, 'data' => $response_data));
-
-    // Always terminate the request after sending the response
-    exit();
-}
-
-add_action('wp_ajax_handle_lead_submission', 'handle_lead_submission');
-add_action('wp_ajax_nopriv_handle_lead_submission', 'handle_lead_submission');

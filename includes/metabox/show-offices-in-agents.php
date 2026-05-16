@@ -307,6 +307,125 @@ function rch_save_agent_offices_meta($post_id)
 }
 add_action('save_post_agents', 'rch_save_agent_offices_meta');
 
+/**
+ * Office addresses linked to an agent via assigned offices.
+ *
+ * @return array<int, array{office_id:int, office_name:string, address:string}>
+ */
+function rch_get_agent_office_addresses(int $agent_id): array
+{
+    $office_ids = get_post_meta($agent_id, '_rch_agent_offices', true);
+    if (empty($office_ids) || ! is_array($office_ids)) {
+        return [];
+    }
+
+    $entries = [];
+    foreach ($office_ids as $office_id) {
+        $office_id = absint($office_id);
+        if ($office_id <= 0) {
+            continue;
+        }
+
+        $office_name = get_the_title($office_id);
+        if ($office_name === '') {
+            continue;
+        }
+
+        $entries[] = [
+            'office_id'   => $office_id,
+            'office_name' => (string) $office_name,
+            'address'     => (string) get_post_meta($office_id, 'office_address', true),
+        ];
+    }
+
+    return $entries;
+}
+
+/**
+ * Plain-text block for display / agent subsite import (one block per office).
+ */
+function rch_format_agent_office_addresses_text(array $entries): string
+{
+    if ($entries === []) {
+        return '';
+    }
+
+    $blocks = [];
+    foreach ($entries as $entry) {
+        $name = isset($entry['office_name']) ? (string) $entry['office_name'] : '';
+        $addr = isset($entry['address']) ? trim((string) $entry['address']) : '';
+
+        if ($addr === '') {
+            $blocks[] = $name . "\n" . __('(No address on file for this office)', 'rechat-plugin');
+            continue;
+        }
+
+        $blocks[] = $name . "\n" . $addr;
+    }
+
+    return implode("\n\n", $blocks);
+}
+
+/**
+ * Persist derived agent_address meta for theme / subsite wizard import.
+ */
+function rch_sync_agent_address_meta(int $agent_id): void
+{
+    if (get_post_type($agent_id) !== 'agents') {
+        return;
+    }
+
+    $text = rch_format_agent_office_addresses_text(rch_get_agent_office_addresses($agent_id));
+    if ($text === '') {
+        delete_post_meta($agent_id, 'agent_address');
+        return;
+    }
+
+    update_post_meta($agent_id, 'agent_address', $text);
+}
+
+/**
+ * After office assignments change, refresh derived address meta.
+ */
+function rch_sync_agent_address_after_offices_save(int $post_id): void
+{
+    if (get_post_type($post_id) !== 'agents') {
+        return;
+    }
+
+    rch_sync_agent_address_meta($post_id);
+}
+add_action('save_post_agents', 'rch_sync_agent_address_after_offices_save', 20);
+
+/**
+ * When an office address changes, refresh all linked agents.
+ */
+function rch_sync_agent_addresses_when_office_saved(int $office_id): void
+{
+    if (get_post_type($office_id) !== 'offices') {
+        return;
+    }
+
+    $agents = get_posts([
+        'post_type'      => 'agents',
+        'posts_per_page' => -1,
+        'post_status'    => 'any',
+        'fields'         => 'ids',
+        'meta_query'     => [
+            [
+                'key'     => '_rch_agent_offices',
+                'value'   => '"' . absint($office_id) . '"',
+                'compare' => 'LIKE',
+            ],
+        ],
+    ]);
+
+    foreach ($agents as $agent_id) {
+        rch_sync_agent_address_meta((int) $agent_id);
+    }
+}
+add_action('save_post_offices', 'rch_sync_agent_addresses_when_office_saved', 25);
+
 
 
 /*******************************
