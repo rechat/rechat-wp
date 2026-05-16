@@ -2,7 +2,7 @@
 /*
 Plugin Name: Rechat Plugin
 Description: Fetches and manages agent, offices, regions, and Listing data from Rechat.
-Version: 6.3.18
+Version: 6.3.19
 Author URI: https://rechat.com/
 Text Domain: rechat-plugin
 License: GPL-2.0-or-later
@@ -18,13 +18,51 @@ if (! defined('ABSPATH')) {
 // define required constants.
 define('RCH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('RCH_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('RCH_VERSION', '6.3.18');
+define('RCH_VERSION', '6.3.19');
 define('RCH_VERSION_SWIPER', '11.2.5');
+if (! function_exists('rch_is_localhost_environment')) {
+    /**
+     * True when site runs on local dev (localhost, 127.0.0.1, .local, .test, or WP_ENVIRONMENT_TYPE=local).
+     */
+    function rch_is_localhost_environment(): bool
+    {
+        if (defined('WP_ENVIRONMENT_TYPE') && WP_ENVIRONMENT_TYPE === 'local') {
+            return true;
+        }
+
+        $host = isset($_SERVER['HTTP_HOST']) ? (string) $_SERVER['HTTP_HOST'] : '';
+        $host = strtolower(preg_replace('/:\d+$/', '', $host));
+
+        if ($host === 'localhost' || $host === '127.0.0.1' || $host === '::1') {
+            return true;
+        }
+
+        foreach (['.local', '.test', '.localhost'] as $tld) {
+            $len = strlen($tld);
+            if ($len > 0 && strlen($host) >= $len && substr($host, -$len) === $tld) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
 if (! defined('RCH_RECHAT_SDK_CSS_URL')) {
-    define('RCH_RECHAT_SDK_CSS_URL', 'https://unpkg.com/@rechat/sdk@1.3.9/dist/rechat.min.css');
+    define(
+        'RCH_RECHAT_SDK_CSS_URL',
+        rch_is_localhost_environment()
+            ? 'https://sdk.rechat.com/builder/dist/rechat.min.css'
+            : 'https://unpkg.com/@rechat/sdk@1.3.9/dist/rechat.min.css'
+    );
 }
 if (! defined('RCH_RECHAT_SDK_JS_URL')) {
-    define('RCH_RECHAT_SDK_JS_URL', 'https://unpkg.com/@rechat/sdk@1.3.9/dist/rechat.min.js');
+    define(
+        'RCH_RECHAT_SDK_JS_URL',
+        rch_is_localhost_environment()
+            ? 'https://sdk.rechat.com/builder/dist/rechat.min.js'
+            : 'https://unpkg.com/@rechat/sdk@1.3.9/dist/rechat.min.js'
+    );
 }
 const RCH_PLUGIN_INCLUDES = RCH_PLUGIN_DIR . 'includes/';
 /** Post meta: manual sort position for agents (lower first). Legacy DB rows may still equal RCH_AGENT_DISPLAY_ORDER_EMPTY_SORT (treated like empty). */
@@ -182,6 +220,5 @@ if (is_multisite() && is_admin()) {
 }
 if (is_admin()) {
     include RCH_PLUGIN_INCLUDES . 'admin/enqueue-admin.php';
-
-
+    require_once RCH_PLUGIN_INCLUDES . 'admin/agent-data-csv-importer.php';
 }
