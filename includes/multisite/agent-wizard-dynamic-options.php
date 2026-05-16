@@ -371,6 +371,9 @@ function rch_agent_wizard_dynamic_heuristic_import_defaults(array $keys): array
         if ((rch_agent_wizard_str_contains_ci($kl, 'phone') || rch_agent_wizard_str_contains_ci($kl, 'tel')) && ! isset($out['phone_number'])) {
             $out['phone_number'] = $k;
         }
+        if (rch_agent_wizard_str_contains_ci($kl, 'address') && ! isset($out['agent_address'])) {
+            $out['agent_address'] = $k;
+        }
         if (rch_agent_wizard_str_contains_ci($kl, 'listing') && (rch_agent_wizard_str_contains_ci($kl, 'url') || rch_agent_wizard_str_contains_ci($kl, 'link')) && ! isset($out['website'])) {
             $out['website'] = $k;
         }

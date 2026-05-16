@@ -214,6 +214,9 @@ const {
 /** Keep in sync with PHP `RECHAT_API_BASE_URL` in the main plugin file. */
 
 const RECHAT_API_BASE_URL = 'https://api.rechat.com';
+
+/** Always offered next to API tags; selectable like other tags. */
+const STATIC_MORTGAGE_QUESTIONNAIRE_TAG = 'Mortgage Questionnaire';
 registerBlockType('rch-rechat-plugin/leads-form-block', {
   title: 'Leads Form Block',
   description: 'Block for lead form submission',
@@ -225,6 +228,18 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
       default: 'Lead Form'
     },
     leadChannel: {
+      type: 'string',
+      default: ''
+    },
+    assigneeAgentEmail: {
+      type: 'string',
+      default: ''
+    },
+    useMortgageQuestionLeadSource: {
+      type: 'boolean',
+      default: true
+    },
+    leadSource: {
       type: 'string',
       default: ''
     },
@@ -252,10 +267,6 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
       type: 'array',
       default: []
     },
-    emailForGetLead: {
-      type: 'string',
-      default: ''
-    },
     submitButtonText: {
       type: 'string',
       default: 'Submit Request'
@@ -268,19 +279,26 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
     const {
       formTitle,
       leadChannel,
+      assigneeAgentEmail,
+      useMortgageQuestionLeadSource,
+      leadSource,
       showFirstName,
       showLastName,
       showPhoneNumber,
       showEmail,
       showNote,
       selectedTagsFrom,
-      emailForGetLead,
       submitButtonText
     } = attributes;
     const [leadChannels, setLeadChannels] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)();
     const [tags, setTags] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
+    const [agentOptions, setAgentOptions] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([{
+      label: 'Loading agents…',
+      value: ''
+    }]);
     const [loadingChannels, setLoadingChannels] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(true);
     const [loadingTags, setLoadingTags] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(true);
+    const [loadingAgents, setLoadingAgents] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(true);
     const [isLoggedIn, setIsLoggedIn] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(null);
     const [brandId, setBrandId] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(null);
     const [accessToken, setAccessToken] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(null);
@@ -323,7 +341,7 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
         const tokenResponse = await _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2___default()({
           path: '/wp/v2/options'
         });
-        if (tokenResponse.rch_rechat_google_map_api_key) {
+        if (tokenResponse.rch_rechat_access_token) {
           setAccessToken(tokenResponse.rch_rechat_access_token);
         } else {
           console.error('Access token not found in WordPress options.');
@@ -333,13 +351,54 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
       }
     };
     (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+      if (isLoggedIn !== true) {
+        return;
+      }
+      let cancelled = false;
+      const loadAgents = async () => {
+        setLoadingAgents(true);
+        try {
+          const res = await _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2___default()({
+            path: '/rch/v1/leads-form-agents'
+          });
+          const agents = Array.isArray(res?.agents) ? res.agents : [];
+          const opts = [{
+            label: 'Select agent to receive this lead',
+            value: ''
+          }, ...agents.map(a => ({
+            label: a.name && a.email ? `${a.name} (${a.email})` : a.email || a.name || 'Agent',
+            value: a.email || ''
+          }))];
+          if (!cancelled) {
+            setAgentOptions(opts);
+          }
+        } catch (e) {
+          console.error('Error loading agents for lead form:', e);
+          if (!cancelled) {
+            setAgentOptions([{
+              label: 'Could not load agents (check agent posts have email meta)',
+              value: ''
+            }]);
+          }
+        } finally {
+          if (!cancelled) {
+            setLoadingAgents(false);
+          }
+        }
+      };
+      loadAgents();
+      return () => {
+        cancelled = true;
+      };
+    }, [isLoggedIn]);
+    (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
       if (isLoggedIn && brandId && accessToken) {
         const fetchLeadChannels = async () => {
           try {
             const channelResponse = await fetch(`${RECHAT_API_BASE_URL}/brands/${brandId}/leads/channels`, {
               method: 'GET',
               headers: {
-                'Authorization': `Bearer ${accessToken}`
+                Authorization: `Bearer ${accessToken}`
               }
             });
             const channelData = await channelResponse.json();
@@ -364,7 +423,7 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
             const tagsResponse = await fetch(`${RECHAT_API_BASE_URL}/contacts/tags`, {
               method: 'GET',
               headers: {
-                'Authorization': `Bearer ${accessToken}`,
+                Authorization: `Bearer ${accessToken}`,
                 'X-RECHAT-BRAND': brandId
               }
             });
@@ -383,6 +442,23 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
         fetchTags();
       }
     }, [isLoggedIn, brandId, accessToken]);
+    const tagsForCheckboxes = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useMemo)(() => {
+      const list = Array.isArray(tags) ? [...tags] : [];
+      const seen = new Set(list.map(t => t.value));
+      if (!seen.has(STATIC_MORTGAGE_QUESTIONNAIRE_TAG)) {
+        list.push({
+          label: STATIC_MORTGAGE_QUESTIONNAIRE_TAG,
+          value: STATIC_MORTGAGE_QUESTIONNAIRE_TAG
+        });
+      }
+      return list;
+    }, [tags]);
+    const handleTagChange = tagId => {
+      const newSelectedTagsFrom = selectedTagsFrom.includes(tagId) ? selectedTagsFrom.filter(id => id !== tagId) : [...selectedTagsFrom, tagId];
+      setAttributes({
+        selectedTagsFrom: newSelectedTagsFrom
+      });
+    };
     if (isLoggedIn === false) {
       return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("p", {
         children: "Please log in to view and manage the lead channels and tags."
@@ -393,12 +469,6 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
         children: "Loading..."
       });
     }
-    const handleTagChange = tagId => {
-      const newSelectedTagsFrom = selectedTagsFrom.includes(tagId) ? selectedTagsFrom.filter(id => id !== tagId) : [...selectedTagsFrom, tagId];
-      setAttributes({
-        selectedTagsFrom: newSelectedTagsFrom
-      });
-    };
     return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.Fragment, {
       children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(InspectorControls, {
         children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(PanelBody, {
@@ -425,13 +495,36 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
             onChange: selectedChannel => setAttributes({
               leadChannel: selectedChannel
             })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(TextControl, {
-            label: "Email for Get This Lead In you Inbox",
-            value: emailForGetLead,
-            placeholder: "Enter the email to receive leads",
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(SelectControl, {
+            label: "Assignee agent (from Agents CPT)",
+            value: assigneeAgentEmail,
+            options: loadingAgents ? [{
+              label: 'Loading agents…',
+              value: ''
+            }] : agentOptions,
             onChange: value => setAttributes({
-              emailForGetLead: value
+              assigneeAgentEmail: value
             })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("p", {
+            style: {
+              marginTop: '-8px',
+              fontSize: '12px',
+              color: '#757575'
+            },
+            children: "Uses each agent post\u2019s email meta. Only agents with a valid email appear."
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(ToggleControl, {
+            label: "Send lead_source as \"Mortgage Question From\"",
+            checked: useMortgageQuestionLeadSource,
+            onChange: value => setAttributes({
+              useMortgageQuestionLeadSource: value
+            })
+          }), !useMortgageQuestionLeadSource && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(TextControl, {
+            label: "Custom lead source",
+            value: leadSource,
+            onChange: value => setAttributes({
+              leadSource: value
+            }),
+            placeholder: "e.g. Contact page"
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(ToggleControl, {
             label: "Show First Name Field",
             checked: showFirstName,
@@ -472,7 +565,7 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
                 children: "Tags"
               }), loadingTags ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("p", {
                 children: "Loading tags..."
-              }) : tags.map(tag => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+              }) : tagsForCheckboxes.map(tag => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
                 style: {
                   marginBottom: '8px'
                 },
@@ -482,7 +575,14 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
                     value: tag.value,
                     checked: selectedTagsFrom.includes(tag.value),
                     onChange: () => handleTagChange(tag.value)
-                  }), tag.label]
+                  }), tag.label, tag.value === STATIC_MORTGAGE_QUESTIONNAIRE_TAG ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("span", {
+                    style: {
+                      color: '#757575',
+                      fontSize: '11px',
+                      marginLeft: '6px'
+                    },
+                    children: "(fixed option)"
+                  }) : null]
                 })
               }, tag.value))]
             })

@@ -24,6 +24,15 @@ function add_agents_meta_box()
         'side',                             // Context (sidebar)
         'default'                           // Priority
     );
+
+    add_meta_box(
+        'agents_address_meta_box',
+        __('Address', 'rechat-plugin'),
+        'agents_address_meta_box_html',
+        'agents',
+        'normal',
+        'default'
+    );
 }
 add_action('add_meta_boxes', 'add_agents_meta_box');
 
@@ -139,6 +148,85 @@ function agents_visibility_meta_box_html($post)
 }
 
 /*******************************
+ * Address meta box (from assigned offices; read-only)
+ ******************************/
+function agents_address_meta_box_html($post)
+{
+    $entries = function_exists('rch_get_agent_office_addresses')
+        ? rch_get_agent_office_addresses((int) $post->ID)
+        : [];
+
+    ?>
+    <style>
+        #agents_address_meta_box .rch-agent-address-list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+        #agents_address_meta_box .rch-agent-address-item {
+            margin: 0 0 12px;
+            padding: 10px 12px;
+            border: 1px solid #dcdcde;
+            border-radius: 4px;
+            background: #f6f7f7;
+        }
+        #agents_address_meta_box .rch-agent-address-item:last-child {
+            margin-bottom: 0;
+        }
+        #agents_address_meta_box .rch-agent-address-office {
+            margin: 0 0 6px;
+            font-weight: 600;
+        }
+        #agents_address_meta_box .rch-agent-address-text {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+        #agents_address_meta_box .rch-agent-address-empty {
+            color: #646970;
+            font-style: italic;
+        }
+    </style>
+    <?php
+
+    if ($entries === []) {
+        echo '<p class="rch-agent-address-empty">' . esc_html__(
+            'No offices assigned. Assign offices in the Rechat Offices box to show address here.',
+            'rechat-plugin'
+        ) . '</p>';
+        return;
+    }
+
+    echo '<ul class="rch-agent-address-list">';
+    foreach ($entries as $entry) {
+        $office_name = isset($entry['office_name']) ? (string) $entry['office_name'] : '';
+        $address     = isset($entry['address']) ? trim((string) $entry['address']) : '';
+        ?>
+        <li class="rch-agent-address-item">
+            <p class="rch-agent-address-office"><?php echo esc_html($office_name); ?></p>
+            <?php if ($address !== '') : ?>
+                <p class="rch-agent-address-text"><?php echo esc_html($address); ?></p>
+            <?php else : ?>
+                <p class="rch-agent-address-empty"><?php esc_html_e('No address on file for this office.', 'rechat-plugin'); ?></p>
+            <?php endif; ?>
+        </li>
+        <?php
+    }
+    echo '</ul>';
+
+    if (count($entries) > 1) {
+        echo '<p class="description">' . esc_html__(
+            'Multiple offices: each address is listed under its office name. The combined text is stored as agent_address for subsite theme import.',
+            'rechat-plugin'
+        ) . '</p>';
+    } else {
+        echo '<p class="description">' . esc_html__(
+            'Address comes from the assigned office. It is stored as agent_address for subsite theme import.',
+            'rechat-plugin'
+        ) . '</p>';
+    }
+}
+
+/*******************************
  * Function to save custom field data
  ******************************/
 function save_agents_meta_box($post_id)
@@ -219,6 +307,10 @@ function save_agents_meta_box($post_id)
                 update_post_meta($post_id, 'agent_visibility', 'show');
             }
         }
+    }
+
+    if (function_exists('rch_sync_agent_address_meta')) {
+        rch_sync_agent_address_meta($post_id);
     }
 }
 

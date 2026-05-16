@@ -436,6 +436,10 @@ function rch_agent_wizard_importable_field_defs(): array
             'label'               => __('License number', 'rechat-plugin'),
             'default_theme_key'   => '',
         ],
+        'agent_address' => [
+            'label'               => __('Address (from assigned offices)', 'rechat-plugin'),
+            'default_theme_key'   => '',
+        ],
         'agent_visibility' => [
             'label'               => __('Visibility (show/hide)', 'rechat-plugin'),
             'default_theme_key'   => '',
