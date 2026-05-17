@@ -219,7 +219,7 @@ $wz_broadcast_step = function_exists('rch_agent_wizard_broadcast_step_enabled') 
                 <p class="rch-wz-card__subtitle">
                     <?php
                     esc_html_e(
-                        'Each row is one theme option key for the network default agent theme. Pick a source: leave unchanged, enter a value manually, or bind an agent profile field. Nothing is written until you deploy.',
+                        'Fields are loaded automatically from the active agent theme (themeoption.php keys and Theme Setting labels). When you add or remove options in the theme, reload this page to refresh the list. Pick a source: leave unchanged, set manually, or bind an agent profile field. Nothing is written until you deploy.',
                         'rechat-plugin'
                     );
                     ?>
@@ -247,6 +247,9 @@ $wz_broadcast_step = function_exists('rch_agent_wizard_broadcast_step_enabled') 
                             <div class="rch-wz-theme-row" data-theme-key="<?php echo esc_attr($mr['key']); ?>">
                                 <div class="rch-wz-theme-row__label">
                                     <span class="rch-wz-theme-label"><?php echo esc_html($mr['label']); ?></span>
+                                    <?php if (! empty($mr['help'])) : ?>
+                                        <p class="rch-wz-theme-help"><?php echo esc_html((string) $mr['help']); ?></p>
+                                    <?php endif; ?>
                                 </div>
                                 <div class="rch-wz-theme-row__controls">
                                     <div class="rch-wz-field">

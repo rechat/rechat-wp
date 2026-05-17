@@ -500,6 +500,14 @@
     color: var(--wz-text);
 }
 
+.rch-agent-wizard .rch-wz-theme-help {
+    margin: 0.35rem 0 0;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.45;
+    color: var(--wz-muted);
+}
+
 .rch-agent-wizard .rch-wz-theme-row__controls {
     display: flex;
     flex-direction: column;

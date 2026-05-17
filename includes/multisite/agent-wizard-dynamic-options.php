@@ -128,6 +128,376 @@ function rch_agent_wizard_discover_from_themeoption_php(string $stylesheet): ?ar
 }
 
 /**
+ * Whether a string is a Rechat/theme option key (not wp_kses noise).
+ */
+function rch_agent_wizard_is_theme_option_key(string $key): bool
+{
+    if ($key === '') {
+        return false;
+    }
+    $kl = strtolower($key);
+
+    return strpos($kl, 'rch-') === 0 || strpos($kl, 'rch_') === 0;
+}
+
+/**
+ * Resolve path to theme option panel view (labels/help for wizard).
+ */
+function rch_agent_wizard_resolve_option_panel_path(string $stylesheet): ?string
+{
+    $stylesheet = is_string($stylesheet) ? preg_replace('/[^a-zA-Z0-9._\-]/', '', $stylesheet) : '';
+    if ($stylesheet === '') {
+        return null;
+    }
+
+    $filtered = apply_filters('rch_agent_wizard_option_panel_path', null, $stylesheet);
+    if (is_string($filtered) && $filtered !== '' && is_readable($filtered)) {
+        return $filtered;
+    }
+
+    $root = trailingslashit(get_theme_root()) . $stylesheet . '/';
+    $candidates = [
+        $root . 'includes/views/option-panel.php',
+        $root . 'views/option-panel.php',
+    ];
+
+    foreach ($candidates as $path) {
+        if (is_readable($path)) {
+            return $path;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Short section name from an option-panel <h3> heading.
+ */
+function rch_agent_wizard_normalize_panel_section_label(string $raw_heading): string
+{
+    $raw = trim(html_entity_decode(wp_strip_all_tags($raw_heading), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+    if ($raw === '') {
+        return '';
+    }
+
+    $before_paren = trim((string) preg_replace('/\s*\(.*/u', '', $raw));
+    $checks         = [
+        '/^Footer\s*—/iu'                    => 'Footer',
+        '/^Stored only/iu'                   => 'Admin only',
+        '/^Homepage\s*—\s*Top hero/iu'       => 'Hero',
+        '/^Homepage\s*—\s*Agent profile/iu'  => 'Profile',
+        '/^Homepage\s*—\s*Stats/iu'          => 'Stats',
+        '/^Homepage\s*—\s*Active listings/iu' => 'Active listings',
+        '/^Homepage\s*—\s*Sold listings/iu'  => 'Sold listings',
+        '/^Homepage bottom\s*—\s*Talk/iu'    => 'Talk',
+    ];
+    foreach ($checks as $pattern => $short) {
+        if (preg_match($pattern, $before_paren)) {
+            return $short;
+        }
+    }
+
+    if (strpos($before_paren, '—') !== false) {
+        $parts = array_map('trim', preg_split('/\s*—\s*/u', $before_paren, 2));
+
+        return $parts[0] !== '' ? $parts[0] : $before_paren;
+    }
+
+    return $before_paren;
+}
+
+/**
+ * Template/file hint from option-panel section heading, e.g. footer.php, index.php.
+ */
+function rch_agent_wizard_extract_panel_placement_hint(string $raw_heading): string
+{
+    $raw = wp_strip_all_tags($raw_heading);
+    if (preg_match('/\b([a-z0-9_\-\/]+\.php)\b/i', $raw, $m)) {
+        return (string) $m[1];
+    }
+    if (preg_match('/\.([a-z][a-z0-9_-]+)/i', $raw, $m2)) {
+        return 'index.php · .' . $m2[1];
+    }
+
+    return '';
+}
+
+/**
+ * Whether a field label already starts with the section short name.
+ */
+function rch_agent_wizard_panel_label_has_section(string $label, string $section): bool
+{
+    if ($section === '' || $label === '') {
+        return false;
+    }
+
+    return (bool) preg_match('/^' . preg_quote($section, '/') . '\s*—/iu', $label);
+}
+
+/**
+ * Discover labels, help text, control type, and order from theme option-panel.php.
+ *
+ * @return array{fields:list<array{key:string,label:string,help?:string,type:string,media:string}>}|null
+ */
+function rch_agent_wizard_discover_from_option_panel_php(string $stylesheet): ?array
+{
+    $path = rch_agent_wizard_resolve_option_panel_path($stylesheet);
+    if ($path === null) {
+        return null;
+    }
+
+    $src = file_get_contents($path);
+    if (! is_string($src) || $src === '') {
+        return null;
+    }
+
+    if (! preg_match_all('/<tr\b[^>]*>.*?<\/tr>/is', $src, $row_matches)) {
+        return null;
+    }
+
+    $fields              = [];
+    $current_section     = '';
+    $current_placement   = '';
+    foreach ($row_matches[0] as $row) {
+        if (preg_match('/<h3\b[^>]*>(.*?)<\/h3>/is', $row, $h3_match)) {
+            $heading_raw         = (string) $h3_match[1];
+            $current_section     = rch_agent_wizard_normalize_panel_section_label($heading_raw);
+            $current_placement   = rch_agent_wizard_extract_panel_placement_hint($heading_raw);
+
+            continue;
+        }
+
+        if (! preg_match('/\bname\s*=\s*["\']([^"\']+)["\']/i', $row, $name_match)) {
+            continue;
+        }
+        $key = trim((string) $name_match[1]);
+        if (! rch_agent_wizard_is_theme_option_key($key)) {
+            continue;
+        }
+
+        $label = '';
+        if (preg_match('/<th[^>]*\bscope\s*=\s*["\']row["\'][^>]*>(.*?)<\/th>/is', $row, $th_match)) {
+            $label = trim(html_entity_decode(wp_strip_all_tags($th_match[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        }
+
+        if ($label !== '' && $current_section !== '' && ! rch_agent_wizard_panel_label_has_section($label, $current_section)) {
+            $label = $current_section . ' — ' . $label;
+        }
+
+        $help = '';
+        if (preg_match('/<p\s+class\s*=\s*["\']description["\'][^>]*>(.*?)<\/p>/is', $row, $help_match)) {
+            $help = trim(html_entity_decode(wp_strip_all_tags($help_match[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        }
+        if ($current_placement !== '') {
+            $placement_line = sprintf(
+                /* translators: %s: theme template file such as index.php or footer.php */
+                __('Placed in: %s', 'rechat-plugin'),
+                $current_placement
+            );
+            $help = $help !== '' ? $placement_line . ' · ' . $help : $placement_line;
+        } elseif ($current_section !== '') {
+            $placement_line = sprintf(
+                /* translators: %s: homepage section name such as Hero or Profile */
+                __('Section: %s', 'rechat-plugin'),
+                $current_section
+            );
+            $help = $help !== '' ? $placement_line . ' · ' . $help : $placement_line;
+        }
+
+        $type  = 'text';
+        $media = '';
+        if (preg_match('/<textarea\b/i', $row)) {
+            $type = 'textarea';
+        } elseif (preg_match('/<select\b/i', $row)) {
+            $type = 'select';
+        } elseif (preg_match('/<input[^>]*\btype\s*=\s*["\']([^"\']+)["\']/i', $row, $type_match)) {
+            $input_type = strtolower((string) $type_match[1]);
+            if (
+                $input_type === 'hidden'
+                && (
+                    (function_exists('rch_agent_wizard_key_uses_tags_multiselect_ui') && rch_agent_wizard_key_uses_tags_multiselect_ui($key))
+                    || rch_agent_wizard_str_contains_ci($key, 'selected-tags')
+                    || rch_agent_wizard_str_contains_ci($key, 'selected_tags')
+                )
+            ) {
+                $type = 'textarea_json';
+            } elseif ($input_type === 'email') {
+                $type = 'text';
+            } elseif (in_array($input_type, ['url', 'number', 'text'], true)) {
+                $type = $input_type === 'text' ? 'text' : $input_type;
+            }
+        }
+
+        if (preg_match('/upload_image_button/i', $row)) {
+            $media = 'image';
+            if ($type === 'text') {
+                $type = 'url';
+            }
+        } elseif (preg_match('/upload_video_button/i', $row)) {
+            $media = 'video';
+            if ($type === 'text') {
+                $type = 'url';
+            }
+        }
+
+        $field = [
+            'key'   => $key,
+            'label' => $label !== '' ? $label : rch_agent_wizard_humanize_option_key($key),
+            'type'  => $type,
+            'media' => $media,
+        ];
+        if ($help !== '') {
+            $field['help'] = $help;
+        }
+        $fields[] = $field;
+    }
+
+    if ($fields === []) {
+        return null;
+    }
+
+    /**
+     * @param array{fields:list<array<string,mixed>>} $result
+     */
+    $result = ['fields' => $fields];
+
+    return apply_filters('rch_agent_wizard_discovered_option_panel_fields', $result, $stylesheet, $path);
+}
+
+/**
+ * Build wizard field list: keys from themeoption.php, labels/order from option-panel.php, optional manifest overrides.
+ *
+ * @param array<string, mixed>|null $manifest Optional rechat-agent-wizard.json (storage, exclude_fields, field overrides).
+ * @param array{storage:array{primary:string,mirror:?string},fields:list<array<string,mixed>>} $disc From themeoption.php.
+ * @param array{fields:list<array<string,mixed>>}|null $panel From option-panel.php.
+ * @return array{storage:array{primary:string,mirror:?string},fields:list<array<string,mixed>>}
+ */
+function rch_agent_wizard_merge_theme_field_definitions(?array $manifest, array $disc, ?array $panel): array
+{
+    $storage = isset($disc['storage']) && is_array($disc['storage']) ? $disc['storage'] : ['primary' => '', 'mirror' => null];
+
+    if (is_array($manifest) && ! empty($manifest['storage']['primary']) && is_string($manifest['storage']['primary'])) {
+        $storage['primary'] = $manifest['storage']['primary'];
+        if (isset($manifest['storage']['mirror']) && is_string($manifest['storage']['mirror']) && $manifest['storage']['mirror'] !== '') {
+            $storage['mirror'] = $manifest['storage']['mirror'];
+        }
+    }
+
+    $disc_fields = isset($disc['fields']) && is_array($disc['fields']) ? $disc['fields'] : [];
+
+    $exclude = [];
+    if (is_array($manifest) && isset($manifest['exclude_fields']) && is_array($manifest['exclude_fields'])) {
+        foreach ($manifest['exclude_fields'] as $ex) {
+            if (is_string($ex) && $ex !== '') {
+                $exclude[ $ex ] = true;
+            }
+        }
+    }
+
+    $disc_by_key = [];
+    $disc_order  = [];
+    foreach ($disc_fields as $field) {
+        if (! is_array($field) || empty($field['key']) || ! is_string($field['key'])) {
+            continue;
+        }
+        if (! empty($exclude[ $field['key'] ])) {
+            continue;
+        }
+        $disc_by_key[ $field['key'] ] = $field;
+        $disc_order[]                  = $field['key'];
+    }
+
+    $panel_by_key = [];
+    $panel_order  = [];
+    if (is_array($panel) && isset($panel['fields']) && is_array($panel['fields'])) {
+        foreach ($panel['fields'] as $field) {
+            if (! is_array($field) || empty($field['key']) || ! is_string($field['key'])) {
+                continue;
+            }
+            $k = $field['key'];
+            if (! isset($disc_by_key[ $k ])) {
+                continue;
+            }
+            $panel_by_key[ $k ] = $field;
+            $panel_order[]      = $k;
+        }
+    }
+
+    $manifest_overrides = [];
+    if (is_array($manifest) && isset($manifest['fields']) && is_array($manifest['fields'])) {
+        foreach ($manifest['fields'] as $field) {
+            if (! is_array($field) || empty($field['key']) || ! is_string($field['key'])) {
+                continue;
+            }
+            if (! isset($disc_by_key[ $field['key'] ])) {
+                continue;
+            }
+            $manifest_overrides[ $field['key'] ] = $field;
+        }
+    }
+
+    $ordered_keys = [];
+    $seen         = [];
+    foreach ($panel_order as $k) {
+        if (empty($seen[ $k ])) {
+            $ordered_keys[] = $k;
+            $seen[ $k ]     = true;
+        }
+    }
+    foreach ($disc_order as $k) {
+        if (empty($seen[ $k ])) {
+            $ordered_keys[] = $k;
+            $seen[ $k ]     = true;
+        }
+    }
+
+    $merged = [];
+    foreach ($ordered_keys as $k) {
+        $field = $disc_by_key[ $k ];
+        if (isset($panel_by_key[ $k ]) && is_array($panel_by_key[ $k ])) {
+            $field = array_merge($field, array_filter(
+                $panel_by_key[ $k ],
+                static function ($v, $prop) {
+                    if ($v === '' || $v === null) {
+                        return false;
+                    }
+
+                    return in_array($prop, ['label', 'help', 'type', 'media'], true);
+                },
+                ARRAY_FILTER_USE_BOTH
+            ));
+        }
+        if (isset($manifest_overrides[ $k ]) && is_array($manifest_overrides[ $k ])) {
+            $field = array_merge($field, array_filter(
+                $manifest_overrides[ $k ],
+                static function ($v, $prop) {
+                    if ($v === '' || $v === null) {
+                        return false;
+                    }
+
+                    return $prop !== 'key';
+                },
+                ARRAY_FILTER_USE_BOTH
+            ));
+        }
+        $merged[] = $field;
+    }
+
+    return [
+        'storage' => $storage,
+        'fields'  => $merged,
+    ];
+}
+
+/**
+ * @deprecated Use {@see rch_agent_wizard_merge_theme_field_definitions()}.
+ */
+function rch_agent_wizard_merge_manifest_discovery_fields(?array $manifest, array $disc): array
+{
+    return rch_agent_wizard_merge_theme_field_definitions($manifest, $disc, null);
+}
+
+/**
  * Read a WordPress option as an associative array on the current blog.
  *
  * @return array<string, mixed>
@@ -415,8 +785,10 @@ function rch_agent_wizard_build_dynamic_profile_from_data(
     array $snapshot,
     ?array $manifest
 ): array {
-    $keys   = [];
-    $labels = [];
+    $keys        = [];
+    $labels      = [];
+    $field_help  = [];
+    $field_order = [];
 
     $buckets = [
         'urls'            => [],
@@ -447,6 +819,10 @@ function rch_agent_wizard_build_dynamic_profile_from_data(
             $labels[ $k ] = isset($field['label']) && is_string($field['label']) && $field['label'] !== ''
                 ? $field['label']
                 : rch_agent_wizard_humanize_option_key($k);
+            if (isset($field['help']) && is_string($field['help']) && $field['help'] !== '') {
+                $field_help[ $k ] = $field['help'];
+            }
+            $field_order[] = $k;
             $type  = isset($field['type']) ? sanitize_key((string) $field['type']) : 'text';
             $media = isset($field['media']) ? sanitize_key((string) $field['media']) : '';
             $sample = $snapshot[ $k ] ?? '';
@@ -535,8 +911,23 @@ function rch_agent_wizard_build_dynamic_profile_from_data(
         ? array_values(array_unique(array_filter($buckets['select'], 'is_string')))
         : [];
 
+    $theme_field_order = $field_order !== [] ? $field_order : $keys;
+    $ordered_keys      = [];
+    foreach ($theme_field_order as $ok) {
+        if (in_array($ok, $merged_keys, true) && ! in_array($ok, $ordered_keys, true)) {
+            $ordered_keys[] = $ok;
+        }
+    }
+    foreach ($merged_keys as $mk) {
+        if (! in_array($mk, $ordered_keys, true)) {
+            $ordered_keys[] = $mk;
+        }
+    }
+
     return [
         'keys'            => $merged_keys,
+        'field_order'     => $ordered_keys,
+        'field_help'      => $field_help,
         'labels'          => array_merge($labels, $wizard_labels),
         'urls'            => $buckets['urls'],
         'textareas'       => $buckets['textareas'],
@@ -592,21 +983,23 @@ function rch_agent_wizard_try_build_dynamic_theme_profile(string $stylesheet): ?
     $manifest  = rch_agent_wizard_load_theme_manifest($stylesheet);
     $snapshot  = rch_agent_wizard_merge_option_snapshots($storage);
 
-    // Authoritative structure source: manifest fields > themeoption.php fields > stored snapshot.
+    // Keys: includes/themeoption.php. Labels/help/order: includes/views/option-panel.php. Manifest: optional overrides only.
     $disc = rch_agent_wizard_discover_from_themeoption_php($stylesheet);
     if (is_array($disc) && ! empty($disc['fields']) && is_array($disc['fields'])) {
-        $storage  = $disc['storage'];
-        $manifest = array_merge(is_array($manifest) ? $manifest : [], ['storage' => $storage, 'fields' => $disc['fields']]);
+        $panel    = rch_agent_wizard_discover_from_option_panel_php($stylesheet);
+        $merged   = rch_agent_wizard_merge_theme_field_definitions(is_array($manifest) ? $manifest : null, $disc, $panel);
+        $storage  = $merged['storage'];
+        $manifest = array_merge(is_array($manifest) ? $manifest : [], $merged);
         // refresh snapshot using discovered storage (different themes share pentama_options; we must not show leftover keys)
         $snapshot = rch_agent_wizard_merge_option_snapshots($storage);
     }
 
-    $has_manifest_fields = is_array($manifest)
+    $has_discovered_fields = is_array($manifest)
         && isset($manifest['fields'])
         && is_array($manifest['fields'])
         && $manifest['fields'] !== [];
 
-    if (! $has_manifest_fields && count($snapshot) === 0) {
+    if (! $has_discovered_fields && count($snapshot) === 0) {
         return null;
     }
 
