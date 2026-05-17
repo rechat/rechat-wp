@@ -207,12 +207,14 @@ function rch_agent_wizard_fetch_tag_choice_strings(): array
 /**
  * Manual step: all theme keys with UI type (matches theme option panel).
  *
- * @return list<array{key:string,label:string,type:string,media:string,options?:list<array{value:string,label:string}>}>
+ * @return list<array{key:string,label:string,help?:string,type:string,media:string,options?:list<array{value:string,label:string}>}>
  */
 function rch_agent_wizard_manual_field_defs(): array
 {
     $profile         = rch_agent_wizard_get_theme_profile(rch_agent_wizard_wizard_ui_stylesheet());
     $labels          = $profile['labels'];
+    $field_help      = isset($profile['field_help']) && is_array($profile['field_help']) ? $profile['field_help'] : [];
+    $field_order     = isset($profile['field_order']) && is_array($profile['field_order']) ? $profile['field_order'] : [];
     $select_keys     = isset($profile['select_keys']) && is_array($profile['select_keys']) ? $profile['select_keys'] : [];
     $select_opts_map = isset($profile['select_options']) && is_array($profile['select_options']) ? $profile['select_options'] : [];
     $rows            = [];
@@ -260,17 +262,41 @@ function rch_agent_wizard_manual_field_defs(): array
             'type'  => $type,
             'media' => $media,
         ];
+        if (isset($field_help[ $key ]) && is_string($field_help[ $key ]) && $field_help[ $key ] !== '') {
+            $row['help'] = $field_help[ $key ];
+        }
         if ($options !== []) {
             $row['options'] = $options;
         }
         $rows[] = $row;
     }
-    usort(
-        $rows,
-        static function (array $a, array $b): int {
-            return strcasecmp($a['label'], $b['label']);
+    if ($field_order !== []) {
+        $rank = [];
+        foreach ($field_order as $i => $fk) {
+            if (is_string($fk) && $fk !== '' && ! isset($rank[ $fk ])) {
+                $rank[ $fk ] = $i;
+            }
         }
-    );
+        usort(
+            $rows,
+            static function (array $a, array $b) use ($rank): int {
+                $ra = $rank[ $a['key'] ] ?? PHP_INT_MAX;
+                $rb = $rank[ $b['key'] ] ?? PHP_INT_MAX;
+                if ($ra === $rb) {
+                    return strcasecmp($a['label'], $b['label']);
+                }
+
+                return $ra <=> $rb;
+            }
+        );
+    } else {
+        usort(
+            $rows,
+            static function (array $a, array $b): int {
+                return strcasecmp($a['label'], $b['label']);
+            }
+        );
+    }
 
     return $rows;
 }
