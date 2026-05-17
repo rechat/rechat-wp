@@ -10,6 +10,7 @@ if (! defined('ABSPATH')) {
 }
 
 require_once RCH_PLUGIN_INCLUDES . 'multisite/agent-wizard-menus-widgets-sync.php';
+require_once RCH_PLUGIN_INCLUDES . 'multisite/agent-wizard-testimonials-sync.php';
 
 /**
  * User meta key for draft wizard state (JSON).
@@ -293,6 +294,94 @@ function rch_agent_wizard_importable_field_defs_resolved(): array
     }
 
     return $defs;
+}
+
+/**
+ * Theme option key => agent profile field key (for wizard meta binding restore).
+ *
+ * @return array<string, string>
+ */
+function rch_agent_wizard_theme_to_meta_import_map(): array
+{
+    $out  = [];
+    $defs = rch_agent_wizard_importable_field_defs_resolved();
+    foreach ($defs as $meta_key => $def) {
+        if (! is_string($meta_key) || ! is_array($def)) {
+            continue;
+        }
+        $theme_key = isset($def['default_theme_key']) ? (string) $def['default_theme_key'] : '';
+        if ($theme_key !== '') {
+            $out[ $theme_key ] = $meta_key;
+        }
+    }
+
+    $import_defaults = rch_agent_wizard_get_theme_profile(rch_agent_wizard_wizard_ui_stylesheet())['import_defaults'] ?? [];
+    if (is_array($import_defaults)) {
+        foreach ($import_defaults as $meta_key => $theme_key) {
+            if (is_string($meta_key) && is_string($theme_key) && $theme_key !== '') {
+                $out[ $theme_key ] = $meta_key;
+            }
+        }
+    }
+
+    /**
+     * @param array<string, string> $out
+     */
+    return apply_filters('rch_agent_wizard_theme_to_meta_import_map', $out);
+}
+
+/**
+ * Restore meta bindings in draft theme rows when manual values match last deployment / agent meta.
+ *
+ * @param array<string, array{mode:string, value?:mixed, meta_key?:string}> $theme_rows
+ * @return array<string, array{mode:string, value?:mixed, meta_key?:string}>
+ */
+function rch_agent_wizard_reconcile_draft_theme_rows(int $agent_id, array $theme_rows): array
+{
+    if ($agent_id <= 0 || $theme_rows === []) {
+        return $theme_rows;
+    }
+
+    if (! function_exists('rch_multisite_get_agent_blog_id')) {
+        return $theme_rows;
+    }
+
+    $blog_id = (int) rch_multisite_get_agent_blog_id($agent_id);
+    if ($blog_id <= 0) {
+        return $theme_rows;
+    }
+
+    $last = rch_agent_wizard_read_destination_last_deployment($blog_id);
+    if ($last === null || empty($last['theme_rows']) || ! is_array($last['theme_rows'])) {
+        return $theme_rows;
+    }
+
+    foreach ($theme_rows as $theme_key => $cfg) {
+        if (! is_string($theme_key) || ! is_array($cfg)) {
+            continue;
+        }
+        if (($cfg['mode'] ?? '') !== 'manual') {
+            continue;
+        }
+        if (! isset($last['theme_rows'][ $theme_key ]) || ! is_array($last['theme_rows'][ $theme_key ])) {
+            continue;
+        }
+        $deploy = $last['theme_rows'][ $theme_key ];
+        if (($deploy['mode'] ?? '') !== 'meta' || empty($deploy['meta_key'])) {
+            continue;
+        }
+        $meta_key = sanitize_key((string) $deploy['meta_key']);
+        $manual   = isset($cfg['value']) ? (string) $cfg['value'] : '';
+        $from_meta = rch_agent_wizard_get_import_source_value($agent_id, $meta_key);
+        if ($manual !== '' && trim($manual) === trim((string) $from_meta)) {
+            $theme_rows[ $theme_key ] = [
+                'mode'      => 'meta',
+                'meta_key'  => $meta_key,
+            ];
+        }
+    }
+
+    return $theme_rows;
 }
 
 /**
@@ -863,6 +952,10 @@ function rch_agent_wizard_ajax_load_agent(): void
 
     update_user_meta(get_current_user_id(), 'rch_agent_wizard_last_agent_id', $agent_id);
 
+    $testimonial_rows = function_exists('rch_agent_testimonial_sync_get_source_rows')
+        ? rch_agent_testimonial_sync_get_source_rows($agent_id)
+        : [];
+
     wp_send_json_success([
         'agent_id'        => $agent_id,
         'title'           => get_the_title($post),
@@ -872,6 +965,10 @@ function rch_agent_wizard_ajax_load_agent(): void
         'theme_keys'      => rch_agent_wizard_theme_key_labels(),
         'current_theme'   => $current_theme,
         'last_deployment' => $last_deployment,
+        'testimonials'    => [
+            'count' => count($testimonial_rows),
+            'rows'  => $testimonial_rows,
+        ],
     ]);
 }
 
@@ -1018,6 +1115,16 @@ function rch_agent_wizard_ajax_save_draft(): void
 
     $save_src = isset($decoded['_draftSaveSrc']) && (string) $decoded['_draftSaveSrc'] === 'auto' ? 'auto' : 'user';
     unset($decoded['_draftSaveSrc']);
+
+    $draft_agent_id = isset($decoded['agentId']) ? absint($decoded['agentId']) : 0;
+    if (
+        $draft_agent_id > 0
+        && isset($decoded['themeRows'])
+        && is_array($decoded['themeRows'])
+        && $decoded['themeRows'] !== []
+    ) {
+        $decoded['themeRows'] = rch_agent_wizard_reconcile_draft_theme_rows($draft_agent_id, $decoded['themeRows']);
+    }
 
     $uid      = get_current_user_id();
     $existing = get_user_meta($uid, RCH_AGENT_WIZARD_DRAFT_META, true);
@@ -1207,9 +1314,29 @@ function rch_agent_wizard_ajax_deploy(): void
 
     update_user_meta(get_current_user_id(), 'rch_agent_wizard_last_agent_id', $agent_id);
 
+    $testimonial_summary = null;
+    if (function_exists('rch_agent_wizard_sync_testimonials_for_agent')) {
+        $ts = rch_agent_wizard_sync_testimonials_for_agent($agent_id);
+        if (! is_wp_error($ts)) {
+            $testimonial_summary = $ts;
+        }
+    }
+
+    $message = __('Theme options were saved on the agent sub-site.', 'rechat-plugin');
+    if (is_array($testimonial_summary)) {
+        $message .= ' ' . sprintf(
+            /* translators: 1: created, 2: updated, 3: removed */
+            __('Testimonials: %1$d created, %2$d updated, %3$d removed.', 'rechat-plugin'),
+            (int) $testimonial_summary['created'],
+            (int) $testimonial_summary['updated'],
+            (int) $testimonial_summary['deleted']
+        );
+    }
+
     wp_send_json_success([
-        'message' => __('Theme options were saved on the agent sub-site.', 'rechat-plugin'),
-        'blog_id' => function_exists('rch_multisite_get_agent_blog_id') ? rch_multisite_get_agent_blog_id($agent_id) : 0,
+        'message'              => $message,
+        'blog_id'              => function_exists('rch_multisite_get_agent_blog_id') ? rch_multisite_get_agent_blog_id($agent_id) : 0,
+        'testimonial_summary'  => $testimonial_summary,
     ]);
 }
 
@@ -2086,6 +2213,7 @@ function rch_agent_wizard_enqueue_assets(string $hook): void
             'ajaxurl'        => admin_url('admin-ajax.php'),
             'nonce'          => wp_create_nonce(RCH_AGENT_WIZARD_NONCE_ACTION),
             'themeKeys'      => $theme_keys,
+            'themeImportMap' => rch_agent_wizard_theme_to_meta_import_map(),
             'metaboxLabels'  => $metabox_labels,
             'bulkCount'      => rch_agent_wizard_count_agents_with_subsites(),
             'lastAgentId'    => $last_agent_id,
@@ -2174,6 +2302,11 @@ function rch_agent_wizard_enqueue_assets(string $hook): void
                 'mbDown'          => __('Move down', 'rechat-plugin'),
                 'mbPrev'          => __('Previous', 'rechat-plugin'),
                 'mbNext'          => __('Next', 'rechat-plugin'),
+                'testimonialsCountSingle' => /* translators: %d: count */ __('%d testimonial row(s) on this agent.', 'rechat-plugin'),
+                'testimonialsCountNone'   => __('No testimonials on this agent yet. Add them in the agent editor on the main site.', 'rechat-plugin'),
+                'testimonialsBulkHint'    => __('Imports testimonials for every agent that has a sub-site (uses each agent’s testimonial list).', 'rechat-plugin'),
+                'testimonialsPickAgent'   => __('Select an agent and load profile first, or switch to “All agent sub-sites”.', 'rechat-plugin'),
+                'testimonialsNoBlog'      => __('This agent has no sub-site yet.', 'rechat-plugin'),
             ],
         ]
     );

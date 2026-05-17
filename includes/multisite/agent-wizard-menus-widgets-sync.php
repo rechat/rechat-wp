@@ -70,6 +70,92 @@ function rch_agent_wizard_export_widget_options(int $blog_id): array
  *
  * @param array<string, mixed> $options
  */
+/**
+ * After menus are cloned, point Navigation Menu widgets at the target blog's menu term IDs.
+ *
+ * @param array<string, mixed>     $options
+ * @param array<int, int>            $source_term_to_target Source menu term_id => target term_id.
+ * @param array<string, int>         $slug_to_target        Menu slug => target term_id (optional).
+ * @return array<string, mixed>
+ */
+function rch_agent_wizard_remap_nav_menu_widget_options(
+    array $options,
+    int $source_blog,
+    array $source_term_to_target,
+    array $slug_to_target = []
+): array {
+    foreach ($options as $name => &$value) {
+        if (! is_string($name) || strpos($name, 'widget_nav_menu') !== 0 || ! is_array($value)) {
+            continue;
+        }
+
+        foreach ($value as $instance_key => &$instance) {
+            if ($instance_key === '_multiwidget' || ! is_array($instance) || empty($instance['nav_menu'])) {
+                continue;
+            }
+
+            $src_term = (int) $instance['nav_menu'];
+            if ($src_term > 0 && isset($source_term_to_target[ $src_term ])) {
+                $instance['nav_menu'] = (int) $source_term_to_target[ $src_term ];
+                continue;
+            }
+
+            if ($src_term > 0 && $slug_to_target !== []) {
+                switch_to_blog($source_blog);
+                $menu = wp_get_nav_menu_object($src_term);
+                restore_current_blog();
+                if (is_object($menu) && ! empty($menu->slug) && isset($slug_to_target[ (string) $menu->slug ])) {
+                    $instance['nav_menu'] = (int) $slug_to_target[ (string) $menu->slug ];
+                }
+            }
+        }
+        unset($instance);
+    }
+    unset($value);
+
+    return $options;
+}
+
+/**
+ * Build menu slug => target term_id map from cloned menus on a target blog.
+ *
+ * @param array<int, int> $source_term_to_target
+ * @return array<string, int>
+ */
+function rch_agent_wizard_build_cloned_menu_slug_map_on_target(
+    int $source_blog,
+    int $target_blog,
+    array $source_term_to_target
+): array {
+    $slug_map = [];
+
+    foreach ($source_term_to_target as $src_id => $tgt_id) {
+        $src_id = (int) $src_id;
+        $tgt_id = (int) $tgt_id;
+        if ($src_id <= 0 || $tgt_id <= 0) {
+            continue;
+        }
+
+        switch_to_blog($source_blog);
+        $menu = wp_get_nav_menu_object($src_id);
+        restore_current_blog();
+
+        if (is_object($menu) && ! empty($menu->slug)) {
+            $slug_map[ (string) $menu->slug ] = $tgt_id;
+        }
+    }
+
+    switch_to_blog($target_blog);
+    foreach (wp_get_nav_menus() as $m) {
+        if (! empty($m->slug) && ! isset($slug_map[ (string) $m->slug ])) {
+            $slug_map[ (string) $m->slug ] = (int) $m->term_id;
+        }
+    }
+    restore_current_blog();
+
+    return $slug_map;
+}
+
 function rch_agent_wizard_import_widget_options(int $blog_id, array $options): void
 {
     $options = apply_filters('rch_agent_wizard_import_widget_options', $options, $blog_id);
@@ -379,7 +465,23 @@ function rch_agent_wizard_sync_menus_widgets_to_blog(
     }
 
     if ($copy_widgets && $widget_export !== []) {
-        rch_agent_wizard_import_widget_options($target_blog, $widget_export);
+        $widgets = $widget_export;
+        if ($term_map !== []) {
+            $slug_map = rch_agent_wizard_build_cloned_menu_slug_map_on_target(
+                $source_blog,
+                $target_blog,
+                $term_map
+            );
+            $widgets = rch_agent_wizard_remap_nav_menu_widget_options($widgets, $source_blog, $term_map, $slug_map);
+        }
+        $widgets = apply_filters(
+            'rch_agent_wizard_widget_options_before_import',
+            $widgets,
+            $source_blog,
+            $target_blog,
+            $term_map
+        );
+        rch_agent_wizard_import_widget_options($target_blog, $widgets);
     }
 
     return true;

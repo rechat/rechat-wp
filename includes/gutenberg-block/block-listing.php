@@ -26,6 +26,13 @@ function rch_disable_wptexturize_on_rechat_tags($tagnames)
     $tagnames[] = 'rechat-root';
     $tagnames[] = 'rechat-listings';
     $tagnames[] = 'rechat-map-filter';
+    $tagnames[] = 'rechat-filter-search';
+    $tagnames[] = 'rechat-filter-price';
+    $tagnames[] = 'rechat-filter-beds';
+    $tagnames[] = 'rechat-filter-baths';
+    $tagnames[] = 'rechat-filter-property-type';
+    $tagnames[] = 'rechat-filter-advanced';
+    $tagnames[] = 'rechat-filter-loading';
     $tagnames[] = 'rechat-listings-sort';
     $tagnames[] = 'rechat-map';
     $tagnames[] = 'rechat-map-listings-grid';

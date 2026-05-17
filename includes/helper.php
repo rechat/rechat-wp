@@ -1555,7 +1555,6 @@ function rch_get_listing_block_attributes()
         'disable_filter_baths' => array('type' => 'boolean', 'default' => false),
         'disable_filter_property_types' => array('type' => 'boolean', 'default' => false),
         'disable_filter_advanced' => array('type' => 'boolean', 'default' => false),
-        'layout_style' => array('type' => 'string', 'default' => 'default'),
         'own_listing' => array('type' => 'boolean', 'default' => true),
         'property_types' => array('type' => 'string', 'default' => ''),
         'filter_open_houses' => array('type' => 'boolean', 'default' => false),
@@ -1564,6 +1563,8 @@ function rch_get_listing_block_attributes()
         'map_latitude' => array('type' => 'string', 'default' => ''),
         'map_longitude' => array('type' => 'string', 'default' => ''),
         'map_zoom' => array('type' => 'string', 'default' => '12'),
+        'map_style' => array('type' => 'string', 'default' => ''),
+        'map_style_url' => array('type' => 'string', 'default' => ''),
         'sort_by' => array('type' => 'string', 'default' => '-list_date'),
         'map_id' => array('type' => 'string', 'default' => ''),
         'filter_address' => array('type' => 'string', 'default' => ''),
@@ -1638,6 +1639,143 @@ function rch_get_rechat_root_attributes($attributes, $map_default_center, $listi
 }
 
 /*******************************
+ * Built-in MapLibre presets for <rechat-map preset="…"> (SDK migration from map_style).
+ ******************************/
+function rch_get_rechat_map_preset_allowlist()
+{
+    return array('liberty', 'bright', 'positron', 'dark');
+}
+
+/*******************************
+ * Render <rechat-map> attributes (preset / style_url / zoom / default_center).
+ ******************************/
+function rch_get_rechat_map_attributes($attributes, $map_default_center = '')
+{
+    $attrs = array();
+
+    $style_url = '';
+    if (! empty($attributes['map_style_url'])) {
+        $style_url = esc_url((string) $attributes['map_style_url']);
+    }
+
+    if ($style_url !== '') {
+        $attrs[] = 'style_url="' . esc_attr($style_url) . '"';
+    } else {
+        $raw_preset = '';
+        if (! empty($attributes['map_style'])) {
+            $raw_preset = sanitize_key((string) $attributes['map_style']);
+        }
+
+        if ($raw_preset !== '' && in_array($raw_preset, rch_get_rechat_map_preset_allowlist(), true)) {
+            $attrs[] = 'preset="' . esc_attr($raw_preset) . '"';
+        }
+    }
+
+    if (! empty($attributes['map_zoom'])) {
+        $attrs[] = 'zoom="' . esc_attr($attributes['map_zoom']) . '"';
+    }
+
+    if (! empty($map_default_center)) {
+        $attrs[] = 'default_center="' . esc_attr($map_default_center) . '"';
+    }
+
+    return implode(' ', $attrs);
+}
+
+/*******************************
+ * Address-search seed attributes for <rechat-map-filter> / <rechat-filter-search>.
+ ******************************/
+function rch_get_rechat_map_filter_attributes($attributes)
+{
+    $attrs = array();
+
+    if (isset($attributes['filter_address']) && (string) $attributes['filter_address'] !== '') {
+        $attrs[] = 'address="' . esc_attr($attributes['filter_address']) . '"';
+    }
+
+    if (! empty($attributes['filter_boundary_country'])) {
+        $attrs[] = 'boundary_country="' . esc_attr($attributes['filter_boundary_country']) . '"';
+    }
+
+    if (! empty($attributes['filter_boundary_state'])) {
+        $attrs[] = 'boundary_state="' . esc_attr($attributes['filter_boundary_state']) . '"';
+    }
+
+    if (! empty($attributes['filter_suggestions_limit'])) {
+        $attrs[] = 'suggestions_limit="' . esc_attr($attributes['filter_suggestions_limit']) . '"';
+    }
+
+    return implode(' ', $attrs);
+}
+
+/**
+ * disabled="true|false" for migrated <rechat-filter-*> tags.
+ *
+ * @param array  $attributes Shortcode/block attributes.
+ * @param string $key        e.g. disable_filter_price
+ * @return string
+ */
+function rch_rechat_filter_disabled_attr($attributes, $key)
+{
+    $disabled = isset($attributes[$key]) && filter_var($attributes[$key], FILTER_VALIDATE_BOOLEAN);
+
+    return 'disabled="' . ($disabled ? 'true' : 'false') . '"';
+}
+
+/**
+ * Whether any sub-filter disable flag is set (use individual <rechat-filter-*> tags).
+ *
+ * @param array $attributes Shortcode/block attributes.
+ * @return bool
+ */
+function rch_listings_filters_use_individual_tags($attributes)
+{
+    $keys = array(
+        'disable_filter_address',
+        'disable_filter_price',
+        'disable_filter_beds',
+        'disable_filter_baths',
+        'disable_filter_property_types',
+        'disable_filter_advanced',
+        'disable_filter_loading_indicator',
+    );
+
+    foreach ($keys as $key) {
+        if (! empty($attributes[$key]) && filter_var($attributes[$key], FILTER_VALIDATE_BOOLEAN)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Filter row markup for [listings] (rechat-map-filter or decomposed rechat-filter-*).
+ *
+ * @param array $attributes Shortcode/block attributes.
+ * @return string HTML
+ */
+function rch_render_listing_filters_html($attributes)
+{
+    $map_filter_attrs = rch_get_rechat_map_filter_attributes($attributes);
+
+    if (! rch_listings_filters_use_individual_tags($attributes)) {
+        return '<rechat-map-filter' . ($map_filter_attrs !== '' ? ' ' . $map_filter_attrs : '') . '></rechat-map-filter>';
+    }
+
+    $search_attrs = $map_filter_attrs !== '' ? $map_filter_attrs . ' ' : '';
+
+    return ''
+        . '<rechat-filter-search ' . $search_attrs . rch_rechat_filter_disabled_attr($attributes, 'disable_filter_address') . '></rechat-filter-search>'
+        . '<rechat-filter-price ' . rch_rechat_filter_disabled_attr($attributes, 'disable_filter_price') . '></rechat-filter-price>'
+        . '<rechat-filter-beds ' . rch_rechat_filter_disabled_attr($attributes, 'disable_filter_beds') . '></rechat-filter-beds>'
+        . '<rechat-filter-baths ' . rch_rechat_filter_disabled_attr($attributes, 'disable_filter_baths') . '></rechat-filter-baths>'
+        . '<rechat-filter-property-type ' . rch_rechat_filter_disabled_attr($attributes, 'disable_filter_property_types') . '></rechat-filter-property-type>'
+        . '<rechat-filter-advanced ' . rch_rechat_filter_disabled_attr($attributes, 'disable_filter_advanced') . '></rechat-filter-advanced>'
+        . '<rechat-filter-loading ' . rch_rechat_filter_disabled_attr($attributes, 'disable_filter_loading_indicator') . '></rechat-filter-loading>';
+}
+
+/*******************************
  * Render rechat-listings attributes (NEW SDK)
  ******************************/
 function rch_get_rechat_listings_attributes($attributes, $map_default_center, $listing_statuses_str)
@@ -1649,42 +1787,12 @@ function rch_get_rechat_listings_attributes($attributes, $map_default_center, $l
         $attrs[] = 'brand_id="' . esc_attr($attributes['brand']) . '"';
     }
 
-    if (!empty($attributes['map_zoom'])) {
-        $attrs[] = 'map_zoom="' . esc_attr($attributes['map_zoom']) . '"';
-    }
-
-    if (!empty($attributes['map_id'])) {
-        $attrs[] = 'map_id="' . esc_attr($attributes['map_id']) . '"';
-    }
-
-    $attrs[] = 'map_api_key="' . esc_attr(get_option('rch_rechat_google_map_api_key')) . '"';
-
-    if (!empty($map_default_center)) {
-        $attrs[] = 'map_default_center="' . esc_attr($map_default_center) . '"';
-    }
-
-    if (isset($attributes['filter_address']) && (string) $attributes['filter_address'] !== '') {
-        $attrs[] = 'filter_address="' . esc_attr($attributes['filter_address']) . '"';
-    }
-
-    if (! empty($attributes['filter_boundary_country'])) {
-        $attrs[] = 'filter_boundary_country="' . esc_attr($attributes['filter_boundary_country']) . '"';
-    }
-
-    if (! empty($attributes['filter_boundary_state'])) {
-        $attrs[] = 'filter_boundary_state="' . esc_attr($attributes['filter_boundary_state']) . '"';
-    }
-
     if (! empty($attributes['filter_boundary_ids'])) {
         $attrs[] = 'filter_boundary_ids="' . esc_attr($attributes['filter_boundary_ids']) . '"';
     }
 
     if (!empty($attributes['filter_search_limit'])) {
         $attrs[] = 'filter_search_limit="' . esc_attr($attributes['filter_search_limit']) . '"';
-    }
-
-    if (!empty($attributes['filter_suggestions_limit'])) {
-        $attrs[] = 'filter_suggestions_limit="' . esc_attr($attributes['filter_suggestions_limit']) . '"';
     }
 
     if (isset($attributes['filter_pagination_offset']) && (string) $attributes['filter_pagination_offset'] !== '') {
@@ -1817,15 +1925,6 @@ function rch_get_rechat_listings_attributes($attributes, $map_default_center, $l
     if (!empty($listing_statuses_str)) {
         $attrs[] = 'filter_listing_statuses="' . esc_attr($listing_statuses_str) . '"';
     }
-
-    // Always output disable filter attributes with proper boolean values
-    $attrs[] = 'disable_filter_address="' . (isset($attributes['disable_filter_address']) && filter_var($attributes['disable_filter_address'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
-    $attrs[] = 'disable_filter_price="' . (isset($attributes['disable_filter_price']) && filter_var($attributes['disable_filter_price'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
-    $attrs[] = 'disable_filter_beds="' . (isset($attributes['disable_filter_beds']) && filter_var($attributes['disable_filter_beds'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
-    $attrs[] = 'disable_filter_baths="' . (isset($attributes['disable_filter_baths']) && filter_var($attributes['disable_filter_baths'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
-    $attrs[] = 'disable_filter_property_types="' . (isset($attributes['disable_filter_property_types']) && filter_var($attributes['disable_filter_property_types'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
-    $attrs[] = 'disable_filter_advanced="' . (isset($attributes['disable_filter_advanced']) && filter_var($attributes['disable_filter_advanced'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
-    $attrs[] = 'disable_filter_loading_indicator="' . (isset($attributes['disable_filter_loading_indicator']) && filter_var($attributes['disable_filter_loading_indicator'], FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false') . '"';
 
     // {street_address} is substituted by the SDK. A raw # in the path breaks the URL (fragment).
     // assets/js/rch-listing-hyperlink-fix.js rewrites those links by omitting the # in the slug.
