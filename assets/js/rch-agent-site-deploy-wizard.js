@@ -21,6 +21,7 @@
         menuBuilderLoc: {},
         mbSearchPaged: 1,
         mbSearchMaxPages: 1,
+        testimonialCount: 0,
     };
 
     /** False until rch_agent_wizard_load_draft finishes (prevents silent persist wiping server draft before restore). */
@@ -875,47 +876,89 @@
         refreshWizardTagChips();
     }
 
-    /**
-     * Apply the last deployed row config (modes + values + meta_key) to rows still on `skip`.
-     * Lets us repaint the wizard with manual/meta modes the user originally chose.
-     */
-    function applyLastDeploymentRowsToEmptyRows(rows) {
-        if (!rows || typeof rows !== 'object') {
-            return;
+    function normalizeThemeRowCompareVal(v) {
+        return String(v === null || v === undefined ? '' : v).trim();
+    }
+
+    function getImportMetaForThemeKey(themeKey) {
+        var map = rchAgentWizard.themeImportMap;
+        if (!map || !Object.prototype.hasOwnProperty.call(map, themeKey)) {
+            return '';
         }
-        $.each(rows, function (key, cfg) {
-            if (!cfg || typeof cfg !== 'object') {
-                return;
-            }
-            var $row = $rowForKey(key);
-            if (!$row.length) {
-                return;
-            }
-            var $mode = $row.find('.rch-wz-row-mode');
-            var currentMode = String($mode.val() || 'skip');
-            if (currentMode !== 'skip') {
-                return;
-            }
-            var mode = String(cfg.mode || 'skip');
-            if (mode !== 'manual' && mode !== 'meta') {
-                return;
-            }
-            $mode.val(mode);
-            if (cfg.meta_key) {
-                $row.find('.rch-wz-row-meta').val(cfg.meta_key);
-            }
-            if (mode === 'manual' && cfg.value !== undefined && cfg.value !== null) {
-                $row.find('.rch-wz-row-value').val(cfg.value).trigger('change');
-            }
-            syncRowVisibility($row);
-            updateMetaPreview($row);
-        });
-        refreshWizardTagChips();
+        return String(map[themeKey] || '');
+    }
+
+    function manualThemeValueMatchesAgentMeta(manualVal, metaKey) {
+        if (!metaKey || !state.meta || !Object.prototype.hasOwnProperty.call(state.meta, metaKey)) {
+            return false;
+        }
+        return normalizeThemeRowCompareVal(manualVal) === normalizeThemeRowCompareVal(state.meta[metaKey]);
     }
 
     /**
-     * Seed rows still in `skip` (no draft override) from the agent sub-site's saved theme options.
-     * Tag arrays are JSON-stringified so the hidden input round-trips chip rendering.
+     * Merge saved draft rows with last-deploy config so profile bindings (meta) are not lost
+     * when an autosaved draft flattened them to manual literals.
+     *
+     * @param {Record<string, {mode?: string, value?: *, meta_key?: string}>|null} draftRows
+     * @param {Record<string, {mode?: string, value?: *, meta_key?: string}>|null} deployRows
+     * @returns {Record<string, {mode: string, value?: *, meta_key?: string}>}
+     */
+    function reconcileThemeRowsForHydrate(draftRows, deployRows) {
+        var out = {};
+        var keys = {};
+        var k;
+
+        function collectKeys(obj) {
+            if (!obj || typeof obj !== 'object') {
+                return;
+            }
+            for (k in obj) {
+                if (Object.prototype.hasOwnProperty.call(obj, k)) {
+                    keys[k] = true;
+                }
+            }
+        }
+
+        collectKeys(draftRows);
+        collectKeys(deployRows);
+
+        for (k in keys) {
+            if (!Object.prototype.hasOwnProperty.call(keys, k)) {
+                continue;
+            }
+            var d = draftRows && draftRows[k] ? draftRows[k] : null;
+            var p = deployRows && deployRows[k] ? deployRows[k] : null;
+            var chosen = null;
+
+            if (p && p.mode === 'meta') {
+                if (d && d.mode === 'manual' && manualThemeValueMatchesAgentMeta(d.value, p.meta_key)) {
+                    chosen = p;
+                } else if (!d || d.mode === 'skip') {
+                    chosen = p;
+                } else if (d.mode === 'meta') {
+                    chosen = d;
+                } else {
+                    chosen = d;
+                }
+            } else if (p && p.mode !== 'skip' && (!d || d.mode === 'skip')) {
+                chosen = p;
+            } else if (d && d.mode !== 'skip') {
+                chosen = d;
+            } else if (p && p.mode !== 'skip') {
+                chosen = p;
+            }
+
+            if (chosen && chosen.mode && chosen.mode !== 'skip') {
+                out[k] = chosen;
+            }
+        }
+
+        return out;
+    }
+
+    /**
+     * Seed rows still in `skip` from the agent sub-site's saved theme options.
+     * Prefer agent profile (meta) when the stored value matches a known import field.
      */
     function applyCurrentThemeOptionsToEmptyRows(opts) {
         if (!opts || typeof opts !== 'object') {
@@ -949,12 +992,66 @@
                     return;
                 }
             }
-            $mode.val('manual');
-            $row.find('.rch-wz-row-value').val(serialized).trigger('change');
+
+            var importMeta = getImportMetaForThemeKey(key);
+            if (importMeta && manualThemeValueMatchesAgentMeta(serialized, importMeta)) {
+                $mode.val('meta');
+                $row.find('.rch-wz-row-meta').val(importMeta);
+            } else {
+                $mode.val('manual');
+                $row.find('.rch-wz-row-value').val(serialized).trigger('change');
+            }
             syncRowVisibility($row);
             updateMetaPreview($row);
         });
         refreshWizardTagChips();
+    }
+
+    /**
+     * @param {Record<string, {mode?: string, value?: *, meta_key?: string}>|null} draftRows
+     * @param {Record<string, {mode?: string, value?: *, meta_key?: string}>|null} deployRows
+     * @param {Record<string, *>|null} currentTheme
+     */
+    function hydrateThemeRowsFromSources(draftRows, deployRows, currentTheme) {
+        var merged = reconcileThemeRowsForHydrate(draftRows, deployRows);
+        if (merged && typeof merged === 'object' && Object.keys(merged).length) {
+            applyThemeRowsToDom(merged);
+        }
+        applyCurrentThemeOptionsToEmptyRows(currentTheme);
+    }
+
+    function refreshTestimonialsSyncUi() {
+        var scope = getScope();
+        var $panel = $('#rch-wz-testimonials-sync');
+        var $count = $('#rch-wz-testimonials-count');
+        if (!$panel.length) {
+            return;
+        }
+        $panel.removeAttr('hidden');
+        if (scope === 'all') {
+            $count.text(str('testimonialsBulkHint') || '');
+            return;
+        }
+        if (!state.agentId) {
+            $count.text(str('testimonialsPickAgent') || '');
+            return;
+        }
+        if (!state.blogId) {
+            $count.text(str('testimonialsNoBlog') || '');
+            return;
+        }
+        var n = state.testimonialCount || 0;
+        if (n > 0) {
+            $count.text((str('testimonialsCountSingle') || '%d').replace('%d', String(n)));
+        } else {
+            $count.text(str('testimonialsCountNone') || '');
+        }
+    }
+
+    function applyAgentPayloadTestimonials(data) {
+        var t = data && data.testimonials;
+        state.testimonialCount = t && typeof t.count === 'number' ? t.count : 0;
+        refreshTestimonialsSyncUi();
     }
 
     function buildDraftPayload(saveSrc) {
@@ -1087,11 +1184,9 @@
                     state.agentId = dr.agentId;
                 }
 
-                function applyRestOfDraft() {
+                function applyRestOfDraft(lastDeploymentRows, currentTheme) {
                     var rows = dr.themeRows || dr.theme_rows;
-                    if (rows && typeof rows === 'object') {
-                        applyThemeRowsToDom(rows);
-                    }
+                    hydrateThemeRowsFromSources(rows, lastDeploymentRows || null, currentTheme || null);
                     var mwm = normalizeWizardTargetMode(dr.mwTargetMode || 'agent_only');
                     if (mwm === 'agent_office') {
                         mwm = 'agent_only';
@@ -1178,6 +1273,7 @@
                                 state.blogId = d.blog_id;
                                 state.title = d.title;
                                 state.meta = d.meta || {};
+                                applyAgentPayloadTestimonials(d);
                                 current_theme = d.current_theme || null;
                                 last_deployment_rows =
                                     d.last_deployment && d.last_deployment.theme_rows
@@ -1193,15 +1289,13 @@
                                             '</p>'
                                     );
                             }
-                            applyRestOfDraft();
-                            applyLastDeploymentRowsToEmptyRows(last_deployment_rows);
-                            applyCurrentThemeOptionsToEmptyRows(current_theme);
+                            applyRestOfDraft(last_deployment_rows, current_theme);
                         })
                         .fail(function () {
-                            applyRestOfDraft();
+                            applyRestOfDraft(null, null);
                         });
                 } else {
-                    applyRestOfDraft();
+                    applyRestOfDraft(null, null);
                 }
                 })
                 .fail(function () {
@@ -1235,6 +1329,7 @@
                     state.blogId = d.blog_id;
                     state.title = d.title;
                     state.meta = d.meta || {};
+                    applyAgentPayloadTestimonials(d);
                     $('#rch-wz-agent-summary')
                         .removeAttr('hidden')
                         .html(
@@ -1244,12 +1339,13 @@
                                 d.blog_id +
                                 '</p>'
                         );
-                    applyLastDeploymentRowsToEmptyRows(
+                    hydrateThemeRowsFromSources(
+                        null,
                         d.last_deployment && d.last_deployment.theme_rows
                             ? d.last_deployment.theme_rows
-                            : null
+                            : null,
+                        d.current_theme || null
                     );
-                    applyCurrentThemeOptionsToEmptyRows(d.current_theme || null);
                     $('.rch-wz-theme-row').each(function () {
                         updateMetaPreview($(this));
                     });
@@ -1290,6 +1386,85 @@
             $('.rch-wz-theme-row').each(function () {
                 updateMetaPreview($(this));
             });
+            refreshTestimonialsSyncUi();
+        });
+
+        refreshTestimonialsSyncUi();
+
+        function resolveWizardAgentId() {
+            var fromSelect = parseInt($('#rch-wz-agent-select').val(), 10) || 0;
+            return fromSelect > 0 ? fromSelect : state.agentId;
+        }
+
+        function postTestimonialSync(scope, agentId) {
+            spin($('#rch-wz-sync-testimonials-spinner'), true);
+            $('#rch-wz-sync-testimonials-result').empty();
+            return $.post(rchAgentWizard.ajaxurl, {
+                action: 'rch_agent_wizard_sync_testimonials',
+                nonce: rchAgentWizard.nonce,
+                scope: scope,
+                agent_id: agentId,
+            })
+                .done(function (res) {
+                    spin($('#rch-wz-sync-testimonials-spinner'), false);
+                    if (!res.success) {
+                        $('#rch-wz-sync-testimonials-result').html(
+                            '<div class="notice notice-error inline"><p>' +
+                                escapeHtml(res.data && res.data.message ? res.data.message : 'Error') +
+                                '</p></div>'
+                        );
+                        return;
+                    }
+                    var html =
+                        '<div class="notice notice-success inline"><p>' +
+                        escapeHtml(res.data.message) +
+                        '</p>';
+                    if (res.data.summary && res.data.summary.errors && res.data.summary.errors.length) {
+                        html += '<ul>';
+                        $.each(res.data.summary.errors, function (i, err) {
+                            html += '<li>' + escapeHtml(err) + '</li>';
+                        });
+                        html += '</ul>';
+                    }
+                    html += '</div>';
+                    $('#rch-wz-sync-testimonials-result').html(html);
+                    if (scope === 'single' && res.data.summary && typeof res.data.summary.total === 'number') {
+                        state.testimonialCount = res.data.summary.total;
+                        refreshTestimonialsSyncUi();
+                    }
+                })
+                .fail(function () {
+                    spin($('#rch-wz-sync-testimonials-spinner'), false);
+                    $('#rch-wz-sync-testimonials-result').html(
+                        '<div class="notice notice-error inline"><p>Request failed</p></div>'
+                    );
+                });
+        }
+
+        $('#rch-wz-sync-testimonials').on('click', function () {
+            var scope = getScope();
+            var agentId = resolveWizardAgentId();
+
+            if (scope === 'single') {
+                if (!agentId) {
+                    alert(str('testimonialsPickAgent') || str('pickAgent'));
+                    return;
+                }
+                if (agentId !== state.agentId || !state.blogId) {
+                    loadAgentAndRepaint(agentId, { silent: true }).done(function (res) {
+                        if (!res || !res.success || !res.data || !res.data.blog_id) {
+                            alert(str('testimonialsNoBlog') || str('noBlog'));
+                            return;
+                        }
+                        postTestimonialSync(scope, agentId);
+                    });
+                    return;
+                }
+            } else if (!(rchAgentWizard.bulkCount > 0)) {
+                alert(rchAgentWizard.strings.bulkNoSites);
+                return;
+            }
+            postTestimonialSync(scope, agentId);
         });
 
         $('#rch-wz-load-agent').on('click', function () {

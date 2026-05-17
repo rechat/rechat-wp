@@ -16,24 +16,6 @@ function rch_listings_shortcode_enqueue_assets()
 }
 
 /**
- * Layout modifier for flex ratios (see assets/css/rch-listing-block.css).
- *
- * @param string $layout_style layout2 | layout3 | default
- * @return string Extra class names (space-prefixed safe for empty)
- */
-function rch_listings_shortcode_layout_modifier_class($layout_style)
-{
-  switch ($layout_style) {
-    case 'layout2':
-      return 'rch-listing-shortcode--layout2';
-    case 'layout3':
-      return 'rch-listing-shortcode--layout3';
-    default:
-      return '';
-  }
-}
-
-/**
  * Inline style attribute only for CSS variables (colors from theme options).
  *
  * @param string $primary_color Stored primary hex or empty
@@ -54,7 +36,7 @@ function rch_listings_shortcode_wrapper_style_attr($primary_color)
 
 /*******************************
  * Renders the listing as a shortcode based on Gutenberg block
- * Usage: [listings property_types="Residential" listing_statuses="Active" layout_style="layout2" filter_pool="true" filter_search_limit="200"]
+ * Usage: [listings property_types="Residential" listing_statuses="Active" filter_pool="true" filter_search_limit="200"]
  ******************************/
 function rch_render_listing_list($atts)
 {
@@ -82,7 +64,6 @@ function rch_render_listing_list($atts)
     'disable_filter_property_types' => false,
     'disable_filter_advanced' => false,
     'disable_filter_loading_indicator' => false,
-    'layout_style' => 'default',
     'own_listing' => true,
     'property_types' => '',
     'filter_open_houses' => false,
@@ -92,6 +73,8 @@ function rch_render_listing_list($atts)
     'map_latitude' => '',
     'map_longitude' => '',
     'map_zoom' => '12',
+    'map_style' => '',
+    'map_style_url' => '',
     'map_id' => '',
     'filter_address' => '',
     'filter_search_limit' => '',
@@ -129,7 +112,6 @@ function rch_render_listing_list($atts)
 
   rch_listings_shortcode_enqueue_assets();
 
-  $layout_style = isset($atts['layout_style']) ? sanitize_text_field($atts['layout_style']) : 'default';
   $primary_color = get_option('_rch_primary_color');
 
   // Merge GET query into shortcode atts (search redirect, bookmarks) — replaces former JS restore.
@@ -208,8 +190,7 @@ function rch_render_listing_list($atts)
     $map_default_center = sanitize_text_field($url_params['map_center']);
   }
 
-  $layout_modifier = rch_listings_shortcode_layout_modifier_class($layout_style);
-  $wrapper_classes = trim('rch-listing-block-gutenberg ' . $layout_modifier);
+  $wrapper_classes = 'rch-listing-block-gutenberg';
   $wrapper_style_attr = rch_listings_shortcode_wrapper_style_attr($primary_color);
 
   // Get rechat root attributes (only brand_id in new SDK)
@@ -217,6 +198,9 @@ function rch_render_listing_list($atts)
 
   // Get rechat-listings attributes (all filter/map attributes in new SDK)
   $rechat_listings_attrs = rch_get_rechat_listings_attributes($atts, $map_default_center, $listing_statuses_str);
+
+  // MapLibre + viewport on <rechat-map>
+  $rechat_map_attrs = rch_get_rechat_map_attributes($atts, $map_default_center);
 
   // Check if all filters are disabled
   $all_filters_disabled = $atts['disable_filter_address'] &&
@@ -232,45 +216,16 @@ function rch_render_listing_list($atts)
   <div class="<?php echo esc_attr($wrapper_classes); ?>" <?php echo $wrapper_style_attr; ?>>
     <rechat-root <?php echo $rechat_attrs; ?>>
       <rechat-listings <?php echo $rechat_listings_attrs; ?>>
-        <div class="container_listing_sdk">
-          <div class="filters">
-            <?php if (!$all_filters_disabled): ?>
-              <rechat-map-filter></rechat-map-filter>
-            <?php endif; ?>
-            <?php if (!$atts['disable_sort']): ?>
-              <rechat-listings-sort></rechat-listings-sort>
-            <?php endif; ?>
-          </div>
-
-          <?php if ($layout_style === 'layout2'): ?>
-            <div class="wrapper">
-              <div class="listings">
-                <rechat-map-listings-grid></rechat-map-listings-grid>
-              </div>
-              <div class="map">
-                <rechat-map></rechat-map>
-              </div>
-            </div>
-          <?php else: ?>
-            <div class="wrapper">
-              <div class="map">
-                <rechat-map></rechat-map>
-              </div>
-              <div class="listings">
-                <div class="listings__header">
-                  <rechat-listings-count></rechat-listings-count>
-                </div>
-
-                <div class="listings__grid">
-                  <rechat-map-listings-grid></rechat-map-listings-grid>
-                </div>
-
-                <div class="listings__footer">
-                  <rechat-listings-pagination></rechat-listings-pagination>
-                </div>
-              </div>
-            </div>
+        <div class="rechat-shell">
+          <?php if (!$all_filters_disabled): ?>
+              <?php echo rch_render_listing_filters_html($atts); ?>
           <?php endif; ?>
+          <?php if (!$atts['disable_sort']): ?>
+            <rechat-listings-sort></rechat-listings-sort>
+          <?php endif; ?>
+          <rechat-map<?php echo $rechat_map_attrs !== '' ? ' ' . $rechat_map_attrs : ''; ?>></rechat-map>
+            <rechat-map-listings-grid></rechat-map-listings-grid>
+            <rechat-listings-pagination></rechat-listings-pagination>
         </div>
       </rechat-listings>
     </rechat-root>

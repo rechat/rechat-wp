@@ -966,3 +966,23 @@
 .rch-agent-wizard .rch-wz-mb-col-actions .button {
     margin: 0 2px 2px 0;
 }
+
+.rch-agent-wizard .rch-wz-testimonials-sync {
+    margin-top: 1.25rem;
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--wz-border);
+    border-radius: var(--wz-radius-sm);
+    background: var(--wz-surface);
+}
+
+.rch-agent-wizard .rch-wz-testimonials-sync__title {
+    margin: 0 0 0.35rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.rch-agent-wizard .rch-wz-testimonials-sync__count {
+    margin: 0 0 0.75rem;
+    font-size: 0.875rem;
+    color: var(--wz-muted);
+}

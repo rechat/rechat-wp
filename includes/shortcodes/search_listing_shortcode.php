@@ -125,6 +125,7 @@ function rch_search_listing_form_shortcode($atts)
 
     $rechat_attrs = rch_get_rechat_root_attributes($attributes, $map_default_center, $filter_listing_statuses);
     $rechat_listings_attrs = rch_get_rechat_listings_attributes($attributes, $map_default_center, $filter_listing_statuses);
+    $rechat_property_search_attrs = rch_get_rechat_map_filter_attributes($attributes);
 
     $form_id = 'rch-search-form-' . uniqid('', false);
     $primary_color = get_option('_rch_primary_color');
@@ -153,7 +154,7 @@ function rch_search_listing_form_shortcode($atts)
                         <div class="rch-search-background" aria-hidden="true"></div>
                     <?php endif; ?>
                     <div class="rch-search-inner">
-                        <rechat-property-search-form />
+                        <rechat-property-search-form<?php echo $rechat_property_search_attrs !== '' ? ' ' . $rechat_property_search_attrs : ''; ?>></rechat-property-search-form>
                     </div>
                 </div>
             </rechat-listings>

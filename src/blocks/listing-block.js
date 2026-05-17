@@ -66,7 +66,6 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         disable_filter_baths: { type: 'boolean', default: false },
         disable_filter_property_types: { type: 'boolean', default: false },
         disable_filter_advanced: { type: 'boolean', default: false },
-        layout_style: { type: 'string', default: 'default' },
         own_listing: { type: 'boolean', default: true },
         property_types: { type: 'string', default: '' },
         filter_open_houses: { type: 'boolean', default: false },
@@ -75,6 +74,8 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         map_latitude: { type: 'string', default: '' },
         map_longitude: { type: 'string', default: '' },
         map_zoom: { type: 'string', default: '12' },
+        map_style: { type: 'string', default: '' },
+        map_style_url: { type: 'string', default: '' },
         map_id: { type: 'string', default: '' },
         sort_by: { type: 'string', default: '-list_date' },
         filter_address: { type: 'string', default: '' },
@@ -102,7 +103,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             listing_per_page, filterByRegions, filterByOffices, selectedStatuses, 
             disable_filter_address, disable_filter_price, disable_filter_beds, 
             disable_filter_baths, disable_filter_property_types, disable_filter_advanced,
-            layout_style, own_listing, property_types, filter_open_houses, office_exclusive, filter_pool, disable_sort, listing_statuses, map_latitude, map_longitude, map_zoom, map_id,
+            own_listing, property_types, filter_open_houses, office_exclusive, filter_pool, disable_sort, listing_statuses, map_latitude, map_longitude, map_zoom, map_style, map_style_url, map_id,
             sort_by, filter_address, filter_search_limit, filter_suggestions_limit, filter_pagination_offset, property_subtypes, architectural_styles, filter_baths, minimum_parking_spaces, minimum_sold_date, filter_agents, list_offices, filter_brand_id, disable_filter_loading_indicator,
             filter_boundary_country, filter_boundary_state,
         } = attributes;
@@ -253,16 +254,6 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             <>
                 <InspectorControls>
                     <PanelBody title="Listing Settings">
-                        <SelectControl
-                            label="Layout Style"
-                            value={layout_style}
-                            options={[
-                                { label: 'Default Layout', value: 'default' },
-                                { label: 'Layout 2 (Listings Left, Map Right)', value: 'layout2' },
-                                { label: 'Layout 3 (Map Wider)', value: 'layout3' },
-                            ]}
-                            onChange={(value) => setAttributes({ layout_style: value })}
-                        />
                         <CheckboxControl
                             label="Only our own listings"
                             checked={own_listing}
@@ -551,7 +542,27 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                             onChange={() => setAttributes({ disable_filter_loading_indicator: !disable_filter_loading_indicator })}
                         />
                     </PanelBody>
-                    <PanelBody title="Map Settings">{googleMapsApiKey ? (
+                    <PanelBody title="Map Settings">
+                        <SelectControl
+                            label="Map style (preset)"
+                            value={map_style || ''}
+                            options={[
+                                { label: 'Default (liberty)', value: '' },
+                                { label: 'Liberty', value: 'liberty' },
+                                { label: 'Bright', value: 'bright' },
+                                { label: 'Positron', value: 'positron' },
+                                { label: 'Dark', value: 'dark' },
+                            ]}
+                            onChange={(v) => setAttributes({ map_style: v || '' })}
+                            help="MapLibre preset on rechat-map. Custom URL below overrides preset."
+                        />
+                        <TextControl
+                            label="Map style URL (style_url)"
+                            value={map_style_url}
+                            onChange={(v) => setAttributes({ map_style_url: v || '' })}
+                            help="Optional MapLibre style JSON URL. When set, overrides preset."
+                        />
+                        {googleMapsApiKey ? (
                             <>
                                 <p><strong>Location Selector</strong></p>
                                 <MapSelector

@@ -66,6 +66,8 @@ function rch_latest_listings_get_defaults()
         'map_longitude' => '',
         'map_default_center' => '',
         'map_zoom' => '',
+        'map_style' => '',
+        'map_style_url' => '',
         'map_id' => '',
         // Pass-through to rch_get_rechat_listings_attributes (Rechat SDK on <rechat-listings>)
         'filter_search_limit' => '',

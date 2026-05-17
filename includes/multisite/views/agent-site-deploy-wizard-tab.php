@@ -186,6 +186,26 @@ $wz_broadcast_step = function_exists('rch_agent_wizard_broadcast_step_enabled') 
                     </div>
                     <div id="rch-wz-agent-summary" class="rch-wz-alert rch-wz-alert--info" hidden></div>
                 </div>
+
+                <div class="rch-wz-testimonials-sync rch-wz-stack" id="rch-wz-testimonials-sync">
+                    <h4 class="rch-wz-testimonials-sync__title"><?php esc_html_e('Testimonials', 'rechat-plugin'); ?></h4>
+                    <p class="rch-wz-hint">
+                        <?php
+                        esc_html_e(
+                            'Copy agent testimonials from the main site into each sub-site testimonial post (one post per row). Re-run to update or remove posts deleted on the main site. Saving an agent on the main site also syncs automatically.',
+                            'rechat-plugin'
+                        );
+                        ?>
+                    </p>
+                    <p class="rch-wz-testimonials-sync__count" id="rch-wz-testimonials-count" aria-live="polite"></p>
+                    <div class="rch-wz-field__row">
+                        <button type="button" class="button button-secondary" id="rch-wz-sync-testimonials">
+                            <?php esc_html_e('Import testimonials to sub-site(s)', 'rechat-plugin'); ?>
+                        </button>
+                        <span class="spinner" id="rch-wz-sync-testimonials-spinner"></span>
+                    </div>
+                    <div id="rch-wz-sync-testimonials-result" class="rch-wz-deploy-result" aria-live="polite"></div>
+                </div>
             </div>
             <div class="rch-wz-card__footer">
                 <button type="button" class="button rch-wz-btn-ghost" id="rch-wz-load-draft"><?php esc_html_e('Restore draft', 'rechat-plugin'); ?></button>

@@ -13,16 +13,81 @@ if (! defined('ABSPATH')) {
 const RCH_AGENT_TESTIMONIALS_META_KEY = 'agent_testimonials';
 
 /**
+ * Blog ID where agent posts (and agent_testimonials meta) are stored.
+ */
+function rch_agent_testimonials_storage_blog_id(): int
+{
+    if (! is_multisite()) {
+        return (int) get_current_blog_id();
+    }
+
+    return (int) get_main_site_id();
+}
+
+/**
+ * Normalize DB value (array, JSON string, or serialized PHP) to a list.
+ *
+ * @param mixed $raw
+ * @return array<int, mixed>
+ */
+function rch_agent_testimonials_normalize_stored_meta($raw): array
+{
+    if (is_array($raw)) {
+        return $raw;
+    }
+
+    if (! is_string($raw) || $raw === '') {
+        return [];
+    }
+
+    $json = json_decode($raw, true);
+    if (is_array($json)) {
+        return $json;
+    }
+
+    $un = maybe_unserialize($raw);
+
+    return is_array($un) ? $un : [];
+}
+
+/**
  * @return array<int, array{name:string, description:string}>
  */
 function rch_get_agent_testimonials(int $agent_id): array
 {
-    $raw = get_post_meta($agent_id, RCH_AGENT_TESTIMONIALS_META_KEY, true);
-    if (! is_array($raw)) {
+    if ($agent_id <= 0) {
         return [];
     }
 
-    return rch_sanitize_agent_testimonials($raw);
+    $storage_blog = rch_agent_testimonials_storage_blog_id();
+    $switched     = false;
+
+    if (is_multisite() && get_current_blog_id() !== $storage_blog) {
+        switch_to_blog($storage_blog);
+        $switched = true;
+    }
+
+    $post = get_post($agent_id);
+    if (! $post || $post->post_type !== 'agents') {
+        if ($switched) {
+            restore_current_blog();
+        }
+
+        return [];
+    }
+
+    $raw = get_post_meta($agent_id, RCH_AGENT_TESTIMONIALS_META_KEY, true);
+    if ($raw === '' || $raw === false) {
+        $raw = get_post_meta($agent_id, 'rch_agent_testimonials', true);
+    }
+
+    $rows = rch_sanitize_agent_testimonials(rch_agent_testimonials_normalize_stored_meta($raw));
+
+    if ($switched) {
+        restore_current_blog();
+    }
+
+    return $rows;
 }
 
 /**
@@ -31,7 +96,8 @@ function rch_get_agent_testimonials(int $agent_id): array
  */
 function rch_sanitize_agent_testimonials($input): array
 {
-    if (! is_array($input)) {
+    $input = rch_agent_testimonials_normalize_stored_meta($input);
+    if ($input === []) {
         return [];
     }
 
@@ -42,7 +108,14 @@ function rch_sanitize_agent_testimonials($input): array
         }
 
         $name = isset($row['name']) ? sanitize_text_field((string) $row['name']) : '';
+        if ($name === '' && isset($row['testimonial_name'])) {
+            $name = sanitize_text_field((string) $row['testimonial_name']);
+        }
+
         $description = isset($row['description']) ? sanitize_textarea_field((string) $row['description']) : '';
+        if ($description === '' && isset($row['testimonial_description'])) {
+            $description = sanitize_textarea_field((string) $row['testimonial_description']);
+        }
 
         if ($name === '' && $description === '') {
             continue;
@@ -290,6 +363,42 @@ function rch_save_agent_testimonials_meta(int $post_id): void
     update_post_meta($post_id, RCH_AGENT_TESTIMONIALS_META_KEY, $testimonials);
 }
 add_action('save_post_agents', 'rch_save_agent_testimonials_meta');
+
+/**
+ * Block editor / hybrid save: persist testimonials when fields are posted without the classic nonce.
+ */
+function rch_save_agent_testimonials_meta_from_posted_fields(int $post_id): void
+{
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+        return;
+    }
+
+    if (isset($_POST['rch_agent_testimonials_nonce'])) {
+        return;
+    }
+
+    if (! isset($_POST['rch_agent_testimonials']) || ! is_array($_POST['rch_agent_testimonials'])) {
+        return;
+    }
+
+    if (! current_user_can('edit_post', $post_id)) {
+        return;
+    }
+
+    if (get_post_type($post_id) !== 'agents') {
+        return;
+    }
+
+    $testimonials = rch_sanitize_agent_testimonials(wp_unslash($_POST['rch_agent_testimonials']));
+
+    if ($testimonials === []) {
+        delete_post_meta($post_id, RCH_AGENT_TESTIMONIALS_META_KEY);
+        return;
+    }
+
+    update_post_meta($post_id, RCH_AGENT_TESTIMONIALS_META_KEY, $testimonials);
+}
+add_action('save_post_agents', 'rch_save_agent_testimonials_meta_from_posted_fields', 25);
 
 function rch_register_agent_testimonials_meta(): void
 {

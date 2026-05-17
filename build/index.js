@@ -773,10 +773,6 @@ registerBlockType('rch-rechat-plugin/listing-block', {
       type: 'boolean',
       default: false
     },
-    layout_style: {
-      type: 'string',
-      default: 'default'
-    },
     own_listing: {
       type: 'boolean',
       default: true
@@ -808,6 +804,14 @@ registerBlockType('rch-rechat-plugin/listing-block', {
     map_zoom: {
       type: 'string',
       default: '12'
+    },
+    map_style: {
+      type: 'string',
+      default: ''
+    },
+    map_style_url: {
+      type: 'string',
+      default: ''
     },
     map_id: {
       type: 'string',
@@ -909,7 +913,6 @@ registerBlockType('rch-rechat-plugin/listing-block', {
       disable_filter_baths,
       disable_filter_property_types,
       disable_filter_advanced,
-      layout_style,
       own_listing,
       property_types,
       filter_open_houses,
@@ -920,6 +923,8 @@ registerBlockType('rch-rechat-plugin/listing-block', {
       map_latitude,
       map_longitude,
       map_zoom,
+      map_style,
+      map_style_url,
       map_id,
       sort_by,
       filter_address,
@@ -1096,23 +1101,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
       children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(InspectorControls, {
         children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(PanelBody, {
           title: "Listing Settings",
-          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(SelectControl, {
-            label: "Layout Style",
-            value: layout_style,
-            options: [{
-              label: 'Default Layout',
-              value: 'default'
-            }, {
-              label: 'Layout 2 (Listings Left, Map Right)',
-              value: 'layout2'
-            }, {
-              label: 'Layout 3 (Map Wider)',
-              value: 'layout3'
-            }],
-            onChange: value => setAttributes({
-              layout_style: value
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(CheckboxControl, {
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(CheckboxControl, {
             label: "Only our own listings",
             checked: own_listing,
             onChange: () => setAttributes({
@@ -1450,9 +1439,39 @@ registerBlockType('rch-rechat-plugin/listing-block', {
               disable_filter_loading_indicator: !disable_filter_loading_indicator
             })
           })]
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(PanelBody, {
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(PanelBody, {
           title: "Map Settings",
-          children: googleMapsApiKey ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.Fragment, {
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(SelectControl, {
+            label: "Map style (preset)",
+            value: map_style || '',
+            options: [{
+              label: 'Default (liberty)',
+              value: ''
+            }, {
+              label: 'Liberty',
+              value: 'liberty'
+            }, {
+              label: 'Bright',
+              value: 'bright'
+            }, {
+              label: 'Positron',
+              value: 'positron'
+            }, {
+              label: 'Dark',
+              value: 'dark'
+            }],
+            onChange: v => setAttributes({
+              map_style: v || ''
+            }),
+            help: "MapLibre preset on rechat-map. Custom URL below overrides preset."
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(TextControl, {
+            label: "Map style URL (style_url)",
+            value: map_style_url,
+            onChange: v => setAttributes({
+              map_style_url: v || ''
+            }),
+            help: "Optional MapLibre style JSON URL. When set, overrides preset."
+          }), googleMapsApiKey ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.Fragment, {
             children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("p", {
               children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("strong", {
                 children: "Location Selector"
@@ -1485,7 +1504,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             })]
           }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("p", {
             children: "Google Maps API key not found. Please make sure it is configured in the WordPress settings."
-          })
+          })]
         })]
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)((_wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1___default()), {
         block: "rch-rechat-plugin/listing-block",

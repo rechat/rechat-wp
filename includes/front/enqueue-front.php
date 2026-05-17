@@ -161,7 +161,6 @@ function rch_enqueue_block_assets()
 
     // Automatically enqueue script/style only when block is present
     if (has_block('rch-rechat-plugin/listing-block')) {
-        wp_enqueue_style('rch-listing-block-css');
         wp_enqueue_style('rechat-sdk-css');
         wp_enqueue_script('rechat-sdk-js');
     }
