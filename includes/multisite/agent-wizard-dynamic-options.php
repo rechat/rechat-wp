@@ -96,7 +96,13 @@ function rch_agent_wizard_discover_from_themeoption_php(string $stylesheet): ?ar
     $keys = [];
     if (preg_match_all("/['\\\"]([a-zA-Z0-9_\\-]+)['\\\"]\\s*=>/m", $src, $mm)) {
         $keys = array_values(array_unique(array_filter($mm[1], static function ($v) {
-            return is_string($v) && $v !== '';
+            if (! is_string($v) || $v === '') {
+                return false;
+            }
+            // Ignore wp_kses allowlists like ['br' => []] — not theme option keys.
+            $vl = strtolower($v);
+
+            return strpos($vl, 'rch-') === 0 || strpos($vl, 'rch_') === 0;
         })));
     }
 
