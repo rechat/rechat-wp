@@ -188,12 +188,7 @@ function rch_search_listing_form_shortcode($atts)
     }
 
     $rechat_attrs = rch_get_rechat_root_attributes($attributes, $map_default_center, $filter_listing_statuses);
-    $rechat_listings_attrs = rch_get_rechat_listings_attributes(
-        $attributes,
-        $map_default_center,
-        $filter_listing_statuses,
-        array('omit_empty_filter_property_types' => true)
-    );
+    $rechat_listings_attrs = rch_get_rechat_listings_attributes($attributes, $map_default_center, $filter_listing_statuses);
     $rechat_property_search_attrs = rch_get_rechat_property_search_form_attributes($attributes);
 
     $form_id = 'rch-search-form-' . uniqid('', false);
