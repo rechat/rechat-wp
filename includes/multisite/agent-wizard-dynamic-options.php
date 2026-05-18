@@ -766,6 +766,9 @@ function rch_agent_wizard_dynamic_heuristic_import_defaults(array $keys): array
         if ((rch_agent_wizard_str_contains_ci($kl, 'twitter') || $kl === 'rch-theme-x' || rch_agent_wizard_str_contains_ci($kl, '-x')) && ! isset($out['twitter'])) {
             $out['twitter'] = $k;
         }
+        if (rch_agent_wizard_str_contains_ci($kl, 'title-main-hero') && ! isset($out['post_title'])) {
+            $out['post_title'] = $k;
+        }
     }
 
     /**

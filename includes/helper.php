@@ -961,14 +961,32 @@ function rch_process_agents_data($access_token, $api_url_base)
                 }
 
 
+                // Prepare other fields
                 $user = $item['user'];
-                $full_name = rch_agent_display_name_from_rechat_api_user($user);
-                $custom_fields = rch_agent_meta_from_rechat_api_user(
-                    $user,
-                    $api_id,
-                    $default_profile_image_url,
-                    $regions_for_agent,
-                    $offices_for_agent
+                $full_name = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
+                $custom_fields = array(
+                    'website' => $user['website'] ?? '',
+                    'instagram' => $user['instagram'] ?? '',
+                    'twitter' => $user['twitter'] ?? '',
+                    'linkedin' => $user['linkedin'] ?? '',
+                    'youtube' => $user['youtube'] ?? '',
+                    'facebook' => $user['facebook'] ?? '',
+                    'profile_image_url' => !empty($user['profile_image_url']) ? $user['profile_image_url'] : $default_profile_image_url,
+                    'phone_number' => $user['phone_number'] ?? '',
+                    'email' => $user['email'] ?? '',
+                    'timezone' => $user['timezone'] ?? '',
+                    'designation' => $user['designation'] ?? '',
+                    'license_number' => $user['agents'][0]['license_number'] ?? '',
+                    'agents' => isset($user['agents']) && is_array($user['agents']) ?
+                        array_map(function ($agent) {
+                            return $agent['id'] ?? null;
+                        }, array_filter($user['agents'], function ($agent) {
+                            return isset($agent['id']);
+                        })) : array(),
+                    'api_id' => $api_id,
+                    'last_name' => $user['last_name'] ?? '',
+                    '_rch_agent_regions' => $regions_for_agent,
+                    '_rch_agent_offices' => $offices_for_agent,
                 );
 
                 if (isset($existing_api_ids[$api_id])) {
