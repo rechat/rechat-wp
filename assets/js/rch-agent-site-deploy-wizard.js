@@ -903,10 +903,14 @@
      * @param {Record<string, {mode?: string, value?: *, meta_key?: string}>|null} deployRows
      * @returns {Record<string, {mode: string, value?: *, meta_key?: string}>}
      */
-    function reconcileThemeRowsForHydrate(draftRows, deployRows) {
+    function reconcileThemeRowsForHydrate(draftRows, deployRows, draftSavedAt, deployUpdatedAt) {
         var out = {};
         var keys = {};
         var k;
+        var deployIsNewer =
+            deployUpdatedAt &&
+            draftSavedAt &&
+            parseInt(deployUpdatedAt, 10) > parseInt(draftSavedAt, 10);
 
         function collectKeys(obj) {
             if (!obj || typeof obj !== 'object') {
@@ -1012,8 +1016,13 @@
      * @param {Record<string, {mode?: string, value?: *, meta_key?: string}>|null} deployRows
      * @param {Record<string, *>|null} currentTheme
      */
-    function hydrateThemeRowsFromSources(draftRows, deployRows, currentTheme) {
-        var merged = reconcileThemeRowsForHydrate(draftRows, deployRows);
+    function hydrateThemeRowsFromSources(draftRows, deployRows, currentTheme, draftSavedAt, deployUpdatedAt) {
+        var merged = reconcileThemeRowsForHydrate(
+            draftRows,
+            deployRows,
+            draftSavedAt || 0,
+            deployUpdatedAt || 0
+        );
         if (merged && typeof merged === 'object' && Object.keys(merged).length) {
             applyThemeRowsToDom(merged);
         }
@@ -1064,6 +1073,7 @@
             meta: state.meta,
             step: state.step,
             themeRows: collectThemeRows(),
+            savedAt: Math.floor(Date.now() / 1000),
             _draftSaveSrc: saveSrc === 'auto' ? 'auto' : 'user',
         };
         if (rchAgentWizard.broadcastStep) {
@@ -1184,9 +1194,16 @@
                     state.agentId = dr.agentId;
                 }
 
-                function applyRestOfDraft(lastDeploymentRows, currentTheme) {
+                function applyRestOfDraft(lastDeploymentRows, currentTheme, deployUpdatedAt) {
                     var rows = dr.themeRows || dr.theme_rows;
-                    hydrateThemeRowsFromSources(rows, lastDeploymentRows || null, currentTheme || null);
+                    state.draftThemeRows = rows && typeof rows === 'object' ? rows : null;
+                    hydrateThemeRowsFromSources(
+                        rows,
+                        lastDeploymentRows || null,
+                        currentTheme || null,
+                        dr.savedAt || 0,
+                        deployUpdatedAt || 0
+                    );
                     var mwm = normalizeWizardTargetMode(dr.mwTargetMode || 'agent_only');
                     if (mwm === 'agent_office') {
                         mwm = 'agent_only';
@@ -1289,13 +1306,20 @@
                                             '</p>'
                                     );
                             }
-                            applyRestOfDraft(last_deployment_rows, current_theme);
+                            applyRestOfDraft(
+                                last_deployment_rows,
+                                current_theme,
+                                d.last_deployment && d.last_deployment.updated_at
+                                    ? d.last_deployment.updated_at
+                                    : 0
+                            );
                         })
                         .fail(function () {
-                            applyRestOfDraft(null, null);
+                            applyRestOfDraft(null, null, 0);
                         });
                 } else {
-                    applyRestOfDraft(null, null);
+                    state.draftThemeRows = dr.themeRows || dr.theme_rows || null;
+                    applyRestOfDraft(null, null, 0);
                 }
                 })
                 .fail(function () {
@@ -1340,11 +1364,15 @@
                                 '</p>'
                         );
                     hydrateThemeRowsFromSources(
-                        null,
+                        collectThemeRows(),
                         d.last_deployment && d.last_deployment.theme_rows
                             ? d.last_deployment.theme_rows
                             : null,
-                        d.current_theme || null
+                        d.current_theme || null,
+                        0,
+                        d.last_deployment && d.last_deployment.updated_at
+                            ? d.last_deployment.updated_at
+                            : 0
                     );
                     $('.rch-wz-theme-row').each(function () {
                         updateMetaPreview($(this));
@@ -1371,6 +1399,9 @@
                 return;
             }
             if (state.agentId || getScope() !== 'single') {
+                return;
+            }
+            if (state.draftThemeRows && Object.keys(state.draftThemeRows).length) {
                 return;
             }
             var lastId = parseInt(rchAgentWizard.lastAgentId || 0, 10);
@@ -1575,6 +1606,16 @@
                 alert(rchAgentWizard.strings.bulkNoSites);
                 return;
             }
+            $('.rch-wz-row-value').each(function () {
+                $(this).trigger('change');
+            });
+            var rowsToDeploy = collectThemeRows();
+            if (scope === 'single' && (!rowsToDeploy || !Object.keys(rowsToDeploy).length)) {
+                alert(
+                    'No theme fields set to deploy. Set each field to “Set manually” or “From agent profile”, not “Do not change”.'
+                );
+                return;
+            }
             spin($('#rch-wz-deploy-spinner'), true);
             $('#rch-wz-deploy-result').empty();
             $.post(rchAgentWizard.ajaxurl, {
@@ -1582,7 +1623,7 @@
                 nonce: rchAgentWizard.nonce,
                 scope: scope,
                 agent_id: state.agentId,
-                theme_rows_json: JSON.stringify(collectThemeRows()),
+                theme_rows_json: JSON.stringify(rowsToDeploy),
             })
                 .done(function (res) {
                     spin($('#rch-wz-deploy-spinner'), false);
@@ -1602,9 +1643,31 @@
                         });
                         html += '</ul>';
                     }
+                    if (res.data && res.data.deployed_preview && res.data.deployed_preview.hero_shortcode) {
+                        html +=
+                            '<p class="description"><strong>Hero shortcode on sub-site:</strong> ' +
+                            escapeHtml(res.data.deployed_preview.hero_shortcode.substring(0, 200)) +
+                            (res.data.deployed_preview.hero_shortcode.length > 200 ? '…' : '') +
+                            '</p>';
+                    }
+                    if (res.data && res.data.deployed_keys && res.data.deployed_keys.length) {
+                        html +=
+                            '<p class="description">Updated ' +
+                            escapeHtml(String(res.data.deployed_keys.length)) +
+                            ' option key(s). Purge Kinsta/cache on the agent site if the front page still looks old.</p>';
+                    }
                     html += '</div>';
                     $('#rch-wz-deploy-result').html(html);
-                    persistWizardDraft(true);
+                    if (res.data && res.data.last_deployment && res.data.last_deployment.theme_rows) {
+                        hydrateThemeRowsFromSources(
+                            collectThemeRows(),
+                            res.data.last_deployment.theme_rows,
+                            null,
+                            Math.floor(Date.now() / 1000),
+                            res.data.last_deployment.updated_at || 0
+                        );
+                    }
+                    persistWizardDraft(false);
                 })
                 .fail(function () {
                     spin($('#rch-wz-deploy-spinner'), false);

@@ -54,6 +54,8 @@ function agents_meta_box_html($post)
     $facebook = get_post_meta($post->ID, 'facebook', true);
     $phone_number = get_post_meta($post->ID, 'phone_number', true);
     $email = get_post_meta($post->ID, 'email', true);
+    $first_name = get_post_meta($post->ID, 'first_name', true);
+    $last_name = get_post_meta($post->ID, 'last_name', true);
     $timezone = get_post_meta($post->ID, 'timezone', true);
     $profile_image_url = get_post_meta($post->ID, 'profile_image_url', true);
     $license_number = get_post_meta($post->ID, 'license_number', true);
@@ -73,11 +75,16 @@ function agents_meta_box_html($post)
     <label for="agents_profile_image_url">Profile Image URL</label>
     <input type="text" id="agents_profile_image_url" name="agents_profile_image_url" value="<?php echo esc_attr($profile_image_url); ?>" class="widefat" />
     <br>
-    <label for="agents_timezone">timezone</label>
+    <label for="agents_timezone">Timezone</label>
     <input type="text" id="agents_timezone" name="agents_timezone" value="<?php echo esc_attr($timezone); ?>" class="widefat" />
     <br>
-    <label for="agents_timezone">Last Name</label>
-    <input type="text" id="agents_last_name" name="agents_last_name" value="<?php echo esc_attr(get_post_meta($post->ID, 'last_name', true)); ?>" class="widefat" />
+    <label for="agents_first_name">First Name</label>
+    <input type="text" id="agents_first_name" name="agents_first_name" value="<?php echo esc_attr($first_name); ?>" class="widefat" />
+    <p class="description">Synced from Rechat API (<code>user.first_name</code>).</p>
+    <br>
+    <label for="agents_last_name">Last Name</label>
+    <input type="text" id="agents_last_name" name="agents_last_name" value="<?php echo esc_attr($last_name); ?>" class="widefat" />
+    <p class="description">Synced from Rechat API (<code>user.last_name</code>).</p>
     <br>
     <label for="agents_website">Website</label>
     <input type="text" id="agents_website" name="agents_website" value="<?php echo esc_attr($website); ?>" class="widefat" />
@@ -260,6 +267,7 @@ function save_agents_meta_box($post_id)
     $fields = array(
         'agents_profile_image_url' => 'profile_image_url',
         'agents_website' => 'website',
+        'agents_first_name' => 'first_name',
         'agents_last_name' => 'last_name',
         'agents_instagram' => 'instagram',
         'agents_twitter' => 'twitter',

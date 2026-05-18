@@ -83,6 +83,7 @@ function rch_agent_wizard_get_theme_profile(string $stylesheet): array
         'urls'            => [],
         'textareas'       => [],
         'textarea_json'   => [],
+        'shortcodes'      => [],
         'numbers'         => [],
         'wp_kses'         => [],
         'color'           => [],
@@ -111,6 +112,57 @@ function rch_agent_wizard_allowed_theme_option_keys(): array
 
     /** @var list<string> $keys */
     return apply_filters('rch_agent_wizard_allowed_theme_option_keys', $keys);
+}
+
+/**
+ * Union of wizard UI theme keys + destination agent sub-site theme keys (deploy must accept both).
+ *
+ * @return list<string>
+ */
+function rch_agent_wizard_resolve_deploy_allowed_keys(int $agent_id): array
+{
+    $keys = rch_agent_wizard_allowed_theme_option_keys();
+
+    if ($agent_id <= 0 || ! function_exists('rch_multisite_get_agent_blog_id')) {
+        return $keys;
+    }
+
+    $blog_id = (int) rch_multisite_get_agent_blog_id($agent_id);
+    if ($blog_id <= 0) {
+        return $keys;
+    }
+
+    switch_to_blog($blog_id);
+    $stylesheet = (string) get_option('stylesheet');
+    restore_current_blog();
+
+    if ($stylesheet === '') {
+        return $keys;
+    }
+
+    $dest_keys = rch_agent_wizard_get_theme_profile($stylesheet)['keys'] ?? [];
+    if (! is_array($dest_keys)) {
+        $dest_keys = [];
+    }
+
+    return array_values(array_unique(array_merge($keys, $dest_keys)));
+}
+
+/**
+ * Bust options cache after writing theme options on a sub-site (object cache / Kinsta).
+ *
+ * @param string      $primary Option name.
+ * @param string|null $mirror  Optional mirror option name.
+ */
+function rch_agent_wizard_flush_theme_option_cache(string $primary, ?string $mirror = null): void
+{
+    if ($primary !== '') {
+        wp_cache_delete($primary, 'options');
+    }
+    if (is_string($mirror) && $mirror !== '' && $mirror !== $primary) {
+        wp_cache_delete($mirror, 'options');
+    }
+    wp_cache_delete('alloptions', 'options');
 }
 
 /**
@@ -617,13 +669,25 @@ function rch_agent_wizard_sanitize_theme_path_or_url($value): string
  * @param mixed $value Raw value.
  * @return string
  */
+function rch_agent_wizard_normalize_shortcode_string(string $value): string
+{
+    // Common wizard typo: closing ] before more attributes (breaks do_shortcode).
+    return preg_replace('/\]\s+(?=(?:disable_|show_|target_|filter_|brand_|map_))/i', ' ', $value);
+}
+
+/**
+ * @param mixed $value Raw value.
+ * @return string
+ */
 function rch_agent_wizard_sanitize_theme_shortcode_field($value): string
 {
+    $value = is_string($value) ? rch_agent_wizard_normalize_shortcode_string(wp_unslash($value)) : '';
+
     if (function_exists('mjd_sanitize_shortcode_field')) {
         return mjd_sanitize_shortcode_field($value);
     }
 
-    return sanitize_textarea_field(wp_unslash(is_string($value) ? $value : ''));
+    return sanitize_textarea_field($value);
 }
 
 /**
@@ -891,12 +955,6 @@ function rch_agent_wizard_deploy_to_agent_blog(int $agent_id, array $theme_rows)
     $dest_stylesheet = (string) get_option('stylesheet');
     $profile         = rch_agent_wizard_get_theme_profile($dest_stylesheet);
 
-    restore_current_blog();
-
-    $dest_keys  = isset($profile['keys']) && is_array($profile['keys']) ? $profile['keys'] : [];
-    $merged_raw = rch_agent_wizard_build_row_from_theme_rows($agent_id, $theme_rows, $dest_keys);
-
-    switch_to_blog($blog_id);
     if (empty($profile['storage_primary']) || ! is_string($profile['storage_primary'])) {
         restore_current_blog();
         return new WP_Error(
@@ -904,11 +962,17 @@ function rch_agent_wizard_deploy_to_agent_blog(int $agent_id, array $theme_rows)
             __('Could not detect theme option storage for this sub-site theme. Add a rechat-agent-wizard.json manifest, or configure rch_agent_wizard_storage_config / rch_agent_wizard_theme_storage_map.', 'rechat-plugin')
         );
     }
-    $sanitized       = rch_agent_wizard_sanitize_theme_options_row($merged_raw, $profile);
-    $dest_allowed    = array_flip($profile['keys']);
-    $sanitized       = array_intersect_key($sanitized, $dest_allowed);
 
-    $primary = isset($profile['storage_primary']) ? (string) $profile['storage_primary'] : 'pentama_options_v2';
+    $allowed_deploy = rch_agent_wizard_resolve_deploy_allowed_keys($agent_id);
+    $merged_raw     = rch_agent_wizard_build_row_from_theme_rows($agent_id, $theme_rows, $allowed_deploy);
+
+    $sanitized    = rch_agent_wizard_sanitize_theme_options_row($merged_raw, $profile);
+    $dest_allowed = array_flip($profile['keys'] ?? []);
+    if ($dest_allowed !== []) {
+        $sanitized = array_intersect_key($sanitized, $dest_allowed);
+    }
+
+    $primary = (string) $profile['storage_primary'];
     $mirror  = array_key_exists('storage_mirror', $profile) ? $profile['storage_mirror'] : 'pentama_options_agent_website';
 
     $existing = get_option($primary, []);
@@ -919,15 +983,28 @@ function rch_agent_wizard_deploy_to_agent_blog(int $agent_id, array $theme_rows)
     $merged = array_merge($existing, $sanitized);
 
     update_option($primary, $merged, false);
-    if (is_string($mirror) && $mirror !== '') {
+    if (is_string($mirror) && $mirror !== '' && $mirror !== $primary) {
         update_option($mirror, $merged, false);
     }
 
-    rch_agent_wizard_record_last_deployment_in_blog($agent_id, $theme_rows);
+    rch_agent_wizard_flush_theme_option_cache($primary, is_string($mirror) ? $mirror : null);
+
+    $deployed_options = [];
+    foreach ($sanitized as $opt_key => $opt_val) {
+        $deployed_options[ $opt_key ] = $merged[ $opt_key ] ?? $opt_val;
+    }
+
+    rch_agent_wizard_record_last_deployment_in_blog($agent_id, $theme_rows, $deployed_options);
 
     restore_current_blog();
 
-    return true;
+    return [
+        'blog_id'            => $blog_id,
+        'deployed_options'   => $deployed_options,
+        'deployed_keys'      => array_keys($sanitized),
+        'theme_rows'         => $theme_rows,
+        'storage_primary'    => $primary,
+    ];
 }
 
 /**
@@ -937,8 +1014,9 @@ function rch_agent_wizard_deploy_to_agent_blog(int $agent_id, array $theme_rows)
  * Must be called inside `switch_to_blog($blog_id)`.
  *
  * @param array<string, array{mode:string, value?:mixed, meta_key?:string}> $theme_rows
+ * @param array<string, mixed>                                         $deployed_options Live theme option values written on the sub-site.
  */
-function rch_agent_wizard_record_last_deployment_in_blog(int $agent_id, array $theme_rows): void
+function rch_agent_wizard_record_last_deployment_in_blog(int $agent_id, array $theme_rows, array $deployed_options = []): void
 {
     $allowed_meta = array_flip(array_keys(rch_agent_wizard_importable_field_defs_resolved()));
     $clean_rows   = [];
@@ -956,7 +1034,8 @@ function rch_agent_wizard_record_last_deployment_in_blog(int $agent_id, array $t
         $entry = ['mode' => $mode];
 
         if ($mode === 'manual') {
-            $entry['value'] = $cfg['value'] ?? '';
+            $raw_val = $cfg['value'] ?? '';
+            $entry['value'] = is_string($raw_val) ? $raw_val : ( is_scalar($raw_val) ? (string) $raw_val : '' );
         }
 
         if ($mode === 'meta') {
@@ -970,10 +1049,19 @@ function rch_agent_wizard_record_last_deployment_in_blog(int $agent_id, array $t
         $clean_rows[$key] = $entry;
     }
 
+    $options_snapshot = [];
+    foreach ($deployed_options as $opt_key => $opt_val) {
+        if (! is_string($opt_key) || $opt_key === '') {
+            continue;
+        }
+        $options_snapshot[ $opt_key ] = $opt_val;
+    }
+
     $payload = [
-        'agent_id'   => $agent_id,
-        'theme_rows' => $clean_rows,
-        'updated_at' => time(),
+        'agent_id'          => $agent_id,
+        'theme_rows'        => $clean_rows,
+        'deployed_options'  => $options_snapshot,
+        'updated_at'        => time(),
     ];
 
     update_option('rch_agent_wizard_last_deployment', wp_json_encode($payload), false);
@@ -1094,7 +1182,8 @@ function rch_agent_wizard_read_destination_last_deployment(int $blog_id): ?array
         $entry = ['mode' => $mode];
 
         if ($mode === 'manual') {
-            $entry['value'] = $cfg['value'] ?? '';
+            $raw_val = $cfg['value'] ?? '';
+            $entry['value'] = is_string($raw_val) ? $raw_val : ( is_scalar($raw_val) ? (string) $raw_val : '' );
         }
 
         if ($mode === 'meta') {
@@ -1108,9 +1197,19 @@ function rch_agent_wizard_read_destination_last_deployment(int $blog_id): ?array
         $clean[$key] = $entry;
     }
 
+    $deployed_options = [];
+    if (! empty($decoded['deployed_options']) && is_array($decoded['deployed_options'])) {
+        foreach ($decoded['deployed_options'] as $opt_key => $opt_val) {
+            if (is_string($opt_key) && $opt_key !== '' && isset($allowed_themes[ $opt_key ])) {
+                $deployed_options[ $opt_key ] = $opt_val;
+            }
+        }
+    }
+
     return [
-        'theme_rows' => $clean,
-        'updated_at' => isset($decoded['updated_at']) ? (int) $decoded['updated_at'] : 0,
+        'theme_rows'         => $clean,
+        'deployed_options'   => $deployed_options,
+        'updated_at'         => isset($decoded['updated_at']) ? (int) $decoded['updated_at'] : 0,
     ];
 }
 
@@ -1293,7 +1392,25 @@ function rch_agent_wizard_ajax_save_draft(): void
 
     update_user_meta($uid, RCH_AGENT_WIZARD_DRAFT_META, wp_json_encode($decoded));
 
-    wp_send_json_success(['message' => __('Draft saved.', 'rechat-plugin')]);
+    $push_message = '';
+    $scope        = isset($decoded['scope']) ? sanitize_key((string) $decoded['scope']) : 'single';
+    $theme_rows   = isset($decoded['themeRows']) && is_array($decoded['themeRows']) ? $decoded['themeRows'] : [];
+
+    if (
+        $save_src === 'user'
+        && $scope === 'single'
+        && $draft_agent_id > 0
+        && $theme_rows !== []
+        && apply_filters('rch_agent_wizard_save_draft_pushes_to_subsite', true, $decoded, $save_src)
+    ) {
+        $push_result = rch_agent_wizard_deploy_to_agent_blog($draft_agent_id, $theme_rows);
+        if (is_wp_error($push_result)) {
+            wp_send_json_error(['message' => $push_result->get_error_message()]);
+        }
+        $push_message = ' ' . __('Agent sub-site theme options were updated.', 'rechat-plugin');
+    }
+
+    wp_send_json_success(['message' => __('Draft saved.', 'rechat-plugin') . $push_message]);
 }
 
 /**
@@ -1338,7 +1455,10 @@ function rch_agent_wizard_ajax_deploy(): void
         wp_send_json_error(['message' => __('Invalid theme configuration JSON.', 'rechat-plugin')]);
     }
 
-    $allowed_themes = array_flip(rch_agent_wizard_allowed_theme_option_keys());
+    $allowed_list   = $agent_id > 0
+        ? rch_agent_wizard_resolve_deploy_allowed_keys($agent_id)
+        : rch_agent_wizard_allowed_theme_option_keys();
+    $allowed_themes = array_flip($allowed_list);
     $allowed_meta   = array_flip(array_keys(rch_agent_wizard_importable_field_defs_resolved()));
     $clean_rows     = [];
     foreach ($theme_rows as $tk => $cfg) {
@@ -1351,7 +1471,8 @@ function rch_agent_wizard_ajax_deploy(): void
         }
         $entry = ['mode' => $mode];
         if ($mode === 'manual') {
-            $entry['value'] = $cfg['value'] ?? '';
+            $raw_val = $cfg['value'] ?? '';
+            $entry['value'] = is_string($raw_val) ? $raw_val : ( is_scalar($raw_val) ? (string) $raw_val : '' );
         }
         if ($mode === 'meta') {
             $mk = isset($cfg['meta_key']) ? sanitize_key((string) $cfg['meta_key']) : '';
@@ -1391,6 +1512,11 @@ function rch_agent_wizard_ajax_deploy(): void
         wp_send_json_error(['message' => $result->get_error_message()]);
     }
 
+    $last_deployment = null;
+    if (is_array($result) && ! empty($result['blog_id'])) {
+        $last_deployment = rch_agent_wizard_read_destination_last_deployment((int) $result['blog_id']);
+    }
+
     update_user_meta(get_current_user_id(), 'rch_agent_wizard_last_agent_id', $agent_id);
 
     $testimonial_summary = null;
@@ -1412,10 +1538,22 @@ function rch_agent_wizard_ajax_deploy(): void
         );
     }
 
+    $deployed_preview = [];
+    if (is_array($result) && ! empty($result['deployed_options']) && is_array($result['deployed_options'])) {
+        $hero_key = 'rch-theme-agent-hero-shortcode';
+        if (isset($result['deployed_options'][ $hero_key ])) {
+            $deployed_preview['hero_shortcode'] = (string) $result['deployed_options'][ $hero_key ];
+        }
+    }
+
     wp_send_json_success([
         'message'              => $message,
         'blog_id'              => function_exists('rch_multisite_get_agent_blog_id') ? rch_multisite_get_agent_blog_id($agent_id) : 0,
         'testimonial_summary'  => $testimonial_summary,
+        'last_deployment'      => $last_deployment,
+        'deployed_keys'        => is_array($result) && isset($result['deployed_keys']) ? $result['deployed_keys'] : [],
+        'deployed_preview'     => $deployed_preview,
+        'storage_primary'      => is_array($result) && isset($result['storage_primary']) ? $result['storage_primary'] : '',
     ]);
 }
 
