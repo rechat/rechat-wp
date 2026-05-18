@@ -599,6 +599,7 @@ function rch_agent_wizard_infer_field_shape(string $key, $sample_value): array
         'urls'          => [],
         'textareas'     => [],
         'textarea_json' => [],
+        'shortcodes'    => [],
         'numbers'       => [],
         'wp_kses'       => [],
         'color'         => [],
@@ -633,9 +634,9 @@ function rch_agent_wizard_infer_field_shape(string $key, $sample_value): array
     }
 
     if (rch_agent_wizard_str_contains_ci($kl, 'shortcode')) {
-        $b['wp_kses'][] = $key;
+        $b['shortcodes'][] = $key;
 
-        return ['type' => 'text', 'media' => '', 'buckets' => $b];
+        return ['type' => 'textarea', 'media' => '', 'buckets' => $b];
     }
 
     if (rch_agent_wizard_str_contains_ci($kl, 'color')) {
@@ -794,6 +795,7 @@ function rch_agent_wizard_build_dynamic_profile_from_data(
         'urls'            => [],
         'textareas'       => [],
         'textarea_json'   => [],
+        'shortcodes'      => [],
         'numbers'         => [],
         'wp_kses'         => [],
         'color'           => [],
@@ -932,6 +934,7 @@ function rch_agent_wizard_build_dynamic_profile_from_data(
         'urls'            => $buckets['urls'],
         'textareas'       => $buckets['textareas'],
         'textarea_json'   => $buckets['textarea_json'],
+        'shortcodes'      => $buckets['shortcodes'],
         'numbers'         => $buckets['numbers'],
         'wp_kses'         => $buckets['wp_kses'],
         'color'           => $buckets['color'],
