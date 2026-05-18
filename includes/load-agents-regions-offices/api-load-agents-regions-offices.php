@@ -91,7 +91,7 @@ function rch_update_agents_offices_regions_data()
 
 
 
-    // Process agents
+    // Process agents (user.first_name, user.last_name, email, etc. → agent post meta / metabox).
     $agents_result = rch_process_agents_data($access_token, $api_url_base);
     // Get current agent IDs
     $current_agent_ids = get_posts(array(
