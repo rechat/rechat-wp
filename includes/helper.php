@@ -1848,15 +1848,9 @@ function rch_render_listing_filters_html($attributes)
 /*******************************
  * Render rechat-listings attributes (NEW SDK)
  ******************************/
-function rch_get_rechat_listings_attributes($attributes, $map_default_center, $listing_statuses_str, $context = array())
+function rch_get_rechat_listings_attributes($attributes, $map_default_center, $listing_statuses_str)
 {
     $attrs = array();
-    $omit_empty_filter_property_types = ! empty($context['omit_empty_filter_property_types']);
-
-    // Add brand_id to rechat-listings only if own_listing is true
-    if (!empty($attributes['own_listing']) && filter_var($attributes['own_listing'], FILTER_VALIDATE_BOOLEAN)) {
-        $attrs[] = 'brand_id="' . esc_attr($attributes['brand']) . '"';
-    }
 
     if (! empty($attributes['filter_boundary_ids'])) {
         $attrs[] = 'filter_boundary_ids="' . esc_attr($attributes['filter_boundary_ids']) . '"';
@@ -1922,15 +1916,12 @@ function rch_get_rechat_listings_attributes($attributes, $map_default_center, $l
         $attrs[] = 'filter_brand_id="' . esc_attr($attributes['filter_brand_id']) . '"';
     }
 
-    if (!empty($attributes['property_types'])) {
+    if (! empty($attributes['property_types'])) {
         $attrs[] = 'filter_property_types="' . esc_attr(
             is_array($attributes['property_types'])
                 ? implode(',', $attributes['property_types'])
                 : $attributes['property_types']
         ) . '"';
-    } elseif (! $omit_empty_filter_property_types) {
-        // property_types is empty → explicitly send empty property_subtypes
-        $attrs[] = 'filter_property_types=""';
     }
 
     if (!empty($attributes['filter_open_houses']) && filter_var($attributes['filter_open_houses'], FILTER_VALIDATE_BOOLEAN)) {

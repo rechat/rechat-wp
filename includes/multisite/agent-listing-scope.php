@@ -511,10 +511,10 @@ function rch_multisite_ob_attr_append_prefix(string $inner): string
 }
 
 /**
- * Fix empty brand_id on rechat-root / rechat-listings using hub option (raw DB).
+ * Fix empty brand_id on <rechat-root> using hub option (raw DB).
  *
  * @param string $html     Full page HTML.
- * @param string $tag      Tag name without brackets (rechat-root or rechat-listings).
+ * @param string $tag      Tag name without brackets (rechat-root).
  * @param string $brand_id Brand UUID from main site.
  * @return string
  */
@@ -679,6 +679,27 @@ function rch_multisite_ob_disable_rechat_listings_when_no_hub_agents(string $htm
 }
 
 /**
+ * Remove brand_id / map_api_key from <rechat-listings> (belong on <rechat-root> only).
+ *
+ * @param string $html Full page HTML.
+ * @return string
+ */
+function rch_multisite_ob_strip_listings_hub_credentials(string $html): string
+{
+    return rch_multisite_preg_replace_callback_safe(
+        '/<rechat-listings\b([^>]*)>/i',
+        static function ($m) {
+            $inner = $m[1];
+            $inner = rch_multisite_preg_replace_safe('/\sbrand_id\s*=\s*(["\'])[^"\']*\1/i', '', $inner);
+            $inner = rch_multisite_preg_replace_safe('/\smap_api_key\s*=\s*(["\'])[^"\']*\1/i', '', $inner);
+
+            return '<rechat-listings' . $inner . '>';
+        },
+        $html
+    );
+}
+
+/**
  * Strip mistaken filter_agents on <rechat-listings-list> (parent should own filters).
  *
  * @param string $html Full page HTML.
@@ -701,7 +722,7 @@ function rch_multisite_ob_strip_filter_agents_on_listings_list(string $html): st
 }
 
 /**
- * Full-page output filter: agent scope filter_agents + hub brand/map on live markup.
+ * Full-page output filter: agent scope filter_agents + hub brand_id on <rechat-root> only.
  *
  * @param string $html Full page HTML.
  * @return string
@@ -729,13 +750,9 @@ function rch_multisite_ob_patch_rechat_markup(string $html)
 
         if ($hub_brand !== '') {
             $html = rch_multisite_ob_patch_open_tag_brand_id($html, 'rechat-root', $hub_brand);
-            $html = rch_multisite_ob_patch_open_tag_brand_id($html, 'rechat-listings', $hub_brand);
         }
 
-        if ($hub_map !== '') {
-            $html = rch_multisite_ob_patch_rechat_listings_map_api_key($html, $hub_map);
-        }
-
+        $html = rch_multisite_ob_strip_listings_hub_credentials($html);
         $html = rch_multisite_ob_strip_filter_agents_on_listings_list($html);
     } catch (Throwable $e) {
         if (defined('WP_DEBUG') && WP_DEBUG) {
@@ -772,8 +789,8 @@ function rch_multisite_should_buffer_listing_markup(): bool
     $hub_map  = rch_multisite_fetch_raw_option_value_for_blog($main_id, 'rch_rechat_google_map_api_key');
 
     if (rch_multisite_is_agent_listing_scope_active()) {
-        // Always buffer agent subsites: inject filter_agents, hub brand/map fallback, and/or
-        // disabled="true" on <rechat-listings> when hub agents meta is empty.
+        // Always buffer agent subsites: inject filter_agents, hub brand_id on <rechat-root>, strip
+        // brand_id/map_api_key from <rechat-listings>, and/or disabled="true" when hub agents empty.
         return true;
     }
 

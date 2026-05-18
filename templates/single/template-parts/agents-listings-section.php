@@ -76,12 +76,7 @@ function rch_render_agent_listings_section($post_id) {
  */
 function rch_get_agent_listings_attrs($brand_id, $agents_string, $property_subtypes, $property_types, $listing_statuses) {
     $attrs = array();
-    
-    // Add brand_id (always show own brand listings on agent pages)
-    if (!empty($brand_id)) {
-        $attrs[] = 'brand_id="' . esc_attr($brand_id) . '"';
-    }
-    
+
     $attrs[] = 'filter_pagination_limit="9"';
     $attrs[] = 'filter_agents="' . esc_attr($agents_string) . '"';
     if ('' === trim((string) $agents_string)) {
