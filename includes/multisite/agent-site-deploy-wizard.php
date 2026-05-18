@@ -371,7 +371,97 @@ function rch_agent_wizard_importable_field_defs_resolved(): array
         }
     }
 
+    $profile_keys = rch_agent_wizard_get_theme_profile(rch_agent_wizard_wizard_ui_stylesheet())['keys'] ?? [];
+    if (is_array($profile_keys) && isset($defs['post_title'])) {
+        $hero_key = rch_agent_wizard_guess_theme_key_for_fragment($profile_keys, 'title-main-hero');
+        if ($hero_key !== '') {
+            $defs['post_title']['default_theme_key'] = $hero_key;
+        }
+    }
+
     return $defs;
+}
+
+/**
+ * First theme option key whose name contains a fragment (e.g. title-main-hero).
+ *
+ * @param list<string> $keys
+ */
+function rch_agent_wizard_guess_theme_key_for_fragment(array $keys, string $fragment): string
+{
+    if ($fragment === '') {
+        return '';
+    }
+
+    foreach ($keys as $key) {
+        if (is_string($key) && stripos($key, $fragment) !== false) {
+            return $key;
+        }
+    }
+
+    return '';
+}
+
+/**
+ * Copy legacy hero title option keys onto the canonical key for the destination theme.
+ *
+ * @param array<string, mixed> $row
+ * @param list<string>       $dest_keys
+ * @return array<string, mixed>
+ */
+function rch_agent_wizard_canonicalize_hero_title_keys(array $row, array $dest_keys): array
+{
+    $canonical = rch_agent_wizard_guess_theme_key_for_fragment($dest_keys, 'title-main-hero');
+    if ($canonical === '') {
+        return $row;
+    }
+
+    $legacy = [
+        'rch-theme-title-main-hero',
+        'rch-theme-agent-title-main-hero',
+        'rch-theme-v0-title-main-hero',
+        'rch-village-theme-title-main-hero',
+    ];
+
+    foreach ($legacy as $leg) {
+        if ($leg === $canonical || ! isset($row[ $leg ])) {
+            continue;
+        }
+        $leg_val = $row[ $leg ];
+        if (! isset($row[ $canonical ]) || $row[ $canonical ] === '' || $row[ $canonical ] === null) {
+            $row[ $canonical ] = $leg_val;
+        }
+        unset($row[ $leg ]);
+    }
+
+    return $row;
+}
+
+/**
+ * Run a callback while agent CPT data is read from the network main site.
+ *
+ * @template T
+ * @param callable(): T $callback
+ * @return T
+ */
+function rch_agent_wizard_with_main_site_agent_data(callable $callback)
+{
+    $switched = false;
+    if (is_multisite()) {
+        $main_id = (int) get_main_site_id();
+        if ($main_id > 0 && get_current_blog_id() !== $main_id) {
+            switch_to_blog($main_id);
+            $switched = true;
+        }
+    }
+
+    try {
+        return $callback();
+    } finally {
+        if ($switched) {
+            restore_current_blog();
+        }
+    }
 }
 
 /**
@@ -793,30 +883,38 @@ function rch_agent_wizard_sanitize_theme_options_row(array $row, ?array $profile
  */
 function rch_agent_wizard_get_import_source_value(int $agent_id, string $field): string
 {
-    if ($field === 'post_title') {
-        $post = get_post($agent_id);
-        return $post ? (string) $post->post_title : '';
+    if ($agent_id <= 0) {
+        return '';
     }
 
-    if ($field === 'post_content') {
-        $post = get_post($agent_id);
-        if (! $post || ! is_string($post->post_content)) {
-            return '';
+    return rch_agent_wizard_with_main_site_agent_data(
+        static function () use ($agent_id, $field): string {
+            if ($field === 'post_title') {
+                $post = get_post($agent_id);
+                return $post ? (string) $post->post_title : '';
+            }
+
+            if ($field === 'post_content') {
+                $post = get_post($agent_id);
+                if (! $post || ! is_string($post->post_content)) {
+                    return '';
+                }
+                $raw = $post->post_content;
+                /**
+                 * Text pushed into theme options (often textarea). Default: strip block markup, keep breaks.
+                 *
+                 * @param string  $text     Processed post_content.
+                 * @param int     $agent_id Agent post ID.
+                 * @param WP_Post $post     Agent post object.
+                 */
+                return (string) apply_filters('rch_agent_wizard_import_post_content_value', wp_strip_all_tags($raw, false), $agent_id, $post);
+            }
+
+            $raw = get_post_meta($agent_id, $field, true);
+
+            return is_scalar($raw) ? (string) $raw : '';
         }
-        $raw = $post->post_content;
-        /**
-         * Text pushed into theme options (often textarea). Default: strip block markup, keep breaks.
-         *
-         * @param string $text    Processed post_content.
-         * @param int    $agent_id Agent post ID.
-         * @param WP_Post $post   Agent post object.
-         */
-        return (string) apply_filters('rch_agent_wizard_import_post_content_value', wp_strip_all_tags($raw, false), $agent_id, $post);
-    }
-
-    $raw = get_post_meta($agent_id, $field, true);
-
-    return is_scalar($raw) ? (string) $raw : '';
+    );
 }
 
 /**
@@ -981,6 +1079,7 @@ function rch_agent_wizard_deploy_to_agent_blog(int $agent_id, array $theme_rows)
     }
 
     $merged = array_merge($existing, $sanitized);
+    $merged = rch_agent_wizard_canonicalize_hero_title_keys($merged, array_keys($dest_allowed !== [] ? $dest_allowed : $allowed_deploy));
 
     update_option($primary, $merged, false);
     if (is_string($mirror) && $mirror !== '' && $mirror !== $primary) {

@@ -195,7 +195,6 @@ include RCH_PLUGIN_INCLUDES . 'admin/settings-page/local-logic-setting.php';
 include RCH_PLUGIN_INCLUDES . 'admin/menu-setting.php';
 include RCH_PLUGIN_INCLUDES . 'admin/custom-fields.php';
 include RCH_PLUGIN_INCLUDES . 'template-load.php';
-include RCH_PLUGIN_INCLUDES . 'load-agents-regions-offices/agent-api-meta-map.php';
 include RCH_PLUGIN_INCLUDES . 'helper.php';
 include RCH_PLUGIN_DIR . 'templates/archive/search-result.php';
 include RCH_PLUGIN_INCLUDES . 'load-agents-regions-offices/api-load-agents-regions-offices.php';
