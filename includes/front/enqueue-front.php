@@ -12,6 +12,10 @@ function rch_enqueue_frontend_styles()
         return;
     }
 
+    if (function_exists('rch_register_rechat_sdk_assets')) {
+        rch_register_rechat_sdk_assets();
+    }
+
     // Enqueue CSS styles
     wp_enqueue_style('rch-front-css-global', RCH_PLUGIN_ASSETS . 'css/rch-global.css', [], RCH_VERSION);
     wp_register_style('rch-swiper', RCH_PLUGIN_ASSETS . 'css/swiper-bundle.min.css', [], RCH_VERSION_SWIPER);
@@ -141,23 +145,9 @@ function rch_enqueue_block_assets()
         RCH_VERSION
     );
 
-    $rch_sdk_css = defined('RCH_RECHAT_SDK_CSS_URL') ? RCH_RECHAT_SDK_CSS_URL : 'https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.css';
-    $rch_sdk_js = defined('RCH_RECHAT_SDK_JS_URL') ? RCH_RECHAT_SDK_JS_URL : 'https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.js';
-
-    wp_register_style(
-        'rechat-sdk-css',
-        $rch_sdk_css,
-        [],
-        null
-    );
-
-    wp_register_script(
-        'rechat-sdk-js',
-        $rch_sdk_js,
-        [],
-        null,
-        false
-    );
+    if (function_exists('rch_register_rechat_sdk_assets')) {
+        rch_register_rechat_sdk_assets();
+    }
 
     // Automatically enqueue script/style only when block is present
     if (has_block('rch-rechat-plugin/listing-block')) {

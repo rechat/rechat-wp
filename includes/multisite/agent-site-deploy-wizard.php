@@ -590,6 +590,43 @@ function rch_agent_wizard_normalize_social_url($value): string
 }
 
 /**
+ * Theme URL/path field: allow site-relative paths (e.g. /test) as well as absolute URLs.
+ *
+ * @param mixed $value Raw value.
+ * @return string
+ */
+function rch_agent_wizard_sanitize_theme_path_or_url($value): string
+{
+    $value = is_string($value) ? trim(wp_unslash($value)) : '';
+    if ($value === '') {
+        return '';
+    }
+
+    if ($value[0] === '/' || $value[0] === '#') {
+        return sanitize_text_field($value);
+    }
+
+    $absolute = esc_url_raw($value);
+
+    return $absolute !== '' ? $absolute : sanitize_text_field($value);
+}
+
+/**
+ * Preserve shortcode strings for deploy (do not run wp_kses_post).
+ *
+ * @param mixed $value Raw value.
+ * @return string
+ */
+function rch_agent_wizard_sanitize_theme_shortcode_field($value): string
+{
+    if (function_exists('mjd_sanitize_shortcode_field')) {
+        return mjd_sanitize_shortcode_field($value);
+    }
+
+    return sanitize_textarea_field(wp_unslash(is_string($value) ? $value : ''));
+}
+
+/**
  * Sanitize values using a theme profile (option panel field kinds).
  *
  * @param  array<string, mixed> $row
@@ -627,8 +664,8 @@ function rch_agent_wizard_sanitize_theme_options_row(array $row, ?array $profile
             continue;
         }
 
-        if ($key === 'rch-theme-talk-shortcode') {
-            $out[ $key ] = wp_kses_post(wp_unslash(is_string($value) ? $value : ''));
+        if (in_array($key, $profile['shortcodes'] ?? [], true) || rch_agent_wizard_str_contains_ci($key, 'shortcode')) {
+            $out[ $key ] = rch_agent_wizard_sanitize_theme_shortcode_field($value);
             continue;
         }
 
@@ -642,7 +679,14 @@ function rch_agent_wizard_sanitize_theme_options_row(array $row, ?array $profile
         }
 
         if (in_array($key, $profile['urls'] ?? [], true)) {
-            $out[ $key ] = esc_url_raw(is_string($value) ? $value : '');
+            if (
+                rch_agent_wizard_str_contains_ci($key, 'button-url')
+                || rch_agent_wizard_str_contains_ci($key, 'button_url')
+            ) {
+                $out[ $key ] = rch_agent_wizard_sanitize_theme_path_or_url($value);
+            } else {
+                $out[ $key ] = esc_url_raw(is_string($value) ? $value : '');
+            }
             continue;
         }
 
@@ -746,11 +790,15 @@ function rch_agent_wizard_apply_placeholders(int $agent_id, string $text): strin
  * Build theme option patch from per-field mode (skip / manual / meta).
  *
  * @param array<string, array{mode:string, value?:mixed, meta_key?:string}> $theme_rows
+ * @param list<string>|null                                                  $allowed_keys Optional allow-list (destination theme keys on deploy).
  * @return array<string, mixed>
  */
-function rch_agent_wizard_build_row_from_theme_rows(int $agent_id, array $theme_rows): array
+function rch_agent_wizard_build_row_from_theme_rows(int $agent_id, array $theme_rows, ?array $allowed_keys = null): array
 {
-    $allowed      = array_flip(rch_agent_wizard_allowed_theme_option_keys());
+    $allowed_list = is_array($allowed_keys) && $allowed_keys !== []
+        ? $allowed_keys
+        : rch_agent_wizard_allowed_theme_option_keys();
+    $allowed      = array_flip($allowed_list);
     $meta_allowed = array_flip(array_keys(rch_agent_wizard_importable_field_defs()));
     $row          = [];
 
@@ -838,12 +886,17 @@ function rch_agent_wizard_deploy_to_agent_blog(int $agent_id, array $theme_rows)
         return new WP_Error('rch_wizard_bad_agent', __('Invalid agent post.', 'rechat-plugin'));
     }
 
-    $merged_raw = rch_agent_wizard_build_row_from_theme_rows($agent_id, $theme_rows);
-
     switch_to_blog($blog_id);
 
     $dest_stylesheet = (string) get_option('stylesheet');
     $profile         = rch_agent_wizard_get_theme_profile($dest_stylesheet);
+
+    restore_current_blog();
+
+    $dest_keys  = isset($profile['keys']) && is_array($profile['keys']) ? $profile['keys'] : [];
+    $merged_raw = rch_agent_wizard_build_row_from_theme_rows($agent_id, $theme_rows, $dest_keys);
+
+    switch_to_blog($blog_id);
     if (empty($profile['storage_primary']) || ! is_string($profile['storage_primary'])) {
         restore_current_blog();
         return new WP_Error(

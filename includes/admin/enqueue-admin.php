@@ -135,22 +135,11 @@ function rch_enqueue_custom_gutenberg_assets()
         RCH_VERSION
     );
 
-    $rch_sdk_css = defined('RCH_RECHAT_SDK_CSS_URL') ? RCH_RECHAT_SDK_CSS_URL : 'https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.css';
-    $rch_sdk_js = defined('RCH_RECHAT_SDK_JS_URL') ? RCH_RECHAT_SDK_JS_URL : 'https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.js';
+    if (function_exists('rch_register_rechat_sdk_assets')) {
+        rch_register_rechat_sdk_assets();
+    }
 
-    wp_enqueue_style(
-        'rechat-sdk-css',
-        $rch_sdk_css,
-        [],
-        null
-    );
-
-    wp_enqueue_script(
-        'rechat-sdk-js',
-        $rch_sdk_js,
-        [],
-        null,
-        false
-    );
+    wp_enqueue_style('rechat-sdk-css');
+    wp_enqueue_script('rechat-sdk-js');
 }
 add_action('enqueue_block_editor_assets', 'rch_enqueue_custom_gutenberg_assets');

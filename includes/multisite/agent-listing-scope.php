@@ -496,6 +496,21 @@ function rch_multisite_preg_replace_safe($pattern, $replacement, $subject, int $
 }
 
 /**
+ * Space before appending a new HTML attribute (check trailing whitespace, not leading).
+ *
+ * @param string $inner Existing attributes inside the tag.
+ * @return string '' or single space
+ */
+function rch_multisite_ob_attr_append_prefix(string $inner): string
+{
+    if ($inner === '') {
+        return '';
+    }
+
+    return preg_match('/\s$/u', $inner) ? '' : ' ';
+}
+
+/**
  * Fix empty brand_id on rechat-root / rechat-listings using hub option (raw DB).
  *
  * @param string $html     Full page HTML.
@@ -530,7 +545,7 @@ function rch_multisite_ob_patch_open_tag_brand_id(string $html, string $tag, str
                 return '<' . $tag . $inner . '>';
             }
 
-            $prefix = ($inner !== '' && $inner[0] !== ' ') ? ' ' : '';
+            $prefix = rch_multisite_ob_attr_append_prefix($inner);
 
             return '<' . $tag . $inner . $prefix . 'brand_id="' . $safe . '">';
         },
@@ -572,7 +587,7 @@ function rch_multisite_ob_patch_rechat_listings_map_api_key(string $html, string
                 return '<rechat-listings' . $inner . '>';
             }
 
-            $prefix = ($inner !== '' && $inner[0] !== ' ') ? ' ' : '';
+            $prefix = rch_multisite_ob_attr_append_prefix($inner);
 
             return '<rechat-listings' . $inner . $prefix . 'map_api_key="' . $safe . '">';
         },
@@ -618,7 +633,7 @@ function rch_multisite_ob_inject_filter_agents($html)
                 return '<rechat-listings' . $inner . '>';
             }
 
-            $prefix = ($inner !== '' && $inner[0] !== ' ') ? ' ' : '';
+            $prefix = rch_multisite_ob_attr_append_prefix($inner);
 
             return '<rechat-listings' . $inner . $prefix . $attr . '>';
         },
@@ -655,7 +670,7 @@ function rch_multisite_ob_disable_rechat_listings_when_no_hub_agents(string $htm
                 return '<rechat-listings' . $inner . '>';
             }
 
-            $prefix = ($inner !== '' && $inner[0] !== ' ') ? ' ' : '';
+            $prefix = rch_multisite_ob_attr_append_prefix($inner);
 
             return '<rechat-listings' . $inner . $prefix . 'disabled="true">';
         },
@@ -674,7 +689,10 @@ function rch_multisite_ob_strip_filter_agents_on_listings_list(string $html): st
     return rch_multisite_preg_replace_callback_safe(
         '/<rechat-listings-list\b([^>]*)>/i',
         static function ($m) {
-            $inner = rch_multisite_preg_replace_safe('/\sfilter_agents\s*=\s*(["\'])[^"\']*\1/i', '', $m[1]);
+            $inner = $m[1];
+            $inner = rch_multisite_preg_replace_safe('/\sfilter_agents\s*=\s*(["\'])[^"\']*\1/i', '', $inner);
+            $inner = rch_multisite_preg_replace_safe('/\sbrand_id\s*=\s*(["\'])[^"\']*\1/i', '', $inner);
+            $inner = rch_multisite_preg_replace_safe('/\smap_api_key\s*=\s*(["\'])[^"\']*\1/i', '', $inner);
 
             return '<rechat-listings-list' . $inner . '>';
         },

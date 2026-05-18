@@ -5,6 +5,24 @@ if (! defined('ABSPATH')) {
 }
 
 /**
+ * Whether [rch_search_listing_form] ran on this request (for footer hydration).
+ *
+ * @return bool
+ */
+function rch_search_listing_form_was_rendered()
+{
+    return ! empty($GLOBALS['rch_search_listing_form_rendered']);
+}
+
+/**
+ * Mark shortcode rendered so footer can nudge web component hydration.
+ */
+function rch_search_listing_form_mark_rendered()
+{
+    $GLOBALS['rch_search_listing_form_rendered'] = true;
+}
+
+/**
  * Enqueue assets only when the search form shortcode is used (not site-wide).
  */
 function rch_search_listing_form_enqueue_assets()
@@ -13,6 +31,45 @@ function rch_search_listing_form_enqueue_assets()
     wp_enqueue_script('rechat-sdk-js');
     wp_enqueue_style('rch-search-listing-shortcode');
     wp_enqueue_script('rch-search-listing-shortcode');
+}
+
+/**
+ * After DOM + Rechat SDK load, re-mount search forms rendered via do_shortcode() in templates.
+ */
+function rch_search_listing_form_footer_hydration()
+{
+    if (! rch_search_listing_form_was_rendered()) {
+        return;
+    }
+
+    wp_enqueue_script('rch-search-listing-shortcode');
+    wp_add_inline_script(
+        'rch-search-listing-shortcode',
+        "(function(){function n(){document.querySelectorAll('.rch-search-listing-form').forEach(function(w){['rechat-root','rechat-listings','rechat-property-search-form'].forEach(function(tag){var el=w.querySelector(tag);if(!el||!el.parentNode){return;}var p=el.parentNode,n=el.nextSibling,c=el.cloneNode(true);p.removeChild(el);p.insertBefore(c,n);});});}function r(){if(window.customElements&&customElements.whenDefined){Promise.all(['rechat-root','rechat-listings','rechat-property-search-form'].map(function(t){return customElements.whenDefined(t);})).then(n).catch(n);}else{n();}}if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',r);}else{r();}})();",
+        'after'
+    );
+}
+add_action('wp_footer', 'rch_search_listing_form_footer_hydration', 5);
+
+/**
+ * Run a shortcode string from theme options / PHP (normalize slashes, ensure assets).
+ *
+ * @param string $content Shortcode tag string.
+ * @return string
+ */
+function rch_do_shortcode($content)
+{
+    if (! is_string($content) || trim($content) === '') {
+        return '';
+    }
+
+    if (function_exists('mjd_normalize_stored_shortcode')) {
+        $content = mjd_normalize_stored_shortcode($content);
+    } else {
+        $content = wp_unslash($content);
+    }
+
+    return do_shortcode($content);
 }
 
 /**
@@ -59,6 +116,8 @@ function rch_search_listing_form_shortcode($atts)
         'disable_filter_beds'           => 'false',
         'disable_filter_baths'          => 'false',
         'disable_filter_property_types' => 'false',
+        'disable_filter_advanced'       => 'false',
+        'disable_filter_loading_indicator' => 'false',
         'filter_minimum_price'      => '',
         'filter_minimum_bathrooms'  => '',
         'filter_minimum_bedrooms'   => '',
@@ -70,6 +129,7 @@ function rch_search_listing_form_shortcode($atts)
     ], $atts, 'rch_search_listing_form');
 
     rch_search_listing_form_enqueue_assets();
+    rch_search_listing_form_mark_rendered();
 
     $target_page = sanitize_text_field($atts['target_page']);
     $brand_id = sanitize_text_field($atts['brand_id']);
@@ -86,6 +146,8 @@ function rch_search_listing_form_shortcode($atts)
     $disable_filter_beds = filter_var($atts['disable_filter_beds'], FILTER_VALIDATE_BOOLEAN);
     $disable_filter_baths = filter_var($atts['disable_filter_baths'], FILTER_VALIDATE_BOOLEAN);
     $disable_filter_property_types = filter_var($atts['disable_filter_property_types'], FILTER_VALIDATE_BOOLEAN);
+    $disable_filter_advanced = filter_var($atts['disable_filter_advanced'], FILTER_VALIDATE_BOOLEAN);
+    $disable_filter_loading_indicator = filter_var($atts['disable_filter_loading_indicator'], FILTER_VALIDATE_BOOLEAN);
     $filter_minimum_price = sanitize_text_field($atts['filter_minimum_price']);
     $filter_minimum_bathrooms = sanitize_text_field($atts['filter_minimum_bathrooms']);
     $filter_minimum_bedrooms = sanitize_text_field($atts['filter_minimum_bedrooms']);
@@ -110,6 +172,8 @@ function rch_search_listing_form_shortcode($atts)
         'disable_filter_beds'           => $disable_filter_beds,
         'disable_filter_baths'          => $disable_filter_baths,
         'disable_filter_property_types' => $disable_filter_property_types,
+        'disable_filter_advanced'       => $disable_filter_advanced,
+        'disable_filter_loading_indicator' => $disable_filter_loading_indicator,
     ];
 
     $boundary_country = (string) get_option('rch_selected_country', '');
@@ -124,8 +188,13 @@ function rch_search_listing_form_shortcode($atts)
     }
 
     $rechat_attrs = rch_get_rechat_root_attributes($attributes, $map_default_center, $filter_listing_statuses);
-    $rechat_listings_attrs = rch_get_rechat_listings_attributes($attributes, $map_default_center, $filter_listing_statuses);
-    $rechat_property_search_attrs = rch_get_rechat_map_filter_attributes($attributes);
+    $rechat_listings_attrs = rch_get_rechat_listings_attributes(
+        $attributes,
+        $map_default_center,
+        $filter_listing_statuses,
+        array('omit_empty_filter_property_types' => true)
+    );
+    $rechat_property_search_attrs = rch_get_rechat_property_search_form_attributes($attributes);
 
     $form_id = 'rch-search-form-' . uniqid('', false);
     $primary_color = get_option('_rch_primary_color');

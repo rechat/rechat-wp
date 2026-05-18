@@ -41,6 +41,7 @@ function rch_latest_listings_get_defaults()
         'limit' => '',
         'brand' => '',
         'listing_statuses' => '',
+        'expand_status_aliases' => 'true',
         'own_listing' => false,
         'property_types' => '',
         'sort_by' => '-list_date',
@@ -202,6 +203,7 @@ function rch_latest_listings_normalize_booleans($atts)
         'disable_filter_property_types',
         'disable_filter_advanced',
         'disable_filter_loading_indicator',
+        'expand_status_aliases',
     ];
 
     foreach ($boolean_fields as $field) {
@@ -250,10 +252,14 @@ function rch_latest_listings_process_statuses($atts)
         return $atts;
     }
 
-    $mappings = rch_latest_listings_get_status_mappings();
+    $expand_aliases = filter_var($atts['expand_status_aliases'] ?? true, FILTER_VALIDATE_BOOLEAN);
 
-    if (isset($mappings[$raw_value])) {
-        $atts['listing_statuses'] = $mappings[$raw_value];
+    if ($expand_aliases) {
+        $mappings = rch_latest_listings_get_status_mappings();
+
+        if (isset($mappings[$raw_value])) {
+            $atts['listing_statuses'] = $mappings[$raw_value];
+        }
     }
 
     // Convert string to array

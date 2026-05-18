@@ -21,6 +21,35 @@ function rch_is_doing_rechat_sync(): bool
     return ! empty($GLOBALS['rch_doing_rechat_sync']);
 }
 
+/**
+ * Cache-busting ?ver= for Rechat SDK handles — uses plugin RCH_VERSION (e.g. 6.3.24).
+ */
+function rch_get_rechat_sdk_asset_version(): string
+{
+    if (defined('RCH_RECHAT_SDK_CACHE_VERSION') && (string) RCH_RECHAT_SDK_CACHE_VERSION !== '') {
+        return (string) RCH_RECHAT_SDK_CACHE_VERSION;
+    }
+
+    return defined('RCH_VERSION') ? (string) RCH_VERSION : '1.0.0';
+}
+
+/**
+ * Register Rechat SDK CSS/JS once (external CDN). Call before wp_enqueue_style/script('rechat-sdk-*').
+ */
+function rch_register_rechat_sdk_assets(): void
+{
+    if (wp_style_is('rechat-sdk-css', 'registered') || wp_script_is('rechat-sdk-js', 'registered')) {
+        return;
+    }
+
+    $ver = rch_get_rechat_sdk_asset_version();
+    $css = defined('RCH_RECHAT_SDK_CSS_URL') ? RCH_RECHAT_SDK_CSS_URL : 'https://unpkg.com/@rechat/sdk@1.4.0/dist/rechat.min.css';
+    $js  = defined('RCH_RECHAT_SDK_JS_URL') ? RCH_RECHAT_SDK_JS_URL : 'https://unpkg.com/@rechat/sdk@1.4.0/dist/rechat.min.js';
+
+    wp_register_style('rechat-sdk-css', $css, [], $ver);
+    wp_register_script('rechat-sdk-js', $js, [], $ver, false);
+}
+
 /*******************************
  * change to readable Date
  ******************************/
@@ -1709,6 +1738,57 @@ function rch_get_rechat_map_filter_attributes($attributes)
 }
 
 /**
+ * Attributes for <rechat-property-search-form> (disable_filter_* + address/boundary seeds).
+ *
+ * @param array $attributes Shortcode/block attributes.
+ * @return string Space-separated HTML attributes.
+ */
+function rch_get_rechat_property_search_form_attributes($attributes)
+{
+    $attrs = array();
+    $map_filter_attrs = rch_get_rechat_map_filter_attributes($attributes);
+    if ($map_filter_attrs !== '') {
+        $attrs[] = $map_filter_attrs;
+    }
+    rch_append_rechat_listings_disable_filter_attrs($attributes, $attrs);
+
+    return implode(' ', $attrs);
+}
+
+/**
+ * Rechat SDK disable_filter_* keys (deprecated on <rechat-listings>; still honored by SDK).
+ *
+ * @return list<string>
+ */
+function rch_rechat_listings_disable_filter_keys()
+{
+    return array(
+        'disable_filter_address',
+        'disable_filter_price',
+        'disable_filter_beds',
+        'disable_filter_baths',
+        'disable_filter_property_types',
+        'disable_filter_advanced',
+        'disable_filter_loading_indicator',
+    );
+}
+
+/**
+ * Append deprecated disable_filter_*="true" attrs for <rechat-listings> (e.g. property-search-form parent).
+ *
+ * @param array        $attributes Shortcode/block attributes.
+ * @param list<string> $attrs      Output attribute strings (by reference).
+ */
+function rch_append_rechat_listings_disable_filter_attrs($attributes, array &$attrs)
+{
+    foreach (rch_rechat_listings_disable_filter_keys() as $key) {
+        if (! empty($attributes[ $key ]) && filter_var($attributes[ $key ], FILTER_VALIDATE_BOOLEAN)) {
+            $attrs[] = $key . '="true"';
+        }
+    }
+}
+
+/**
  * disabled="true|false" for migrated <rechat-filter-*> tags.
  *
  * @param array  $attributes Shortcode/block attributes.
@@ -1730,17 +1810,7 @@ function rch_rechat_filter_disabled_attr($attributes, $key)
  */
 function rch_listings_filters_use_individual_tags($attributes)
 {
-    $keys = array(
-        'disable_filter_address',
-        'disable_filter_price',
-        'disable_filter_beds',
-        'disable_filter_baths',
-        'disable_filter_property_types',
-        'disable_filter_advanced',
-        'disable_filter_loading_indicator',
-    );
-
-    foreach ($keys as $key) {
+    foreach (rch_rechat_listings_disable_filter_keys() as $key) {
         if (! empty($attributes[$key]) && filter_var($attributes[$key], FILTER_VALIDATE_BOOLEAN)) {
             return true;
         }
@@ -1778,9 +1848,10 @@ function rch_render_listing_filters_html($attributes)
 /*******************************
  * Render rechat-listings attributes (NEW SDK)
  ******************************/
-function rch_get_rechat_listings_attributes($attributes, $map_default_center, $listing_statuses_str)
+function rch_get_rechat_listings_attributes($attributes, $map_default_center, $listing_statuses_str, $context = array())
 {
     $attrs = array();
+    $omit_empty_filter_property_types = ! empty($context['omit_empty_filter_property_types']);
 
     // Add brand_id to rechat-listings only if own_listing is true
     if (!empty($attributes['own_listing']) && filter_var($attributes['own_listing'], FILTER_VALIDATE_BOOLEAN)) {
@@ -1857,7 +1928,7 @@ function rch_get_rechat_listings_attributes($attributes, $map_default_center, $l
                 ? implode(',', $attributes['property_types'])
                 : $attributes['property_types']
         ) . '"';
-    } else {
+    } elseif (! $omit_empty_filter_property_types) {
         // property_types is empty → explicitly send empty property_subtypes
         $attrs[] = 'filter_property_types=""';
     }
@@ -1945,6 +2016,9 @@ function rch_get_rechat_listings_attributes($attributes, $map_default_center, $l
     if (!empty($attributes['listing_per_page'])) {
         $attrs[] = 'filter_pagination_limit="' . esc_attr($attributes['listing_per_page']) . '"';
     }
+
+    // Deprecated on <rechat-listings> but still works (SDK console.warn). Needed for <rechat-property-search-form>.
+    rch_append_rechat_listings_disable_filter_attrs($attributes, $attrs);
 
     // $attrs[] = 'authorization="' . esc_attr(get_option('rch_rechat_access_token')) . '"';
     return implode("\n      ", $attrs);
