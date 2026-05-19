@@ -84,3 +84,7 @@
 .search_address_input__field_wrapper {
   border:none;
 }
+rechat-property-search-form {
+  display: flex;
+  justify-content: center;
+}
