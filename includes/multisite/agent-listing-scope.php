@@ -8,13 +8,15 @@
  *   legacy archive AJAX with `filter_agents` from the hub agent's `agents` post meta.
  * - OAuth tokens (`rch_rechat_access_token`, `rch_rechat_refresh_token`) are per-blog only; subsites
  *   do not inherit the main site connection — each site uses Connect To Rechat on that blog.
- * - When local brand or map API key is empty, those options still fall back to the main site DB value.
+ * - When local brand, Local Logic API key, or Google Map API key is empty, those options fall back to the main site.
  * - Output buffer on subsites with empty local brand or map (or active agent scope) patches
  *   `<rechat-root>` / `<rechat-listings>`.
  *
  * Hub options used for non-OAuth fallback / raw markup patch:
  * - `rch_rechat_brand_id`
+ * - `rch_rechat_local_logic_api_key`
  * - `rch_rechat_google_map_api_key`
+ * - `rch_rechat_local_logic_features` (listing Local Content checkbox, etc.)
  *
  * Requires a real WordPress multisite network (`is_multisite()`). Separate single-site installs
  * are not supported here. You do not need to recreate agent subsites when hub options exist;
@@ -166,6 +168,10 @@ function rch_multisite_get_main_site_agent_ids_csv(): string
  */
 function rch_multisite_rechat_option_is_empty($value): bool
 {
+    if (is_array($value)) {
+        return $value === [];
+    }
+
     return $value === false || $value === null || $value === '';
 }
 
@@ -250,14 +256,65 @@ add_filter('pre_option_rch_rechat_brand_id', static function ($pre, $option, $de
     return rch_multisite_pre_option_hub_fallback($pre, 'rch_rechat_brand_id');
 }, 5, 3);
 
-add_filter('pre_option_rch_rechat_google_map_api_key', static function ($pre, $option, $default) {
-    unset($option, $default);
+if (function_exists('rch_multisite_local_logic_features_option_name')) {
+    $features_option = rch_multisite_local_logic_features_option_name();
 
-    return rch_multisite_pre_option_hub_fallback($pre, 'rch_rechat_google_map_api_key');
-}, 5, 3);
+    add_filter(
+        'pre_option_' . $features_option,
+        static function ($pre, $option, $default) use ($features_option) {
+            unset($option, $default);
+
+            if (! is_multisite()) {
+                return false;
+            }
+
+            $main_id = (int) get_main_site_id();
+            $here    = get_current_blog_id();
+
+            if ($here <= 0 || $here === $main_id) {
+                return false;
+            }
+
+            $local = function_exists('rch_multisite_fetch_blog_option_mixed')
+                ? rch_multisite_fetch_blog_option_mixed($here, $features_option)
+                : get_option($features_option, []);
+
+            if (! rch_multisite_local_logic_features_is_empty($local)) {
+                return false;
+            }
+
+            $hub = function_exists('rch_multisite_fetch_hub_local_logic_features')
+                ? rch_multisite_fetch_hub_local_logic_features()
+                : [];
+
+            return rch_multisite_local_logic_features_is_empty($hub) ? false : $hub;
+        },
+        5,
+        3
+    );
+}
+
+if (function_exists('rch_multisite_hub_inherited_option_names')) {
+    foreach (rch_multisite_hub_inherited_option_names() as $hub_option_name) {
+        if ($hub_option_name === '') {
+            continue;
+        }
+
+        add_filter(
+            'pre_option_' . $hub_option_name,
+            static function ($pre, $option, $default) use ($hub_option_name) {
+                unset($option, $default);
+
+                return rch_multisite_pre_option_hub_fallback($pre, $hub_option_name);
+            },
+            5,
+            3
+        );
+    }
+}
 
 /**
- * Fallback main-site Rechat option for subsites when local value empty (brand / map only; not OAuth).
+ * Fallback main-site Rechat option for subsites when local value empty (not OAuth).
  *
  * @param mixed  $value Local option value.
  * @param string $option Option name.
@@ -321,19 +378,55 @@ add_filter('option_rch_rechat_brand_id', static function ($value) {
     return rch_multisite_fallback_rechat_option($value, 'rch_rechat_brand_id');
 }, 5);
 
-add_filter('option_rch_rechat_google_map_api_key', static function ($value) {
-    return rch_multisite_fallback_rechat_option($value, 'rch_rechat_google_map_api_key');
-}, 5);
+if (function_exists('rch_multisite_local_logic_features_option_name')) {
+    $features_option = rch_multisite_local_logic_features_option_name();
+
+    add_filter(
+        'option_' . $features_option,
+        static function ($value) use ($features_option) {
+            return rch_multisite_fallback_rechat_option($value, $features_option);
+        },
+        5
+    );
+
+    add_filter(
+        'option_' . $features_option,
+        static function ($value) use ($features_option) {
+            return rch_multisite_fallback_rechat_option($value, $features_option);
+        },
+        999
+    );
+}
+
+if (function_exists('rch_multisite_hub_inherited_option_names')) {
+    foreach (rch_multisite_hub_inherited_option_names() as $hub_option_name) {
+        if ($hub_option_name === '') {
+            continue;
+        }
+
+        add_filter(
+            'option_' . $hub_option_name,
+            static function ($value) use ($hub_option_name) {
+                return rch_multisite_fallback_rechat_option($value, $hub_option_name);
+            },
+            5
+        );
+
+        add_filter(
+            'option_' . $hub_option_name,
+            static function ($value) use ($hub_option_name) {
+                return rch_multisite_fallback_rechat_option($value, $hub_option_name);
+            },
+            999
+        );
+    }
+}
 
 /**
  * Late pass: other code can empty options after priority 5; re-apply hub fallback.
  */
 add_filter('option_rch_rechat_brand_id', static function ($value) {
     return rch_multisite_fallback_rechat_option($value, 'rch_rechat_brand_id');
-}, 999);
-
-add_filter('option_rch_rechat_google_map_api_key', static function ($value) {
-    return rch_multisite_fallback_rechat_option($value, 'rch_rechat_google_map_api_key');
 }, 999);
 
 /**

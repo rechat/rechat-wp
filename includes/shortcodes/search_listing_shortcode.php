@@ -85,8 +85,11 @@ function rch_search_listing_form_wrapper_style_attr($primary_color, $show_backgr
     $primary = ($primary_color !== '' && $primary_color !== null) ? $primary_color : '#2563eb';
     $on_primary = rch_get_contrast_text_color($primary);
     $parts = [
-        '--rch-search-primary:' . $primary,
-        '--rch-search-on-primary:' . $on_primary,
+
+        '--rch-search-primary:' . (!empty($primary) ? $primary : '#000'),
+    
+        '--rch-search-on-primary:' . (!empty($on_primary) ? $on_primary : '#fff'),
+    
     ];
 
     if ($show_background && $background_image !== '') {

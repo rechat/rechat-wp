@@ -3,8 +3,8 @@
  * Template part for displaying listing and seller agents
  * 
  * This template displays:
- * - Listing agents loop with photo, contact info, and license number
- * - Seller agents loop with photo, contact info, and license number
+ * - Listing agents loop with photo, contact info, and license number (hidden on agent-only subsites)
+ * - Seller agents loop with photo, contact info, and license number (hidden on agent-only subsites)
  * - Local Logic widgets section
  * - Courtesy text (if no agents found)
  * - MLS disclaimer with dynamic year replacement
@@ -26,8 +26,18 @@ if (!isset($listing_detail) || !is_array($listing_detail)) {
 }
 
 $rch_listing_context_label = rch_listing_alt_base_label($listing_detail);
+
+$rch_show_listing_seller_agents = ! (
+    function_exists('rch_is_rechat_agent_only_subsite')
+    && rch_is_rechat_agent_only_subsite()
+);
+$rch_show_listing_seller_agents = (bool) apply_filters(
+    'rch_show_listing_seller_agents_on_listing',
+    $rch_show_listing_seller_agents
+);
 ?>
 
+<?php if ($rch_show_listing_seller_agents) : ?>
 <?php
 // Output result - only render if $agent_posts is a non-empty array
 if (is_array($agent_posts) && count($agent_posts) > 0):
@@ -216,6 +226,8 @@ if (is_array($seller_agent_posts) && count($seller_agent_posts) > 0):
             <?php endforeach; ?>
         </ul>
     </div>
+<?php endif; ?>
+
 <?php endif; ?>
 
 <div class=rch_local_logic id="rch-location">

@@ -126,6 +126,280 @@ function rch_multisite_is_create_office_sites_enabled(): bool
 }
 
 /**
+ * Subsite options inherited from the main site when empty on the subsite.
+ *
+ * @return string[]
+ */
+function rch_multisite_hub_inherited_option_names(): array
+{
+    return (array) apply_filters(
+        'rch_multisite_hub_inherited_option_names',
+        [
+            'rch_rechat_local_logic_api_key',
+            'rch_rechat_google_map_api_key',
+        ]
+    );
+}
+
+/**
+ * Whether an option value is considered empty for hub inheritance.
+ *
+ * @param mixed $value Option value.
+ */
+function rch_multisite_option_value_is_empty($value): bool
+{
+    if (is_array($value)) {
+        return $value === [];
+    }
+
+    return $value === false || $value === null || $value === '';
+}
+
+/**
+ * Option name for listing-page Local Logic feature checkboxes.
+ */
+function rch_multisite_local_logic_features_option_name(): string
+{
+    return 'rch_rechat_local_logic_features';
+}
+
+/**
+ * Whether the Local Logic features option has no enabled features.
+ *
+ * @param mixed $value Option value.
+ */
+function rch_multisite_local_logic_features_is_empty($value): bool
+{
+    return ! is_array($value) || $value === [];
+}
+
+/**
+ * Read an option from a site's database (bypasses filters / object cache).
+ *
+ * @param int    $blog_id      Blog ID.
+ * @param string $option_name Option name.
+ * @return mixed Unserialized value, or false when missing.
+ */
+function rch_multisite_fetch_blog_option_mixed(int $blog_id, string $option_name)
+{
+    if ($blog_id <= 0 || $option_name === '') {
+        return false;
+    }
+
+    global $wpdb;
+
+    $row = null;
+
+    try {
+        switch_to_blog($blog_id);
+        $row = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s LIMIT 1",
+                $option_name
+            )
+        );
+    } finally {
+        restore_current_blog();
+    }
+
+    if ($row === null) {
+        return false;
+    }
+
+    return maybe_unserialize($row);
+}
+
+/**
+ * Listing-page Local Logic features enabled on the network main site.
+ *
+ * @return string[]
+ */
+function rch_multisite_fetch_hub_local_logic_features(): array
+{
+    $raw = rch_multisite_fetch_blog_option_mixed((int) get_main_site_id(), rch_multisite_local_logic_features_option_name());
+
+    if (! is_array($raw)) {
+        return [];
+    }
+
+    $allowed = array_keys(RCH_LOCAL_LOGIC_FEATURES);
+
+    return array_values(array_filter($raw, static function ($feature) use ($allowed) {
+        return is_string($feature) && in_array($feature, $allowed, true);
+    }));
+}
+
+/**
+ * Ensure Local Content is enabled in a features list.
+ *
+ * @param string[] $features Feature keys.
+ * @return string[]
+ */
+function rch_multisite_features_with_local_content(array $features): array
+{
+    if (! in_array('LocalContent', $features, true)) {
+        $features[] = 'LocalContent';
+    }
+
+    return array_values(array_unique($features));
+}
+
+/**
+ * Sync listing-page Local Logic features onto a subsite.
+ *
+ * @param int  $blog_id               Target blog ID.
+ * @param bool $only_if_subsite_empty When true, copy hub features only when subsite has none selected.
+ * @param bool $ensure_local_content  When true, always enable the Local Content checkbox.
+ * @return int 1 when the option was updated, 0 otherwise.
+ */
+function rch_multisite_sync_local_logic_features_to_blog(
+    int $blog_id,
+    bool $only_if_subsite_empty = true,
+    bool $ensure_local_content = false
+): int {
+    if (! is_multisite() || $blog_id <= 0 || $blog_id === (int) get_main_site_id()) {
+        return 0;
+    }
+
+    $option_name = rch_multisite_local_logic_features_option_name();
+    $local       = rch_multisite_fetch_blog_option_mixed($blog_id, $option_name);
+    $local       = is_array($local) ? $local : [];
+    $next        = $local;
+
+    if (rch_multisite_local_logic_features_is_empty($local)) {
+        $hub = rch_multisite_fetch_hub_local_logic_features();
+
+        if (! rch_multisite_local_logic_features_is_empty($hub)) {
+            $next = $hub;
+        }
+    } elseif (! $only_if_subsite_empty) {
+        $next = $local;
+    }
+
+    if ($ensure_local_content) {
+        $next = rch_multisite_features_with_local_content($next);
+    }
+
+    if ($next === $local) {
+        return 0;
+    }
+
+    switch_to_blog($blog_id);
+    update_option($option_name, $next, false);
+    restore_current_blog();
+
+    return 1;
+}
+
+/**
+ * Copy hub Local Logic / Google Map API keys onto a subsite when that subsite's value is empty.
+ *
+ * @param int  $blog_id               Target blog ID.
+ * @param bool $only_if_subsite_empty When true, never overwrite a non-empty subsite value.
+ * @return int Number of options written on the subsite.
+ */
+function rch_multisite_sync_hub_api_keys_to_blog(int $blog_id, bool $only_if_subsite_empty = true): int
+{
+    if (! is_multisite() || $blog_id <= 0) {
+        return 0;
+    }
+
+    $main_id = (int) get_main_site_id();
+
+    if ($blog_id === $main_id) {
+        return 0;
+    }
+
+    $hub_values = [];
+
+    foreach (rch_multisite_hub_inherited_option_names() as $option_name) {
+        if ($option_name === '') {
+            continue;
+        }
+
+        $hub_val = rch_multisite_fetch_hub_option_value($option_name);
+
+        if (! rch_multisite_option_value_is_empty($hub_val)) {
+            $hub_values[$option_name] = $hub_val;
+        }
+    }
+
+    if ($hub_values === []) {
+        return 0;
+    }
+
+    $written = 0;
+
+    switch_to_blog($blog_id);
+
+    foreach ($hub_values as $option_name => $hub_val) {
+        $local = get_option($option_name, '');
+
+        if ($only_if_subsite_empty && ! rch_multisite_option_value_is_empty($local)) {
+            continue;
+        }
+
+        update_option($option_name, $hub_val, false);
+        $written++;
+    }
+
+    restore_current_blog();
+
+    return $written;
+}
+
+/**
+ * Sync hub Local Logic API keys and listing features onto an agent subsite.
+ *
+ * @param int  $blog_id               Target blog ID.
+ * @param bool $only_if_subsite_empty When true, only fill empty subsite values (except Local Content when forced).
+ * @param bool $ensure_local_content  When true, enable the Local Content feature checkbox.
+ * @return int Number of options updated on the subsite.
+ */
+function rch_multisite_sync_hub_local_logic_settings_to_blog(
+    int $blog_id,
+    bool $only_if_subsite_empty = true,
+    bool $ensure_local_content = false
+): int {
+    $written  = rch_multisite_sync_hub_api_keys_to_blog($blog_id, $only_if_subsite_empty);
+    $written += rch_multisite_sync_local_logic_features_to_blog($blog_id, $only_if_subsite_empty, $ensure_local_content);
+
+    return $written;
+}
+
+/**
+ * Read a scalar option from the network main site.
+ *
+ * @param string $option_name Option name.
+ * @return string
+ */
+function rch_multisite_fetch_hub_option_value(string $option_name): string
+{
+    if (! is_multisite() || $option_name === '') {
+        return '';
+    }
+
+    if (function_exists('rch_multisite_fetch_raw_option_value_for_blog')) {
+        return rch_multisite_fetch_raw_option_value_for_blog((int) get_main_site_id(), $option_name);
+    }
+
+    $main_id = (int) get_main_site_id();
+    switch_to_blog($main_id);
+    $value = get_option($option_name, '');
+    restore_current_blog();
+
+    if (is_string($value)) {
+        return $value;
+    }
+
+    if (is_scalar($value)) {
+        return (string) $value;
+    }
+
+    return '';
+}
+
+/**
  * Network default theme for agent sub-sites (no per-post override).
  *
  * @return array{template:string,stylesheet:string}
@@ -596,13 +870,14 @@ function rch_multisite_ensure_user_editor_on_blog(int $user_id, int $blog_id)
  * For every published agent with a linked sub-site and valid profile email, ensure the
  * matching network user is on that blog with {@see rch_agent_site_user_role()} (no welcome emails).
  *
- * @return array{updated:int,skipped:int,errors:string[]}
+ * @return array{updated:int,skipped:int,api_keys_synced:int,errors:string[]}
  */
 function rch_multisite_bulk_reassign_agent_site_user_roles(): array
 {
-    $updated = 0;
-    $skipped = 0;
-    $errors  = [];
+    $updated         = 0;
+    $skipped         = 0;
+    $api_keys_synced = 0;
+    $errors          = [];
 
     $agents = get_posts([
         'post_type'   => 'agents',
@@ -621,6 +896,10 @@ function rch_multisite_bulk_reassign_agent_site_user_roles(): array
         if ($label === '') {
             /* translators: %d: agent post ID */
             $label = sprintf(__('Agent #%d', 'rechat-plugin'), (int) $agent->ID);
+        }
+
+        if ($blog_id && rch_multisite_sync_hub_local_logic_settings_to_blog($blog_id, true, true) > 0) {
+            $api_keys_synced++;
         }
 
         if (! $blog_id || ! $email || ! is_email($email)) {
@@ -649,7 +928,7 @@ function rch_multisite_bulk_reassign_agent_site_user_roles(): array
         $updated++;
     }
 
-    return compact('updated', 'skipped', 'errors');
+    return compact('updated', 'skipped', 'api_keys_synced', 'errors');
 }
 
 /**
@@ -1324,7 +1603,27 @@ function rch_multisite_configure_new_site(int $blog_id, string $site_title, ?int
 
     update_option('rch_rechat_subsite_role', $is_office ? 'office' : 'agent', true);
 
+    foreach (rch_multisite_hub_inherited_option_names() as $option_name) {
+        if ($option_name === '') {
+            continue;
+        }
+
+        $local = get_option($option_name, '');
+
+        if (! rch_multisite_option_value_is_empty($local)) {
+            continue;
+        }
+
+        $hub_val = rch_multisite_fetch_hub_option_value($option_name);
+
+        if (! rch_multisite_option_value_is_empty($hub_val)) {
+            update_option($option_name, $hub_val, false);
+        }
+    }
+
     restore_current_blog();
+
+    rch_multisite_sync_local_logic_features_to_blog($blog_id, true, false);
 
     error_log(
         'Rechat Plugin Multisite: Configured site blog_id=' . $blog_id .
@@ -1678,10 +1977,11 @@ function rch_multisite_ajax_reassign_agent_site_user_roles(): void
     $result = rch_multisite_bulk_reassign_agent_site_user_roles();
 
     $message = sprintf(
-        /* translators: 1: number of users updated, 2: number of agent rows skipped */
-        __('Done. Role updated for %1$d account(s). %2$d agent row(s) skipped (no sub-site, invalid email, or no WordPress user with that email).', 'rechat-plugin'),
+        /* translators: 1: number of users updated, 2: number of agent rows skipped, 3: subsites that received hub API keys */
+        __('Done. Role updated for %1$d account(s). %2$d agent row(s) skipped (no sub-site, invalid email, or no WordPress user with that email). Local Logic / Google Map API keys and the Local Content feature were applied on %3$d sub-site(s) (empty keys copied from the main site; Local Content enabled on each agent sub-site).', 'rechat-plugin'),
         $result['updated'],
-        $result['skipped']
+        $result['skipped'],
+        isset($result['api_keys_synced']) ? (int) $result['api_keys_synced'] : 0
     );
 
     wp_send_json_success([

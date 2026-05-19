@@ -355,7 +355,7 @@ function rch_multisite_render_admin_tab(): void
         </p>
 
         <p class="description" style="max-width:900px;margin-top:10px;">
-            <?php esc_html_e('“Reassign agent sub-site role for all agents” walks every agent profile that has a sub-site and a valid email, finds the WordPress user with that email, and sets their role on that sub-site to the current agent role (e.g. Agent). No login emails are sent. Use this after changing role names or capabilities.', 'rechat-plugin'); ?>
+            <?php esc_html_e('“Reassign agent sub-site role for all agents” walks every agent profile that has a sub-site and a valid email, finds the WordPress user with that email, and sets their role on that sub-site to the current agent role (e.g. Agent). It also copies the main site Local Logic and Google Map API keys when those fields are empty on the sub-site, and enables the Local Content feature checkbox on every agent sub-site. Sub-sites with their own API keys are left unchanged. No login emails are sent. Use this after changing role names or capabilities.', 'rechat-plugin'); ?>
         </p>
 
         <p style="margin-top:16px;margin-bottom:6px;">
