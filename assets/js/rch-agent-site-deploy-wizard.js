@@ -633,6 +633,32 @@
         });
     }
 
+    /**
+     * Strip <?php echo do_shortcode('…'); ?> wrappers; keep [rch_…] shortcode only.
+     *
+     * @param {string} raw
+     * @returns {string}
+     */
+    function normalizeWizardShortcodeValue(raw) {
+        var v = typeof raw === 'string' ? raw.trim() : '';
+        if (!v) {
+            return '';
+        }
+        if (v.indexOf('<?php') !== -1 || v.toLowerCase().indexOf('do_shortcode') !== -1) {
+            var start = v.toLowerCase().indexOf('[rch_');
+            if (start === -1) {
+                start = v.indexOf('[');
+            }
+            if (start !== -1) {
+                var end = v.lastIndexOf(']');
+                if (end > start) {
+                    v = v.substring(start, end + 1);
+                }
+            }
+        }
+        return v.trim();
+    }
+
     function collectThemeRows() {
         var out = {};
         $('.rch-wz-theme-row').each(function () {
@@ -643,9 +669,13 @@
                 return;
             }
             if (mode === 'manual') {
+                var val = $row.find('.rch-wz-row-value').val();
+                if (key && key.toLowerCase().indexOf('shortcode') !== -1) {
+                    val = normalizeWizardShortcodeValue(val);
+                }
                 out[key] = {
                     mode: 'manual',
-                    value: $row.find('.rch-wz-row-value').val(),
+                    value: val,
                 };
                 return;
             }
