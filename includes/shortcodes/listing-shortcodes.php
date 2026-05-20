@@ -64,7 +64,7 @@ function rch_render_listing_list($atts)
     'disable_filter_property_types' => false,
     'disable_filter_advanced' => false,
     'disable_filter_loading_indicator' => false,
-    'own_listing' => true,
+    'own_listing' => false,
     'property_types' => '',
     'filter_open_houses' => false,
     'office_exclusive' => false,
@@ -96,7 +96,7 @@ function rch_render_listing_list($atts)
   // Convert boolean attributes from strings
   $atts['own_listing'] = filter_var($atts['own_listing'], FILTER_VALIDATE_BOOLEAN);
 
-  // Always set brand_id from settings (rechat-root always needs it)
+  // brand for rechat-root brand_id; own_listing also sets brand_id on rechat-listings via rch_get_rechat_listings_attributes()
   $atts['brand'] = get_option('rch_rechat_brand_id');
   $atts['disable_filter_address'] = filter_var($atts['disable_filter_address'], FILTER_VALIDATE_BOOLEAN);
   $atts['disable_filter_price'] = filter_var($atts['disable_filter_price'], FILTER_VALIDATE_BOOLEAN);
