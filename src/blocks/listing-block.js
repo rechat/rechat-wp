@@ -66,7 +66,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         disable_filter_baths: { type: 'boolean', default: false },
         disable_filter_property_types: { type: 'boolean', default: false },
         disable_filter_advanced: { type: 'boolean', default: false },
-        own_listing: { type: 'boolean', default: true },
+        own_listing: { type: 'boolean', default: false },
         property_types: { type: 'string', default: '' },
         filter_open_houses: { type: 'boolean', default: false },
         office_exclusive: { type: 'boolean', default: false },

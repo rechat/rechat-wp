@@ -775,7 +775,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
     },
     own_listing: {
       type: 'boolean',
-      default: true
+      default: false
     },
     property_types: {
       type: 'string',

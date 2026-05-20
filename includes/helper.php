@@ -1584,7 +1584,7 @@ function rch_get_listing_block_attributes()
         'disable_filter_baths' => array('type' => 'boolean', 'default' => false),
         'disable_filter_property_types' => array('type' => 'boolean', 'default' => false),
         'disable_filter_advanced' => array('type' => 'boolean', 'default' => false),
-        'own_listing' => array('type' => 'boolean', 'default' => true),
+        'own_listing' => array('type' => 'boolean', 'default' => false),
         'property_types' => array('type' => 'string', 'default' => ''),
         'filter_open_houses' => array('type' => 'boolean', 'default' => false),
         'office_exclusive' => array('type' => 'boolean', 'default' => false),
@@ -1914,8 +1914,22 @@ function rch_get_rechat_listings_attributes($attributes, $map_default_center, $l
         ) . '"';
     }
 
-    if (!empty($attributes['filter_brand_id'])) {
-        $attrs[] = 'filter_brand_id="' . esc_attr($attributes['filter_brand_id']) . '"';
+    // brand_id on <rechat-listings> when own_listing (or block override filter_brand_id → brand_id). <rechat-root> always has brand_id too.
+    $listings_brand_id = '';
+    if (! empty($attributes['filter_brand_id'])) {
+        $listings_brand_id = (string) $attributes['filter_brand_id'];
+    } elseif (
+        isset($attributes['own_listing'])
+        && filter_var($attributes['own_listing'], FILTER_VALIDATE_BOOLEAN)
+    ) {
+        if (! empty($attributes['brand'])) {
+            $listings_brand_id = (string) $attributes['brand'];
+        } else {
+            $listings_brand_id = (string) get_option('rch_rechat_brand_id', '');
+        }
+    }
+    if ($listings_brand_id !== '') {
+        $attrs[] = 'brand_id="' . esc_attr($listings_brand_id) . '"';
     }
 
     if (! empty($attributes['property_types'])) {
