@@ -22,7 +22,7 @@ function rch_enqueue_agent_single_scripts($email = '') {
     // Enqueue Rechat SDK
     wp_enqueue_script(
         'rechat-sdk',
-        'https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.js',
+        'https://unpkg.com/@rechat/sdk@' . RCH_RECHAT_SDK_VERSION . '/dist/rechat.min.js',
         [],
         null,
         true

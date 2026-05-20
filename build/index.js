@@ -884,6 +884,11 @@ registerBlockType('rch-rechat-plugin/listing-block', {
     filter_boundary_state: {
       type: 'string',
       default: ''
+    },
+    // Legacy; no editor control — preserves old posts and satisfies REST attribute schema.
+    layout_style: {
+      type: 'string',
+      default: ''
     }
   },
   edit({

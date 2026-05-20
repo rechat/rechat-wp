@@ -58,8 +58,15 @@
      * Handles lead capture form submission
      */
     class LeadCaptureForm {
-        constructor(formElement, sdk, config) {
-            this.form = formElement;
+        constructor(formRoot, sdk, config) {
+            // Template uses id="leadCaptureForm" on wrapper div; bind real <form> for submit/reset.
+            this.formRoot = formRoot;
+            this.form =
+                formRoot && formRoot.tagName === 'FORM'
+                    ? formRoot
+                    : formRoot
+                      ? formRoot.querySelector('form')
+                      : null;
             this.sdk = sdk;
             this.config = config;
             this.elements = {
@@ -72,6 +79,10 @@
         initialize() {
             if (!this.form) return;
 
+            DOMService.hide(this.elements.success);
+            DOMService.hide(this.elements.error);
+            DOMService.hide(this.elements.loading);
+
             this.form.addEventListener('submit', (event) => {
                 event.preventDefault();
                 this.handleSubmit();
@@ -83,13 +94,19 @@
                 this._showLoading();
 
                 const leadData = this._collectFormData();
-                await this.sdk.Leads.capture(
+                const result = await this.sdk.Leads.capture(
                     { lead_channel: this.config.leadChannel },
                     leadData
                 );
 
+                if (!this._isCaptureSuccess(result)) {
+                    throw new Error('Lead capture returned an unexpected response');
+                }
+
                 this._showSuccess();
-                this.form.reset();
+                if (typeof this.form.reset === 'function') {
+                    this.form.reset();
+                }
             } catch (error) {
                 console.error('Lead capture error:', error);
                 this._showError();
@@ -137,6 +154,26 @@
                 DOMService.hide(this.elements.error);
             }, 5000);
         }
+
+        /**
+         * SDK may resolve with { code: 'OK', data: {...} } or with no body on success.
+         *
+         * @param {unknown} result
+         * @returns {boolean}
+         */
+        _isCaptureSuccess(result) {
+            if (result === undefined || result === null) {
+                return true;
+            }
+            if (typeof result !== 'object') {
+                return true;
+            }
+            const code = /** @type {{ code?: string }} */ (result).code;
+            if (code === undefined || code === null || code === '') {
+                return true;
+            }
+            return String(code).toUpperCase() === 'OK';
+        }
     }
 
     // ============================================================================
@@ -158,10 +195,10 @@
             }
 
             const sdk = new Rechat.Sdk();
-            const formElement = DOMService.getElement('leadCaptureForm');
-            
-            if (formElement) {
-                const leadForm = new LeadCaptureForm(formElement, sdk, this.config);
+            const formRoot = DOMService.getElement('leadCaptureForm');
+
+            if (formRoot) {
+                const leadForm = new LeadCaptureForm(formRoot, sdk, this.config);
                 leadForm.initialize();
             }
         }
