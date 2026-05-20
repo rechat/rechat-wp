@@ -761,6 +761,29 @@ function rch_agent_wizard_sanitize_theme_path_or_url($value): string
  */
 function rch_agent_wizard_normalize_shortcode_string(string $value): string
 {
+    $value = trim($value);
+    if ($value === '') {
+        return '';
+    }
+
+    // Users sometimes paste theme PHP wrappers around do_shortcode(); store only the [shortcode] token.
+    if (preg_match('/<\?php/i', $value) || stripos($value, 'do_shortcode') !== false) {
+        $start = stripos($value, '[rch_');
+        if ($start === false) {
+            $start = strpos($value, '[');
+        }
+        if ($start !== false) {
+            $end = strrpos($value, ']');
+            if ($end !== false && $end > $start) {
+                $value = substr($value, $start, $end - $start + 1);
+            }
+        } else {
+            $value = preg_replace('/<\?php.*?\?>/is', '', $value);
+            $value = strip_tags($value);
+        }
+        $value = trim($value);
+    }
+
     // Common wizard typo: closing ] before more attributes (breaks do_shortcode).
     return preg_replace('/\]\s+(?=(?:disable_|show_|target_|filter_|brand_|map_))/i', ' ', $value);
 }
@@ -783,18 +806,21 @@ function rch_agent_wizard_sanitize_theme_shortcode_field($value): string
 /**
  * Sanitize values using a theme profile (option panel field kinds).
  *
- * @param  array<string, mixed> $row
- * @param  array<string, mixed> $profile From rch_agent_wizard_get_theme_profile().
+ * @param  array<string, mixed>   $row
+ * @param  array<string, mixed>   $profile        From rch_agent_wizard_get_theme_profile().
+ * @param  list<string>|null      $allowed_keys   Optional deploy allow-list (wizard UI + destination union).
  * @return array<string, mixed>
  */
-function rch_agent_wizard_sanitize_theme_options_row(array $row, ?array $profile = null): array
+function rch_agent_wizard_sanitize_theme_options_row(array $row, ?array $profile = null, ?array $allowed_keys = null): array
 {
     if ($profile === null) {
         $profile = rch_agent_wizard_get_theme_profile(rch_agent_wizard_wizard_ui_stylesheet());
     }
 
-    $allowed = array_flip($profile['keys']);
-    $out     = [];
+    $profile_keys = isset($profile['keys']) && is_array($profile['keys']) ? $profile['keys'] : [];
+    $allowed_list = is_array($allowed_keys) && $allowed_keys !== [] ? $allowed_keys : $profile_keys;
+    $allowed      = array_flip($allowed_list);
+    $out          = [];
 
     foreach ($row as $key => $value) {
         if (! is_string($key) || ! isset($allowed[ $key ])) {
@@ -1064,10 +1090,10 @@ function rch_agent_wizard_deploy_to_agent_blog(int $agent_id, array $theme_rows)
     $allowed_deploy = rch_agent_wizard_resolve_deploy_allowed_keys($agent_id);
     $merged_raw     = rch_agent_wizard_build_row_from_theme_rows($agent_id, $theme_rows, $allowed_deploy);
 
-    $sanitized    = rch_agent_wizard_sanitize_theme_options_row($merged_raw, $profile);
-    $dest_allowed = array_flip($profile['keys'] ?? []);
-    if ($dest_allowed !== []) {
-        $sanitized = array_intersect_key($sanitized, $dest_allowed);
+    $sanitized     = rch_agent_wizard_sanitize_theme_options_row($merged_raw, $profile, $allowed_deploy);
+    $allowed_write = array_flip($allowed_deploy);
+    if ($allowed_write !== []) {
+        $sanitized = array_intersect_key($sanitized, $allowed_write);
     }
 
     $primary = (string) $profile['storage_primary'];
@@ -1078,8 +1104,10 @@ function rch_agent_wizard_deploy_to_agent_blog(int $agent_id, array $theme_rows)
         $existing = [];
     }
 
-    $merged = array_merge($existing, $sanitized);
-    $merged = rch_agent_wizard_canonicalize_hero_title_keys($merged, array_keys($dest_allowed !== [] ? $dest_allowed : $allowed_deploy));
+    $merged      = array_merge($existing, $sanitized);
+    $dest_keys   = isset($profile['keys']) && is_array($profile['keys']) ? $profile['keys'] : [];
+    $hero_keys   = $dest_keys !== [] ? $dest_keys : $allowed_deploy;
+    $merged      = rch_agent_wizard_canonicalize_hero_title_keys($merged, $hero_keys);
 
     update_option($primary, $merged, false);
     if (is_string($mirror) && $mirror !== '' && $mirror !== $primary) {
