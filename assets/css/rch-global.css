@@ -631,6 +631,12 @@ ul.rch-rechat-block img {
     justify-content: center;
     color: #b1b1b1;
 }
+.map-listing-grid__list:has(.map-listing-grid__empty-state) {
+  display: flex;
+}
+.rechat-shell:not(:has(> rechat-map)) > rechat-map-listings-grid {
+  grid-column: 1 / -1;
+}
 /* Medium screens */
 @media (max-width: 1200px) {
 }

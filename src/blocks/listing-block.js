@@ -94,6 +94,8 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         disable_filter_loading_indicator: { type: 'boolean', default: false },
         filter_boundary_country: { type: 'string', default: '' },
         filter_boundary_state: { type: 'string', default: '' },
+        // Legacy; no editor control — preserves old posts and satisfies REST attribute schema.
+        layout_style: { type: 'string', default: '' },
     },
     edit({ attributes, setAttributes }) {
         const {

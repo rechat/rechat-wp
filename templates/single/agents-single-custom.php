@@ -177,10 +177,10 @@ $license_number = get_post_meta($post_id, 'license_number', true);
                             <!-- Submit Button -->
                             <button type="submit">Submit Request</button>
                             <div id="loading-spinner" class="rch-loading-spinner-form" style="display: none;"></div>
-                            <div id="rch-listing-success-sdk" class="rch-success-box-listing">
+                            <div id="rch-listing-success-sdk" class="rch-success-box-listing" style="display: none;" role="status">
                                 Thank you! Your data has been successfully sent.
                             </div>
-                            <div id="rch-listing-cancel-sdk" class="rch-error-box-listing">
+                            <div id="rch-listing-cancel-sdk" class="rch-error-box-listing" style="display: none;" role="alert">
                                 Something went wrong. Please try again.
                             </div>
                         </form>

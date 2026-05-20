@@ -310,6 +310,10 @@ START: Agent Single Page - Rechat Web Components Display Modes
   .listing-card__badge {
   color: white;
 }
+
+.rechat-shell {
+  height: auto !important;
+}
 /* Tablet */
 @media (max-width: 1200px) {
     .rch-agents-combined-section rechat-listings-list,
