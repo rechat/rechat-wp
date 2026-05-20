@@ -21,6 +21,10 @@
         menuBuilderLoc: {},
         mbSearchPaged: 1,
         mbSearchMaxPages: 1,
+        mbBcPaged: 1,
+        mbBcMaxPages: 0,
+        mbBcFound: 0,
+        mbBcTotal: 0,
         testimonialCount: 0,
     };
 
@@ -102,7 +106,6 @@
             } else if (n === ms) {
                 fillMwTargetSummary();
                 loadMwList();
-                loadMbBroadcastPicks();
             } else if (n === ps) {
                 refreshPreview();
             }
@@ -302,74 +305,177 @@
             });
     }
 
-    function loadMbBroadcastPicks() {
-        if (!rchAgentWizard.broadcastStep) {
-            return;
+    function mbMenuHasSourcePostId(sourcePostId) {
+        var sid = parseInt(sourcePostId, 10) || 0;
+        if (!sid) {
+            return false;
         }
-        var $out = $('#rch-wz-mb-broadcast-picks');
-        if (!$out.length) {
-            return;
-        }
-        var ids = [];
-        var k;
-        for (k in state.broadcastPick) {
-            if (Object.prototype.hasOwnProperty.call(state.broadcastPick, k) && state.broadcastPick[k]) {
-                var nid = parseInt(k, 10);
-                if (nid) {
-                    ids.push(nid);
-                }
+        var i;
+        for (i = 0; i < state.menuBuilderItems.length; i++) {
+            if (parseInt(state.menuBuilderItems[i].sourcePostId, 10) === sid) {
+                return true;
             }
         }
-        if (!ids.length) {
-            $out.empty().append(
-                '<p class="rch-wz-hint">' + escapeHtml(str('mbBroadcastPicksEmpty')) + '</p>'
-            );
+        return false;
+    }
+
+    function mbAddItemsFromPosts(items) {
+        var added = 0;
+        var j;
+        for (j = 0; j < items.length; j++) {
+            var it = items[j];
+            var sid = parseInt(it.id, 10) || 0;
+            if (!sid || mbMenuHasSourcePostId(sid)) {
+                continue;
+            }
+            var title = it.title || '#' + sid;
+            state.menuBuilderItems.push({
+                id: mbMakeId(),
+                title: title,
+                url: it.url || '',
+                sourcePostId: sid,
+            });
+            added++;
+        }
+        if (added) {
+            renderMenuBuilderTable();
+            scheduleFieldDraftAutosave();
+        }
+        return added;
+    }
+
+    function loadMbBroadcastedPosts(page) {
+        if (!rchAgentWizard.broadcastStep || !$('#rch-wz-mb-bc-tbody').length) {
             return;
         }
-        $out.empty().text(str('bcLoading') || '…');
+        state.mbBcPaged = page || 1;
+        spin($('#rch-wz-mb-bc-spinner'), true);
+        $.post(rchAgentWizard.ajaxurl, {
+            action: 'rch_agent_wizard_list_menu_broadcasted_posts',
+            nonce: rchAgentWizard.nonce,
+            paged: state.mbBcPaged,
+            per_page: 20,
+            search: $('#rch-wz-mb-bc-search').val() || '',
+        })
+            .done(function (res) {
+                spin($('#rch-wz-mb-bc-spinner'), false);
+                var $tb = $('#rch-wz-mb-bc-tbody');
+                $tb.empty();
+                if (!res.success || !res.data) {
+                    $tb.append(
+                        '<tr class="rch-wz-bc-placeholder"><td colspan="6">' + escapeHtml('Error') + '</td></tr>'
+                    );
+                    return;
+                }
+                var d = res.data;
+                state.mbBcMaxPages = d.max_pages || 0;
+                state.mbBcFound = d.found || 0;
+                state.mbBcTotal = d.total_broadcasted != null ? d.total_broadcasted : 0;
+                var info = '';
+                if (state.mbBcTotal) {
+                    info = (str('mbBroadcastedTotal') || '').replace('%d', String(state.mbBcTotal));
+                }
+                if (state.mbBcFound) {
+                    info +=
+                        (info ? ' · ' : '') +
+                        'Page ' +
+                        state.mbBcPaged +
+                        ' / ' +
+                        Math.max(1, state.mbBcMaxPages) +
+                        ' · ' +
+                        state.mbBcFound +
+                        ' shown';
+                } else {
+                    info = info || str('mbBroadcastedEmpty') || str('bcEmpty');
+                }
+                $('#rch-wz-mb-bc-pageinfo').text(info);
+                $('#rch-wz-mb-bc-prev').prop('disabled', state.mbBcPaged <= 1);
+                $('#rch-wz-mb-bc-next').prop(
+                    'disabled',
+                    state.mbBcMaxPages < 1 || state.mbBcPaged >= state.mbBcMaxPages
+                );
+                var items = d.items || [];
+                if (!items.length) {
+                    $tb.append(
+                        '<tr class="rch-wz-bc-placeholder"><td colspan="6">' +
+                            escapeHtml(str('mbBroadcastedEmpty') || str('bcEmpty')) +
+                            '</td></tr>'
+                    );
+                    return;
+                }
+                var i;
+                for (i = 0; i < items.length; i++) {
+                    var it = items[i];
+                    var id = it.id;
+                    var title = it.title || '(#' + id + ')';
+                    var sites =
+                        it.child_count != null
+                            ? String(it.child_count)
+                            : '—';
+                    $tb.append(
+                        '<tr>' +
+                            '<td><input type="checkbox" class="rch-wz-mb-bc-check" data-id="' +
+                            id +
+                            '" /></td>' +
+                            '<td>' +
+                            escapeHtml(title) +
+                            '</td>' +
+                            '<td>' +
+                            escapeHtml(it.type_label || it.type || '') +
+                            '</td>' +
+                            '<td>' +
+                            escapeHtml(sites) +
+                            '</td>' +
+                            '<td>' +
+                            escapeHtml(it.modified || '') +
+                            '</td>' +
+                            '<td><button type="button" class="button button-small rch-wz-mb-bc-add-hit" data-id="' +
+                            id +
+                            '">' +
+                            escapeHtml(str('mbAdd')) +
+                            '</button></td>' +
+                            '</tr>'
+                    );
+                }
+            })
+            .fail(function () {
+                spin($('#rch-wz-mb-bc-spinner'), false);
+                $('#rch-wz-mb-bc-tbody').html(
+                    '<tr class="rch-wz-bc-placeholder"><td colspan="6">Request failed</td></tr>'
+                );
+            });
+    }
+
+    function mbAddBroadcastedByIds(ids, $feedback) {
+        if (!ids.length) {
+            alert(str('mbBroadcastedNoneSelected'));
+            return;
+        }
         $.post(rchAgentWizard.ajaxurl, {
             action: 'rch_agent_wizard_menu_builder_posts_by_ids',
             nonce: rchAgentWizard.nonce,
             post_ids: JSON.stringify(ids),
         })
             .done(function (res) {
-                $out.empty();
                 if (!res.success || !res.data) {
-                    $out.append('<p class="rch-wz-hint">Error</p>');
+                    if ($feedback) {
+                        $feedback.text('Error');
+                    }
                     return;
                 }
-                var items = res.data.items || [];
-                if (!items.length) {
-                    $out.append(
-                        '<p class="rch-wz-hint">' + escapeHtml(str('mbBroadcastPicksEmpty')) + '</p>'
-                    );
-                    return;
-                }
-                var j;
-                for (j = 0; j < items.length; j++) {
-                    var it = items[j];
-                    var title = it.title || '#' + it.id;
-                    $out.append(
-                        '<div class="rch-wz-mb-hit">' +
-                            '<span class="rch-wz-mb-hit__title">' +
-                            escapeHtml(title) +
-                            '</span> <span class="rch-wz-hint">' +
-                            escapeHtml(it.type || '') +
-                            '</span> ' +
-                            '<button type="button" class="button button-small rch-wz-mb-add-hit" data-title="' +
-                            escapeAttr(title) +
-                            '" data-url="' +
-                            escapeAttr(it.url || '') +
-                            '" data-source-post-id="' +
-                            escapeAttr(it.id ? String(it.id) : '') +
-                            '">' +
-                            escapeHtml(str('mbAdd')) +
-                            '</button></div>'
-                    );
+                var added = mbAddItemsFromPosts(res.data.items || []);
+                if ($feedback) {
+                    if (added) {
+                        $feedback.text((str('mbBroadcastedAdded') || '').replace('%d', String(added)));
+                    } else {
+                        $feedback.text(str('mbBroadcastedAllDup') || '');
+                    }
                 }
             })
             .fail(function () {
-                $out.empty().append('<p class="rch-wz-hint">Request failed</p>');
+                if ($feedback) {
+                    $feedback.text('Request failed');
+                }
             });
     }
 
@@ -1793,6 +1899,44 @@
             renderMenuBuilderTable();
             scheduleFieldDraftAutosave();
         });
+
+        if (rchAgentWizard.broadcastStep) {
+            $('#rch-wz-mb-bc-load').on('click', function () {
+                loadMbBroadcastedPosts(1);
+            });
+            $('#rch-wz-mb-bc-prev').on('click', function () {
+                if (state.mbBcPaged > 1) {
+                    loadMbBroadcastedPosts(state.mbBcPaged - 1);
+                }
+            });
+            $('#rch-wz-mb-bc-next').on('click', function () {
+                if (state.mbBcPaged < state.mbBcMaxPages) {
+                    loadMbBroadcastedPosts(state.mbBcPaged + 1);
+                }
+            });
+            $('#rch-wz-mb-bc-selall').on('click', function () {
+                $('.rch-wz-mb-bc-check').prop('checked', true);
+            });
+            $('#rch-wz-mb-bc-selnone').on('click', function () {
+                $('.rch-wz-mb-bc-check').prop('checked', false);
+            });
+            $('#rch-wz-mb-bc-add-selected').on('click', function () {
+                var ids = [];
+                $('.rch-wz-mb-bc-check:checked').each(function () {
+                    var id = parseInt($(this).data('id'), 10);
+                    if (id) {
+                        ids.push(id);
+                    }
+                });
+                mbAddBroadcastedByIds(ids, $('#rch-wz-mb-bc-pageinfo'));
+            });
+            $(document).on('click', '.rch-wz-mb-bc-add-hit', function () {
+                var id = parseInt($(this).data('id'), 10);
+                if (id) {
+                    mbAddBroadcastedByIds([id], null);
+                }
+            });
+        }
 
         $('#rch-wz-mb-search-btn').on('click', function () {
             runMbSearch(1);

@@ -459,10 +459,42 @@ $wz_broadcast_step = function_exists('rch_agent_wizard_broadcast_step_enabled') 
                     <h4 class="rch-wz-mb-heading"><?php esc_html_e('Build new menu for targets', 'rechat-plugin'); ?></h4>
                     <p class="rch-wz-hint"><?php esc_html_e('Add links from template posts/pages or custom URLs, choose display locations from the template theme, then create the same menu on every site in the target scope above.', 'rechat-plugin'); ?></p>
                     <?php if ($wz_broadcast_step) : ?>
-                    <div class="rch-wz-mb-broadcast-picks" id="rch-wz-mb-broadcast-picks-wrap">
-                        <p class="rch-wz-field__label"><?php esc_html_e('From broadcast selection', 'rechat-plugin'); ?></p>
-                        <p class="rch-wz-hint"><?php esc_html_e('Posts and pages you checked on the Broadcast step appear here with an Add button. After you run Broadcast, “Create menu on all targets” adds a real Page/Post menu entry on each site (that site’s URL), not the main site link.', 'rechat-plugin'); ?></p>
-                        <div id="rch-wz-mb-broadcast-picks" class="rch-wz-mb-search-results" aria-live="polite"></div>
+                    <div class="rch-wz-mb-broadcasted" id="rch-wz-mb-broadcasted-wrap">
+                        <p class="rch-wz-field__label"><?php esc_html_e('Broadcasted posts & pages', 'rechat-plugin'); ?></p>
+                        <p class="rch-wz-hint"><?php esc_html_e('Content already pushed to sub-sites via Broadcast. Select items and add them to the menu below; each target site will use its own copy of the page or post.', 'rechat-plugin'); ?></p>
+                        <div class="rch-wz-field rch-wz-bc-search-row">
+                            <label class="rch-wz-field__label screen-reader-text" for="rch-wz-mb-bc-search"><?php esc_html_e('Search broadcasted content', 'rechat-plugin'); ?></label>
+                            <div class="rch-wz-field__row">
+                                <input type="search" id="rch-wz-mb-bc-search" class="rch-wz-input rch-wz-input--grow" placeholder="<?php esc_attr_e('Search titles…', 'rechat-plugin'); ?>" />
+                                <button type="button" class="button rch-wz-btn-secondary" id="rch-wz-mb-bc-load"><?php esc_html_e('Load broadcasted list', 'rechat-plugin'); ?></button>
+                                <span class="spinner" id="rch-wz-mb-bc-spinner"></span>
+                            </div>
+                        </div>
+                        <p class="rch-wz-hint" id="rch-wz-mb-bc-pageinfo"></p>
+                        <div class="rch-wz-bc-table-wrap">
+                            <table class="rch-wz-bc-table widefat striped" id="rch-wz-mb-bc-table">
+                                <thead>
+                                    <tr>
+                                        <th class="rch-wz-bc-col-check" scope="col"><span class="screen-reader-text"><?php esc_html_e('Select', 'rechat-plugin'); ?></span></th>
+                                        <th scope="col"><?php esc_html_e('Title', 'rechat-plugin'); ?></th>
+                                        <th scope="col"><?php esc_html_e('Type', 'rechat-plugin'); ?></th>
+                                        <th scope="col"><?php esc_html_e('Sub-sites', 'rechat-plugin'); ?></th>
+                                        <th scope="col"><?php esc_html_e('Modified', 'rechat-plugin'); ?></th>
+                                        <th scope="col"><?php esc_html_e('Add', 'rechat-plugin'); ?></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rch-wz-mb-bc-tbody">
+                                    <tr class="rch-wz-bc-placeholder"><td colspan="6"><?php esc_html_e('Click “Load broadcasted list” to show posts and pages that have already been broadcast.', 'rechat-plugin'); ?></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="rch-wz-bc-pager">
+                            <button type="button" class="button" id="rch-wz-mb-bc-prev" disabled><?php esc_html_e('Previous', 'rechat-plugin'); ?></button>
+                            <button type="button" class="button" id="rch-wz-mb-bc-next" disabled><?php esc_html_e('Next', 'rechat-plugin'); ?></button>
+                            <button type="button" class="button rch-wz-btn-secondary" id="rch-wz-mb-bc-selall"><?php esc_html_e('Select all on page', 'rechat-plugin'); ?></button>
+                            <button type="button" class="button rch-wz-btn-secondary" id="rch-wz-mb-bc-selnone"><?php esc_html_e('Clear page', 'rechat-plugin'); ?></button>
+                            <button type="button" class="button button-primary" id="rch-wz-mb-bc-add-selected"><?php esc_html_e('Add selected to menu', 'rechat-plugin'); ?></button>
+                        </div>
                     </div>
                     <?php endif; ?>
                     <div class="rch-wz-field">

@@ -1967,6 +1967,115 @@ function rch_agent_wizard_ajax_list_broadcast_posts(): void
 }
 
 /**
+ * AJAX: paginated posts/pages on the source blog that already have Broadcast children (for menu builder).
+ */
+function rch_agent_wizard_ajax_list_menu_broadcasted_posts(): void
+{
+    check_ajax_referer(RCH_AGENT_WIZARD_NONCE_ACTION, 'nonce');
+
+    if (is_wp_error(rch_agent_wizard_user_can_run())) {
+        wp_send_json_error(['message' => __('Permission denied.', 'rechat-plugin')], 403);
+    }
+
+    if (! rch_agent_wizard_broadcast_step_enabled()) {
+        wp_send_json_error(['message' => __('Broadcast is not available.', 'rechat-plugin')]);
+    }
+
+    if (! function_exists('rch_agent_wizard_collect_broadcast_parent_post_ids')) {
+        wp_send_json_error(['message' => __('Broadcast listing is unavailable.', 'rechat-plugin')]);
+    }
+
+    $source = function_exists('rch_multisite_broadcast_source_blog_id')
+        ? rch_multisite_broadcast_source_blog_id()
+        : (int) get_main_site_id();
+    $paged  = isset($_POST['paged']) ? max(1, absint($_POST['paged'])) : 1;
+    $per    = isset($_POST['per_page']) ? min(50, max(5, absint($_POST['per_page']))) : 20;
+    $search = isset($_POST['search']) ? sanitize_text_field(wp_unslash($_POST['search'])) : '';
+
+    $parent_ids = rch_agent_wizard_collect_broadcast_parent_post_ids($source);
+    $parent_ids = array_values(
+        array_filter(
+            array_map('absint', $parent_ids),
+            static function (int $id): bool {
+                return $id > 0;
+            }
+        )
+    );
+
+    if ($parent_ids === []) {
+        wp_send_json_success(
+            [
+                'items'     => [],
+                'paged'     => $paged,
+                'max_pages' => 0,
+                'found'     => 0,
+                'total_broadcasted' => 0,
+            ]
+        );
+    }
+
+    switch_to_blog($source);
+
+    $q = new WP_Query(
+        [
+            'post_type'              => ['post', 'page'],
+            'post_status'            => ['publish', 'future', 'draft', 'private'],
+            'post__in'               => $parent_ids,
+            'posts_per_page'         => $per,
+            'paged'                  => $paged,
+            's'                      => $search,
+            'orderby'                => 'modified',
+            'order'                  => 'DESC',
+            'no_found_rows'          => false,
+            'update_post_meta_cache' => false,
+            'update_term_meta_cache' => false,
+        ]
+    );
+
+    $items = [];
+
+    foreach ($q->posts as $p) {
+        if (! $p instanceof WP_Post) {
+            continue;
+        }
+
+        $child_count = 0;
+        $bcd         = function_exists('rch_multisite_get_post_broadcast_data')
+            ? rch_multisite_get_post_broadcast_data($source, (int) $p->ID)
+            : null;
+        if ($bcd && $bcd->has_linked_children()) {
+            $child_count = count($bcd->get_linked_children());
+        }
+
+        $items[] = [
+            'id'           => (int) $p->ID,
+            'title'        => get_the_title($p),
+            'type'         => $p->post_type,
+            'type_label'   => $p->post_type === 'page' ? __('Page', 'rechat-plugin') : __('Post', 'rechat-plugin'),
+            'status'       => $p->post_status,
+            'modified'     => mysql2date('Y-m-d H:i', $p->post_modified, false),
+            'url'          => (string) get_permalink($p),
+            'child_count'  => $child_count,
+        ];
+    }
+
+    $max_pages = (int) $q->max_num_pages;
+    $found     = (int) $q->found_posts;
+
+    restore_current_blog();
+
+    wp_send_json_success(
+        [
+            'items'               => $items,
+            'paged'               => $paged,
+            'max_pages'           => $max_pages,
+            'found'               => $found,
+            'total_broadcasted'   => count($parent_ids),
+        ]
+    );
+}
+
+/**
  * AJAX: broadcast selected post/page IDs from source blog to targets.
  */
 function rch_agent_wizard_ajax_broadcast_posts(): void
@@ -2422,6 +2531,7 @@ add_action('wp_ajax_rch_agent_wizard_save_draft', 'rch_agent_wizard_ajax_save_dr
 add_action('wp_ajax_rch_agent_wizard_load_draft', 'rch_agent_wizard_ajax_load_draft');
 add_action('wp_ajax_rch_agent_wizard_deploy', 'rch_agent_wizard_ajax_deploy');
 add_action('wp_ajax_rch_agent_wizard_list_broadcast_posts', 'rch_agent_wizard_ajax_list_broadcast_posts');
+add_action('wp_ajax_rch_agent_wizard_list_menu_broadcasted_posts', 'rch_agent_wizard_ajax_list_menu_broadcasted_posts');
 add_action('wp_ajax_rch_agent_wizard_broadcast_posts', 'rch_agent_wizard_ajax_broadcast_posts');
 add_action('wp_ajax_rch_agent_wizard_list_menus_widgets', 'rch_agent_wizard_ajax_list_menus_widgets');
 add_action('wp_ajax_rch_agent_wizard_apply_menus_widgets', 'rch_agent_wizard_ajax_apply_menus_widgets');
@@ -2620,7 +2730,17 @@ function rch_agent_wizard_enqueue_assets(string $hook): void
                 'mbNeedName'      => __('Enter a menu name.', 'rechat-plugin'),
                 'mbNeedItem'      => __('Add at least one link (title and URL, or title and a template post from Add / broadcast list so each site can use its own page link).', 'rechat-plugin'),
                 'mbAdd'           => __('Add', 'rechat-plugin'),
-                'mbBroadcastPicksEmpty' => __('No posts or pages are checked on the Broadcast step yet.', 'rechat-plugin'),
+                'mbBroadcastedLabel'  => __('Broadcasted posts & pages', 'rechat-plugin'),
+                'mbBroadcastedLead'   => __('Content already pushed to sub-sites. Add to the menu structure; each target uses its own copy.', 'rechat-plugin'),
+                'mbBroadcastedLoad'   => __('Load broadcasted list', 'rechat-plugin'),
+                'mbBroadcastedEmpty'  => __('No broadcasted posts or pages found. Run Broadcast on the previous step first.', 'rechat-plugin'),
+                'mbBroadcastedPlaceholder' => __('Click “Load broadcasted list” to show posts and pages that have already been broadcast.', 'rechat-plugin'),
+                'mbBroadcastedTotal'  => /* translators: %d: count */ __('%d broadcasted item(s) total.', 'rechat-plugin'),
+                'mbBroadcastedColSites' => __('Sub-sites', 'rechat-plugin'),
+                'mbBroadcastedAddSelected' => __('Add selected to menu', 'rechat-plugin'),
+                'mbBroadcastedNoneSelected' => __('Select at least one broadcasted post or page.', 'rechat-plugin'),
+                'mbBroadcastedAdded'  => /* translators: %d: count */ __('Added %d link(s) to the menu.', 'rechat-plugin'),
+                'mbBroadcastedAllDup' => __('Selected items are already in the menu.', 'rechat-plugin'),
                 'mbRemove'        => __('Remove', 'rechat-plugin'),
                 'mbUp'            => __('Move up', 'rechat-plugin'),
                 'mbDown'          => __('Move down', 'rechat-plugin'),

@@ -101,6 +101,29 @@ function rch_multisite_broadcast_source_blog_id(): int
 }
 
 /**
+ * Broadcast data for a post on a blog (ThreeWP Broadcast), or null when unavailable.
+ *
+ * @return \threewp_broadcast\broadcast_data|null
+ */
+function rch_multisite_get_post_broadcast_data(int $blog_id, int $post_id)
+{
+    if ($blog_id <= 0 || $post_id <= 0 || ! function_exists('ThreeWP_Broadcast')) {
+        return null;
+    }
+
+    try {
+        $plugin = ThreeWP_Broadcast();
+        if (! is_object($plugin) || ! method_exists($plugin, 'get_post_broadcast_data')) {
+            return null;
+        }
+
+        return $plugin->get_post_broadcast_data($blog_id, $post_id);
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
+/**
  * Child post ID on a target blog for a parent post (ThreeWP Broadcast), or the parent ID when target is the parent blog.
  *
  * @param int $parent_blog_id Blog where $parent_post_id exists.
@@ -131,12 +154,7 @@ function rch_multisite_broadcast_child_post_id_on_blog(int $parent_blog_id, int 
 
     switch_to_blog($parent_blog_id);
 
-    try {
-        $broadcast = ThreeWP_Broadcast();
-        $bcd       = $broadcast->get_post_broadcast_data($parent_blog_id, $parent_post_id);
-    } catch (Throwable $e) {
-        $bcd = null;
-    }
+    $bcd = rch_multisite_get_post_broadcast_data($parent_blog_id, $parent_post_id);
 
     restore_current_blog();
 
@@ -165,6 +183,60 @@ function rch_multisite_broadcast_child_post_id_on_blog(int $parent_blog_id, int 
     restore_current_blog();
 
     return $child instanceof WP_Post ? $child_id : 0;
+}
+
+/**
+ * Parent post IDs on the Broadcast source blog that already have linked children (broadcasted).
+ *
+ * @return int[]
+ */
+function rch_agent_wizard_collect_broadcast_parent_post_ids(int $source_blog_id): array
+{
+    if ($source_blog_id <= 0 || ! function_exists('ThreeWP_Broadcast')) {
+        return [];
+    }
+
+    global $wpdb;
+
+    $table = $wpdb->base_prefix . '_3wp_broadcast_broadcastdata';
+    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name from Broadcast plugin.
+    $rows = $wpdb->get_results(
+        $wpdb->prepare(
+            "SELECT id, blog_id, post_id, data FROM `{$table}` WHERE blog_id = %d",
+            $source_blog_id
+        ),
+        ARRAY_A
+    );
+
+    if (! is_array($rows) || $rows === []) {
+        return [];
+    }
+
+    $ids = [];
+    foreach ($rows as $row) {
+        if (! is_array($row) || empty($row['post_id'])) {
+            continue;
+        }
+
+        try {
+            $bcd = \threewp_broadcast\broadcast_data::sql((object) $row);
+        } catch (Throwable $e) {
+            continue;
+        }
+
+        if ($bcd->get_linked_parent() !== false || ! $bcd->has_linked_children()) {
+            continue;
+        }
+
+        $pid = (int) $row['post_id'];
+        if ($pid > 0) {
+            $ids[] = $pid;
+        }
+    }
+
+    $ids = array_values(array_unique($ids));
+
+    return (array) apply_filters('rch_agent_wizard_broadcast_parent_post_ids', $ids, $source_blog_id);
 }
 
 /**
