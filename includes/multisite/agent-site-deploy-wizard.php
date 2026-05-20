@@ -761,29 +761,6 @@ function rch_agent_wizard_sanitize_theme_path_or_url($value): string
  */
 function rch_agent_wizard_normalize_shortcode_string(string $value): string
 {
-    $value = trim($value);
-    if ($value === '') {
-        return '';
-    }
-
-    // Users sometimes paste theme PHP wrappers around do_shortcode(); store only the [shortcode] token.
-    if (preg_match('/<\?php/i', $value) || stripos($value, 'do_shortcode') !== false) {
-        $start = stripos($value, '[rch_');
-        if ($start === false) {
-            $start = strpos($value, '[');
-        }
-        if ($start !== false) {
-            $end = strrpos($value, ']');
-            if ($end !== false && $end > $start) {
-                $value = substr($value, $start, $end - $start + 1);
-            }
-        } else {
-            $value = preg_replace('/<\?php.*?\?>/is', '', $value);
-            $value = strip_tags($value);
-        }
-        $value = trim($value);
-    }
-
     // Common wizard typo: closing ] before more attributes (breaks do_shortcode).
     return preg_replace('/\]\s+(?=(?:disable_|show_|target_|filter_|brand_|map_))/i', ' ', $value);
 }
@@ -806,9 +783,9 @@ function rch_agent_wizard_sanitize_theme_shortcode_field($value): string
 /**
  * Sanitize values using a theme profile (option panel field kinds).
  *
- * @param  array<string, mixed>   $row
- * @param  array<string, mixed>   $profile        From rch_agent_wizard_get_theme_profile().
- * @param  list<string>|null      $allowed_keys   Optional deploy allow-list (wizard UI + destination union).
+ * @param  array<string, mixed>      $row
+ * @param  array<string, mixed>|null $profile      From rch_agent_wizard_get_theme_profile() (field-type buckets).
+ * @param  list<string>|null         $allowed_keys Keys allowed for this deploy (wizard + destination union).
  * @return array<string, mixed>
  */
 function rch_agent_wizard_sanitize_theme_options_row(array $row, ?array $profile = null, ?array $allowed_keys = null): array
@@ -817,10 +794,13 @@ function rch_agent_wizard_sanitize_theme_options_row(array $row, ?array $profile
         $profile = rch_agent_wizard_get_theme_profile(rch_agent_wizard_wizard_ui_stylesheet());
     }
 
-    $profile_keys = isset($profile['keys']) && is_array($profile['keys']) ? $profile['keys'] : [];
-    $allowed_list = is_array($allowed_keys) && $allowed_keys !== [] ? $allowed_keys : $profile_keys;
-    $allowed      = array_flip($allowed_list);
-    $out          = [];
+    $profile_key_list = isset($profile['keys']) && is_array($profile['keys']) ? $profile['keys'] : [];
+    $allowed          = array_flip(
+        is_array($allowed_keys) && $allowed_keys !== []
+            ? $allowed_keys
+            : $profile_key_list
+    );
+    $out              = [];
 
     foreach ($row as $key => $value) {
         if (! is_string($key) || ! isset($allowed[ $key ])) {
@@ -1090,10 +1070,10 @@ function rch_agent_wizard_deploy_to_agent_blog(int $agent_id, array $theme_rows)
     $allowed_deploy = rch_agent_wizard_resolve_deploy_allowed_keys($agent_id);
     $merged_raw     = rch_agent_wizard_build_row_from_theme_rows($agent_id, $theme_rows, $allowed_deploy);
 
-    $sanitized     = rch_agent_wizard_sanitize_theme_options_row($merged_raw, $profile, $allowed_deploy);
-    $allowed_write = array_flip($allowed_deploy);
-    if ($allowed_write !== []) {
-        $sanitized = array_intersect_key($sanitized, $allowed_write);
+    $sanitized = rch_agent_wizard_sanitize_theme_options_row($merged_raw, $profile, $allowed_deploy);
+    $key_allow = array_flip($allowed_deploy);
+    if ($key_allow !== []) {
+        $sanitized = array_intersect_key($sanitized, $key_allow);
     }
 
     $primary = (string) $profile['storage_primary'];
@@ -1104,10 +1084,8 @@ function rch_agent_wizard_deploy_to_agent_blog(int $agent_id, array $theme_rows)
         $existing = [];
     }
 
-    $merged      = array_merge($existing, $sanitized);
-    $dest_keys   = isset($profile['keys']) && is_array($profile['keys']) ? $profile['keys'] : [];
-    $hero_keys   = $dest_keys !== [] ? $dest_keys : $allowed_deploy;
-    $merged      = rch_agent_wizard_canonicalize_hero_title_keys($merged, $hero_keys);
+    $merged = array_merge($existing, $sanitized);
+    $merged = rch_agent_wizard_canonicalize_hero_title_keys($merged, array_keys($key_allow !== [] ? $key_allow : $allowed_deploy));
 
     update_option($primary, $merged, false);
     if (is_string($mirror) && $mirror !== '' && $mirror !== $primary) {
@@ -1582,9 +1560,12 @@ function rch_agent_wizard_ajax_deploy(): void
         wp_send_json_error(['message' => __('Invalid theme configuration JSON.', 'rechat-plugin')]);
     }
 
-    $allowed_list   = $agent_id > 0
-        ? rch_agent_wizard_resolve_deploy_allowed_keys($agent_id)
-        : rch_agent_wizard_allowed_theme_option_keys();
+    $scope = isset($_POST['scope']) ? sanitize_key(wp_unslash($_POST['scope'])) : 'single';
+
+    // Bulk deploy: accept every key the wizard form can send (not only one preview agent's destination keys).
+    $allowed_list = ($scope === 'all' || $agent_id <= 0)
+        ? rch_agent_wizard_allowed_theme_option_keys()
+        : rch_agent_wizard_resolve_deploy_allowed_keys($agent_id);
     $allowed_themes = array_flip($allowed_list);
     $allowed_meta   = array_flip(array_keys(rch_agent_wizard_importable_field_defs_resolved()));
     $clean_rows     = [];
@@ -1611,7 +1592,6 @@ function rch_agent_wizard_ajax_deploy(): void
         $clean_rows[ $tk ] = $entry;
     }
 
-    $scope = isset($_POST['scope']) ? sanitize_key(wp_unslash($_POST['scope'])) : 'single';
     if ($scope === 'all') {
         $bulk = rch_agent_wizard_deploy_all_agent_subsites($clean_rows);
         $msg  = sprintf(
