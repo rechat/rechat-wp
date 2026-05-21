@@ -144,6 +144,26 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
         }, [isLoggedIn]);
 
         useEffect(() => {
+            if (!isLoggedIn) {
+                return;
+            }
+            let cancelled = false;
+            apiFetch({ path: '/rch/v1/leads-form-linked-agent' })
+                .then((res) => {
+                    if (cancelled || !res?.linked || !res?.email) {
+                        return;
+                    }
+                    if (assigneeAgentEmail !== res.email) {
+                        setAttributes({ assigneeAgentEmail: res.email });
+                    }
+                })
+                .catch(() => {});
+            return () => {
+                cancelled = true;
+            };
+        }, [isLoggedIn, assigneeAgentEmail, setAttributes]);
+
+        useEffect(() => {
             if (isLoggedIn && brandId && accessToken) {
                 const fetchLeadChannels = async () => {
                     try {
@@ -155,7 +175,7 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
                         });
                         const channelData = await channelResponse.json();
                         const options = channelData.data.map((channel) => ({
-                            label: channel.title ? channel.title : 'Unnamed',
+                            label: channel.name ? channel.name : 'Unnamed',
                             value: channel.id,
                         }));
                         options.unshift({
@@ -250,7 +270,7 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
                             onChange={(value) => setAttributes({ assigneeAgentEmail: value })}
                         />
                         <p style={{ marginTop: '-8px', fontSize: '12px', color: '#757575' }}>
-                            Uses each agent post’s email meta. Only agents with a valid email appear.
+                            Uses each agent post’s email meta. On agent subsites, the linked hub agent email is set automatically.
                         </p>
                         <ToggleControl
                             label='Send lead_source as "Mortgage Question From"'

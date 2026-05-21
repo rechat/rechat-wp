@@ -392,6 +392,27 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
       };
     }, [isLoggedIn]);
     (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+      if (!isLoggedIn) {
+        return;
+      }
+      let cancelled = false;
+      _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2___default()({
+        path: '/rch/v1/leads-form-linked-agent'
+      }).then(res => {
+        if (cancelled || !res?.linked || !res?.email) {
+          return;
+        }
+        if (assigneeAgentEmail !== res.email) {
+          setAttributes({
+            assigneeAgentEmail: res.email
+          });
+        }
+      }).catch(() => {});
+      return () => {
+        cancelled = true;
+      };
+    }, [isLoggedIn, assigneeAgentEmail, setAttributes]);
+    (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
       if (isLoggedIn && brandId && accessToken) {
         const fetchLeadChannels = async () => {
           try {
@@ -403,7 +424,7 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
             });
             const channelData = await channelResponse.json();
             const options = channelData.data.map(channel => ({
-              label: channel.title ? channel.title : 'Unnamed',
+              label: channel.name ? channel.name : 'Unnamed',
               value: channel.id
             }));
             options.unshift({
@@ -511,7 +532,7 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
               fontSize: '12px',
               color: '#757575'
             },
-            children: "Uses each agent post\u2019s email meta. Only agents with a valid email appear."
+            children: "Uses each agent post\u2019s email meta. On agent subsites, the linked hub agent email is set automatically."
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(ToggleControl, {
             label: "Send lead_source as \"Mortgage Question From\"",
             checked: useMortgageQuestionLeadSource,

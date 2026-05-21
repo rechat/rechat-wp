@@ -7,6 +7,45 @@ if (! defined('ABSPATH')) {
  ******************************/
 
 /**
+ * Resolve assignee email: agent subsite uses linked hub agent profile; else explicit value.
+ *
+ * @param string $explicit Email from block attr, shortcode, or POST.
+ * @return string Valid email or empty.
+ */
+function rch_leads_form_resolve_assignee_email($explicit = '')
+{
+    if (function_exists('rch_multisite_get_linked_agent_profile_email')) {
+        $linked = rch_multisite_get_linked_agent_profile_email();
+        if ($linked !== '') {
+            return $linked;
+        }
+    }
+
+    $explicit = is_string($explicit) ? sanitize_email(trim($explicit)) : '';
+
+    return is_email($explicit) ? $explicit : '';
+}
+
+/**
+ * REST: linked agent email on current agent subsite (block editor prefill).
+ *
+ * @return WP_REST_Response
+ */
+function rch_rest_leads_form_linked_agent()
+{
+    $email = function_exists('rch_multisite_get_linked_agent_profile_email')
+        ? rch_multisite_get_linked_agent_profile_email()
+        : '';
+
+    return rest_ensure_response(
+        array(
+            'email'   => $email,
+            'linked'  => $email !== '',
+        )
+    );
+}
+
+/**
  * REST: agents with email for block editor dropdown (editors only).
  *
  * @return WP_REST_Response
@@ -59,6 +98,18 @@ function rch_register_leads_form_rest_routes()
             },
         )
     );
+
+    register_rest_route(
+        'rch/v1',
+        '/leads-form-linked-agent',
+        array(
+            'methods'             => 'GET',
+            'callback'            => 'rch_rest_leads_form_linked_agent',
+            'permission_callback' => static function () {
+                return current_user_can('edit_posts');
+            },
+        )
+    );
 }
 add_action('rest_api_init', 'rch_register_leads_form_rest_routes');
 
@@ -78,8 +129,10 @@ function rch_ajax_submit_lead_rechat_api()
         wp_send_json_error(array('message' => 'Lead channel is required.'), 400);
     }
 
-    $assignee_email = isset($_POST['assignee_email']) ? sanitize_email(wp_unslash($_POST['assignee_email'])) : '';
-    if ($assignee_email === '' || ! is_email($assignee_email)) {
+    $assignee_email = rch_leads_form_resolve_assignee_email(
+        isset($_POST['assignee_email']) ? (string) wp_unslash($_POST['assignee_email']) : ''
+    );
+    if ($assignee_email === '') {
         wp_send_json_error(array('message' => 'A valid agent assignee email is required.'), 400);
     }
 
@@ -254,7 +307,9 @@ function rch_render_leads_form_block($attributes)
 {
     $form_title          = isset($attributes['formTitle']) ? $attributes['formTitle'] : '';
     $lead_channel        = isset($attributes['leadChannel']) ? $attributes['leadChannel'] : '';
-    $assignee_agent_email = isset($attributes['assigneeAgentEmail']) ? $attributes['assigneeAgentEmail'] : '';
+    $assignee_agent_email = rch_leads_form_resolve_assignee_email(
+        isset($attributes['assigneeAgentEmail']) ? (string) $attributes['assigneeAgentEmail'] : ''
+    );
     $use_mortgage_question_lead_source = isset($attributes['useMortgageQuestionLeadSource'])
         ? (bool) $attributes['useMortgageQuestionLeadSource']
         : true;
