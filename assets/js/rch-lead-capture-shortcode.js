@@ -58,6 +58,7 @@
     var formId = config.formId;
     var leadChannel = config.leadChannel || '';
     var tags = config.tags || [];
+    var assigneeEmail = config.assigneeEmail || '';
 
     var form = document.getElementById(formId);
     if (!form) {
@@ -114,6 +115,10 @@
 
       if (tags && tags.length > 0) {
         input.tag = tags;
+      }
+
+      if (assigneeEmail) {
+        input.assignees = [{ email: assigneeEmail }];
       }
 
       setVisible(loadingEl, true);

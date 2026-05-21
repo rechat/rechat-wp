@@ -3,7 +3,7 @@
 /**
  * Lead capture form shortcode — Rechat SDK integration.
  *
- * Usage: [rch_leads_form form_title="Contact" lead_channel="..." tags="a,b" show_email="true"]
+ * Usage: [rch_leads_form form_title="Contact" lead_channel="..." assignee_email="agent@example.com" tags="a,b" show_email="true"]
  */
 
 if (! defined('ABSPATH')) {
@@ -41,13 +41,15 @@ function rch_enqueue_lead_form_assets()
  * @param string $form_id        DOM id of the form element
  * @param string $lead_channel   Rechat lead channel
  * @param array  $selected_tags  Tag strings
+ * @param string $assignee_email Rechat assignee email (agent subsite auto-filled when empty).
  */
-function rch_lead_capture_enqueue_instance_script($form_id, $lead_channel, array $selected_tags)
+function rch_lead_capture_enqueue_instance_script($form_id, $lead_channel, array $selected_tags, $assignee_email = '')
 {
     $config = [
         'formId'       => $form_id,
         'leadChannel'  => $lead_channel,
         'tags'         => array_values($selected_tags),
+        'assigneeEmail' => $assignee_email,
     ];
 
     wp_add_inline_script(
@@ -76,7 +78,11 @@ function rch_render_leads_form_shortcode($atts)
     rch_render_form_html($atts, $form_id);
     $html = ob_get_clean();
 
-    rch_lead_capture_enqueue_instance_script($form_id, $lead_channel, $selected_tags);
+    $assignee_email = function_exists('rch_leads_form_resolve_assignee_email')
+        ? rch_leads_form_resolve_assignee_email($atts['assignee_email'] ?? '')
+        : sanitize_email((string) ($atts['assignee_email'] ?? ''));
+
+    rch_lead_capture_enqueue_instance_script($form_id, $lead_channel, $selected_tags, $assignee_email);
 
     return $html;
 }
@@ -95,6 +101,7 @@ function rch_parse_shortcode_attributes($atts)
         'show_email'          => 'true',
         'show_note'           => 'true',
         'lead_channel'        => '',
+        'assignee_email'      => '',
         'tags'                => '',
     ];
 
@@ -107,7 +114,12 @@ function rch_parse_shortcode_attributes($atts)
 
     $atts['form_title']    = sanitize_text_field($atts['form_title']);
     $atts['lead_channel']  = sanitize_text_field($atts['lead_channel']);
+    $atts['assignee_email'] = sanitize_email((string) $atts['assignee_email']);
     $atts['tags']          = sanitize_text_field($atts['tags']);
+
+    if (function_exists('rch_leads_form_resolve_assignee_email')) {
+        $atts['assignee_email'] = rch_leads_form_resolve_assignee_email($atts['assignee_email']);
+    }
 
     return $atts;
 }

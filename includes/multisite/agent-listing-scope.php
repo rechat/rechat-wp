@@ -164,6 +164,32 @@ function rch_multisite_get_main_site_agent_ids_csv(): string
 }
 
 /**
+ * Profile email from the main-site `agents` post linked to this agent subsite (`email` post meta).
+ *
+ * @return string Sanitized email or empty when not an agent subsite / missing meta.
+ */
+function rch_multisite_get_linked_agent_profile_email(): string
+{
+    if (! rch_multisite_is_agent_listing_scope_active()) {
+        return '';
+    }
+
+    $agent_post_id = rch_multisite_resolve_agent_post_id_for_current_blog();
+    if ($agent_post_id <= 0) {
+        return '';
+    }
+
+    $main_id = (int) get_main_site_id();
+    switch_to_blog($main_id);
+    $raw = get_post_meta($agent_post_id, 'email', true);
+    restore_current_blog();
+
+    $email = is_string($raw) ? trim($raw) : '';
+
+    return is_email($email) ? $email : '';
+}
+
+/**
  * True when this blog is not the main site and the given option value is empty.
  */
 function rch_multisite_rechat_option_is_empty($value): bool
@@ -374,6 +400,39 @@ function rch_multisite_get_hub_site_option(string $option)
     return $cache[$option];
 }
 
+/**
+ * Rechat API token + brand for multisite subsites only (read-only).
+ *
+ * When local subsite OAuth is empty, uses main-site `rch_rechat_access_token` and
+ * `rch_rechat_brand_id`. Main hub and single-site installs must not call this.
+ *
+ * @return array{access_token: string, brand_id: string}
+ */
+function rch_multisite_subsite_rechat_api_credentials()
+{
+    $access_token = (string) get_option('rch_rechat_access_token', '');
+    $brand_id     = (string) get_option('rch_rechat_brand_id', '');
+
+    if ($access_token === '') {
+        $hub_token = rch_multisite_get_hub_site_option('rch_rechat_access_token');
+        if (! rch_multisite_rechat_option_is_empty($hub_token)) {
+            $access_token = (string) $hub_token;
+        }
+    }
+
+    if ($brand_id === '') {
+        $hub_brand = rch_multisite_get_hub_site_option('rch_rechat_brand_id');
+        if (! rch_multisite_rechat_option_is_empty($hub_brand)) {
+            $brand_id = (string) $hub_brand;
+        }
+    }
+
+    return array(
+        'access_token' => $access_token,
+        'brand_id'     => $brand_id,
+    );
+}
+
 add_filter('option_rch_rechat_brand_id', static function ($value) {
     return rch_multisite_fallback_rechat_option($value, 'rch_rechat_brand_id');
 }, 5);
@@ -432,6 +491,20 @@ add_filter('option_rch_rechat_brand_id', static function ($value) {
 /**
  * [listings] and Gutenberg block (via [listings]): inject filter_agents after shortcode_atts merge.
  */
+/**
+ * Agent subsite: default assignee for [rch_leads_form] and Leads Form block.
+ */
+add_filter('shortcode_atts_rch_leads_form', static function ($out, $pairs, $atts) {
+    unset($pairs, $atts);
+
+    $linked = rch_multisite_get_linked_agent_profile_email();
+    if ($linked !== '') {
+        $out['assignee_email'] = $linked;
+    }
+
+    return $out;
+}, 10, 3);
+
 add_filter('shortcode_atts_listings', static function ($out, $pairs, $atts) {
     unset($pairs, $atts);
 
@@ -490,6 +563,38 @@ function rch_multisite_render_block_data_inject_listing_filter_agents($parsed_bl
 }
 
 add_filter('render_block_data', 'rch_multisite_render_block_data_inject_listing_filter_agents', 10, 3);
+
+/**
+ * Leads Form block on agent subsites: set assigneeAgentEmail from linked hub agent profile.
+ *
+ * @param array         $parsed_block Parsed block.
+ * @param array         $source_block Unused.
+ * @param \WP_Block|null $parent_block Unused.
+ * @return array
+ */
+function rch_multisite_render_block_data_inject_leads_form_assignee($parsed_block, $source_block = null, $parent_block = null)
+{
+    unset($source_block, $parent_block);
+
+    if (! is_array($parsed_block) || ($parsed_block['blockName'] ?? '') !== 'rch-rechat-plugin/leads-form-block') {
+        return $parsed_block;
+    }
+
+    $linked = rch_multisite_get_linked_agent_profile_email();
+    if ($linked === '') {
+        return $parsed_block;
+    }
+
+    if (! isset($parsed_block['attrs']) || ! is_array($parsed_block['attrs'])) {
+        $parsed_block['attrs'] = array();
+    }
+
+    $parsed_block['attrs']['assigneeAgentEmail'] = $linked;
+
+    return $parsed_block;
+}
+
+add_filter('render_block_data', 'rch_multisite_render_block_data_inject_leads_form_assignee', 10, 3);
 
 /**
  * [rch_latest_listings] does not pass a shortcode name into shortcode_atts(), so we proxy the handler.
@@ -589,6 +694,17 @@ function rch_multisite_preg_replace_safe($pattern, $replacement, $subject, int $
 }
 
 /**
+ * Regex for the parent `<rechat-listings>` open tag only — not `rechat-listings-sort`,
+ * `rechat-listings-pagination`, `rechat-listings-list`, etc. (`\b` after "listings" wrongly matched those).
+ *
+ * @return string PCRE pattern with one capture group for attributes.
+ */
+function rch_multisite_rechat_listings_parent_open_tag_pattern(): string
+{
+    return '/<rechat-listings(?![-\w])([^>]*)>/i';
+}
+
+/**
  * Space before appending a new HTML attribute (check trailing whitespace, not leading).
  *
  * @param string $inner Existing attributes inside the tag.
@@ -662,7 +778,7 @@ function rch_multisite_ob_patch_rechat_listings_map_api_key(string $html, string
     $safe = esc_attr($api_key);
 
     return rch_multisite_preg_replace_callback_safe(
-        '/<rechat-listings\b([^>]*)>/i',
+        rch_multisite_rechat_listings_parent_open_tag_pattern(),
         static function ($m) use ($safe) {
             $inner = $m[1];
             if (preg_match('/\bmap_api_key\s*=\s*(["\'])([^"\']*)\1/i', $inner, $mm)) {
@@ -689,7 +805,7 @@ function rch_multisite_ob_patch_rechat_listings_map_api_key(string $html, string
 }
 
 /**
- * Inject or replace filter_agents on all <rechat-listings> tags (search form, widgets, FSE, etc.).
+ * Inject or replace filter_agents on parent <rechat-listings> only (not sort/pagination children).
  *
  * @param string $html Full page HTML.
  * @return string
@@ -712,7 +828,7 @@ function rch_multisite_ob_inject_filter_agents($html)
     $attr = 'filter_agents="' . esc_attr($csv) . '"';
 
     return rch_multisite_preg_replace_callback_safe(
-        '/<rechat-listings\b([^>]*)>/i',
+        rch_multisite_rechat_listings_parent_open_tag_pattern(),
         static function ($m) use ($attr) {
             $inner = $m[1];
             if (preg_match('/\bfilter_agents\s*=/i', $inner)) {
@@ -756,7 +872,7 @@ function rch_multisite_ob_disable_rechat_listings_when_no_hub_agents(string $htm
     }
 
     return rch_multisite_preg_replace_callback_safe(
-        '/<rechat-listings\b([^>]*)>/i',
+        rch_multisite_rechat_listings_parent_open_tag_pattern(),
         static function ($m) {
             $inner = $m[1];
             if (preg_match('/\bdisabled\s*=/i', $inner)) {
@@ -772,6 +888,44 @@ function rch_multisite_ob_disable_rechat_listings_when_no_hub_agents(string $htm
 }
 
 /**
+ * Remove filter_agents from child listing components (scope lives on parent <rechat-listings> only).
+ *
+ * @param string $html Full page HTML.
+ * @return string
+ */
+function rch_multisite_ob_strip_filter_agents_on_listing_children(string $html): string
+{
+    $child_tags = array(
+        'rechat-listings-sort',
+        'rechat-listings-pagination',
+        'rechat-listings-list',
+        'rechat-map-listings-grid',
+        'rechat-map-filter',
+        'rechat-filter-search',
+        'rechat-filter-price',
+        'rechat-filter-beds',
+        'rechat-filter-baths',
+        'rechat-filter-property-type',
+        'rechat-filter-advanced',
+        'rechat-filter-loading',
+    );
+
+    foreach ($child_tags as $tag) {
+        $html = rch_multisite_preg_replace_callback_safe(
+            '/<' . preg_quote($tag, '/') . '\b([^>]*)>/i',
+            static function ($m) use ($tag) {
+                $inner = rch_multisite_preg_replace_safe('/\sfilter_agents\s*=\s*(["\'])[^"\']*\1/i', '', $m[1]);
+
+                return '<' . $tag . $inner . '>';
+            },
+            $html
+        );
+    }
+
+    return $html;
+}
+
+/**
  * Remove brand_id / map_api_key from <rechat-listings> (belong on <rechat-root> only).
  *
  * @param string $html Full page HTML.
@@ -780,7 +934,7 @@ function rch_multisite_ob_disable_rechat_listings_when_no_hub_agents(string $htm
 function rch_multisite_ob_strip_listings_hub_credentials(string $html): string
 {
     return rch_multisite_preg_replace_callback_safe(
-        '/<rechat-listings\b([^>]*)>/i',
+        rch_multisite_rechat_listings_parent_open_tag_pattern(),
         static function ($m) {
             $inner = $m[1];
             $inner = rch_multisite_preg_replace_safe('/\sbrand_id\s*=\s*(["\'])[^"\']*\1/i', '', $inner);
@@ -793,7 +947,7 @@ function rch_multisite_ob_strip_listings_hub_credentials(string $html): string
 }
 
 /**
- * Strip mistaken filter_agents on <rechat-listings-list> (parent should own filters).
+ * Strip mistaken filter_agents / hub credentials on <rechat-listings-list> (parent owns filters).
  *
  * @param string $html Full page HTML.
  * @return string
@@ -835,6 +989,7 @@ function rch_multisite_ob_patch_rechat_markup(string $html)
 
     try {
         $html = rch_multisite_ob_inject_filter_agents($html);
+        $html = rch_multisite_ob_strip_filter_agents_on_listing_children($html);
         $html = rch_multisite_ob_disable_rechat_listings_when_no_hub_agents($html);
 
         $main_id = (int) get_main_site_id();
