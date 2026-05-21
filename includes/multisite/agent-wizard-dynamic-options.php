@@ -306,7 +306,9 @@ function rch_agent_wizard_discover_from_option_panel_php(string $stylesheet): ?a
 
         $type  = 'text';
         $media = '';
-        if (preg_match('/<textarea\b/i', $row)) {
+        if (function_exists('rch_agent_wizard_key_uses_tags_multiselect_ui') && rch_agent_wizard_key_uses_tags_multiselect_ui($key)) {
+            $type = 'textarea_json';
+        } elseif (preg_match('/<textarea\b/i', $row)) {
             $type = 'textarea';
         } elseif (preg_match('/<select\b/i', $row)) {
             $type = 'select';
@@ -834,6 +836,15 @@ function rch_agent_wizard_build_dynamic_profile_from_data(
 
             if ($type === 'textarea') {
                 $buckets['textareas'][] = $k;
+            } elseif (
+                $type === 'tags'
+                || (
+                    $type === 'textarea_json'
+                    && function_exists('rch_agent_wizard_key_uses_tags_multiselect_ui')
+                    && rch_agent_wizard_key_uses_tags_multiselect_ui($k)
+                )
+            ) {
+                $buckets['textarea_json'][] = $k;
             } elseif ($type === 'textarea_json') {
                 $buckets['textarea_json'][] = $k;
             } elseif ($type === 'select') {

@@ -230,26 +230,45 @@ function rch_agent_wizard_fetch_lead_channel_select_options(): array
  */
 function rch_agent_wizard_fetch_tag_choice_strings(): array
 {
-    if (! function_exists('rch_fetch_tags')) {
-        return [];
-    }
-
-    $response = rch_fetch_tags();
-    if (empty($response['success']) || empty($response['data']['data']) || ! is_array($response['data']['data'])) {
-        return [];
-    }
-
     $out = [];
-    foreach ($response['data']['data'] as $tag) {
-        if (! is_array($tag)) {
-            continue;
-        }
-        $name = $tag['tag'] ?? $tag['text'] ?? '';
-        $name = is_string($name) ? trim($name) : '';
-        if ($name !== '' && ! in_array($name, $out, true)) {
-            $out[] = $name;
+
+    if (function_exists('rch_fetch_tags')) {
+        $response = rch_fetch_tags();
+        if (
+            ! empty($response['success'])
+            && ! empty($response['data']['data'])
+            && is_array($response['data']['data'])
+        ) {
+            foreach ($response['data']['data'] as $tag) {
+                if (! is_array($tag)) {
+                    continue;
+                }
+                $name = $tag['tag'] ?? $tag['text'] ?? '';
+                $name = is_string($name) ? trim($name) : '';
+                if ($name !== '' && ! in_array($name, $out, true)) {
+                    $out[] = $name;
+                }
+            }
         }
     }
+
+    // Acropolis-agent theme panel uses fetch_rechat_tags() (same Rechat API).
+    if ($out === [] && function_exists('fetch_rechat_tags')) {
+        $raw = fetch_rechat_tags();
+        if (is_array($raw)) {
+            foreach ($raw as $tag) {
+                if (! is_array($tag)) {
+                    continue;
+                }
+                $name = $tag['tag'] ?? $tag['text'] ?? '';
+                $name = is_string($name) ? trim($name) : '';
+                if ($name !== '' && ! in_array($name, $out, true)) {
+                    $out[] = $name;
+                }
+            }
+        }
+    }
+
     sort($out, SORT_STRING);
 
     /** @param list<string> $out */
@@ -290,21 +309,23 @@ function rch_agent_wizard_manual_field_defs(): array
         }
 
         $options = [];
-        if (in_array($key, $select_keys, true)) {
+        if (function_exists('rch_agent_wizard_key_uses_tags_multiselect_ui') && rch_agent_wizard_key_uses_tags_multiselect_ui($key)) {
+            $type = 'tags';
+            foreach (rch_agent_wizard_fetch_tag_choice_strings() as $t) {
+                $options[] = ['value' => $t, 'label' => $t];
+            }
+        } elseif (in_array($key, $select_keys, true)) {
             $type = 'select';
             $opts = isset($select_opts_map[ $key ]) && is_array($select_opts_map[ $key ]) ? $select_opts_map[ $key ] : [];
-            if ($opts === [] && function_exists('rch_fetch_lead_channels')) {
+            $is_lead_channel_key = rch_agent_wizard_str_contains_ci($key, 'lead-channel')
+                || rch_agent_wizard_str_contains_ci($key, 'lead_channel');
+            if ($opts === [] && $is_lead_channel_key && function_exists('rch_fetch_lead_channels')) {
                 $opts = rch_agent_wizard_fetch_lead_channel_select_options();
             }
             foreach ($opts as $opt) {
                 if (is_array($opt) && isset($opt['value'], $opt['label'])) {
                     $options[] = ['value' => (string) $opt['value'], 'label' => (string) $opt['label']];
                 }
-            }
-        } elseif (($type === 'textarea_json' || $key === 'rch_selected_tags') && rch_agent_wizard_key_uses_tags_multiselect_ui($key)) {
-            $type = 'tags';
-            foreach (rch_agent_wizard_fetch_tag_choice_strings() as $t) {
-                $options[] = ['value' => $t, 'label' => $t];
             }
         }
 
@@ -657,6 +678,10 @@ function rch_agent_wizard_importable_field_defs(): array
             'label'               => __('Designation', 'rechat-plugin'),
             'default_theme_key'   => 'rch-wizard-agent-designation',
         ],
+        'agent_title' => [
+            'label'               => __('Agent title', 'rechat-plugin'),
+            'default_theme_key'   => '',
+        ],
         'last_name' => [
             'label'               => __('Last name', 'rechat-plugin'),
             'default_theme_key'   => '',
@@ -807,7 +832,11 @@ function rch_agent_wizard_sanitize_theme_options_row(array $row, ?array $profile
             continue;
         }
 
-        if ($key === 'rch_selected_tags' || in_array($key, $profile['textarea_json'] ?? [], true)) {
+        if (
+            $key === 'rch_selected_tags'
+            || in_array($key, $profile['textarea_json'] ?? [], true)
+            || (function_exists('rch_agent_wizard_key_uses_tags_multiselect_ui') && rch_agent_wizard_key_uses_tags_multiselect_ui($key))
+        ) {
             if (is_array($value)) {
                 $out[ $key ] = array_map('sanitize_text_field', $value);
             } elseif (is_string($value)) {
@@ -1086,6 +1115,10 @@ function rch_agent_wizard_deploy_to_agent_blog(int $agent_id, array $theme_rows)
 
     $merged = array_merge($existing, $sanitized);
     $merged = rch_agent_wizard_canonicalize_hero_title_keys($merged, array_keys($key_allow !== [] ? $key_allow : $allowed_deploy));
+
+    if (function_exists('rch_leads_form_sync_talk_options_row')) {
+        $merged = rch_leads_form_sync_talk_options_row($merged);
+    }
 
     update_option($primary, $merged, false);
     if (is_string($mirror) && $mirror !== '' && $mirror !== $primary) {

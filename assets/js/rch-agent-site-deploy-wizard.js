@@ -769,6 +769,31 @@
         return out;
     }
 
+    function formatManualPreviewValue(themeKey, raw) {
+        var $row = $rowForKey(themeKey);
+        if (!$row.length) {
+            return raw.length ? raw : '—';
+        }
+
+        if ($row.find('.rch-wz-tags-wrap').length) {
+            var tagList = parseJsonStringArray(raw || '[]');
+            return tagList.length ? tagList.join(', ') : '—';
+        }
+
+        var $val = $row.find('.rch-wz-row-value').first();
+        if ($val.is('select')) {
+            var selectedVal = String($val.val() || raw || '');
+            if (!selectedVal) {
+                return '—';
+            }
+            var $opt = $val.find('option[value="' + escapeAttr(selectedVal) + '"]');
+            var label = $opt.length ? String($opt.text()).trim() : '';
+            return label !== '' ? label : selectedVal;
+        }
+
+        return raw.length ? raw : '—';
+    }
+
     function previewResolvedRow(themeKey, cfg) {
         if (!cfg || cfg.mode === 'skip') {
             return null;
@@ -780,7 +805,7 @@
                 mode: 'manual',
                 themeKey: themeKey,
                 themeLabel: themeLabel,
-                valuePreview: raw.length ? raw : '—',
+                valuePreview: formatManualPreviewValue(themeKey, raw),
             };
         }
         if (cfg.mode === 'meta' && cfg.meta_key) {

@@ -125,6 +125,23 @@ function rch_parse_shortcode_attributes($atts)
 }
 
 /**
+ * Agent theme Talk options → lead_channel / tags when omitted from shortcode string.
+ */
+add_filter(
+    'shortcode_atts_rch_leads_form',
+    static function ($out, $pairs, $atts) {
+        unset($pairs, $atts);
+        if (! function_exists('rch_leads_form_apply_talk_theme_options')) {
+            return $out;
+        }
+
+        return rch_leads_form_apply_talk_theme_options($out);
+    },
+    15,
+    3
+);
+
+/**
  * @param array $atts Shortcode attributes
  * @return string
  */
