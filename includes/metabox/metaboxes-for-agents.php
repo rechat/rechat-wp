@@ -57,6 +57,7 @@ function agents_meta_box_html($post)
     $timezone = get_post_meta($post->ID, 'timezone', true);
     $profile_image_url = get_post_meta($post->ID, 'profile_image_url', true);
     $license_number = get_post_meta($post->ID, 'license_number', true);
+    $agent_title = get_post_meta($post->ID, 'agent_title', true);
     $display_order_raw = get_post_meta($post->ID, RCH_AGENT_DISPLAY_ORDER_META_KEY, true);
     $display_order_show = '';
     if (! rch_agent_display_order_meta_is_empty($display_order_raw)) {
@@ -113,6 +114,10 @@ function agents_meta_box_html($post)
     <input type="text" id="agents_email" name="agents_email" value="<?php echo esc_attr($email); ?>" class="widefat" />
     <label for="agents_designation">Designation</label>
     <input type="text" id="agents_designation" name="agents_designation" value="<?php echo esc_attr(get_post_meta($post->ID, 'designation', true)); ?>" class="widefat" />
+    <br>
+    <label for="agents_agent_title"><?php esc_html_e('Agent title', 'rechat-plugin'); ?></label>
+    <input type="text" id="agents_agent_title" name="agents_agent_title" value="<?php echo esc_attr($agent_title); ?>" class="widefat" />
+    <p class="description"><?php esc_html_e('Optional display title (e.g. Senior Realtor). Stored as agent_title.', 'rechat-plugin'); ?></p>
     <br>
 <?php
 }
@@ -270,6 +275,7 @@ function save_agents_meta_box($post_id)
         'agents_email' => 'email',
         'agents_timezone' => 'timezone',
         'agents_designation' => 'designation',
+        'agents_agent_title' => 'agent_title',
         'agents_license_number' => 'license_number', // Save License Number
     );
 

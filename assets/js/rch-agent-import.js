@@ -47,6 +47,7 @@
         fd.append('csv_file', file);
         fd.append('match_by', $('#rch-import-match-by').val());
         fd.append('import_bio', $('#rch-import-bio').is(':checked') ? '1' : '');
+        fd.append('import_agent_title', $('#rch-import-agent-title').is(':checked') ? '1' : '');
         fd.append('import_testimonials', $('#rch-import-testimonials').is(':checked') ? '1' : '');
         fd.append('testimonial_mode', $('input[name="testimonial_mode"]:checked').val() || 'replace');
         return fd;
@@ -70,6 +71,9 @@
         if (s.bios) {
             html += pill(s.bios + ' bios', 'ok');
         }
+        if (s.agent_titles) {
+            html += pill(s.agent_titles + ' ' + (rchAgentImport.i18n.agentTitles || 'titles'), 'ok');
+        }
         if (s.testimonials) {
             html += pill(s.testimonials + ' new testimonials', 'ok');
         }
@@ -82,12 +86,15 @@
     function renderTable(agents) {
         $tbody.empty();
         if (!agents || !agents.length) {
-            $tbody.append('<tr><td colspan="5">' + rchAgentImport.i18n.noAgents + '</td></tr>');
+            $tbody.append('<tr><td colspan="6">' + rchAgentImport.i18n.noAgents + '</td></tr>');
             return;
         }
         agents.forEach(function (row) {
             var statusClass = 'rch-status-' + (row.status || 'skip');
             var bioCell = row.bio ? '✓' + (row.bio_preview ? ' ' + $('<div>').text(row.bio_preview).html() : '') : '—';
+            var titleCell = row.agent_title_meta
+                ? '✓' + (row.agent_title_preview ? ' ' + $('<div>').text(row.agent_title_preview).html() : '')
+                : '—';
             var tCell = '—';
             if (row.testimonials_new) {
                 tCell = row.testimonials_new + ' new';
@@ -103,6 +110,7 @@
                 '<td><strong>' + $('<div>').text(row.agent_title || '—').html() + '</strong></td>' +
                 '<td>' + (row.agent_id || '—') + '</td>' +
                 '<td>' + bioCell + '</td>' +
+                '<td>' + titleCell + '</td>' +
                 '<td>' + tCell + '</td>' +
                 '<td class="' + statusClass + '">' + (row.status || '') + msg + '</td>' +
                 '</tr>'
@@ -145,7 +153,11 @@
             return;
         }
 
-        if (!$('#rch-import-bio').is(':checked') && !$('#rch-import-testimonials').is(':checked')) {
+        if (
+            !$('#rch-import-bio').is(':checked') &&
+            !$('#rch-import-agent-title').is(':checked') &&
+            !$('#rch-import-testimonials').is(':checked')
+        ) {
             setFeedback(rchAgentImport.i18n.selectOne, 'error');
             return;
         }

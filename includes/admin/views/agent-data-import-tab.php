@@ -42,20 +42,26 @@ $sample_simple_url   = $sample_urls['simple'];
                     <dt><code>agent_match</code></dt>
                     <dd><?php esc_html_e('Who to update: WordPress agent post ID (number), Rechat ID (api_id), or exact agent name.', 'rechat-plugin'); ?></dd>
                     <dt><code>match_by</code></dt>
-                    <dd><?php esc_html_e('How to read agent_match: post_id, api_id, title, or auto. Use the same value for every row of the same agent.', 'rechat-plugin'); ?></dd>
+                    <dd><?php esc_html_e('Must be the word api_id, post_id, title, or auto — not the Rechat ID itself. Leave blank to use the form default (api_id). If you pasted the UUID in both columns, the importer still fixes that automatically.', 'rechat-plugin'); ?></dd>
                     <dt><code>bio</code></dt>
                     <dd><?php esc_html_e('Agent biography → saved in the agent post content (main editor).', 'rechat-plugin'); ?></dd>
+                    <dt><code>title</code></dt>
+                    <dd><?php esc_html_e('Agent display title (e.g. Licensed Real Estate Agent) → saved as agent_title meta.', 'rechat-plugin'); ?></dd>
                     <dt><code>testimonial_name</code></dt>
-                    <dd><?php esc_html_e('Person who gave the quote (client name).', 'rechat-plugin'); ?></dd>
+                    <dd><?php esc_html_e('Person who gave the quote (client name). Use - if unknown.', 'rechat-plugin'); ?></dd>
                     <dt><code>testimonial_description</code></dt>
                     <dd><?php esc_html_e('The testimonial text.', 'rechat-plugin'); ?></dd>
+                    <dt><code>testimonial_rank</code></dt>
+                    <dd><?php esc_html_e('Star rating (free text: 4.7, 4.8, 5, etc.). Aliases: testimonial_stars, stars, rating.', 'rechat-plugin'); ?></dd>
+                    <dt><code>testimonial_link</code></dt>
+                    <dd><?php esc_html_e('URL for this testimonial (e.g. RateMyAgent review link).', 'rechat-plugin'); ?></dd>
                 </dl>
             </div>
             <div class="rch-agent-import__guide-block">
                 <h4><?php esc_html_e('Empty cells', 'rechat-plugin'); ?></h4>
                 <p><?php esc_html_e('Leave a cell blank if that row does not set that field. Blank bio cells do not erase an existing bio. Blank testimonial cells mean “no testimonial on this row”.', 'rechat-plugin'); ?></p>
                 <p><strong><?php esc_html_e('Same agent, multiple rows:', 'rechat-plugin'); ?></strong>
-                <?php esc_html_e('Repeat the same agent_match (e.g. 42) on several rows. Row 1 can set only bio; rows 2–3 can add testimonials with bio left empty. The importer merges all rows for that agent.', 'rechat-plugin'); ?></p>
+                <?php esc_html_e('Repeat agent_match on each row, or leave agent_match blank on follow-up rows to attach testimonials to the previous agent (as in your bulk export).', 'rechat-plugin'); ?></p>
             </div>
         </div>
         <h4 class="rch-agent-import__example-title"><?php esc_html_e('Example from the sample file (agent post ID 42)', 'rechat-plugin'); ?></h4>
@@ -67,8 +73,9 @@ $sample_simple_url   = $sample_urls['simple'];
                         <th>agent_match</th>
                         <th>match_by</th>
                         <th>bio</th>
+                        <th>title</th>
                         <th>testimonial_name</th>
-                        <th>testimonial_description</th>
+                        <th>testimonial_rank</th>
                         <th><?php esc_html_e('What happens', 'rechat-plugin'); ?></th>
                     </tr>
                 </thead>
@@ -77,28 +84,31 @@ $sample_simple_url   = $sample_urls['simple'];
                         <td>1</td>
                         <td><code>42</code></td>
                         <td>post_id</td>
-                        <td class="rch-agent-import__cell--fill"><?php esc_html_e('Bio text…', 'rechat-plugin'); ?></td>
+                        <td class="rch-agent-import__cell--fill"><?php esc_html_e('Bio…', 'rechat-plugin'); ?></td>
+                        <td><?php esc_html_e('Licensed RE Agent', 'rechat-plugin'); ?></td>
                         <td class="rch-agent-import__cell--empty">—</td>
                         <td class="rch-agent-import__cell--empty">—</td>
-                        <td><?php esc_html_e('Sets bio only for agent #42', 'rechat-plugin'); ?></td>
+                        <td><?php esc_html_e('Bio + agent title', 'rechat-plugin'); ?></td>
                     </tr>
                     <tr>
                         <td>2</td>
-                        <td><code>42</code></td>
-                        <td>post_id</td>
+                        <td class="rch-agent-import__cell--empty">—</td>
+                        <td class="rch-agent-import__cell--empty">—</td>
+                        <td class="rch-agent-import__cell--empty">—</td>
                         <td class="rch-agent-import__cell--empty">—</td>
                         <td>Sarah M.</td>
-                        <td><?php esc_html_e('Quote text…', 'rechat-plugin'); ?></td>
-                        <td><?php esc_html_e('Adds testimonial #1 (same agent)', 'rechat-plugin'); ?></td>
+                        <td>5</td>
+                        <td><?php esc_html_e('Testimonial #1 (blank agent_match)', 'rechat-plugin'); ?></td>
                     </tr>
                     <tr>
                         <td>3</td>
-                        <td><code>42</code></td>
-                        <td>post_id</td>
+                        <td class="rch-agent-import__cell--empty">—</td>
+                        <td class="rch-agent-import__cell--empty">—</td>
+                        <td class="rch-agent-import__cell--empty">—</td>
                         <td class="rch-agent-import__cell--empty">—</td>
                         <td>Tom R.</td>
-                        <td><?php esc_html_e('Quote text…', 'rechat-plugin'); ?></td>
-                        <td><?php esc_html_e('Adds testimonial #2 (same agent)', 'rechat-plugin'); ?></td>
+                        <td>4.7</td>
+                        <td><?php esc_html_e('Testimonial #2 (same agent)', 'rechat-plugin'); ?></td>
                     </tr>
                 </tbody>
             </table>
@@ -133,9 +143,9 @@ $sample_simple_url   = $sample_urls['simple'];
                     <summary><?php esc_html_e('Accepted column names', 'rechat-plugin'); ?></summary>
                     <ul>
                         <li><code>agent_match</code> — <?php esc_html_e('post ID, Rechat api_id, or exact agent title', 'rechat-plugin'); ?></li>
-                        <li><code>bio</code> — <?php esc_html_e('agent post content', 'rechat-plugin'); ?></li>
-                        <li><code>testimonial_name</code>, <code>testimonial_description</code></li>
-                        <li><?php esc_html_e('Aliases: agent, post_id, api_id, biography, name, quote, …', 'rechat-plugin'); ?></li>
+                        <li><code>bio</code>, <code>title</code> (agent_title meta)</li>
+                        <li><code>testimonial_name</code>, <code>testimonial_description</code>, <code>testimonial_rank</code>, <code>testimonial_link</code></li>
+                        <li><?php esc_html_e('Aliases: BIO, Title, Testimonial_rank, stars, link, …', 'rechat-plugin'); ?></li>
                     </ul>
                 </details>
             </section>
@@ -148,8 +158,12 @@ $sample_simple_url   = $sample_urls['simple'];
                         <?php esc_html_e('Import bio → agent post content', 'rechat-plugin'); ?>
                     </label>
                     <label class="rch-agent-import__check">
+                        <input type="checkbox" name="import_agent_title" id="rch-import-agent-title" value="1" checked />
+                        <?php esc_html_e('Import agent title (title column → agent_title meta)', 'rechat-plugin'); ?>
+                    </label>
+                    <label class="rch-agent-import__check">
                         <input type="checkbox" name="import_testimonials" id="rch-import-testimonials" value="1" checked />
-                        <?php esc_html_e('Import testimonials', 'rechat-plugin'); ?>
+                        <?php esc_html_e('Import testimonials (name, text, stars, link)', 'rechat-plugin'); ?>
                     </label>
                 </fieldset>
                 <fieldset class="rch-agent-import__radios">
@@ -201,6 +215,7 @@ $sample_simple_url   = $sample_urls['simple'];
                             <th><?php esc_html_e('Agent', 'rechat-plugin'); ?></th>
                             <th><?php esc_html_e('ID', 'rechat-plugin'); ?></th>
                             <th><?php esc_html_e('Bio', 'rechat-plugin'); ?></th>
+                            <th><?php esc_html_e('Title', 'rechat-plugin'); ?></th>
                             <th><?php esc_html_e('Testimonials', 'rechat-plugin'); ?></th>
                             <th><?php esc_html_e('Status', 'rechat-plugin'); ?></th>
                         </tr>

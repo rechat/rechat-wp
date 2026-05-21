@@ -27,6 +27,149 @@ function rch_leads_form_resolve_assignee_email($explicit = '')
 }
 
 /**
+ * Agent theme option bag (Acropolis-agent uses pentama_options_agent_website).
+ *
+ * @return array<string, mixed>
+ */
+function rch_leads_form_get_agent_theme_options(): array
+{
+    $opts = get_option('pentama_options_agent_website', []);
+    if (! is_array($opts)) {
+        $opts = [];
+    }
+
+    /**
+     * @param array<string, mixed> $opts
+     */
+    return apply_filters('rch_leads_form_agent_theme_options', $opts);
+}
+
+/**
+ * Normalize talk selected-tags from theme options to a string list.
+ *
+ * @param mixed $raw Option value.
+ * @return list<string>
+ */
+function rch_leads_form_normalize_talk_tags($raw): array
+{
+    if (is_string($raw)) {
+        $decoded = json_decode($raw, true);
+        $raw     = is_array($decoded) ? $decoded : [];
+    }
+    if (! is_array($raw)) {
+        return [];
+    }
+
+    $out = [];
+    foreach ($raw as $tag) {
+        $tag = sanitize_text_field((string) $tag);
+        if ($tag !== '' && ! in_array($tag, $out, true)) {
+            $out[] = $tag;
+        }
+    }
+
+    return $out;
+}
+
+/**
+ * Build [rch_leads_form …] for the Talk section from theme option keys.
+ *
+ * @param array<string, mixed> $opts Theme options row.
+ * @return string Shortcode text.
+ */
+function rch_leads_form_build_talk_shortcode_from_options(array $opts): string
+{
+    $attrs = [
+        'show_first_name'   => 'true',
+        'show_last_name'    => 'true',
+        'show_phone_number' => 'true',
+        'show_email'        => 'true',
+        'show_note'         => 'true',
+    ];
+
+    $title = trim((string) ($opts['rch-theme-agent-talk-title'] ?? ''));
+    if ($title !== '') {
+        $attrs['form_title'] = $title;
+    }
+
+    $channel = trim((string) ($opts['rch-theme-agent-talk-lead-channel'] ?? ''));
+    if ($channel === '') {
+        $channel = (string) get_option('rch_lead_channels', '');
+    }
+    if ($channel !== '') {
+        $attrs['lead_channel'] = $channel;
+    }
+
+    $tags = rch_leads_form_normalize_talk_tags($opts['rch-theme-agent-talk-selected-tags'] ?? []);
+    if ($tags !== []) {
+        $attrs['tags'] = implode(',', $tags);
+    }
+
+    if (function_exists('rch_leads_form_resolve_assignee_email')) {
+        $assignee = rch_leads_form_resolve_assignee_email('');
+        if ($assignee !== '') {
+            $attrs['assignee_email'] = $assignee;
+        }
+    }
+
+    $parts = [];
+    foreach ($attrs as $key => $value) {
+        $parts[] = $key . '="' . esc_attr((string) $value) . '"';
+    }
+
+    return '[rch_leads_form ' . implode(' ', $parts) . ']';
+}
+
+/**
+ * Keep rch-theme-agent-talk-shortcode in sync with talk lead channel + tags options.
+ *
+ * @param array<string, mixed> $opts Theme options row (mutated in place).
+ * @return array<string, mixed>
+ */
+function rch_leads_form_sync_talk_options_row(array $opts): array
+{
+    $touch = array_key_exists('rch-theme-agent-talk-lead-channel', $opts)
+        || array_key_exists('rch-theme-agent-talk-selected-tags', $opts)
+        || array_key_exists('rch-theme-agent-talk-title', $opts);
+
+    if ($touch) {
+        $opts['rch-theme-agent-talk-shortcode'] = rch_leads_form_build_talk_shortcode_from_options($opts);
+    }
+
+    return $opts;
+}
+
+/**
+ * Merge Talk theme options into parsed [rch_leads_form] attributes when shortcode omits them.
+ *
+ * @param array<string, mixed> $atts Parsed shortcode attributes.
+ * @return array<string, mixed>
+ */
+function rch_leads_form_apply_talk_theme_options(array $atts): array
+{
+    $opts = rch_leads_form_get_agent_theme_options();
+
+    if (empty($atts['lead_channel'])) {
+        $channel = trim((string) ($opts['rch-theme-agent-talk-lead-channel'] ?? ''));
+        if ($channel === '') {
+            $channel = (string) get_option('rch_lead_channels', '');
+        }
+        if ($channel !== '') {
+            $atts['lead_channel'] = sanitize_text_field($channel);
+        }
+    }
+
+    if (empty($atts['tags'])) {
+        $tags = rch_leads_form_normalize_talk_tags($opts['rch-theme-agent-talk-selected-tags'] ?? []);
+        if ($tags !== []) {
+            $atts['tags'] = implode(',', $tags);
+        }
+    }
+
+    return $atts;
+}
+
+/**
  * REST: linked agent email on current agent subsite (block editor prefill).
  *
  * @return WP_REST_Response

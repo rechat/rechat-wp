@@ -42,7 +42,30 @@ function rch_agent_import_header_aliases(): array
         'testimonial'              => 'testimonial_description',
         'quote'                    => 'testimonial_description',
         'text'                     => 'testimonial_description',
+        'title'                    => 'agent_title_meta',
+        'agent_title'              => 'agent_title_meta',
+        'testimonial_rank'         => 'testimonial_stars',
+        'testimonial_stars'        => 'testimonial_stars',
+        'stars'                    => 'testimonial_stars',
+        'rank'                     => 'testimonial_stars',
+        'rating'                   => 'testimonial_stars',
+        'testimonial_link'         => 'testimonial_link',
+        'link'                     => 'testimonial_link',
+        'url'                      => 'testimonial_link',
     ];
+}
+
+/**
+ * Normalize a CSV cell (trim; treat "-" as empty).
+ */
+function rch_agent_import_normalize_cell(string $value): string
+{
+    $value = trim($value);
+    if ($value === '-' || $value === '—') {
+        return '';
+    }
+
+    return $value;
 }
 
 /**
@@ -56,6 +79,76 @@ function rch_agent_import_allowed_match_by(): array
         'api_id'  => __('Rechat ID (api_id)', 'rechat-plugin'),
         'title'   => __('Agent post title (exact)', 'rechat-plugin'),
     ];
+}
+
+/**
+ * Valid match_by keys for CSV rows and the import form default.
+ *
+ * @return list<string>
+ */
+function rch_agent_import_valid_match_by_keys(): array
+{
+    return ['auto', 'post_id', 'api_id', 'title'];
+}
+
+/**
+ * Normalize per-row match_by (handles common CSV mistake: Rechat ID pasted into match_by).
+ */
+function rch_agent_import_resolve_match_by(string $row_match_by, string $default_match_by, string $agent_match = ''): string
+{
+    $valid   = rch_agent_import_valid_match_by_keys();
+    $default = sanitize_key($default_match_by);
+    if (! in_array($default, $valid, true)) {
+        $default = 'auto';
+    }
+
+    $raw = trim($row_match_by);
+    if ($raw === '') {
+        return $default;
+    }
+
+    $key = sanitize_key($raw);
+    if (in_array($key, $valid, true)) {
+        return $key;
+    }
+
+    $match_trim = trim($agent_match);
+    if ($match_trim !== '' && strcasecmp($raw, $match_trim) === 0) {
+        return 'api_id';
+    }
+
+    if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $match_trim)) {
+        return 'api_id';
+    }
+
+    return $default;
+}
+
+/**
+ * Run a callback while switched to the blog where agent CPT posts live.
+ *
+ * @template T
+ * @param callable(): T $callback
+ * @return T
+ */
+function rch_agent_import_with_agents_blog(callable $callback)
+{
+    if (! is_multisite()) {
+        return $callback();
+    }
+
+    $main_id = (int) get_main_site_id();
+    if (get_current_blog_id() === $main_id) {
+        return $callback();
+    }
+
+    switch_to_blog($main_id);
+
+    try {
+        return $callback();
+    } finally {
+        restore_current_blog();
+    }
 }
 
 /**
@@ -133,26 +226,40 @@ function rch_agent_import_parse_csv_file(string $tmp_path): array
             'agent_match'             => '',
             'match_by'                => '',
             'bio'                     => '',
+            'agent_title_meta'        => '',
             'testimonial_name'        => '',
             'testimonial_description' => '',
+            'testimonial_stars'       => '',
+            'testimonial_link'        => '',
             '_line'                   => (string) $line,
         ];
 
         foreach ($map as $idx => $field) {
             if (isset($data[ $idx ])) {
-                $row[ $field ] = trim((string) $data[ $idx ]);
+                $row[ $field ] = rch_agent_import_normalize_cell((string) $data[ $idx ]);
             }
         }
 
-        if ($row['agent_match'] === '' || strpos($row['agent_match'], '#') === 0) {
-            if ($row['agent_match'] !== '') {
-                continue;
-            }
-            $errors[] = sprintf(
-                /* translators: %d: CSV line number */
-                __('Line %d: agent_match is empty — row skipped.', 'rechat-plugin'),
-                $line
+        if ($row['agent_match'] !== '' && strpos($row['agent_match'], '#') === 0) {
+            continue;
+        }
+
+        $has_continuation = $row['agent_match'] === ''
+            && (
+                $row['bio'] !== ''
+                || $row['agent_title_meta'] !== ''
+                || $row['testimonial_name'] !== ''
+                || $row['testimonial_description'] !== ''
+                || $row['testimonial_stars'] !== ''
+                || $row['testimonial_link'] !== ''
             );
+
+        if ($row['agent_match'] === '' && ! $has_continuation) {
+            continue;
+        }
+
+        if ($row['agent_match'] === '' && $has_continuation) {
+            $rows[] = $row;
             continue;
         }
 
@@ -173,13 +280,25 @@ function rch_agent_import_parse_csv_file(string $tmp_path): array
  */
 function rch_agent_import_resolve_agent_id(string $match, string $match_by = 'auto'): int
 {
+    return rch_agent_import_with_agents_blog(
+        static function () use ($match, $match_by): int {
+            return rch_agent_import_resolve_agent_id_on_current_blog($match, $match_by);
+        }
+    );
+}
+
+/**
+ * Resolve agent post ID on the current blog (call inside rch_agent_import_with_agents_blog).
+ */
+function rch_agent_import_resolve_agent_id_on_current_blog(string $match, string $match_by = 'auto'): int
+{
     $match = trim($match);
     if ($match === '') {
         return 0;
     }
 
-    $match_by = sanitize_key($match_by);
-    if ($match_by === '' || $match_by === 'auto') {
+    $match_by = rch_agent_import_resolve_match_by($match_by, 'auto', $match);
+    if ($match_by === 'auto') {
         if (ctype_digit($match)) {
             $post = get_post((int) $match);
             if ($post && $post->post_type === 'agents') {
@@ -213,6 +332,20 @@ function rch_agent_import_resolve_agent_id(string $match, string $match_by = 'au
 
 function rch_agent_import_find_agent_by_api_id(string $api_id): int
 {
+    return rch_agent_import_with_agents_blog(
+        static function () use ($api_id): int {
+            return rch_agent_import_find_agent_by_api_id_on_current_blog($api_id);
+        }
+    );
+}
+
+function rch_agent_import_find_agent_by_api_id_on_current_blog(string $api_id): int
+{
+    $api_id = trim($api_id);
+    if ($api_id === '') {
+        return 0;
+    }
+
     $posts = get_posts([
         'post_type'      => 'agents',
         'posts_per_page' => 1,
@@ -231,6 +364,15 @@ function rch_agent_import_find_agent_by_api_id(string $api_id): int
 }
 
 function rch_agent_import_find_agent_by_title(string $title): int
+{
+    return rch_agent_import_with_agents_blog(
+        static function () use ($title): int {
+            return rch_agent_import_find_agent_by_title_on_current_blog($title);
+        }
+    );
+}
+
+function rch_agent_import_find_agent_by_title_on_current_blog(string $title): int
 {
     $posts = get_posts([
         'post_type'              => 'agents',
@@ -267,23 +409,34 @@ function rch_agent_import_find_agent_by_title(string $title): int
  *   agent_title:string,
  *   agent_match:string,
  *   bio:string,
- *   testimonials: array<int, array{name:string, description:string}>,
+ *   agent_title_meta:string,
+ *   testimonials: array<int, array{name:string, description:string, stars:string, link:string}>,
  *   lines: int[],
  *   errors: string[]
  * }>
  */
 function rch_agent_import_group_rows(array $rows, string $default_match_by): array
 {
-    $grouped = [];
+    $grouped        = [];
+    $last_agent_id  = 0;
 
     foreach ($rows as $row) {
         $line      = isset($row['_line']) ? (int) $row['_line'] : 0;
-        $match     = $row['agent_match'] ?? '';
-        $row_match = isset($row['match_by']) && $row['match_by'] !== ''
-            ? sanitize_key($row['match_by'])
-            : $default_match_by;
+        $match     = isset($row['agent_match']) ? trim((string) $row['agent_match']) : '';
+        $row_match = rch_agent_import_resolve_match_by(
+            isset($row['match_by']) ? (string) $row['match_by'] : '',
+            $default_match_by,
+            $match
+        );
 
-        $agent_id = rch_agent_import_resolve_agent_id($match, $row_match);
+        if ($match === '' && $last_agent_id > 0) {
+            $agent_id = $last_agent_id;
+        } else {
+            $agent_id = rch_agent_import_resolve_agent_id($match, $row_match);
+            if ($agent_id > 0) {
+                $last_agent_id = $agent_id;
+            }
+        }
 
         if ($agent_id <= 0) {
             $key = 'unresolved:' . md5($match . '|' . $row_match);
@@ -299,25 +452,38 @@ function rch_agent_import_group_rows(array $rows, string $default_match_by): arr
                 ];
             }
             $grouped[ $key ]['lines'][] = $line;
-            $grouped[ $key ]['errors'][] = sprintf(
-                /* translators: 1: match value, 2: line number */
-                __('No agent found for “%1$s” (line %2$d).', 'rechat-plugin'),
-                $match,
-                $line
-            );
+            if ($match === '') {
+                $grouped[ $key ]['errors'][] = sprintf(
+                    /* translators: %d: CSV line number */
+                    __('Line %d: testimonial row has no agent_match and no previous agent on file — skipped.', 'rechat-plugin'),
+                    $line
+                );
+            } else {
+                $grouped[ $key ]['errors'][] = sprintf(
+                    /* translators: 1: match value, 2: line number */
+                    __('No agent found for “%1$s” (line %2$d).', 'rechat-plugin'),
+                    $match,
+                    $line
+                );
+            }
             continue;
         }
 
         if (! isset($grouped[ $agent_id ])) {
-            $post = get_post($agent_id);
+            $post = rch_agent_import_with_agents_blog(
+                static function () use ($agent_id) {
+                    return get_post($agent_id);
+                }
+            );
             $grouped[ $agent_id ] = [
-                'agent_id'     => $agent_id,
-                'agent_title'  => $post ? (string) $post->post_title : '',
-                'agent_match'  => $match,
-                'bio'          => '',
-                'testimonials' => [],
-                'lines'        => [],
-                'errors'       => [],
+                'agent_id'          => $agent_id,
+                'agent_title'       => $post ? (string) $post->post_title : '',
+                'agent_match'       => $match,
+                'bio'               => '',
+                'agent_title_meta'  => '',
+                'testimonials'      => [],
+                'lines'             => [],
+                'errors'            => [],
             ];
         }
 
@@ -328,12 +494,22 @@ function rch_agent_import_group_rows(array $rows, string $default_match_by): arr
             $grouped[ $agent_id ]['bio'] = $bio;
         }
 
+        $title_meta = isset($row['agent_title_meta']) ? trim((string) $row['agent_title_meta']) : '';
+        if ($title_meta !== '') {
+            $grouped[ $agent_id ]['agent_title_meta'] = $title_meta;
+        }
+
         $t_name = isset($row['testimonial_name']) ? trim((string) $row['testimonial_name']) : '';
         $t_desc = isset($row['testimonial_description']) ? trim((string) $row['testimonial_description']) : '';
-        if ($t_name !== '' || $t_desc !== '') {
+        $t_stars = isset($row['testimonial_stars']) ? trim((string) $row['testimonial_stars']) : '';
+        $t_link  = isset($row['testimonial_link']) ? trim((string) $row['testimonial_link']) : '';
+
+        if ($t_name !== '' || $t_desc !== '' || $t_stars !== '' || $t_link !== '') {
             $grouped[ $agent_id ]['testimonials'][] = [
                 'name'        => $t_name,
                 'description' => $t_desc,
+                'stars'       => $t_stars,
+                'link'        => $t_link,
             ];
         }
     }
@@ -346,6 +522,7 @@ function rch_agent_import_group_rows(array $rows, string $default_match_by): arr
  * @param array{
  *   match_by?:string,
  *   import_bio?:bool,
+ *   import_agent_title?:bool,
  *   import_testimonials?:bool,
  *   testimonial_mode?:string
  * } $options
@@ -353,6 +530,7 @@ function rch_agent_import_group_rows(array $rows, string $default_match_by): arr
 function rch_agent_import_build_plan(array $grouped, array $options): array
 {
     $import_bio           = ! empty($options['import_bio']);
+    $import_agent_title   = ! empty($options['import_agent_title']);
     $import_testimonials  = ! empty($options['import_testimonials']);
     $testimonial_mode     = isset($options['testimonial_mode']) && $options['testimonial_mode'] === 'merge' ? 'merge' : 'replace';
 
@@ -363,6 +541,7 @@ function rch_agent_import_build_plan(array $grouped, array $options): array
             'agents_ok'     => 0,
             'agents_skip'   => 0,
             'bios'          => 0,
+            'agent_titles'  => 0,
             'testimonials'  => 0,
             'errors'        => 0,
         ],
@@ -387,6 +566,7 @@ function rch_agent_import_build_plan(array $grouped, array $options): array
         }
 
         $bio = $import_bio ? trim((string) ($item['bio'] ?? '')) : '';
+        $title_meta = $import_agent_title ? trim((string) ($item['agent_title_meta'] ?? '')) : '';
         $new_testimonials = [];
         if ($import_testimonials && ! empty($item['testimonials']) && is_array($item['testimonials'])) {
             $new_testimonials = function_exists('rch_sanitize_agent_testimonials')
@@ -394,17 +574,19 @@ function rch_agent_import_build_plan(array $grouped, array $options): array
                 : $item['testimonials'];
         }
 
-        $will_bio = $bio !== '';
-        $will_t   = $new_testimonials !== [];
+        $will_bio   = $bio !== '';
+        $will_title = $title_meta !== '';
+        $will_t     = $new_testimonials !== [];
 
-        if (! $will_bio && ! $will_t) {
+        if (! $will_bio && ! $will_title && ! $will_t) {
             $plan['summary']['agents_skip']++;
             $plan['agents'][] = [
                 'agent_id'    => $agent_id,
                 'agent_title' => (string) ($item['agent_title'] ?? ''),
                 'status'      => 'skip',
-                'message'     => __('No bio or testimonial data for this agent in the CSV.', 'rechat-plugin'),
+                'message'     => __('No bio, agent title, or testimonial data for this agent in the CSV.', 'rechat-plugin'),
                 'bio'         => false,
+                'agent_title_meta' => false,
                 'testimonials_count' => 0,
             ];
             continue;
@@ -423,6 +605,9 @@ function rch_agent_import_build_plan(array $grouped, array $options): array
         if ($will_bio) {
             $plan['summary']['bios']++;
         }
+        if ($will_title) {
+            $plan['summary']['agent_titles']++;
+        }
         if ($will_t) {
             $plan['summary']['testimonials'] += count($new_testimonials);
         }
@@ -434,6 +619,8 @@ function rch_agent_import_build_plan(array $grouped, array $options): array
             'message'              => '',
             'bio'                  => $will_bio,
             'bio_preview'          => $will_bio ? wp_html_excerpt($bio, 120, '…') : '',
+            'agent_title_meta'     => $will_title,
+            'agent_title_preview'  => $will_title ? wp_html_excerpt($title_meta, 80, '…') : '',
             'testimonials_count'   => $final_testimonial_count,
             'testimonials_new'     => count($new_testimonials),
             'testimonial_mode'     => $testimonial_mode,
@@ -454,6 +641,7 @@ function rch_agent_import_run_grouped(array $grouped, array $options): array
     $plan = rch_agent_import_build_plan($grouped, $options);
 
     $import_bio          = ! empty($options['import_bio']);
+    $import_agent_title  = ! empty($options['import_agent_title']);
     $import_testimonials = ! empty($options['import_testimonials']);
     $testimonial_mode    = isset($options['testimonial_mode']) && $options['testimonial_mode'] === 'merge' ? 'merge' : 'replace';
 
@@ -467,6 +655,27 @@ function rch_agent_import_run_grouped(array $grouped, array $options): array
 
         $agent_id = (int) $item['agent_id'];
         $did      = false;
+
+        rch_agent_import_with_agents_blog(
+            static function () use (
+                $import_agent_title,
+                $import_bio,
+                $import_testimonials,
+                $testimonial_mode,
+                &$did,
+                &$plan,
+                &$failed,
+                &$updated,
+                $item,
+                $agent_id
+            ): void {
+        if ($import_agent_title) {
+            $title_meta = trim((string) ($item['agent_title_meta'] ?? ''));
+            if ($title_meta !== '') {
+                update_post_meta($agent_id, 'agent_title', sanitize_text_field($title_meta));
+                $did = true;
+            }
+        }
 
         if ($import_bio) {
             $bio = trim((string) ($item['bio'] ?? ''));
@@ -486,7 +695,8 @@ function rch_agent_import_run_grouped(array $grouped, array $options): array
                         $result->get_error_message()
                     );
                     $failed++;
-                    continue;
+
+                    return;
                 }
                 $did = true;
             }
@@ -507,6 +717,18 @@ function rch_agent_import_run_grouped(array $grouped, array $options): array
 
                 update_post_meta($agent_id, RCH_AGENT_TESTIMONIALS_META_KEY, $new);
                 $did = true;
+
+                if (function_exists('rch_agent_wizard_sync_testimonials_for_agent') && is_multisite()) {
+                    $sync = rch_agent_wizard_sync_testimonials_for_agent($agent_id);
+                    if (is_wp_error($sync) && $sync->get_error_code() !== 'rch_testimonial_no_blog') {
+                        $plan['errors'][] = sprintf(
+                            /* translators: 1: agent title, 2: error message */
+                            __('Testimonial sub-site sync failed for “%1$s”: %2$s', 'rechat-plugin'),
+                            (string) ($item['agent_title'] ?? $agent_id),
+                            $sync->get_error_message()
+                        );
+                    }
+                }
             } elseif ($testimonial_mode === 'replace') {
                 delete_post_meta($agent_id, RCH_AGENT_TESTIMONIALS_META_KEY);
             }
@@ -515,6 +737,8 @@ function rch_agent_import_run_grouped(array $grouped, array $options): array
         if ($did) {
             $updated++;
         }
+            }
+        );
     }
 
     $plan['summary']['updated'] = $updated;
@@ -548,6 +772,7 @@ function rch_agent_import_get_options_from_request(): array
     return [
         'match_by'             => $match_by,
         'import_bio'           => ! empty($_POST['import_bio']),
+        'import_agent_title'   => ! empty($_POST['import_agent_title']),
         'import_testimonials'  => ! empty($_POST['import_testimonials']),
         'testimonial_mode'     => $mode,
     ];
@@ -595,8 +820,8 @@ function rch_agent_import_ajax_run(): void
     }
 
     $options = rch_agent_import_get_options_from_request();
-    if (empty($options['import_bio']) && empty($options['import_testimonials'])) {
-        wp_send_json_error(['message' => __('Select at least one: Import bio or Import testimonials.', 'rechat-plugin')]);
+    if (empty($options['import_bio']) && empty($options['import_agent_title']) && empty($options['import_testimonials'])) {
+        wp_send_json_error(['message' => __('Select at least one: Import bio, agent title, or testimonials.', 'rechat-plugin')]);
     }
 
     $grouped = rch_agent_import_group_rows($parsed['rows'], $options['match_by']);
@@ -633,19 +858,19 @@ function rch_agent_import_download_sample(): void
     $variant = isset($_GET['variant']) ? sanitize_key(wp_unslash($_GET['variant'])) : 'full';
 
     if ($variant === 'simple') {
-        $csv  = "# One agent, one row — bio and one testimonial together\n";
-        $csv .= "agent_match,match_by,bio,testimonial_name,testimonial_description\n";
-        $csv .= "42,post_id,\"Your bio paragraph here.\",Jane Client,\"They were wonderful to work with.\"\n";
+        $csv  = "# One agent, one row — bio, title, and one testimonial\n";
+        $csv .= "agent_match,match_by,bio,title,testimonial_name,testimonial_description,testimonial_rank,testimonial_link\n";
+        $csv .= "42,post_id,\"Your bio paragraph here.\",Licensed Real Estate Agent,Jane Client,\"They were wonderful to work with.\",4.8,https://example.com/review\n";
         $filename = 'rechat-agent-import-simple.csv';
     } else {
-        $csv  = "# Lines starting with # are ignored. Empty cells = leave that field unchanged on this row.\n";
-        $csv .= "agent_match,match_by,bio,testimonial_name,testimonial_description\n";
-        $csv .= "# Agent A (WP post ID 42): row 1 = bio only | rows 2-3 = two testimonials (same agent_match)\n";
-        $csv .= "42,post_id,\"Jane has 10 years of experience helping buyers and sellers.\",,\n";
-        $csv .= "42,post_id,,Sarah M.,\"Our home purchase was smooth and stress-free.\"\n";
-        $csv .= "42,post_id,,Tom R.,\"Highly professional and always available.\"\n";
-        $csv .= "# Agent B (Rechat api_id): bio + one testimonial on a single row\n";
-        $csv .= "YOUR-RECHAT-API-ID,api_id,\"Short bio from CSV.\",Alex P.,\"Would recommend to anyone.\"\n";
+        $csv  = "# Lines starting with # are ignored. Empty agent_match = same agent as the row above (extra testimonials).\n";
+        $csv .= "agent_match,match_by,bio,title,testimonial_name,testimonial_description,testimonial_rank,testimonial_link\n";
+        $csv .= "# Agent A (WP post ID 42): row 1 = bio + title | rows 2-3 = more testimonials (agent_match blank)\n";
+        $csv .= "42,post_id,\"Jane has 10 years of experience.\",Licensed Real Estate Agent,,\n";
+        $csv .= ",,,Sarah M.,\"Our home purchase was smooth.\",5,https://example.com/review/1\n";
+        $csv .= ",,,Tom R.,\"Highly professional.\",4.7,https://example.com/review/2\n";
+        $csv .= "# Agent B (Rechat api_id): everything on one row\n";
+        $csv .= "YOUR-RECHAT-API-ID,api_id,\"Short bio.\",Principal Broker,Alex P.,\"Would recommend.\",5,https://example.com/review/3\n";
         $filename = 'rechat-agent-import-sample.csv';
     }
 
@@ -708,7 +933,8 @@ function rch_agent_import_enqueue_assets(string $hook): void
                 'importDone'    => __('Import completed.', 'rechat-plugin'),
                 'confirmImport' => __('Run import now? This updates agent bios and/or testimonials on the live site.', 'rechat-plugin'),
                 'noAgents'      => __('No agents ready to import. Fix errors in your CSV and preview again.', 'rechat-plugin'),
-                'selectOne'     => __('Enable “Import bio” and/or “Import testimonials”.', 'rechat-plugin'),
+                'selectOne'     => __('Enable “Import bio”, “Agent title”, and/or “Import testimonials”.', 'rechat-plugin'),
+                'agentTitles'   => __('agent titles', 'rechat-plugin'),
             ],
         ]
     );

@@ -9,8 +9,51 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-/** Post meta key: array of { name, description }. */
+/** Post meta key: array of { name, description, stars, link }. */
 const RCH_AGENT_TESTIMONIALS_META_KEY = 'agent_testimonials';
+
+/**
+ * Sanitize free-form star rating (0–5, up to 2 decimals, e.g. 4.7, 4.8, 5).
+ *
+ * @param mixed $value
+ */
+function rch_sanitize_agent_testimonial_stars($value): string
+{
+    if ($value === null || $value === '' || $value === false) {
+        return '';
+    }
+
+    $raw = is_string($value) ? trim(str_replace(',', '.', $value)) : '';
+    if ($raw === '' && is_numeric($value)) {
+        $raw = (string) $value;
+    }
+    if ($raw === '' || ! is_numeric($raw)) {
+        return '';
+    }
+
+    $f = (float) $raw;
+    if ($f <= 0 || $f > 5) {
+        return '';
+    }
+
+    $f = round($f, 2);
+    $formatted = rtrim(rtrim(sprintf('%.2f', $f), '0'), '.');
+
+    return $formatted !== '' ? $formatted : '';
+}
+
+/**
+ * @param mixed $value
+ */
+function rch_sanitize_agent_testimonial_link($value): string
+{
+    $url = is_string($value) ? trim($value) : '';
+    if ($url === '') {
+        return '';
+    }
+
+    return esc_url_raw($url);
+}
 
 /**
  * Blog ID where agent posts (and agent_testimonials meta) are stored.
@@ -51,7 +94,7 @@ function rch_agent_testimonials_normalize_stored_meta($raw): array
 }
 
 /**
- * @return array<int, array{name:string, description:string}>
+ * @return array<int, array{name:string, description:string, stars:string, link:string}>
  */
 function rch_get_agent_testimonials(int $agent_id): array
 {
@@ -92,7 +135,7 @@ function rch_get_agent_testimonials(int $agent_id): array
 
 /**
  * @param mixed $input
- * @return array<int, array{name:string, description:string}>
+ * @return array<int, array{name:string, description:string, stars:string, link:string}>
  */
 function rch_sanitize_agent_testimonials($input): array
 {
@@ -117,6 +160,11 @@ function rch_sanitize_agent_testimonials($input): array
             $description = sanitize_textarea_field((string) $row['testimonial_description']);
         }
 
+        $stars_raw = $row['stars'] ?? $row['testimonial_stars'] ?? $row['rank'] ?? $row['testimonial_rank'] ?? $row['rating'] ?? '';
+        $link_raw  = $row['link'] ?? $row['testimonial_link'] ?? $row['url'] ?? '';
+        $stars     = rch_sanitize_agent_testimonial_stars($stars_raw);
+        $link      = rch_sanitize_agent_testimonial_link($link_raw);
+
         if ($name === '' && $description === '') {
             continue;
         }
@@ -124,6 +172,8 @@ function rch_sanitize_agent_testimonials($input): array
         $out[] = [
             'name'        => $name,
             'description' => $description,
+            'stars'       => $stars,
+            'link'        => $link,
         ];
 
         if (count($out) >= 50) {
@@ -157,12 +207,12 @@ function rch_agent_testimonials_meta_box_html(WP_Post $post): void
     ?>
     <div id="rch-agent-testimonials-root">
         <p class="description">
-            <?php esc_html_e('Add one or more testimonials for this agent. Each row needs a name and testimonial text.', 'rechat-plugin'); ?>
+            <?php esc_html_e('Add one or more testimonials for this agent. Each row needs a name and testimonial text. Optional: star rating and link.', 'rechat-plugin'); ?>
         </p>
         <div id="rch-agent-testimonials-list">
             <?php
             if ($testimonials === []) {
-                rch_render_agent_testimonial_row(0, ['name' => '', 'description' => '']);
+                rch_render_agent_testimonial_row(0, ['name' => '', 'description' => '', 'stars' => '', 'link' => '']);
             } else {
                 foreach ($testimonials as $i => $item) {
                     rch_render_agent_testimonial_row((int) $i, $item);
@@ -178,20 +228,22 @@ function rch_agent_testimonials_meta_box_html(WP_Post $post): void
     </div>
 
     <script type="text/html" id="rch-agent-testimonial-row-template">
-        <?php rch_render_agent_testimonial_row('__INDEX__', ['name' => '', 'description' => '']); ?>
+        <?php rch_render_agent_testimonial_row('__INDEX__', ['name' => '', 'description' => '', 'stars' => '', 'link' => '']); ?>
     </script>
     <?php
 }
 
 /**
  * @param int|string $index
- * @param array{name?:string, description?:string} $item
+ * @param array{name?:string, description?:string, stars?:string, link?:string} $item
  */
 function rch_render_agent_testimonial_row($index, array $item): void
 {
     $name        = isset($item['name']) ? (string) $item['name'] : '';
     $description = isset($item['description']) ? (string) $item['description'] : '';
-    $idx         = is_numeric($index) ? (int) $index : (string) $index;
+    $stars       = isset($item['stars']) ? rch_sanitize_agent_testimonial_stars($item['stars']) : '';
+    $link        = isset($item['link']) ? (string) $item['link'] : '';
+    $idx = is_numeric($index) ? (int) $index : (string) $index;
     ?>
     <div class="rch-testimonial-row" data-index="<?php echo esc_attr((string) $idx); ?>">
         <div class="rch-testimonial-row__head">
@@ -221,6 +273,33 @@ function rch_render_agent_testimonial_row($index, array $item): void
                     name="rch_agent_testimonials[<?php echo esc_attr((string) $idx); ?>][description]"
                     placeholder="<?php esc_attr_e('Testimonial text', 'rechat-plugin'); ?>"
                 ><?php echo esc_textarea($description); ?></textarea>
+            </label>
+        </p>
+        <p>
+            <label for="rch-agent-testimonial-stars-<?php echo esc_attr((string) $idx); ?>">
+                <?php esc_html_e('Stars', 'rechat-plugin'); ?>
+                <input
+                    type="text"
+                    class="small-text"
+                    id="rch-agent-testimonial-stars-<?php echo esc_attr((string) $idx); ?>"
+                    name="rch_agent_testimonials[<?php echo esc_attr((string) $idx); ?>][stars]"
+                    value="<?php echo esc_attr($stars); ?>"
+                    inputmode="decimal"
+                    placeholder="<?php esc_attr_e('e.g. 4.7', 'rechat-plugin'); ?>"
+                />
+            </label>
+            <span class="description"><?php esc_html_e('Optional. Number from 0.1 to 5 (e.g. 4.7, 4.8, 5). Leave empty if not set.', 'rechat-plugin'); ?></span>
+        </p>
+        <p>
+            <label>
+                <?php esc_html_e('Link', 'rechat-plugin'); ?>
+                <input
+                    type="url"
+                    class="widefat"
+                    name="rch_agent_testimonials[<?php echo esc_attr((string) $idx); ?>][link]"
+                    value="<?php echo esc_attr($link); ?>"
+                    placeholder="<?php esc_attr_e('https://example.com/review', 'rechat-plugin'); ?>"
+                />
             </label>
         </p>
     </div>
@@ -266,6 +345,11 @@ function rch_agent_testimonials_metabox_styles(): void
         #rch_agent_testimonials_meta_box .rch-testimonial-row p:last-child {
             margin-bottom: 0;
         }
+        #rch_agent_testimonials_meta_box .rch-testimonial-row .description {
+            display: inline-block;
+            margin-left: 6px;
+            font-weight: 400;
+        }
     </style>
     <?php
 }
@@ -285,15 +369,14 @@ function rch_agent_testimonials_admin_script(): void
             $('#rch-agent-testimonials-list .rch-testimonial-row').each(function (i) {
                 var $row = $(this);
                 $row.attr('data-index', i);
-                $row.find('input[name^="rch_agent_testimonials"]').each(function () {
+                $row.find('input[name^="rch_agent_testimonials"], textarea[name^="rch_agent_testimonials"]').each(function () {
                     var $el = $(this);
                     var field = $el.attr('name').replace(/\[(\d+|__INDEX__)\]/, '[' + i + ']');
                     $el.attr('name', field);
-                });
-                $row.find('textarea[name^="rch_agent_testimonials"]').each(function () {
-                    var $el = $(this);
-                    var field = $el.attr('name').replace(/\[(\d+|__INDEX__)\]/, '[' + i + ']');
-                    $el.attr('name', field);
+                    var id = $el.attr('id');
+                    if (id && id.indexOf('rch-agent-testimonial-stars-') === 0) {
+                        $el.attr('id', 'rch-agent-testimonial-stars-' + i);
+                    }
                 });
             });
         }
@@ -407,7 +490,7 @@ function rch_register_agent_testimonials_meta(): void
         RCH_AGENT_TESTIMONIALS_META_KEY,
         [
             'type'              => 'array',
-            'description'       => __('Agent testimonials (name + description).', 'rechat-plugin'),
+            'description'       => __('Agent testimonials (name, description, stars, link).', 'rechat-plugin'),
             'single'            => true,
             'show_in_rest'      => [
                 'schema' => [
@@ -417,6 +500,8 @@ function rch_register_agent_testimonials_meta(): void
                         'properties' => [
                             'name'        => ['type' => 'string'],
                             'description' => ['type' => 'string'],
+                            'stars'       => ['type' => 'string'],
+                            'link'        => ['type' => 'string'],
                         ],
                     ],
                 ],

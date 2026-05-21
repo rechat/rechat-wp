@@ -9,16 +9,28 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
+if (! function_exists('rch_sanitize_agent_testimonial_stars') && defined('RCH_PLUGIN_INCLUDES')) {
+    require_once RCH_PLUGIN_INCLUDES . 'metabox/metaboxes-for-agent-testimonials.php';
+}
+
+require_once RCH_PLUGIN_INCLUDES . 'multisite/testimonial-cpt-subfields.php';
+
 /** Post meta on sub-site testimonial posts — source agent ID (main site). */
 const RCH_TESTIMONIAL_SYNC_AGENT_META = '_rch_sync_agent_id';
 
 /** Post meta on sub-site testimonial posts — stable row key for upsert. */
 const RCH_TESTIMONIAL_SYNC_KEY_META = '_rch_sync_key';
 
+/** Post meta on sub-site testimonial posts — star rating (1–5, half steps). */
+const RCH_TESTIMONIAL_STARS_META = 'testimonial_stars';
+
+/** Post meta on sub-site testimonial posts — optional URL. */
+const RCH_TESTIMONIAL_LINK_META = 'testimonial_link';
+
 /**
  * Stable key for one testimonial row (index + content).
  *
- * @param array{name?:string, description?:string} $item
+ * @param array{name?:string, description?:string, stars?:string, link?:string} $item
  */
 function rch_agent_testimonial_sync_row_key(int $index, array $item): string
 {
@@ -29,7 +41,37 @@ function rch_agent_testimonial_sync_row_key(int $index, array $item): string
 }
 
 /**
- * @return array<int, array{name:string, description:string}>
+ * @param array<string, mixed> $item
+ */
+function rch_agent_testimonial_sync_item_stars(array $item): string
+{
+    $raw = $item['stars'] ?? $item['testimonial_stars'] ?? $item['rank'] ?? $item['testimonial_rank'] ?? '';
+
+    if (function_exists('rch_sanitize_agent_testimonial_stars')) {
+        return rch_sanitize_agent_testimonial_stars($raw);
+    }
+
+    return is_scalar($raw) ? trim((string) $raw) : '';
+}
+
+/**
+ * @param array<string, mixed> $item
+ */
+function rch_agent_testimonial_sync_item_link(array $item): string
+{
+    $raw = $item['link'] ?? $item['testimonial_link'] ?? $item['url'] ?? '';
+
+    if (function_exists('rch_sanitize_agent_testimonial_link')) {
+        return rch_sanitize_agent_testimonial_link($raw);
+    }
+
+    $url = is_scalar($raw) ? trim((string) $raw) : '';
+
+    return $url !== '' ? esc_url_raw($url) : '';
+}
+
+/**
+ * @return array<int, array{name:string, description:string, stars:string, link:string}>
  */
 function rch_agent_testimonial_sync_get_source_rows(int $agent_id): array
 {
@@ -128,6 +170,8 @@ function rch_agent_testimonial_sync_apply_on_current_blog(int $agent_id, array $
 
         $name = isset($item['name']) ? sanitize_text_field((string) $item['name']) : '';
         $desc = isset($item['description']) ? wp_kses_post((string) $item['description']) : '';
+        $stars = rch_agent_testimonial_sync_item_stars($item);
+        $link  = rch_agent_testimonial_sync_item_link($item);
 
         if ($name === '' && trim(wp_strip_all_tags($desc)) === '') {
             ++$skipped;
@@ -137,6 +181,8 @@ function rch_agent_testimonial_sync_apply_on_current_blog(int $agent_id, array $
         $sync_key = rch_agent_testimonial_sync_row_key($index, [
             'name'        => $name,
             'description' => $desc,
+            'stars'       => $stars,
+            'link'        => $link,
         ]);
         $seen[ $sync_key ] = true;
         ++$index;
@@ -160,6 +206,7 @@ function rch_agent_testimonial_sync_apply_on_current_blog(int $agent_id, array $
                 ++$skipped;
                 continue;
             }
+            rch_agent_testimonial_sync_save_row_meta($post_id, $stars, $link);
             ++$updated;
             continue;
         }
@@ -170,10 +217,14 @@ function rch_agent_testimonial_sync_apply_on_current_blog(int $agent_id, array $
             continue;
         }
 
-        update_post_meta((int) $post_id, RCH_TESTIMONIAL_SYNC_AGENT_META, $agent_id);
-        update_post_meta((int) $post_id, RCH_TESTIMONIAL_SYNC_KEY_META, $sync_key);
+        $post_id = (int) $post_id;
+        update_post_meta($post_id, RCH_TESTIMONIAL_SYNC_AGENT_META, $agent_id);
+        update_post_meta($post_id, RCH_TESTIMONIAL_SYNC_KEY_META, $sync_key);
+        rch_agent_testimonial_sync_save_row_meta($post_id, $stars, $link);
         ++$created;
     }
+
+    rch_agent_testimonial_sync_repair_row_meta_by_order($agent_id, $rows);
 
     $deleted = 0;
     foreach ($by_key as $key => $post_id) {
@@ -195,6 +246,87 @@ function rch_agent_testimonial_sync_apply_on_current_blog(int $agent_id, array $
 }
 
 /**
+ * Persist stars + link on a sub-site testimonial post.
+ */
+function rch_agent_testimonial_sync_save_row_meta(int $post_id, string $stars, string $link): void
+{
+    if ($post_id <= 0) {
+        return;
+    }
+
+    if ($stars !== '') {
+        update_post_meta($post_id, RCH_TESTIMONIAL_STARS_META, $stars);
+        update_post_meta($post_id, 'stars', $stars);
+    } else {
+        delete_post_meta($post_id, RCH_TESTIMONIAL_STARS_META);
+        delete_post_meta($post_id, 'stars');
+    }
+
+    if ($link !== '') {
+        update_post_meta($post_id, RCH_TESTIMONIAL_LINK_META, $link);
+        update_post_meta($post_id, 'link', $link);
+    } else {
+        delete_post_meta($post_id, RCH_TESTIMONIAL_LINK_META);
+        delete_post_meta($post_id, 'link');
+    }
+}
+
+/**
+ * Re-apply stars/link on synced testimonial posts by menu_order (fixes posts synced before meta existed).
+ *
+ * @param array<int, array<string, mixed>> $rows
+ */
+function rch_agent_testimonial_sync_repair_row_meta_by_order(int $agent_id, array $rows): void
+{
+    if ($rows === []) {
+        return;
+    }
+
+    $posts = get_posts([
+        'post_type'      => 'testimonial',
+        'post_status'    => ['publish', 'draft', 'private', 'pending'],
+        'posts_per_page' => 50,
+        'orderby'        => 'menu_order',
+        'order'          => 'ASC',
+        'meta_query'     => [
+            [
+                'key'   => RCH_TESTIMONIAL_SYNC_AGENT_META,
+                'value' => (string) $agent_id,
+            ],
+        ],
+    ]);
+
+    if ($posts === []) {
+        return;
+    }
+
+    $index = 0;
+    foreach ($rows as $item) {
+        if (! is_array($item)) {
+            continue;
+        }
+
+        $name = isset($item['name']) ? sanitize_text_field((string) $item['name']) : '';
+        $desc = isset($item['description']) ? (string) $item['description'] : '';
+        if ($name === '' && trim(wp_strip_all_tags($desc)) === '') {
+            continue;
+        }
+
+        if (! isset($posts[ $index ])) {
+            break;
+        }
+
+        $post_id = (int) $posts[ $index ]->ID;
+        rch_agent_testimonial_sync_save_row_meta(
+            $post_id,
+            rch_agent_testimonial_sync_item_stars($item),
+            rch_agent_testimonial_sync_item_link($item)
+        );
+        ++$index;
+    }
+}
+
+/**
  * Sync agent testimonials from main site to linked sub-site.
  *
  * @return array{created:int, updated:int, deleted:int, skipped:int, total:int, blog_id:int}|WP_Error
@@ -209,9 +341,27 @@ function rch_agent_wizard_sync_testimonials_for_agent(int $agent_id)
         return new WP_Error('rch_testimonial_agent', __('Invalid agent.', 'rechat-plugin'));
     }
 
+    $storage_blog = function_exists('rch_agent_testimonials_storage_blog_id')
+        ? rch_agent_testimonials_storage_blog_id()
+        : (int) get_current_blog_id();
+    $switched     = false;
+
+    if (is_multisite() && get_current_blog_id() !== $storage_blog) {
+        switch_to_blog($storage_blog);
+        $switched = true;
+    }
+
     $post = get_post($agent_id);
     if (! $post || $post->post_type !== 'agents') {
+        if ($switched) {
+            restore_current_blog();
+        }
+
         return new WP_Error('rch_testimonial_agent', __('Invalid agent post.', 'rechat-plugin'));
+    }
+
+    if ($switched) {
+        restore_current_blog();
     }
 
     if (! function_exists('rch_multisite_get_agent_blog_id')) {
@@ -267,12 +417,26 @@ function rch_agent_wizard_sync_testimonials_for_all_agents(): array
         'errors'  => [],
     ];
 
+    $storage_blog = function_exists('rch_agent_testimonials_storage_blog_id')
+        ? rch_agent_testimonials_storage_blog_id()
+        : (int) get_current_blog_id();
+    $switched     = false;
+
+    if (is_multisite() && get_current_blog_id() !== $storage_blog) {
+        switch_to_blog($storage_blog);
+        $switched = true;
+    }
+
     $agent_ids = get_posts([
         'post_type'      => 'agents',
         'post_status'    => 'publish',
         'posts_per_page' => -1,
         'fields'         => 'ids',
     ]);
+
+    if ($switched) {
+        restore_current_blog();
+    }
 
     foreach ($agent_ids as $agent_id) {
         $agent_id = (int) $agent_id;
