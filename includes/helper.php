@@ -1554,6 +1554,31 @@ function rch_get_contrast_text_color($background_color)
     return rch_is_color_dark($background_color) ? '#ffffff' : '#000000';
 }
 
+/**
+ * Normalize block/shortcode values to boolean (Gutenberg may pass true, "true", or 1).
+ *
+ * @param mixed $value Raw attribute value.
+ * @return bool
+ */
+function rch_attr_to_bool($value): bool
+{
+    if (is_bool($value)) {
+        return $value;
+    }
+
+    if (is_int($value) || is_float($value)) {
+        return (int) $value !== 0;
+    }
+
+    if (is_string($value)) {
+        $normalized = strtolower(trim($value));
+
+        return in_array($normalized, array('1', 'true', 'yes', 'on'), true);
+    }
+
+    return (bool) filter_var($value, FILTER_VALIDATE_BOOLEAN);
+}
+
 /*******************************
  * Get block attributes configuration for listing block
  ******************************/
@@ -1920,7 +1945,7 @@ function rch_get_rechat_listings_attributes($attributes, $map_default_center, $l
         $listings_brand_id = (string) $attributes['filter_brand_id'];
     } elseif (
         isset($attributes['own_listing'])
-        && filter_var($attributes['own_listing'], FILTER_VALIDATE_BOOLEAN)
+        && rch_attr_to_bool($attributes['own_listing'])
     ) {
         if (! empty($attributes['brand'])) {
             $listings_brand_id = (string) $attributes['brand'];

@@ -64,26 +64,10 @@ function rch_render_listing_block($attributes)
     }));
 
     $attributes = rch_apply_listing_boundary_site_defaults($attributes);
-    
-    // Build shortcode attributes string from block attributes
-    $shortcode_atts = array();
-    
-    foreach ($attributes as $key => $value) {
-        // Always include boolean values (even if false)
-        if (is_bool($value)) {
-            $shortcode_atts[] = $key . '="' . ($value ? 'true' : 'false') . '"';
-        } elseif (!empty($value)) {
-            if (is_array($value)) {
-                $shortcode_atts[] = $key . '="' . esc_attr(implode(',', $value)) . '"';
-            } else {
-                $shortcode_atts[] = $key . '="' . esc_attr($value) . '"';
-            }
-        }
-    }
-    
-    $shortcode_string = '[listings ' . implode(' ', $shortcode_atts) . ']';
-    
-    return do_shortcode($shortcode_string);
+
+    $listing_atts = rch_prepare_listing_atts_from_block($attributes);
+
+    return rch_render_listing_list($listing_atts);
 }
 
 /*******************************
