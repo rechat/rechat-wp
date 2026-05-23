@@ -926,7 +926,8 @@ function rch_multisite_ob_strip_filter_agents_on_listing_children(string $html):
 }
 
 /**
- * Remove brand_id / map_api_key from <rechat-listings> (belong on <rechat-root> only).
+ * Remove map_api_key from <rechat-listings> (belongs on <rechat-root> only).
+ * Keep brand_id when present — "Only our own listings" / filter_brand_id need it on the component.
  *
  * @param string $html Full page HTML.
  * @return string
@@ -937,7 +938,6 @@ function rch_multisite_ob_strip_listings_hub_credentials(string $html): string
         rch_multisite_rechat_listings_parent_open_tag_pattern(),
         static function ($m) {
             $inner = $m[1];
-            $inner = rch_multisite_preg_replace_safe('/\sbrand_id\s*=\s*(["\'])[^"\']*\1/i', '', $inner);
             $inner = rch_multisite_preg_replace_safe('/\smap_api_key\s*=\s*(["\'])[^"\']*\1/i', '', $inner);
 
             return '<rechat-listings' . $inner . '>';
@@ -1038,7 +1038,7 @@ function rch_multisite_should_buffer_listing_markup(): bool
 
     if (rch_multisite_is_agent_listing_scope_active()) {
         // Always buffer agent subsites: inject filter_agents, hub brand_id on <rechat-root>, strip
-        // brand_id/map_api_key from <rechat-listings>, and/or disabled="true" when hub agents empty.
+        // map_api_key from <rechat-listings>, and/or disabled="true" when hub agents empty.
         return true;
     }
 

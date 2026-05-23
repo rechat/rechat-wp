@@ -34,14 +34,14 @@ function rch_listings_shortcode_wrapper_style_attr($primary_color)
   return ' style="' . esc_attr($css) . '"';
 }
 
-/*******************************
- * Renders the listing as a shortcode based on Gutenberg block
- * Usage: [listings property_types="Residential" listing_statuses="Active" filter_pool="true" filter_search_limit="200"]
- ******************************/
-function rch_render_listing_list($atts)
+/**
+ * Default attribute keys/values for [listings] and the Listing Gutenberg block.
+ *
+ * @return array<string, mixed>
+ */
+function rch_get_listings_default_atts()
 {
-  // Parse shortcode attributes with defaults
-  $atts = shortcode_atts([
+  return [
     'minimum_price' => '',
     'maximum_price' => '',
     'minimum_square_feet' => '',
@@ -91,24 +91,96 @@ function rch_render_listing_list($atts)
     'sort_by' => '-list_date',
     'filter_boundary_country' => '',
     'filter_boundary_state' => '',
-  ], $atts);
+  ];
+}
 
-  // Convert boolean attributes from strings
-  $atts['own_listing'] = filter_var($atts['own_listing'], FILTER_VALIDATE_BOOLEAN);
+/**
+ * Map Listing block attributes to [listings] atts (no shortcode string — avoids parse loss).
+ *
+ * @param array<string, mixed> $block_attributes Block attrs after URL/boundary merge.
+ * @return array<string, mixed>
+ */
+function rch_prepare_listing_atts_from_block(array $block_attributes)
+{
+  $defaults = rch_get_listings_default_atts();
+  $out = $defaults;
+
+  $bool_keys = array(
+    'own_listing',
+    'disable_filter_address',
+    'disable_filter_price',
+    'disable_filter_beds',
+    'disable_filter_baths',
+    'disable_filter_property_types',
+    'disable_filter_advanced',
+    'disable_filter_loading_indicator',
+    'filter_open_houses',
+    'office_exclusive',
+    'filter_pool',
+    'disable_sort',
+  );
+
+  foreach ($block_attributes as $key => $value) {
+    if (! array_key_exists($key, $defaults)) {
+      continue;
+    }
+
+    if (in_array($key, $bool_keys, true)) {
+      $out[$key] = rch_attr_to_bool($value);
+      continue;
+    }
+
+    if (is_array($value)) {
+      $out[$key] = $value;
+      continue;
+    }
+
+    if ($value === '' || $value === null) {
+      continue;
+    }
+
+    $out[$key] = is_scalar($value) ? (string) $value : $value;
+  }
+
+  if (
+    empty($out['listing_statuses'])
+    && ! empty($block_attributes['selectedStatuses'])
+    && is_array($block_attributes['selectedStatuses'])
+  ) {
+    $out['listing_statuses'] = $block_attributes['selectedStatuses'];
+  }
+
+  if (array_key_exists('own_listing', $block_attributes)) {
+    $out['own_listing'] = rch_attr_to_bool($block_attributes['own_listing']);
+  }
+
+  return $out;
+}
+
+/*******************************
+ * Renders the listing as a shortcode based on Gutenberg block
+ * Usage: [listings property_types="Residential" listing_statuses="Active" filter_pool="true" filter_search_limit="200"]
+ ******************************/
+function rch_render_listing_list($atts)
+{
+  // Parse shortcode attributes with defaults
+  $atts = shortcode_atts(rch_get_listings_default_atts(), $atts);
+
+  $atts['own_listing'] = rch_attr_to_bool($atts['own_listing']);
 
   // brand for rechat-root brand_id; own_listing also sets brand_id on rechat-listings via rch_get_rechat_listings_attributes()
   $atts['brand'] = get_option('rch_rechat_brand_id');
-  $atts['disable_filter_address'] = filter_var($atts['disable_filter_address'], FILTER_VALIDATE_BOOLEAN);
-  $atts['disable_filter_price'] = filter_var($atts['disable_filter_price'], FILTER_VALIDATE_BOOLEAN);
-  $atts['disable_filter_beds'] = filter_var($atts['disable_filter_beds'], FILTER_VALIDATE_BOOLEAN);
-  $atts['disable_filter_baths'] = filter_var($atts['disable_filter_baths'], FILTER_VALIDATE_BOOLEAN);
-  $atts['disable_filter_property_types'] = filter_var($atts['disable_filter_property_types'], FILTER_VALIDATE_BOOLEAN);
-  $atts['disable_filter_advanced'] = filter_var($atts['disable_filter_advanced'], FILTER_VALIDATE_BOOLEAN);
-  $atts['filter_open_houses'] = filter_var($atts['filter_open_houses'], FILTER_VALIDATE_BOOLEAN);
-  $atts['office_exclusive'] = filter_var($atts['office_exclusive'], FILTER_VALIDATE_BOOLEAN);
-  $atts['filter_pool'] = filter_var($atts['filter_pool'], FILTER_VALIDATE_BOOLEAN);
-  $atts['disable_sort'] = filter_var($atts['disable_sort'], FILTER_VALIDATE_BOOLEAN);
-  $atts['disable_filter_loading_indicator'] = filter_var($atts['disable_filter_loading_indicator'], FILTER_VALIDATE_BOOLEAN);
+  $atts['disable_filter_address'] = rch_attr_to_bool($atts['disable_filter_address']);
+  $atts['disable_filter_price'] = rch_attr_to_bool($atts['disable_filter_price']);
+  $atts['disable_filter_beds'] = rch_attr_to_bool($atts['disable_filter_beds']);
+  $atts['disable_filter_baths'] = rch_attr_to_bool($atts['disable_filter_baths']);
+  $atts['disable_filter_property_types'] = rch_attr_to_bool($atts['disable_filter_property_types']);
+  $atts['disable_filter_advanced'] = rch_attr_to_bool($atts['disable_filter_advanced']);
+  $atts['filter_open_houses'] = rch_attr_to_bool($atts['filter_open_houses']);
+  $atts['office_exclusive'] = rch_attr_to_bool($atts['office_exclusive']);
+  $atts['filter_pool'] = rch_attr_to_bool($atts['filter_pool']);
+  $atts['disable_sort'] = rch_attr_to_bool($atts['disable_sort']);
+  $atts['disable_filter_loading_indicator'] = rch_attr_to_bool($atts['disable_filter_loading_indicator']);
 
   rch_listings_shortcode_enqueue_assets();
 
