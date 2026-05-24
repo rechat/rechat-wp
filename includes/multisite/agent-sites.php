@@ -649,6 +649,26 @@ function rch_multisite_is_agent_site_enabled(int $post_id): bool
 }
 
 /**
+ * Linked multisite sub-site URL for an agent (does not read or override `website` meta).
+ *
+ * @param  int $post_id Agent post ID (main-site `agents` CPT).
+ * @return string       Empty when not multisite, site disabled, or no linked blog.
+ */
+function rch_get_agent_subsite_url(int $post_id): string
+{
+    if (
+        ! is_multisite()
+        || ! rch_multisite_is_agent_site_enabled($post_id)
+    ) {
+        return '';
+    }
+
+    $blog_id = rch_multisite_get_agent_blog_id($post_id);
+
+    return $blog_id > 0 ? get_site_url($blog_id) : '';
+}
+
+/**
  * Return the blog_id linked to an office post, clearing stale meta if the site is gone.
  *
  * @param  int $post_id Office post ID.
