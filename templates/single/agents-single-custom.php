@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Agent Single Page Template
  * 
@@ -18,7 +19,9 @@ get_header();
 $post_id = get_the_ID();
 
 // Retrieve the meta values
-$website = get_post_meta($post_id, 'website', true);
+$website = function_exists('rch_get_agent_public_website_url')
+    ? rch_get_agent_public_website_url($post_id)
+    : get_post_meta($post_id, 'website', true);
 $instagram = get_post_meta($post_id, 'instagram', true);
 $twitter = get_post_meta($post_id, 'twitter', true);
 $linkedin = get_post_meta($post_id, 'linkedin', true);

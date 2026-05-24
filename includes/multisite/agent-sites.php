@@ -669,6 +669,29 @@ function rch_get_agent_subsite_url(int $post_id): string
 }
 
 /**
+ * Website URL shown on agent single templates (display only; does not change `website` meta).
+ *
+ * Priority: linked multisite sub-site → current agent sub-site home → Rechat `website` meta.
+ *
+ * @param  int $post_id Agent post ID (main-site `agents` CPT).
+ * @return string
+ */
+function rch_get_agent_public_website_url(int $post_id): string
+{
+    $subsite_url = rch_get_agent_subsite_url($post_id);
+
+    if ($subsite_url !== '') {
+        return $subsite_url;
+    }
+
+    if (function_exists('rch_is_rechat_agent_only_subsite') && rch_is_rechat_agent_only_subsite()) {
+        return home_url('/');
+    }
+
+    return (string) get_post_meta($post_id, 'website', true);
+}
+
+/**
  * Return the blog_id linked to an office post, clearing stale meta if the site is gone.
  *
  * @param  int $post_id Office post ID.
