@@ -10,6 +10,16 @@ if (! defined('ABSPATH')) {
  ******************************/
 function rch_register_block_assets_listing()
 {
+    if (! wp_script_is('rch-gutenberg-js', 'registered')) {
+        wp_register_script(
+            'rch-gutenberg-js',
+            RCH_PLUGIN_URL . 'build/index.js',
+            array('wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-api-fetch'),
+            RCH_VERSION,
+            true
+        );
+    }
+
     register_block_type('rch-rechat-plugin/listing-block', array(
         'editor_script' => 'rch-gutenberg-js',
         'attributes' => rch_get_listing_block_attributes(),

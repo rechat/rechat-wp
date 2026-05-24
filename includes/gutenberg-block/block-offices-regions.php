@@ -14,9 +14,9 @@ function rch_register_block_assets($block_name, $render_callback)
     wp_register_script(
         'rch-gutenberg-js',
         RCH_PLUGIN_URL . 'build/index.js',
-        array('wp-blocks', 'wp-element', 'wp-editor', 'wp-components'),
-        '1.0.0',
-        true // 
+        array('wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-api-fetch'),
+        RCH_VERSION,
+        true
     );
     register_block_type($block_name, array(
         'editor_script' => 'rch-gutenberg-js',

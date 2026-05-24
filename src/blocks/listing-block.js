@@ -252,6 +252,34 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             setAttributes({ map_zoom: zoom.toString() });
         };
 
+        /**
+         * Persist brand scope via filter_brand_id as well as own_listing.
+         * Some installs strip unknown block attrs on REST save; filter_brand_id
+         * still drives brand_id on <rechat-listings> in PHP.
+         */
+        const handleOwnListingChange = () => {
+            const next = !own_listing;
+            if (!next) {
+                setAttributes({ own_listing: false, filter_brand_id: '' });
+                return;
+            }
+            apiFetch({ path: '/wp/v2/options' })
+                .then((options) => {
+                    const brand =
+                        options && options.rch_rechat_brand_id
+                            ? String(options.rch_rechat_brand_id)
+                            : '';
+                    setAttributes({
+                        own_listing: true,
+                        ...(brand ? { filter_brand_id: brand } : {}),
+                    });
+                })
+                .catch((error) => {
+                    console.error('Error fetching brand for own_listing:', error);
+                    setAttributes({ own_listing: true });
+                });
+        };
+
         return (
             <>
                 <InspectorControls>
@@ -259,7 +287,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                         <CheckboxControl
                             label="Only our own listings"
                             checked={own_listing}
-                            onChange={() => setAttributes({ own_listing: !own_listing })}
+                            onChange={handleOwnListingChange}
                         />
                         <CheckboxControl
                             label="Open Houses Only"
