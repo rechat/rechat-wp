@@ -1939,22 +1939,22 @@ function rch_get_rechat_listings_attributes($attributes, $map_default_center, $l
         ) . '"';
     }
 
-    // brand_id on <rechat-listings> when own_listing (or block override filter_brand_id → brand_id). <rechat-root> always has brand_id too.
-    $listings_brand_id = '';
+    // filter_brand_id on <rechat-listings> when own_listing or block override. <rechat-root> keeps brand_id for SDK auth.
+    $listings_filter_brand_id = '';
     if (! empty($attributes['filter_brand_id'])) {
-        $listings_brand_id = (string) $attributes['filter_brand_id'];
+        $listings_filter_brand_id = (string) $attributes['filter_brand_id'];
     } elseif (
         isset($attributes['own_listing'])
         && rch_attr_to_bool($attributes['own_listing'])
     ) {
         if (! empty($attributes['brand'])) {
-            $listings_brand_id = (string) $attributes['brand'];
+            $listings_filter_brand_id = (string) $attributes['brand'];
         } else {
-            $listings_brand_id = (string) get_option('rch_rechat_brand_id', '');
+            $listings_filter_brand_id = (string) get_option('rch_rechat_brand_id', '');
         }
     }
-    if ($listings_brand_id !== '') {
-        $attrs[] = 'brand_id="' . esc_attr($listings_brand_id) . '"';
+    if ($listings_filter_brand_id !== '') {
+        $attrs[] = 'filter_brand_id="' . esc_attr($listings_filter_brand_id) . '"';
     }
 
     if (! empty($attributes['property_types'])) {

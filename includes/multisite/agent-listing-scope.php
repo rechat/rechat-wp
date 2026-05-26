@@ -927,7 +927,7 @@ function rch_multisite_ob_strip_filter_agents_on_listing_children(string $html):
 
 /**
  * Remove map_api_key from <rechat-listings> (belongs on <rechat-root> only).
- * Keep brand_id when present — "Only our own listings" / filter_brand_id need it on the component.
+ * Keep filter_brand_id on <rechat-listings> when present ("Only our own listings").
  *
  * @param string $html Full page HTML.
  * @return string
