@@ -255,7 +255,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         /**
          * Persist brand scope via filter_brand_id as well as own_listing.
          * Some installs strip unknown block attrs on REST save; filter_brand_id
-         * still drives brand_id on <rechat-listings> in PHP.
+         * is also output on <rechat-listings> in PHP when own_listing is enabled.
          */
         const handleOwnListingChange = () => {
             const next = !own_listing;

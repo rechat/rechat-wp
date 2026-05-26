@@ -76,8 +76,8 @@ You can display listings anywhere on your site using the `[listings]` shortcode.
 | `filter_pool` | Pool only (SDK `filter_pool`, use `true` to enable) | `true` or `false` |
 | `filter_agents` | Comma-separated Rechat agent IDs (SDK `filter_agents`) | Comma-separated string |
 | `list_offices` | Comma-separated office IDs (SDK `filter_list_offices`) | Comma-separated string |
-| `filter_brand_id` | Override brand for this list (SDK `filter_brand_id`); `brand_id` on root still comes from settings unless you also adjust site options | String |
-| `own_listing` | When `true`, scopes listings to the configured brand (`brand_id` on `<rechat-listings>`) | `true` or `false` (default: `false`) |
+| `filter_brand_id` | Override brand for this list (`filter_brand_id` on `<rechat-listings>`); `brand_id` on `<rechat-root>` still comes from settings | String |
+| `own_listing` | When `true`, scopes listings to the configured brand (`filter_brand_id` on `<rechat-listings>`) | `true` or `false` (default: `false`) |
 | `map_latitude` / `map_longitude` | Default map center (used with `map_default_center`) | Decimal string |
 | `map_zoom` | Initial map zoom (SDK `map_zoom`) | String number, e.g. `12` |
 | `map_id` | Google **Cloud** map style ID, if you use one (SDK `map_id`) | String |

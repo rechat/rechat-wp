@@ -168,7 +168,7 @@ function rch_render_listing_list($atts)
 
   $atts['own_listing'] = rch_attr_to_bool($atts['own_listing']);
 
-  // brand for rechat-root brand_id; own_listing also sets brand_id on rechat-listings via rch_get_rechat_listings_attributes()
+  // brand for rechat-root brand_id; own_listing / filter_brand_id set filter_brand_id on <rechat-listings> via rch_get_rechat_listings_attributes()
   $atts['brand'] = get_option('rch_rechat_brand_id');
   $atts['disable_filter_address'] = rch_attr_to_bool($atts['disable_filter_address']);
   $atts['disable_filter_price'] = rch_attr_to_bool($atts['disable_filter_price']);
