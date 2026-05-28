@@ -37,7 +37,7 @@ function rch_render_agent_listings_section($post_id)
     // Define common property types and subtypes
     $property_subtypes = 'RES-Single Family, RES-Half Duplex, RES-Farm/Ranch, RES-Condo, RES-Townhouse, LSE-Apartment, LSE-Condo/Townhome, LSE-Duplex, LSE-Fourplex, LSE-House, LSE-Mobile, LSE-Triplex, LND-Commercial, LND-Farm/Ranch, LND-Residential, MUL-Full Duplex, MUL-Apartment/5Plex+, MUL-Fourplex, MUL-Multiple Single Units, MUL-Triplex, COM-Lease, COM-Sale, Lot/Land';
     $property_types = 'Residential, Residential Lease, Lots & Acreage, Multi-Family, Commercial';
-    $active_statuses = 'Active, Active Contingent, Active Kick Out, Active Option Contract, Active Under Contract, Pending';
+    $active_statuses = 'Active, Active Contingent, Active Kick Out, Active Option Contract, Active Under Contract';
     $sold_statuses = 'Sold, Leased';
 
     // Prepare attributes for helper functions (NEW SDK)

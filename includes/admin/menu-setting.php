@@ -518,10 +518,16 @@ function rch_render_general_settings_tab()
     $appearance_group = defined('RCH_APPEARANCE_SETTINGS_GROUP') ? RCH_APPEARANCE_SETTINGS_GROUP : 'appearance_settings';
     ?>
     <div class="tab-content">
-        <form method="POST" action="options.php">
+        <form method="POST" action="options.php" style="margin-bottom: 24px;">
             <?php
             settings_fields('general_settings');
             do_settings_sections('general_settings');
+            submit_button();
+            ?>
+        </form>
+
+        <form method="POST" action="options.php">
+            <?php
             settings_fields($appearance_group);
             do_settings_sections('appearance_setting');
             submit_button();
