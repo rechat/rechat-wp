@@ -593,8 +593,26 @@ jQuery(document).ready(function ($) {
             var selected = String($wrap.attr('data-selected') || '');
             var $msg = $wrap.find('.rch-lead-channel-loading-msg');
             var $sel = $wrap.find('select');
+            var $selectedName = $wrap.find('.rch-lead-channel-selected-name');
             var $empty = $wrap.find('.rch-lead-channel-empty');
             var $err = $wrap.find('.rch-lead-channel-error');
+
+            function rchUpdateSelectedLeadChannelName() {
+                if (!$selectedName.length) {
+                    return;
+                }
+                var txt = ($sel.find('option:selected').text() || '').trim();
+                var val = String($sel.val() || '');
+                if (!val) {
+                    $selectedName.hide().text('');
+                    return;
+                }
+                if (!txt) {
+                    $selectedName.hide().text('');
+                    return;
+                }
+                $selectedName.text((LC.selected_prefix || 'Selected lead source: ') + txt).show();
+            }
 
             rchFetchLeadChannelsOnce()
                 .done(function (response) {
@@ -627,18 +645,23 @@ jQuery(document).ready(function ($) {
                         var id = String(ch.id);
                         var $opt = jQuery('<option></option>')
                             .attr('value', id)
-                            .text(ch.title || id);
+                            .text(ch.name || ch.title || id);
                         if (id === selected) {
                             $opt.prop('selected', true);
                         }
                         $sel.append($opt);
                     });
                     $sel.prop('disabled', false).show();
+                    rchUpdateSelectedLeadChannelName();
                 })
                 .fail(function () {
                     $msg.hide();
                     $err.text(LC.channels_failed || '').show();
                 });
+
+            $sel.off('change.rchLeadChannelName').on('change.rchLeadChannelName', function () {
+                rchUpdateSelectedLeadChannelName();
+            });
         });
 
         jQuery('.rch-async-tags').each(function () {

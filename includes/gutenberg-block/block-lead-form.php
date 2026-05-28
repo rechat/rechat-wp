@@ -395,6 +395,10 @@ function rch_register_block_assets_leads_form()
                     'type'    => 'string',
                     'default' => '',
                 ),
+                'leadChannelName'     => array(
+                    'type'    => 'string',
+                    'default' => '',
+                ),
                 'assigneeAgentEmail'  => array(
                     'type'    => 'string',
                     'default' => '',
@@ -450,6 +454,7 @@ function rch_render_leads_form_block($attributes)
 {
     $form_title          = isset($attributes['formTitle']) ? $attributes['formTitle'] : '';
     $lead_channel        = isset($attributes['leadChannel']) ? $attributes['leadChannel'] : '';
+    $lead_channel_name   = isset($attributes['leadChannelName']) ? (string) $attributes['leadChannelName'] : '';
     $assignee_agent_email = rch_leads_form_resolve_assignee_email(
         isset($attributes['assigneeAgentEmail']) ? (string) $attributes['assigneeAgentEmail'] : ''
     );
@@ -488,6 +493,12 @@ function rch_render_leads_form_block($attributes)
 
             <?php if ($form_title) : ?>
                 <h2 class="rch-leads-form-block__title"><?php echo esc_html($form_title); ?></h2>
+            <?php endif; ?>
+
+            <?php if ($lead_channel_name !== '') : ?>
+                <p class="rch-leads-form-block__lead-channel">
+                    <?php echo esc_html($lead_channel_name); ?>
+                </p>
             <?php endif; ?>
 
             <?php if ($show_first_name) : ?>

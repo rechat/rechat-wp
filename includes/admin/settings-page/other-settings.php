@@ -418,6 +418,7 @@ function rch_render_lead_channel_select($option_name)
             <?php esc_html_e('Loading lead sources…', 'rechat-plugin'); ?>
         </p>
         <select id="<?php echo $field_id; ?>" name="<?php echo $field_id; ?>" class="rch-lead-channel-select regular-text" disabled style="display:none;"></select>
+        <p class="description rch-lead-channel-selected-name" style="display:none;margin-top:6px;"></p>
         <p class="description rch-lead-channel-empty" style="display:none;margin-top:6px;"><?php esc_html_e('No lead sources available.', 'rechat-plugin'); ?></p>
         <p class="description rch-lead-channel-error" style="display:none;margin-top:6px;color:#b32d2d;"></p>
     </div>
@@ -574,9 +575,18 @@ function rch_ajax_fetch_lead_channels_settings()
         if (! is_array($channel)) {
             continue;
         }
+        $id = isset($channel['id']) ? (string) $channel['id'] : '';
+        $name = '';
+        if (isset($channel['name'])) {
+            $name = (string) $channel['name'];
+        } elseif (isset($channel['title'])) {
+            $name = (string) $channel['title'];
+        }
         $out[] = [
-            'id'    => isset($channel['id']) ? (string) $channel['id'] : '',
-            'title' => isset($channel['title']) ? (string) $channel['title'] : '',
+            'id'    => $id,
+            'name'  => $name,
+            // Back-compat for older JS that expects "title"
+            'title' => $name,
         ];
     }
 

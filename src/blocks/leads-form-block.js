@@ -19,6 +19,7 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
     attributes: {
         formTitle: { type: 'string', default: 'Lead Form' },
         leadChannel: { type: 'string', default: '' },
+        leadChannelName: { type: 'string', default: '' },
         assigneeAgentEmail: { type: 'string', default: '' },
         useMortgageQuestionLeadSource: { type: 'boolean', default: true },
         leadSource: { type: 'string', default: '' },
@@ -34,6 +35,7 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
         const {
             formTitle,
             leadChannel,
+            leadChannelName,
             assigneeAgentEmail,
             useMortgageQuestionLeadSource,
             leadSource,
@@ -261,7 +263,12 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
                             label="Lead Channel"
                             value={leadChannel}
                             options={loadingChannels ? [{ label: 'Loading channels...', value: '' }] : leadChannels}
-                            onChange={(selectedChannel) => setAttributes({ leadChannel: selectedChannel })}
+                            onChange={(selectedChannel) => {
+                                const list = Array.isArray(leadChannels) ? leadChannels : [];
+                                const match = list.find((o) => String(o.value) === String(selectedChannel));
+                                const name = match && match.value ? String(match.label || '') : '';
+                                setAttributes({ leadChannel: selectedChannel, leadChannelName: name });
+                            }}
                         />
                         <SelectControl
                             label="Assignee agent (from Agents CPT)"
