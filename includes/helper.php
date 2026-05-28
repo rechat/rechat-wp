@@ -965,6 +965,7 @@ function rch_process_agents_data($access_token, $api_url_base)
                 $user = $item['user'];
                 $full_name = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
                 $custom_fields = array(
+                    'first_name' => $user['first_name'] ?? '',
                     'website' => $user['website'] ?? '',
                     'instagram' => $user['instagram'] ?? '',
                     'twitter' => $user['twitter'] ?? '',
