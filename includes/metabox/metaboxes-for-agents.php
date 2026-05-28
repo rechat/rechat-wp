@@ -58,6 +58,8 @@ function agents_meta_box_html($post)
     $profile_image_url = get_post_meta($post->ID, 'profile_image_url', true);
     $license_number = get_post_meta($post->ID, 'license_number', true);
     $agent_title = get_post_meta($post->ID, 'agent_title', true);
+    $first_name = get_post_meta($post->ID, 'first_name', true);
+    $last_name = get_post_meta($post->ID, 'last_name', true);
     $display_order_raw = get_post_meta($post->ID, RCH_AGENT_DISPLAY_ORDER_META_KEY, true);
     $display_order_show = '';
     if (! rch_agent_display_order_meta_is_empty($display_order_raw)) {
@@ -77,8 +79,11 @@ function agents_meta_box_html($post)
     <label for="agents_timezone">timezone</label>
     <input type="text" id="agents_timezone" name="agents_timezone" value="<?php echo esc_attr($timezone); ?>" class="widefat" />
     <br>
-    <label for="agents_timezone">Last Name</label>
-    <input type="text" id="agents_last_name" name="agents_last_name" value="<?php echo esc_attr(get_post_meta($post->ID, 'last_name', true)); ?>" class="widefat" />
+    <label for="agents_first_name">First Name</label>
+    <input type="text" id="agents_first_name" name="agents_first_name" value="<?php echo esc_attr($first_name); ?>" class="widefat" />
+    <br>
+    <label for="agents_last_name">Last Name</label>
+    <input type="text" id="agents_last_name" name="agents_last_name" value="<?php echo esc_attr($last_name); ?>" class="widefat" />
     <br>
     <label for="agents_website">Website</label>
     <input type="text" id="agents_website" name="agents_website" value="<?php echo esc_attr($website); ?>" class="widefat" />
@@ -265,6 +270,7 @@ function save_agents_meta_box($post_id)
     $fields = array(
         'agents_profile_image_url' => 'profile_image_url',
         'agents_website' => 'website',
+        'agents_first_name' => 'first_name',
         'agents_last_name' => 'last_name',
         'agents_instagram' => 'instagram',
         'agents_twitter' => 'twitter',

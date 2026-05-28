@@ -22,6 +22,39 @@ if (!defined('ABSPATH')) {
 if (!isset($listing_detail) || !is_array($listing_detail)) {
     return;
 }
+
+// Listing lead-capture defaults: on subsites, inherit from network main site when empty.
+$rch_listing_lead_channel = (string) get_option('rch_lead_channels', '');
+$rch_listing_tags         = get_option('rch_selected_tags', []);
+$rch_listing_assignee     = '';
+
+if (is_multisite()) {
+    $rch_main_site_id = (int) get_main_site_id();
+    $rch_here_id      = (int) get_current_blog_id();
+
+    if ($rch_here_id > 0 && $rch_main_site_id > 0 && $rch_here_id !== $rch_main_site_id) {
+        if ($rch_listing_lead_channel === '') {
+            switch_to_blog($rch_main_site_id);
+            $rch_listing_lead_channel = (string) get_option('rch_lead_channels', '');
+            restore_current_blog();
+        }
+
+        $rch_tags_empty = !is_array($rch_listing_tags) || $rch_listing_tags === [];
+        if ($rch_tags_empty) {
+            switch_to_blog($rch_main_site_id);
+            $rch_listing_tags = get_option('rch_selected_tags', []);
+            restore_current_blog();
+        }
+
+        if (function_exists('rch_multisite_get_linked_agent_profile_email')) {
+            $rch_listing_assignee = rch_multisite_get_linked_agent_profile_email();
+        }
+    }
+}
+
+$rch_listing_tags = is_array($rch_listing_tags) ? array_values($rch_listing_tags) : [];
+$rch_listing_tags = array_map('sanitize_text_field', $rch_listing_tags);
+$rch_listing_tags_json = wp_json_encode($rch_listing_tags);
 ?>
 
 <script src="https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.js"></script>
@@ -35,7 +68,7 @@ if (!isset($listing_detail) || !is_array($listing_detail)) {
     })
 
     const channel = {
-        lead_channel: '<?php echo esc_js(get_option("rch_lead_channels")); ?>'
+        lead_channel: '<?php echo esc_js($rch_listing_lead_channel); ?>'
     };
     sdk.Leads.Tracker.capture({
         listing_id: '<?php echo esc_js($listing_detail['id']) ?>'
@@ -50,12 +83,16 @@ if (!isset($listing_detail) || !is_array($listing_detail)) {
             phone_number: document.getElementById('phone_number').value,
             email: document.getElementById('email').value,
             note: document.getElementById('note').value,
-            tag: <?php echo get_option("rch_selected_tags", '[]'); ?>,
+            tag: <?php echo $rch_listing_tags_json; ?>,
             source_type: 'Website',
             mlsid: '<?php echo esc_js($listing_detail['mls_number']) ?>',
             listing_id: '<?php echo esc_js($listing_detail['id']) ?>',
             referer_url: window.location.href
         };
+
+        <?php if ($rch_listing_assignee !== '') : ?>
+        input.assignees = [{ email: '<?php echo esc_js($rch_listing_assignee); ?>' }];
+        <?php endif; ?>
 
         // Hide success, error alerts, and show loading spinner
         document.getElementById('rch-listing-success-sdk').style.display = 'none';

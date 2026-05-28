@@ -25,6 +25,7 @@ function rch_multisite_render_admin_tab(): void
     $row_theme_nonce   = wp_create_nonce('rch_multisite_row_theme');
     $reassign_roles_nonce = wp_create_nonce('rch_multisite_reassign_agent_roles');
     $resync_themes_nonce   = wp_create_nonce('rch_multisite_resync_themes');
+    $migrate_urls_nonce    = wp_create_nonce('rch_multisite_migrate_agent_urls');
     $saved_agent_theme  = (string) get_site_option('rch_multisite_agent_theme_stylesheet', '');
     $saved_office_theme = (string) get_site_option('rch_multisite_office_theme_stylesheet', '');
     $theme_choices      = rch_multisite_get_theme_choices();
@@ -343,6 +344,16 @@ function rch_multisite_render_admin_tab(): void
             data-nonce="<?php echo esc_attr($reassign_roles_nonce); ?>"
         >
             <?php esc_html_e('Reassign agent sub-site role for all agents', 'rechat-plugin'); ?>
+        </button>
+
+        <button
+            id="rch-multisite-migrate-agent-urls-btn"
+            type="button"
+            class="button"
+            style="margin-left:8px;"
+            data-nonce="<?php echo esc_attr($migrate_urls_nonce); ?>"
+        >
+            <?php esc_html_e('Migrate agent sub-site URLs (initial+lastname)', 'rechat-plugin'); ?>
         </button>
 
         <span id="rch-multisite-provision-spinner" class="spinner" style="float:none;margin-top:4px;"></span>
@@ -847,6 +858,55 @@ function rch_multisite_render_admin_tab(): void
                         $.each(d.errors, function (i, err) {
                             html += '<li>' + err + '</li>';
                         });
+                        html += '</ul>';
+                    }
+
+                    html += '</div>';
+                    $result.html(html);
+                } else {
+                    $result.html(
+                        '<div class="notice notice-error inline"><p>' +
+                        (response.data || '<?php echo esc_js(__('An error occurred.', 'rechat-plugin')); ?>') +
+                        '</p></div>'
+                    );
+                }
+            }).fail(function () {
+                $btn.prop('disabled', false);
+                $spinner.removeClass('is-active');
+                $result.html(
+                    '<div class="notice notice-error inline"><p><?php echo esc_js(__('Request failed. Please try again.', 'rechat-plugin')); ?></p></div>'
+                );
+            });
+        });
+
+        // ── Migrate existing agent URL slugs (rename subsites) ─────────────────
+        $('#rch-multisite-migrate-agent-urls-btn').on('click', function () {
+            var $btn     = $(this);
+            var $spinner = $('#rch-multisite-provision-spinner');
+            var $result  = $('#rch-multisite-provision-result');
+
+            if (! window.confirm('<?php echo esc_js(__('Rename all existing agent sub-sites to the new URL format (first initial + last name)? This changes subdomain URLs across the network.', 'rechat-plugin')); ?>')) {
+                return;
+            }
+
+            $btn.prop('disabled', true);
+            $spinner.addClass('is-active');
+            $result.html('');
+
+            $.post(ajaxurl, {
+                action: 'rch_multisite_migrate_agent_subsite_urls',
+                _nonce: $btn.data('nonce'),
+            }, function (response) {
+                $btn.prop('disabled', false);
+                $spinner.removeClass('is-active');
+
+                if (response.success) {
+                    var d    = response.data;
+                    var html = '<div class="notice notice-success inline"><p>' + d.message + '</p>';
+
+                    if (d.errors && d.errors.length) {
+                        html += '<p><strong><?php echo esc_js(__('Errors:', 'rechat-plugin')); ?></strong></p><ul>';
+                        $.each(d.errors, function (i, err) { html += '<li>' + err + '</li>'; });
                         html += '</ul>';
                     }
 

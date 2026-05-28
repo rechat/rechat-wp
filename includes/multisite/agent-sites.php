@@ -59,6 +59,100 @@ function rch_multisite_sanitize_slug(string $name): string
 }
 
 /**
+ * Build a deterministic agent sub-site slug base: first initial + last name (e.g. "afreeman").
+ *
+ * Rules:
+ *  - lowercase only
+ *  - letters/digits only (no hyphens) to match the requested format
+ *  - derived from agent `first_name` + `last_name` post meta
+ *  - falls back to agent display name when data missing
+ *
+ * @param int    $agent_post_id Agent post ID.
+ * @param string $agent_name    Agent display name (usually post title).
+ * @return string Sanitized slug base (may be empty if nothing valid remains).
+ */
+function rch_multisite_agent_site_slug_base(int $agent_post_id, string $agent_name): string
+{
+    $first = (string) get_post_meta($agent_post_id, 'first_name', true);
+    $last  = (string) get_post_meta($agent_post_id, 'last_name', true);
+
+    $first = trim($first);
+    $last  = trim($last);
+
+    if ($last !== '') {
+        $initial = $first !== '' ? mb_substr($first, 0, 1) : '';
+        $raw     = remove_accents($initial . $last);
+        $raw     = strtolower($raw);
+        $raw     = preg_replace('/[^a-z0-9]+/', '', $raw);
+        $raw     = substr((string) $raw, 0, 63);
+        $raw     = (string) $raw;
+        if ($raw !== '') {
+            return $raw;
+        }
+    }
+
+    // Fallback: legacy behavior from agent display name.
+    $fallback = remove_accents($agent_name);
+    $fallback = strtolower($fallback);
+    $fallback = preg_replace('/[^a-z0-9]+/', '', $fallback);
+    $fallback = substr((string) $fallback, 0, 63);
+    return (string) $fallback;
+}
+
+/**
+ * Ensure an agent slug is unique across the network for the current URL mode.
+ *
+ * In subdomain mode this guarantees unique subdomains.
+ *
+ * @param string   $base_slug        Sanitized slug base (letters/digits only).
+ * @param int|null $exclude_blog_id  Blog ID allowed to already own the target domain/path (used for renames).
+ * @return string Unique slug (base or base + numeric suffix).
+ */
+function rch_multisite_unique_agent_site_slug(string $base_slug, ?int $exclude_blog_id = null): string
+{
+    $base_slug = trim((string) $base_slug);
+    $base_slug = strtolower($base_slug);
+    $base_slug = preg_replace('/[^a-z0-9]+/', '', $base_slug);
+    $base_slug = substr((string) $base_slug, 0, 63);
+    $base_slug = (string) $base_slug;
+
+    if ($base_slug === '') {
+        $base_slug = 'agent';
+    }
+
+    $candidate = $base_slug;
+    $n         = 2;
+
+    while (true) {
+        $loc = rch_multisite_build_site_location($candidate);
+
+        $existing = get_sites([
+            'domain' => $loc['domain'],
+            'path'   => $loc['path'],
+            'number' => 1,
+            'fields' => 'ids',
+        ]);
+
+        if (empty($existing)) {
+            return $candidate;
+        }
+
+        $existing_id = (int) $existing[0];
+        if ($exclude_blog_id && $existing_id === (int) $exclude_blog_id) {
+            return $candidate;
+        }
+
+        $suffix = (string) $n;
+        $candidate = substr($base_slug, 0, max(1, 63 - strlen($suffix))) . $suffix;
+        $n++;
+
+        if ($n > 5000) {
+            return 'agent' . wp_rand(100000, 999999);
+        }
+    }
+}
+
+/**
  * Build a URL slug for office sub-sites (prefixed so agent + office names never collide).
  *
  * @param  string $name Office display name.
@@ -762,7 +856,8 @@ function rch_multisite_create_site_for_agent(int $post_id, string $agent_name)
         return $broadcast_err;
     }
 
-    $slug = rch_multisite_sanitize_slug($agent_name);
+    $base = rch_multisite_agent_site_slug_base($post_id, $agent_name);
+    $slug = rch_multisite_unique_agent_site_slug($base, null);
 
     if (empty($slug)) {
         return new WP_Error(
@@ -1287,12 +1382,26 @@ function rch_multisite_sync_agent_site_editor(int $agent_post_id, int $blog_id, 
         }
 
         update_post_meta($agent_post_id, '_rch_agent_site_editor_provisioned', '1');
+
+        // When the admin clicks "Update editor" (bypass idempotency), reset the password and email credentials.
+        // This matches the requested behavior for provisioning and avoids "use your existing password" confusion.
+        $plain_pass     = '';
+        $treat_as_new   = false;
+        $existing_user  = true;
+
+        if ($bypass_idempotency) {
+            $plain_pass = wp_generate_password(24, true, true);
+            wp_set_password($plain_pass, $uid);
+            $treat_as_new  = true;
+            $existing_user = false;
+        }
+
         rch_multisite_send_agent_site_editor_email(
             $email,
             $agent_name,
             $login_url,
-            '',
-            true,
+            $plain_pass,
+            $existing_user,
             $final_login
         );
         rch_multisite_send_agent_site_editor_admin_notice(
@@ -1302,12 +1411,14 @@ function rch_multisite_sync_agent_site_editor(int $agent_post_id, int $blog_id, 
             $final_login,
             $login_url,
             $site_url,
-            true
+            ! $treat_as_new
         );
 
         return [
             'ok'      => true,
-            'message' => __('Editor access is set for this site and instructions were emailed to the agent.', 'rechat-plugin'),
+            'message' => $bypass_idempotency
+                ? __('Editor access is set and login credentials were emailed to the agent.', 'rechat-plugin')
+                : __('Editor access is set for this site and instructions were emailed to the agent.', 'rechat-plugin'),
         ];
     }
 
@@ -3261,6 +3372,184 @@ function rch_multisite_ajax_provision_all(): void
     ]);
 }
 add_action('wp_ajax_rch_multisite_provision_all', 'rch_multisite_ajax_provision_all');
+
+/**
+ * Rename (migrate) existing agent sub-sites to the deterministic slug format.
+ *
+ * Updates wp_blogs domain/path via wp_update_site (or update_blog_details fallback) and
+ * then updates `home` and `siteurl` options on the destination blog.
+ *
+ * @param  int    $blog_id    Target blog ID.
+ * @param  string $domain    New domain.
+ * @param  string $path      New path.
+ * @return true|\WP_Error
+ */
+function rch_multisite_rename_blog_location(int $blog_id, string $domain, string $path)
+{
+    if (! is_multisite()) {
+        return new WP_Error('rch_not_multisite', __('Multisite is not enabled.', 'rechat-plugin'));
+    }
+
+    $site = get_site($blog_id);
+    if (! $site) {
+        return new WP_Error('rch_site_missing', __('Sub-site does not exist.', 'rechat-plugin'));
+    }
+
+    $domain = strtolower(trim($domain));
+    $path   = trailingslashit('/' . ltrim($path, '/'));
+
+    if ($domain === '' || $path === '') {
+        return new WP_Error('rch_invalid_location', __('Invalid target domain/path.', 'rechat-plugin'));
+    }
+
+    // Avoid collisions (should be prevented by slug uniqueness resolver).
+    $existing = get_sites([
+        'domain' => $domain,
+        'path'   => $path,
+        'number' => 1,
+        'fields' => 'ids',
+    ]);
+    if (! empty($existing) && (int) $existing[0] !== $blog_id) {
+        return new WP_Error('rch_location_taken', __('Target domain/path already exists on the network.', 'rechat-plugin'));
+    }
+
+    if (function_exists('wp_update_site')) {
+        $res = wp_update_site($blog_id, [
+            'domain' => $domain,
+            'path'   => $path,
+        ]);
+        if (is_wp_error($res)) {
+            return $res;
+        }
+    } else {
+        // Legacy fallback.
+        update_blog_details($blog_id, [
+            'domain' => $domain,
+            'path'   => $path,
+        ]);
+    }
+
+    // Update home/siteurl to match new location.
+    $scheme = parse_url(get_site_url($blog_id), PHP_URL_SCHEME);
+    $scheme = $scheme ?: 'https';
+    $base   = set_url_scheme('http://' . $domain . $path, $scheme);
+    $base   = rtrim($base, '/');
+
+    switch_to_blog($blog_id);
+    update_option('home', $base, true);
+    update_option('siteurl', $base, true);
+    flush_rewrite_rules(false);
+    restore_current_blog();
+
+    clean_blog_cache($blog_id);
+
+    return true;
+}
+
+/**
+ * Migrate all existing agent subsites to the new slug format: [first initial][lastname].
+ *
+ * @return array{renamed:int,unchanged:int,skipped:int,errors:string[]}
+ */
+function rch_multisite_migrate_agent_subsite_urls(): array
+{
+    $renamed   = 0;
+    $unchanged = 0;
+    $skipped   = 0;
+    $errors    = [];
+
+    if (! is_multisite()) {
+        return compact('renamed', 'unchanged', 'skipped', 'errors');
+    }
+
+    // Subdomain install required for this migration tool.
+    if (rch_multisite_get_url_type() !== 'subdomain') {
+        $errors[] = __('This migration is only available for subdomain installs.', 'rechat-plugin');
+        return compact('renamed', 'unchanged', 'skipped', 'errors');
+    }
+
+    $agents = get_posts([
+        'post_type'   => 'agents',
+        'numberposts' => -1,
+        'post_status' => 'publish',
+        'fields'      => 'all',
+    ]);
+
+    foreach ($agents as $agent) {
+        $agent_id = (int) $agent->ID;
+        $blog_id  = rch_multisite_get_agent_blog_id($agent_id);
+        if (! $blog_id) {
+            $skipped++;
+            continue;
+        }
+
+        $name = trim((string) $agent->post_title);
+        $base = rch_multisite_agent_site_slug_base($agent_id, $name);
+        $slug = rch_multisite_unique_agent_site_slug($base, $blog_id);
+        $loc  = rch_multisite_build_site_location($slug);
+
+        $site = get_site($blog_id);
+        if (! $site) {
+            $skipped++;
+            continue;
+        }
+
+        $current_domain = strtolower((string) $site->domain);
+        $current_path   = (string) $site->path;
+
+        if ($current_domain === strtolower($loc['domain']) && $current_path === $loc['path']) {
+            // Keep meta in sync anyway.
+            update_post_meta($agent_id, '_rch_agent_slug', $slug);
+            $unchanged++;
+            continue;
+        }
+
+        $res = rch_multisite_rename_blog_location($blog_id, $loc['domain'], $loc['path']);
+        if (is_wp_error($res)) {
+            $errors[] = esc_html($name ?: ('Agent #' . $agent_id)) . ': ' . esc_html($res->get_error_message());
+            continue;
+        }
+
+        update_post_meta($agent_id, '_rch_agent_slug', $slug);
+        $renamed++;
+    }
+
+    return compact('renamed', 'unchanged', 'skipped', 'errors');
+}
+
+/**
+ * AJAX: migrate existing agent sub-site URLs to firstInitial+lastName format.
+ *
+ * @return void
+ */
+function rch_multisite_ajax_migrate_agent_subsite_urls(): void
+{
+    check_ajax_referer('rch_multisite_migrate_agent_urls', '_nonce');
+
+    if (! current_user_can('manage_network_options')) {
+        wp_send_json_error(__('Insufficient permissions.', 'rechat-plugin'));
+        return;
+    }
+
+    if (! is_multisite()) {
+        wp_send_json_error(__('Multisite is not enabled.', 'rechat-plugin'));
+        return;
+    }
+
+    $result = rch_multisite_migrate_agent_subsite_urls();
+
+    wp_send_json_success([
+        'message' => sprintf(
+            /* translators: 1: renamed, 2: unchanged, 3: skipped */
+            __('Done. Renamed %1$d agent sub-site(s). %2$d already matched. %3$d skipped (no linked site).', 'rechat-plugin'),
+            (int) $result['renamed'],
+            (int) $result['unchanged'],
+            (int) $result['skipped']
+        ),
+        'errors'  => $result['errors'],
+    ]);
+}
+add_action('wp_ajax_rch_multisite_migrate_agent_subsite_urls', 'rch_multisite_ajax_migrate_agent_subsite_urls');
 
 /**
  * AJAX: Toggle the enabled/disabled state for a single agent site.
