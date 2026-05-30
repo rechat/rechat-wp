@@ -9,20 +9,79 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-/** Post meta key: assigned office post ID (int), or empty if none. */
+/** Post meta key: assigned office post IDs (int[]), or empty if none. */
 if (! defined('RCH_NEIGHBORHOOD_OFFICE_META_KEY')) {
     define('RCH_NEIGHBORHOOD_OFFICE_META_KEY', '_rch_neighborhood_office');
 }
 
 /**
+ * Normalize stored neighborhood office meta (legacy single int or array of IDs).
+ *
+ * @param mixed $raw Meta value from get_post_meta.
+ * @return int[]
+ */
+function rch_normalize_neighborhood_office_ids($raw): array
+{
+    if ($raw === '' || $raw === false || $raw === null) {
+        return [];
+    }
+
+    if (is_numeric($raw)) {
+        $id = absint($raw);
+
+        return $id > 0 ? [$id] : [];
+    }
+
+    if (is_string($raw) && is_numeric(trim($raw))) {
+        $id = absint($raw);
+
+        return $id > 0 ? [$id] : [];
+    }
+
+    if (! is_array($raw)) {
+        return [];
+    }
+
+    $ids = array_map('absint', $raw);
+    $ids = array_values(array_unique(array_filter($ids)));
+
+    return $ids;
+}
+
+/**
+ * @param int $neighborhood_id Neighborhood post ID.
+ * @return int[] Office post IDs.
+ */
+function rch_get_neighborhood_office_ids(int $neighborhood_id): array
+{
+    $raw = get_post_meta($neighborhood_id, RCH_NEIGHBORHOOD_OFFICE_META_KEY, true);
+
+    return rch_normalize_neighborhood_office_ids($raw);
+}
+
+/**
+ * First assigned office (backward compatibility).
+ *
  * @param int $neighborhood_id Neighborhood post ID.
  * @return int Office post ID, or 0 if none.
  */
 function rch_get_neighborhood_office_id(int $neighborhood_id): int
 {
-    $office_id = get_post_meta($neighborhood_id, RCH_NEIGHBORHOOD_OFFICE_META_KEY, true);
+    $ids = rch_get_neighborhood_office_ids($neighborhood_id);
 
-    return $office_id !== '' && $office_id !== false ? absint($office_id) : 0;
+    return $ids !== [] ? (int) $ids[0] : 0;
+}
+
+/**
+ * Whether neighborhood office assignment UI runs on this blog (main site only).
+ */
+function rch_neighborhood_office_metabox_is_main_site(): bool
+{
+    if (! is_multisite()) {
+        return true;
+    }
+
+    return get_current_blog_id() === (int) get_main_site_id();
 }
 
 /**
@@ -46,6 +105,12 @@ function rch_query_neighborhoods_by_office(int $office_id, array $args = []): WP
 
     if ($office_id > 0) {
         $defaults['meta_query'] = [
+            'relation' => 'OR',
+            [
+                'key'     => RCH_NEIGHBORHOOD_OFFICE_META_KEY,
+                'value'   => sprintf('i:%d;', $office_id),
+                'compare' => 'LIKE',
+            ],
             [
                 'key'     => RCH_NEIGHBORHOOD_OFFICE_META_KEY,
                 'value'   => $office_id,
@@ -320,9 +385,13 @@ function rch_get_agent_cards_for_office(int $office_id, array $args = []): array
 
 function rch_add_neighborhood_office_meta_box(): void
 {
+    if (! rch_neighborhood_office_metabox_is_main_site()) {
+        return;
+    }
+
     add_meta_box(
         'rch_neighborhood_office_meta_box',
-        __('Assigned Office', 'rechat-plugin'),
+        __('Assigned Offices', 'rechat-plugin'),
         'rch_neighborhood_office_meta_box_callback',
         'neighborhoods',
         'side',
@@ -331,35 +400,105 @@ function rch_add_neighborhood_office_meta_box(): void
 }
 add_action('add_meta_boxes', 'rch_add_neighborhood_office_meta_box');
 
+/**
+ * Inline styles for neighborhood office checkboxes (main site).
+ */
+function rch_neighborhood_office_metabox_styles(): void
+{
+    ?>
+    <style>
+        #rch_neighborhood_office_meta_box .rch-neighborhood-office-search {
+            box-sizing: border-box;
+            width: 100%;
+            padding: 5px 8px;
+            margin-bottom: 10px;
+            border: 1px solid #8c8f94;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        #rch_neighborhood_office_meta_box .rch-neighborhood-office-results {
+            max-height: 220px;
+            overflow-y: auto;
+            border: 1px solid #dcdcde;
+            padding: 8px;
+            background: #fff;
+        }
+        #rch_neighborhood_office_meta_box .rch-neighborhood-office-results label {
+            display: block;
+            padding: 4px 0;
+            margin: 0;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        #rch_neighborhood_office_meta_box .rch-neighborhood-office-results input[type="checkbox"] {
+            margin-right: 5px;
+        }
+    </style>
+    <?php
+}
+
 function rch_neighborhood_office_meta_box_callback(WP_Post $post): void
 {
     wp_nonce_field('rch_save_neighborhood_office', 'rch_neighborhood_office_nonce');
 
-    $selected_office = rch_get_neighborhood_office_id((int) $post->ID);
-    $offices         = function_exists('rch_get_all_offices') ? rch_get_all_offices() : get_posts([
+    $selected_offices = rch_get_neighborhood_office_ids((int) $post->ID);
+    $offices          = function_exists('rch_get_all_offices') ? rch_get_all_offices() : get_posts([
         'post_type'      => 'offices',
         'posts_per_page' => -1,
         'post_status'    => 'publish',
         'orderby'        => 'title',
         'order'          => 'ASC',
     ]);
+
+    rch_neighborhood_office_metabox_styles();
     ?>
     <p>
-        <label for="rch_neighborhood_office" class="screen-reader-text">
-            <?php esc_html_e('Assigned Office', 'rechat-plugin'); ?>
+        <label for="rch-neighborhood-office-search" class="screen-reader-text">
+            <?php esc_html_e('Search offices', 'rechat-plugin'); ?>
         </label>
-        <select name="rch_neighborhood_office" id="rch_neighborhood_office" class="widefat">
-            <option value=""><?php esc_html_e('— None —', 'rechat-plugin'); ?></option>
+        <input
+            type="text"
+            id="rch-neighborhood-office-search"
+            class="rch-neighborhood-office-search"
+            placeholder="<?php esc_attr_e('Search offices…', 'rechat-plugin'); ?>"
+        />
+    </p>
+    <div id="rch-neighborhood-office-results" class="rch-neighborhood-office-results">
+        <?php if ($offices !== []) : ?>
             <?php foreach ($offices as $office) : ?>
-                <option value="<?php echo esc_attr((string) $office->ID); ?>" <?php selected($selected_office, (int) $office->ID); ?>>
+                <label class="rch-neighborhood-office-option">
+                    <input
+                        type="checkbox"
+                        name="rch_neighborhood_offices[]"
+                        value="<?php echo esc_attr((string) $office->ID); ?>"
+                        <?php checked(in_array((int) $office->ID, $selected_offices, true)); ?>
+                    />
                     <?php echo esc_html($office->post_title); ?>
-                </option>
+                </label>
             <?php endforeach; ?>
-        </select>
-    </p>
+        <?php else : ?>
+            <p class="description"><?php esc_html_e('No offices available.', 'rechat-plugin'); ?></p>
+        <?php endif; ?>
+    </div>
     <p class="description">
-        <?php esc_html_e('Link this neighborhood to an office for use in office pages and theme templates.', 'rechat-plugin'); ?>
+        <?php esc_html_e('Select one or more offices. This neighborhood appears on each assigned office site and templates.', 'rechat-plugin'); ?>
     </p>
+    <script>
+    (function () {
+        var search = document.getElementById('rch-neighborhood-office-search');
+        var box = document.getElementById('rch-neighborhood-office-results');
+        if (!search || !box) {
+            return;
+        }
+        search.addEventListener('input', function () {
+            var q = search.value.toLowerCase();
+            box.querySelectorAll('.rch-neighborhood-office-option').forEach(function (label) {
+                var text = (label.textContent || '').toLowerCase();
+                label.style.display = text.indexOf(q) !== -1 ? '' : 'none';
+            });
+        });
+    })();
+    </script>
     <?php
 }
 
@@ -385,31 +524,54 @@ function rch_save_neighborhood_office_meta(int $post_id): void
         return;
     }
 
-    if (! isset($_POST['rch_neighborhood_office']) || $_POST['rch_neighborhood_office'] === '') {
-        delete_post_meta($post_id, RCH_NEIGHBORHOOD_OFFICE_META_KEY);
+    if (! rch_neighborhood_office_metabox_is_main_site()) {
         return;
     }
 
-    $office_id = absint($_POST['rch_neighborhood_office']);
+    $previous_office_ids = rch_get_neighborhood_office_ids($post_id);
 
-    if ($office_id <= 0 || get_post_type($office_id) !== 'offices') {
-        delete_post_meta($post_id, RCH_NEIGHBORHOOD_OFFICE_META_KEY);
-        return;
+    $raw_ids = isset($_POST['rch_neighborhood_offices']) ? wp_unslash($_POST['rch_neighborhood_offices']) : [];
+    if (! is_array($raw_ids)) {
+        $raw_ids = [];
     }
 
-    update_post_meta($post_id, RCH_NEIGHBORHOOD_OFFICE_META_KEY, $office_id);
+    $office_ids = [];
+
+    foreach ($raw_ids as $raw_id) {
+        $office_id = absint($raw_id);
+        if ($office_id <= 0 || get_post_type($office_id) !== 'offices') {
+            continue;
+        }
+        $office_ids[] = $office_id;
+    }
+
+    $office_ids = array_values(array_unique($office_ids));
+
+    if ($office_ids === []) {
+        delete_post_meta($post_id, RCH_NEIGHBORHOOD_OFFICE_META_KEY);
+    } else {
+        update_post_meta($post_id, RCH_NEIGHBORHOOD_OFFICE_META_KEY, $office_ids);
+    }
+
+    if (function_exists('rch_schedule_agents_for_neighborhood_office_change')) {
+        rch_schedule_agents_for_neighborhood_office_change($previous_office_ids, $office_ids);
+    }
 }
 add_action('save_post_neighborhoods', 'rch_save_neighborhood_office_meta');
 
 function rch_add_neighborhood_office_admin_column(array $columns): array
 {
+    if (! rch_neighborhood_office_metabox_is_main_site()) {
+        return $columns;
+    }
+
     $new_columns = [];
 
     foreach ($columns as $key => $value) {
         $new_columns[$key] = $value;
 
         if ($key === 'title') {
-            $new_columns['rch_neighborhood_office'] = __('Office', 'rechat-plugin');
+            $new_columns['rch_neighborhood_office'] = __('Offices', 'rechat-plugin');
         }
     }
 
@@ -423,20 +585,27 @@ function rch_show_neighborhood_office_admin_column(string $column, int $post_id)
         return;
     }
 
-    $office_id = rch_get_neighborhood_office_id($post_id);
+    $office_ids = rch_get_neighborhood_office_ids($post_id);
 
-    if ($office_id <= 0) {
+    if ($office_ids === []) {
         echo '<em>' . esc_html__('None', 'rechat-plugin') . '</em>';
         return;
     }
 
-    $title = get_the_title($office_id);
+    $titles = [];
 
-    if ($title === '') {
+    foreach ($office_ids as $office_id) {
+        $title = get_the_title($office_id);
+        if ($title !== '') {
+            $titles[] = $title;
+        }
+    }
+
+    if ($titles === []) {
         echo '<em>' . esc_html__('None', 'rechat-plugin') . '</em>';
         return;
     }
 
-    echo esc_html($title);
+    echo esc_html(implode(', ', $titles));
 }
 add_action('manage_neighborhoods_posts_custom_column', 'rch_show_neighborhood_office_admin_column', 10, 2);
