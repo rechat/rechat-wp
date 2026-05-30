@@ -59,25 +59,58 @@ function rch_multisite_sanitize_slug(string $name): string
 }
 
 /**
- * Build a deterministic agent sub-site slug base: first initial + last name (e.g. "afreeman").
+ * Configured agent sub-site slug format.
  *
- * Rules:
- *  - lowercase only
- *  - letters/digits only (no hyphens) to match the requested format
- *  - derived from agent `first_name` + `last_name` post meta
- *  - falls back to agent display name when data missing
+ * @return string `initial_lastname` (default) or `firstname_lastname`.
+ */
+function rch_multisite_get_agent_slug_format(): string
+{
+    $saved = (string) get_site_option('rch_multisite_agent_slug_format', 'initial_lastname');
+
+    if (! in_array($saved, ['initial_lastname', 'firstname_lastname'], true)) {
+        return 'initial_lastname';
+    }
+
+    return $saved;
+}
+
+/**
+ * Build the agent sub-site slug base from post meta using the configured format.
  *
- * @param int    $agent_post_id Agent post ID.
- * @param string $agent_name    Agent display name (usually post title).
+ * Formats:
+ *  - initial_lastname:  first initial + last name, no separators (e.g. "afreeman")
+ *  - firstname_lastname: first name + last name with hyphens (e.g. "amy-freeman")
+ *
+ * Falls back to the agent display name when name meta is missing.
+ *
+ * @param int         $agent_post_id Agent post ID.
+ * @param string      $agent_name    Agent display name (usually post title).
+ * @param string|null $format        Optional format override.
  * @return string Sanitized slug base (may be empty if nothing valid remains).
  */
-function rch_multisite_agent_site_slug_base(int $agent_post_id, string $agent_name): string
+function rch_multisite_agent_site_slug_base(int $agent_post_id, string $agent_name, ?string $format = null): string
 {
-    $first = (string) get_post_meta($agent_post_id, 'first_name', true);
-    $last  = (string) get_post_meta($agent_post_id, 'last_name', true);
+    $format = $format ?? rch_multisite_get_agent_slug_format();
+    $first  = trim((string) get_post_meta($agent_post_id, 'first_name', true));
+    $last   = trim((string) get_post_meta($agent_post_id, 'last_name', true));
 
-    $first = trim($first);
-    $last  = trim($last);
+    if ($format === 'firstname_lastname') {
+        if ($first !== '' && $last !== '') {
+            $slug = rch_multisite_sanitize_slug($first . ' ' . $last);
+            if ($slug !== '') {
+                return $slug;
+            }
+        }
+
+        if ($first !== '' || $last !== '') {
+            $slug = rch_multisite_sanitize_slug(trim($first . ' ' . $last));
+            if ($slug !== '') {
+                return $slug;
+            }
+        }
+
+        return rch_multisite_sanitize_slug($agent_name);
+    }
 
     if ($last !== '') {
         $initial = $first !== '' ? mb_substr($first, 0, 1) : '';
@@ -91,12 +124,60 @@ function rch_multisite_agent_site_slug_base(int $agent_post_id, string $agent_na
         }
     }
 
-    // Fallback: legacy behavior from agent display name.
     $fallback = remove_accents($agent_name);
     $fallback = strtolower($fallback);
     $fallback = preg_replace('/[^a-z0-9]+/', '', $fallback);
     $fallback = substr((string) $fallback, 0, 63);
+
     return (string) $fallback;
+}
+
+/**
+ * Normalize a slug base for the selected agent URL format.
+ *
+ * @param string      $base_slug Slug base.
+ * @param string|null $format    Optional format override.
+ * @return string
+ */
+function rch_multisite_normalize_agent_site_slug(string $base_slug, ?string $format = null): string
+{
+    $format    = $format ?? rch_multisite_get_agent_slug_format();
+    $base_slug = trim((string) $base_slug);
+
+    if ($format === 'firstname_lastname') {
+        $base_slug = remove_accents($base_slug);
+        $base_slug = strtolower($base_slug);
+        $base_slug = preg_replace('/[^a-z0-9]+/', '-', $base_slug);
+        $base_slug = trim($base_slug, '-');
+        $base_slug = substr((string) $base_slug, 0, 63);
+        $base_slug = rtrim((string) $base_slug, '-');
+    } else {
+        $base_slug = strtolower($base_slug);
+        $base_slug = preg_replace('/[^a-z0-9]+/', '', $base_slug);
+        $base_slug = substr((string) $base_slug, 0, 63);
+    }
+
+    return (string) $base_slug;
+}
+
+/**
+ * Resolve the final unique agent sub-site slug (base + collision suffix when needed).
+ *
+ * @param int         $agent_post_id   Agent post ID.
+ * @param string      $agent_name      Agent display name.
+ * @param int|null    $exclude_blog_id Blog ID allowed to already own the target domain/path.
+ * @param string|null $format          Optional format override.
+ * @return string
+ */
+function rch_multisite_resolve_agent_site_slug(
+    int $agent_post_id,
+    string $agent_name,
+    ?int $exclude_blog_id = null,
+    ?string $format = null
+): string {
+    $base = rch_multisite_agent_site_slug_base($agent_post_id, $agent_name, $format);
+
+    return rch_multisite_unique_agent_site_slug($base, $exclude_blog_id, $format);
 }
 
 /**
@@ -104,17 +185,15 @@ function rch_multisite_agent_site_slug_base(int $agent_post_id, string $agent_na
  *
  * In subdomain mode this guarantees unique subdomains.
  *
- * @param string   $base_slug        Sanitized slug base (letters/digits only).
- * @param int|null $exclude_blog_id  Blog ID allowed to already own the target domain/path (used for renames).
+ * @param string      $base_slug        Sanitized slug base.
+ * @param int|null    $exclude_blog_id  Blog ID allowed to already own the target domain/path (used for renames).
+ * @param string|null $format           Optional format override.
  * @return string Unique slug (base or base + numeric suffix).
  */
-function rch_multisite_unique_agent_site_slug(string $base_slug, ?int $exclude_blog_id = null): string
+function rch_multisite_unique_agent_site_slug(string $base_slug, ?int $exclude_blog_id = null, ?string $format = null): string
 {
-    $base_slug = trim((string) $base_slug);
-    $base_slug = strtolower($base_slug);
-    $base_slug = preg_replace('/[^a-z0-9]+/', '', $base_slug);
-    $base_slug = substr((string) $base_slug, 0, 63);
-    $base_slug = (string) $base_slug;
+    $format    = $format ?? rch_multisite_get_agent_slug_format();
+    $base_slug = rch_multisite_normalize_agent_site_slug($base_slug, $format);
 
     if ($base_slug === '') {
         $base_slug = 'agent';
@@ -142,8 +221,13 @@ function rch_multisite_unique_agent_site_slug(string $base_slug, ?int $exclude_b
             return $candidate;
         }
 
-        $suffix = (string) $n;
-        $candidate = substr($base_slug, 0, max(1, 63 - strlen($suffix))) . $suffix;
+        if ($format === 'firstname_lastname') {
+            $suffix    = '-' . $n;
+            $candidate = substr($base_slug, 0, max(1, 63 - strlen($suffix))) . $suffix;
+        } else {
+            $suffix    = (string) $n;
+            $candidate = substr($base_slug, 0, max(1, 63 - strlen($suffix))) . $suffix;
+        }
         $n++;
 
         if ($n > 5000) {
@@ -856,8 +940,7 @@ function rch_multisite_create_site_for_agent(int $post_id, string $agent_name)
         return $broadcast_err;
     }
 
-    $base = rch_multisite_agent_site_slug_base($post_id, $agent_name);
-    $slug = rch_multisite_unique_agent_site_slug($base, null);
+    $slug = rch_multisite_resolve_agent_site_slug($post_id, $agent_name, null);
 
     if (empty($slug)) {
         return new WP_Error(
@@ -2852,7 +2935,7 @@ function rch_multisite_render_agent_metabox(WP_Post $post): void
         $location = rch_multisite_build_site_location($slug);
         $site_url = 'https://' . $location['domain'] . rtrim($location['path'], '/');
     } else {
-        $slug_preview = rch_multisite_sanitize_slug($post->post_title);
+        $slug_preview = rch_multisite_agent_site_slug_base($post->ID, $post->post_title);
         if ($slug_preview) {
             $location = rch_multisite_build_site_location($slug_preview);
             $site_url = 'https://' . $location['domain'] . rtrim($location['path'], '/');
@@ -3484,8 +3567,7 @@ function rch_multisite_migrate_agent_subsite_urls(): array
         }
 
         $name = trim((string) $agent->post_title);
-        $base = rch_multisite_agent_site_slug_base($agent_id, $name);
-        $slug = rch_multisite_unique_agent_site_slug($base, $blog_id);
+        $slug = rch_multisite_resolve_agent_site_slug($agent_id, $name, $blog_id);
         $loc  = rch_multisite_build_site_location($slug);
 
         $site = get_site($blog_id);
@@ -3719,6 +3801,14 @@ function rch_multisite_save_settings(): void
         $url_type = 'subdomain';
     }
     update_site_option('rch_multisite_url_type', $url_type);
+
+    $slug_format = isset($_POST['rch_multisite_agent_slug_format'])
+        ? sanitize_key(wp_unslash($_POST['rch_multisite_agent_slug_format']))
+        : 'initial_lastname';
+    if (! in_array($slug_format, ['initial_lastname', 'firstname_lastname'], true)) {
+        $slug_format = 'initial_lastname';
+    }
+    update_site_option('rch_multisite_agent_slug_format', $slug_format);
 
     // Delete on agent delete flag.
     $delete_flag = isset($_POST['rch_multisite_delete_on_delete']) ? 1 : 0;
