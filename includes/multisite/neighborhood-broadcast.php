@@ -51,24 +51,6 @@ function rch_neighborhood_broadcast_threewp_post_types(array $types): array
 add_filter('threewp_broadcast_post_types', 'rch_neighborhood_broadcast_threewp_post_types');
 
 /**
- * Normalize agent office meta to post IDs.
- *
- * @param mixed $raw Meta value.
- * @return int[]
- */
-function rch_normalize_agent_office_ids($raw): array
-{
-    if (! is_array($raw)) {
-        return [];
-    }
-
-    $ids = array_map('absint', $raw);
-    $ids = array_values(array_unique(array_filter($ids)));
-
-    return $ids;
-}
-
-/**
  * Agent post IDs on the hub linked to any of the given offices.
  *
  * @param int[] $office_ids Office post IDs on the source blog.
