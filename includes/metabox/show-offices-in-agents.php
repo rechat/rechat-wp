@@ -13,6 +13,77 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+/**
+ * Unique positive post IDs from agent office meta (no duplicate assignments).
+ *
+ * @param mixed $raw Meta value.
+ * @return int[]
+ */
+function rch_normalize_agent_office_ids($raw): array
+{
+    if (! is_array($raw)) {
+        return [];
+    }
+
+    $ids = array_map('absint', $raw);
+
+    return array_values(array_unique(array_filter($ids)));
+}
+
+/**
+ * Unique positive post IDs from agent region meta.
+ *
+ * @param mixed $raw Meta value.
+ * @return int[]
+ */
+function rch_normalize_agent_region_ids($raw): array
+{
+    if (! is_array($raw)) {
+        return [];
+    }
+
+    $ids = array_map('absint', $raw);
+
+    return array_values(array_unique(array_filter($ids)));
+}
+
+/**
+ * Persist deduplicated office/region meta when duplicates exist in the DB.
+ *
+ * @param int $post_id Agent post ID.
+ * @return void
+ */
+function rch_repair_agent_association_meta(int $post_id): void
+{
+    $post_id = absint($post_id);
+
+    if ($post_id <= 0 || get_post_type($post_id) !== 'agents') {
+        return;
+    }
+
+    $raw_offices = get_post_meta($post_id, '_rch_agent_offices', true);
+    $offices     = rch_normalize_agent_office_ids($raw_offices);
+
+    if (is_array($raw_offices) && $offices !== $raw_offices) {
+        if ($offices === []) {
+            delete_post_meta($post_id, '_rch_agent_offices');
+        } else {
+            update_post_meta($post_id, '_rch_agent_offices', $offices);
+        }
+    }
+
+    $raw_regions = get_post_meta($post_id, '_rch_agent_regions', true);
+    $regions     = rch_normalize_agent_region_ids($raw_regions);
+
+    if (is_array($raw_regions) && $regions !== $raw_regions) {
+        if ($regions === []) {
+            delete_post_meta($post_id, '_rch_agent_regions');
+        } else {
+            update_post_meta($post_id, '_rch_agent_regions', $regions);
+        }
+    }
+}
+
 /*******************************
  * Add offices meta box to agents post type
  ******************************/
@@ -39,8 +110,7 @@ function rch_agent_offices_meta_box_callback($post)
     wp_nonce_field('rch_save_agent_offices', 'rch_agent_offices_nonce');
 
     // Get selected offices
-    $selected_offices = get_post_meta($post->ID, '_rch_agent_offices', true);
-    $selected_offices = is_array($selected_offices) ? $selected_offices : [];
+    $selected_offices = rch_normalize_agent_office_ids(get_post_meta($post->ID, '_rch_agent_offices', true));
 
     // Add inline styles
     rch_add_agent_offices_metabox_styles();
@@ -299,8 +369,12 @@ function rch_save_agent_offices_meta($post_id)
 
     // Save or delete offices
     if (isset($_POST['rch_agent_offices']) && is_array($_POST['rch_agent_offices'])) {
-        $offices = array_map('intval', $_POST['rch_agent_offices']);
-        update_post_meta($post_id, '_rch_agent_offices', $offices);
+        $offices = rch_normalize_agent_office_ids($_POST['rch_agent_offices']);
+        if ($offices !== []) {
+            update_post_meta($post_id, '_rch_agent_offices', $offices);
+        } else {
+            delete_post_meta($post_id, '_rch_agent_offices');
+        }
     } else {
         delete_post_meta($post_id, '_rch_agent_offices');
     }
@@ -314,8 +388,8 @@ add_action('save_post_agents', 'rch_save_agent_offices_meta');
  */
 function rch_get_agent_office_addresses(int $agent_id): array
 {
-    $office_ids = get_post_meta($agent_id, '_rch_agent_offices', true);
-    if (empty($office_ids) || ! is_array($office_ids)) {
+    $office_ids = rch_normalize_agent_office_ids(get_post_meta($agent_id, '_rch_agent_offices', true));
+    if ($office_ids === []) {
         return [];
     }
 
@@ -466,25 +540,30 @@ add_action('manage_agents_posts_custom_column', 'rch_show_agent_association_colu
  ******************************/
 function rch_display_agent_offices_column($post_id)
 {
-    $offices = get_post_meta($post_id, '_rch_agent_offices', true);
-    
-    if (!empty($offices) && is_array($offices)) {
-        $office_titles = [];
-        foreach ($offices as $office_id) {
-            $title = get_the_title($office_id);
-            if ($title) {
-                $office_titles[] = $title;
-            }
-        }
-        
-        if (!empty($office_titles)) {
-            echo esc_html(implode(', ', $office_titles));
-        } else {
-            echo '<em>' . esc_html__('No Offices Assigned', 'rechat-plugin') . '</em>';
-        }
-    } else {
+    rch_repair_agent_association_meta($post_id);
+
+    $offices = rch_normalize_agent_office_ids(get_post_meta($post_id, '_rch_agent_offices', true));
+
+    if ($offices === []) {
         echo '<em>' . esc_html__('No Offices Assigned', 'rechat-plugin') . '</em>';
+        return;
     }
+
+    $office_titles = [];
+
+    foreach ($offices as $office_id) {
+        $title = get_the_title($office_id);
+        if ($title !== '') {
+            $office_titles[] = $title;
+        }
+    }
+
+    if ($office_titles !== []) {
+        echo esc_html(implode(', ', $office_titles));
+        return;
+    }
+
+    echo '<em>' . esc_html__('No Offices Assigned', 'rechat-plugin') . '</em>';
 }
 
 /*******************************
@@ -492,25 +571,28 @@ function rch_display_agent_offices_column($post_id)
  ******************************/
 function rch_display_agent_regions_column($post_id)
 {
-    $regions = get_post_meta($post_id, '_rch_agent_regions', true);
-    
-    if (!empty($regions) && is_array($regions)) {
-        $region_titles = [];
-        foreach ($regions as $region_id) {
-            $title = get_the_title($region_id);
-            if ($title) {
-                $region_titles[] = $title;
-            }
-        }
-        
-        if (!empty($region_titles)) {
-            echo esc_html(implode(', ', $region_titles));
-        } else {
-            echo '<em>' . esc_html__('No Regions Assigned', 'rechat-plugin') . '</em>';
-        }
-    } else {
+    $regions = rch_normalize_agent_region_ids(get_post_meta($post_id, '_rch_agent_regions', true));
+
+    if ($regions === []) {
         echo '<em>' . esc_html__('No Regions Assigned', 'rechat-plugin') . '</em>';
+        return;
     }
+
+    $region_titles = [];
+
+    foreach ($regions as $region_id) {
+        $title = get_the_title($region_id);
+        if ($title !== '') {
+            $region_titles[] = $title;
+        }
+    }
+
+    if ($region_titles !== []) {
+        echo esc_html(implode(', ', $region_titles));
+        return;
+    }
+
+    echo '<em>' . esc_html__('No Regions Assigned', 'rechat-plugin') . '</em>';
 }
 
 

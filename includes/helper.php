@@ -934,7 +934,10 @@ function rch_process_agents_data($access_token, $api_url_base)
 
                         if ($region_query->have_posts()) {
                             $region_query->the_post();
-                            $regions_for_agent[] = get_the_ID(); // Store the ID of the region
+                            $region_post_id = (int) get_the_ID();
+                            if ($region_post_id > 0 && ! in_array($region_post_id, $regions_for_agent, true)) {
+                                $regions_for_agent[] = $region_post_id;
+                            }
                             wp_reset_postdata();
                         }
                     } elseif ($brand['brand_type'] === 'Office') {
@@ -954,12 +957,21 @@ function rch_process_agents_data($access_token, $api_url_base)
 
                         if ($office_query->have_posts()) {
                             $office_query->the_post();
-                            $offices_for_agent[] = get_the_ID(); // Store the ID of the office
+                            $office_post_id = (int) get_the_ID();
+                            if ($office_post_id > 0 && ! in_array($office_post_id, $offices_for_agent, true)) {
+                                $offices_for_agent[] = $office_post_id;
+                            }
                             wp_reset_postdata();
                         }
                     }
                 }
 
+                if (function_exists('rch_normalize_agent_office_ids')) {
+                    $offices_for_agent = rch_normalize_agent_office_ids($offices_for_agent);
+                }
+                if (function_exists('rch_normalize_agent_region_ids')) {
+                    $regions_for_agent = rch_normalize_agent_region_ids($regions_for_agent);
+                }
 
                 // Prepare other fields
                 $user = $item['user'];
