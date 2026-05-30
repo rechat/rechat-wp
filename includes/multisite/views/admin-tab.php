@@ -15,6 +15,7 @@ function rch_multisite_render_admin_tab(): void
     $admin_user_id   = absint(get_site_option('rch_multisite_admin_user_id', 0));
     $delete_on_del   = (bool) get_site_option('rch_multisite_delete_site_on_agent_delete', 0);
     $url_type        = rch_multisite_get_url_type();
+    $agent_slug_format = rch_multisite_get_agent_slug_format();
     $network         = get_network();
     $base_domain     = preg_replace('/^www\./i', '', $network->domain);
     $network_path    = trailingslashit($network->path); // e.g. '/rechat-plugin/'
@@ -36,6 +37,8 @@ function rch_multisite_render_admin_tab(): void
     // URL pattern examples for the helper text.
     $example_subdomain    = 'john.' . $base_domain;
     $example_subdirectory = $base_domain . rtrim($network_path, '/') . '/john';
+    $example_agent_initial_lastname = 'afreeman.' . $base_domain;
+    $example_agent_firstname_lastname = 'amy-freeman.' . $base_domain;
 
     // All published agent posts for the status table.
     $agents = get_posts([
@@ -245,6 +248,39 @@ function rch_multisite_render_admin_tab(): void
                     </td>
                 </tr>
 
+                <tr valign="top">
+                    <th scope="row">
+                        <?php esc_html_e('Agent sub-site URL slug', 'rechat-plugin'); ?>
+                    </th>
+                    <td>
+                        <fieldset>
+                            <label style="display:block;margin-bottom:6px;">
+                                <input
+                                    type="radio"
+                                    name="rch_multisite_agent_slug_format"
+                                    value="initial_lastname"
+                                    <?php checked($agent_slug_format, 'initial_lastname'); ?>
+                                >
+                                <?php esc_html_e('First initial + last name', 'rechat-plugin'); ?>
+                                &nbsp;<code><?php echo esc_html($example_agent_initial_lastname); ?></code>
+                            </label>
+                            <label style="display:block;">
+                                <input
+                                    type="radio"
+                                    name="rch_multisite_agent_slug_format"
+                                    value="firstname_lastname"
+                                    <?php checked($agent_slug_format, 'firstname_lastname'); ?>
+                                >
+                                <?php esc_html_e('First name + last name', 'rechat-plugin'); ?>
+                                &nbsp;<code><?php echo esc_html($example_agent_firstname_lastname); ?></code>
+                            </label>
+                        </fieldset>
+                        <p class="description" style="margin-top:6px;">
+                            <?php esc_html_e('Controls how agent sub-site URLs are generated for new sites, sync, and the migration tool below. Default is first initial + last name. Changing this does not rename existing sites until you run the migration action.', 'rechat-plugin'); ?>
+                        </p>
+                    </td>
+                </tr>
+
                 <?php /* Owner user ID */ ?>
                 <tr valign="top">
                     <th scope="row">
@@ -353,7 +389,7 @@ function rch_multisite_render_admin_tab(): void
             style="margin-left:8px;"
             data-nonce="<?php echo esc_attr($migrate_urls_nonce); ?>"
         >
-            <?php esc_html_e('Migrate agent sub-site URLs (initial+lastname)', 'rechat-plugin'); ?>
+            <?php esc_html_e('Migrate agent sub-site URLs', 'rechat-plugin'); ?>
         </button>
 
         <span id="rch-multisite-provision-spinner" class="spinner" style="float:none;margin-top:4px;"></span>
@@ -367,6 +403,10 @@ function rch_multisite_render_admin_tab(): void
 
         <p class="description" style="max-width:900px;margin-top:10px;">
             <?php esc_html_e('“Reassign agent sub-site role for all agents” walks every agent profile that has a sub-site and a valid email, finds the WordPress user with that email, and sets their role on that sub-site to the current agent role (e.g. Agent). It also copies the main site Local Logic and Google Map API keys when those fields are empty on the sub-site, and enables the Local Content feature checkbox on every agent sub-site. Sub-sites with their own API keys are left unchanged. No login emails are sent. Use this after changing role names or capabilities.', 'rechat-plugin'); ?>
+        </p>
+
+        <p class="description" style="max-width:900px;margin-top:10px;">
+            <?php esc_html_e('“Migrate agent sub-site URLs” renames every linked agent sub-site to match the slug format selected above (first initial + last name, or first name + last name). Save Multisite Settings first if you changed the slug format.', 'rechat-plugin'); ?>
         </p>
 
         <p style="margin-top:16px;margin-bottom:6px;">
@@ -436,7 +476,7 @@ function rch_multisite_render_admin_tab(): void
                                 ? get_site_url($blog_id)
                                 : 'https://' . $loc['domain'] . rtrim($loc['path'], '/');
                         } else {
-                            $preview_slug = rch_multisite_sanitize_slug($agent->post_title);
+                            $preview_slug = rch_multisite_agent_site_slug_base($agent->ID, $agent->post_title);
                             if ($preview_slug) {
                                 $loc      = rch_multisite_build_site_location($preview_slug);
                                 $site_url = 'https://' . $loc['domain'] . rtrim($loc['path'], '/');
@@ -885,7 +925,7 @@ function rch_multisite_render_admin_tab(): void
             var $spinner = $('#rch-multisite-provision-spinner');
             var $result  = $('#rch-multisite-provision-result');
 
-            if (! window.confirm('<?php echo esc_js(__('Rename all existing agent sub-sites to the new URL format (first initial + last name)? This changes subdomain URLs across the network.', 'rechat-plugin')); ?>')) {
+            if (! window.confirm('<?php echo esc_js(__('Rename all existing agent sub-sites to match the selected slug format? This changes subdomain URLs across the network.', 'rechat-plugin')); ?>')) {
                 return;
             }
 
