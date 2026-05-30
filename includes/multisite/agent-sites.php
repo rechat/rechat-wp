@@ -982,6 +982,8 @@ function rch_multisite_create_site_for_agent(int $post_id, string $agent_name)
             rch_multisite_schedule_broadcast_to_new_blog($existing_blog_id);
         }
 
+        do_action('rch_multisite_agent_site_created', $post_id, $existing_blog_id);
+
         return $existing_blog_id;
     }
 
@@ -1047,6 +1049,14 @@ function rch_multisite_create_site_for_agent(int $post_id, string $agent_name)
     if (function_exists('rch_multisite_schedule_broadcast_to_new_blog')) {
         rch_multisite_schedule_broadcast_to_new_blog($blog_id);
     }
+
+    /**
+     * Fires after Rechat provisions an agent subsite (neighborhood broadcast, etc.).
+     *
+     * @param int $post_id Agent post ID on the hub.
+     * @param int $blog_id New subsite blog ID.
+     */
+    do_action('rch_multisite_agent_site_created', $post_id, $blog_id);
 
     error_log(
         'Rechat Plugin Multisite: Created site ' . $domain . $path .

@@ -34,8 +34,8 @@ function rch_multisite_set_subsite_role_option(int $blog_id, string $role): void
 /**
  * Whether the current blog is an agent subsite (not the network hub, not an office subsite).
  *
- * When true, Rechat hides its custom post type admin menus (Agents, Offices, Regions, Neighborhoods)
- * while keeping the Rechat settings screen and other network-facing tools available.
+ * When true, Rechat hides Agents, Offices, and Regions admin menus on this subsite; Neighborhoods
+ * stays available in wp-admin. Rechat settings and other tools remain available.
  *
  * @return bool
  */

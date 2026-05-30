@@ -4,11 +4,22 @@ if (! defined('ABSPATH')) {
 }
 
 /**
- * @return bool True on agent-only subsites: hide Rechat CPT admin menus while keeping public archives.
+ * Whether a Rechat CPT admin UI should be hidden on the current blog.
+ *
+ * On agent-only subsites: hide agents, offices, and regions; keep neighborhoods editable.
+ *
+ * @param string $post_type CPT slug: agents, offices, regions, neighborhoods.
+ * @return bool
  */
-function rch_rechat_should_hide_cpt_admin_ui(): bool
+function rch_rechat_should_hide_cpt_admin_ui(string $post_type = ''): bool
 {
-    return function_exists('rch_is_rechat_agent_only_subsite') && rch_is_rechat_agent_only_subsite();
+    $hide = false;
+
+    if (function_exists('rch_is_rechat_agent_only_subsite') && rch_is_rechat_agent_only_subsite()) {
+        $hide = $post_type !== 'neighborhoods';
+    }
+
+    return (bool) apply_filters('rch_rechat_should_hide_cpt_admin_ui', $hide, $post_type);
 }
 
 /*******************************
@@ -16,7 +27,7 @@ function rch_rechat_should_hide_cpt_admin_ui(): bool
  ******************************/
 function rch_agents()
 {
-    $hide_ui = rch_rechat_should_hide_cpt_admin_ui();
+    $hide_ui = rch_rechat_should_hide_cpt_admin_ui('agents');
 
     $labels = array(
         'name'                  => _x('Agents', 'Post Type General Name', 'rechat-plugin'),
@@ -76,7 +87,7 @@ function rch_agents()
  ******************************/
 function rch_offices()
 {
-    $hide_ui = rch_rechat_should_hide_cpt_admin_ui();
+    $hide_ui = rch_rechat_should_hide_cpt_admin_ui('offices');
 
     $labels = array(
         'name'                  => _x('Offices', 'Post Type General Name', 'rechat-plugin'),
@@ -136,7 +147,7 @@ function rch_offices()
  ******************************/
 function rch_regions()
 {
-    $hide_ui = rch_rechat_should_hide_cpt_admin_ui();
+    $hide_ui = rch_rechat_should_hide_cpt_admin_ui('regions');
 
     $labels = array(
         'name'                  => _x('Regions', 'Post Type General Name', 'rechat-plugin'),
@@ -195,7 +206,7 @@ function rch_regions()
  ******************************/
 function rch_neighborhoods()
 {
-    $hide_ui = rch_rechat_should_hide_cpt_admin_ui();
+    $hide_ui = rch_rechat_should_hide_cpt_admin_ui('neighborhoods');
 
     $args = array(
         'labels' => array(
