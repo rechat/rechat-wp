@@ -400,6 +400,32 @@ function rch_oauth_error_message_from_response($data, $default)
     return $default;
 }
 
+/**
+ * True when this blog should run its own token refresh cron (not hub-only inheritance).
+ *
+ * @return bool
+ */
+function rch_multisite_should_run_local_oauth_refresh(): bool
+{
+    if (! is_multisite()) {
+        return true;
+    }
+
+    if (get_current_blog_id() === (int) get_main_site_id()) {
+        return true;
+    }
+
+    if (! function_exists('rch_is_rechat_provisioned_subsite') || ! rch_is_rechat_provisioned_subsite()) {
+        return true;
+    }
+
+    if (! function_exists('rch_multisite_subsite_has_local_oauth')) {
+        return true;
+    }
+
+    return rch_multisite_subsite_has_local_oauth();
+}
+
 /*******************************
  * Check if access token has expired
  ******************************/
@@ -407,6 +433,12 @@ function rch_check_token_expiry()
 {
     // Don't check on every admin page load - only on settings page
     if (!isset($_GET['page']) || $_GET['page'] !== 'rechat-setting') {
+        return;
+    }
+
+    if (! rch_multisite_should_run_local_oauth_refresh()) {
+        rch_unschedule_token_refresh();
+
         return;
     }
 
@@ -605,8 +637,14 @@ function rch_disconnect_oauth()
 
     error_log('Rechat Plugin: OAuth disconnected successfully');
 
+    $redirect_args = ['disconnected' => '1'];
+
+    if (function_exists('rch_multisite_subsite_uses_hub_oauth') && rch_multisite_subsite_uses_hub_oauth()) {
+        $redirect_args['hub_oauth'] = '1';
+    }
+
     // Redirect back to settings page
-    wp_safe_redirect(admin_url('admin.php?page=rechat-setting&tab=connect-to-rechat&disconnected=1'));
+    wp_safe_redirect(add_query_arg($redirect_args, admin_url('admin.php?page=rechat-setting&tab=connect-to-rechat')));
     exit;
 }
 

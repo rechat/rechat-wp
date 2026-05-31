@@ -6,8 +6,9 @@
  * - Agent-only subsites (linked to a hub `agents` post via `_rch_agent_site_id`) auto-scope every
  *   `<rechat-listings>` / `[listings]` / Gutenberg listing block / `[rch_latest_listings]` /
  *   legacy archive AJAX with `filter_agents` from the hub agent's `agents` post meta.
- * - OAuth tokens (`rch_rechat_access_token`, `rch_rechat_refresh_token`) are per-blog only; subsites
- *   do not inherit the main site connection — each site uses Connect To Rechat on that blog.
+ * - On agent/office subsites, when local OAuth options are empty, `rch_rechat_access_token`,
+ *   `rch_rechat_refresh_token`, `rch_rechat_brand_id`, and `rch_rechat_expires_in` fall back to the hub.
+ *   Non-empty local values always win so a subsite can connect its own Rechat account via OAuth.
  * - When local brand, Local Logic API key, or Google Map API key is empty, those options fall back to the main site.
  * - Output buffer on subsites with empty local brand or map (or active agent scope) patches
  *   `<rechat-root>` / `<rechat-listings>`.
@@ -249,12 +250,13 @@ function rch_multisite_fetch_raw_option_value_for_blog(int $blog_id, string $opt
 }
 
 /**
- * Short-circuit empty subsite options with hub DB values (runs before alloptions cache).
+ * Whether hub option inheritance should run on the current blog.
+ *
+ * @param string $option_name Option being read.
+ * @return bool
  */
-function rch_multisite_pre_option_hub_fallback($pre, string $option_name)
+function rch_multisite_should_inherit_hub_option(string $option_name): bool
 {
-    unset($pre);
-
     if (! is_multisite()) {
         return false;
     }
@@ -266,6 +268,31 @@ function rch_multisite_pre_option_hub_fallback($pre, string $option_name)
         return false;
     }
 
+    $oauth_options = function_exists('rch_multisite_hub_oauth_option_names')
+        ? rch_multisite_hub_oauth_option_names()
+        : [];
+
+    if (in_array($option_name, $oauth_options, true)) {
+        return function_exists('rch_is_rechat_provisioned_subsite') && rch_is_rechat_provisioned_subsite();
+    }
+
+    return true;
+}
+
+/**
+ * Short-circuit empty subsite options with hub DB values (runs before alloptions cache).
+ */
+function rch_multisite_pre_option_hub_fallback($pre, string $option_name)
+{
+    unset($pre);
+
+    if (! rch_multisite_should_inherit_hub_option($option_name)) {
+        return false;
+    }
+
+    $main_id = (int) get_main_site_id();
+    $here    = get_current_blog_id();
+
     $local = rch_multisite_fetch_raw_option_value_for_blog($here, $option_name);
     if ($local !== '') {
         return false;
@@ -276,11 +303,27 @@ function rch_multisite_pre_option_hub_fallback($pre, string $option_name)
     return $hub !== '' ? $hub : false;
 }
 
-add_filter('pre_option_rch_rechat_brand_id', static function ($pre, $option, $default) {
-    unset($option, $default);
+foreach (
+    function_exists('rch_multisite_hub_oauth_option_names')
+        ? rch_multisite_hub_oauth_option_names()
+        : ['rch_rechat_brand_id']
+    as $oauth_option_name
+) {
+    if ($oauth_option_name === '') {
+        continue;
+    }
 
-    return rch_multisite_pre_option_hub_fallback($pre, 'rch_rechat_brand_id');
-}, 5, 3);
+    add_filter(
+        'pre_option_' . $oauth_option_name,
+        static function ($pre, $option, $default) use ($oauth_option_name) {
+            unset($option, $default);
+
+            return rch_multisite_pre_option_hub_fallback($pre, $oauth_option_name);
+        },
+        5,
+        3
+    );
+}
 
 if (function_exists('rch_multisite_local_logic_features_option_name')) {
     $features_option = rch_multisite_local_logic_features_option_name();
@@ -354,6 +397,10 @@ function rch_multisite_fallback_rechat_option($value, string $option)
 
     $main_id = (int) get_main_site_id();
     if (get_current_blog_id() === $main_id) {
+        return $value;
+    }
+
+    if (! rch_multisite_should_inherit_hub_option($option)) {
         return $value;
     }
 
@@ -433,9 +480,32 @@ function rch_multisite_subsite_rechat_api_credentials()
     );
 }
 
-add_filter('option_rch_rechat_brand_id', static function ($value) {
-    return rch_multisite_fallback_rechat_option($value, 'rch_rechat_brand_id');
-}, 5);
+foreach (
+    function_exists('rch_multisite_hub_oauth_option_names')
+        ? rch_multisite_hub_oauth_option_names()
+        : ['rch_rechat_brand_id']
+    as $oauth_option_name
+) {
+    if ($oauth_option_name === '') {
+        continue;
+    }
+
+    add_filter(
+        'option_' . $oauth_option_name,
+        static function ($value) use ($oauth_option_name) {
+            return rch_multisite_fallback_rechat_option($value, $oauth_option_name);
+        },
+        5
+    );
+
+    add_filter(
+        'option_' . $oauth_option_name,
+        static function ($value) use ($oauth_option_name) {
+            return rch_multisite_fallback_rechat_option($value, $oauth_option_name);
+        },
+        999
+    );
+}
 
 if (function_exists('rch_multisite_local_logic_features_option_name')) {
     $features_option = rch_multisite_local_logic_features_option_name();
@@ -482,11 +552,71 @@ if (function_exists('rch_multisite_hub_inherited_option_names')) {
 }
 
 /**
- * Late pass: other code can empty options after priority 5; re-apply hub fallback.
+ * Raw OAuth option stored on this blog (no hub fallback).
+ *
+ * @param string $option_name Option name.
+ * @return string
  */
-add_filter('option_rch_rechat_brand_id', static function ($value) {
-    return rch_multisite_fallback_rechat_option($value, 'rch_rechat_brand_id');
-}, 999);
+function rch_multisite_get_local_oauth_option_raw(string $option_name): string
+{
+    if ($option_name === '') {
+        return '';
+    }
+
+    return rch_multisite_fetch_raw_option_value_for_blog(get_current_blog_id(), $option_name);
+}
+
+/**
+ * Whether this provisioned subsite has its own OAuth tokens saved locally.
+ *
+ * @return bool
+ */
+function rch_multisite_subsite_has_local_oauth(): bool
+{
+    if (! function_exists('rch_is_rechat_provisioned_subsite') || ! rch_is_rechat_provisioned_subsite()) {
+        return (bool) get_option('rch_rechat_access_token') || (bool) get_option('rch_rechat_refresh_token');
+    }
+
+    $local_access  = rch_multisite_get_local_oauth_option_raw('rch_rechat_access_token');
+    $local_refresh = rch_multisite_get_local_oauth_option_raw('rch_rechat_refresh_token');
+
+    return $local_access !== '' || $local_refresh !== '';
+}
+
+/**
+ * Whether this subsite uses the hub's OAuth because local credentials are empty.
+ *
+ * @return bool
+ */
+function rch_multisite_subsite_uses_hub_oauth(): bool
+{
+    if (! function_exists('rch_is_rechat_provisioned_subsite') || ! rch_is_rechat_provisioned_subsite()) {
+        return false;
+    }
+
+    if (rch_multisite_subsite_has_local_oauth()) {
+        return false;
+    }
+
+    $main_id = (int) get_main_site_id();
+    $hub_access = rch_multisite_fetch_raw_option_value_for_blog($main_id, 'rch_rechat_access_token');
+    $hub_brand  = rch_multisite_fetch_raw_option_value_for_blog($main_id, 'rch_rechat_brand_id');
+
+    return $hub_access !== '' && $hub_brand !== '';
+}
+
+/**
+ * Effective OAuth connected state (local or inherited hub credentials).
+ *
+ * @return bool
+ */
+function rch_multisite_oauth_is_effectively_connected(): bool
+{
+    $access  = (string) get_option('rch_rechat_access_token', '');
+    $refresh = (string) get_option('rch_rechat_refresh_token', '');
+
+    return $access !== '' || $refresh !== '';
+}
 
 /**
  * [listings] and Gutenberg block (via [listings]): inject filter_agents after shortcode_atts merge.

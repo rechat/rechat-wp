@@ -107,9 +107,15 @@ function rch_rechat_menu_page()
 
     $auth_url = rch_get_oauth_authorization_url();
     $active_tab = rch_get_active_tab();
-    $access_token_exists  = (bool) get_option('rch_rechat_access_token');
+    $access_token_exists  = function_exists('rch_multisite_oauth_is_effectively_connected')
+        ? ((string) get_option('rch_rechat_access_token', '') !== '')
+        : (bool) get_option('rch_rechat_access_token');
     $refresh_token_exists = (bool) get_option('rch_rechat_refresh_token');
-    $has_oauth_credentials = $access_token_exists || $refresh_token_exists;
+    $has_oauth_credentials  = function_exists('rch_multisite_oauth_is_effectively_connected')
+        ? rch_multisite_oauth_is_effectively_connected()
+        : ($access_token_exists || $refresh_token_exists);
+    $uses_hub_oauth         = function_exists('rch_multisite_subsite_uses_hub_oauth') && rch_multisite_subsite_uses_hub_oauth();
+    $has_local_oauth        = function_exists('rch_multisite_subsite_has_local_oauth') && rch_multisite_subsite_has_local_oauth();
 
     ?>
     <div class="wrap wrap-for-rechat">
@@ -128,7 +134,14 @@ function rch_rechat_menu_page()
                     break;
                     
                 case 'connect-to-rechat':
-                    rch_render_connect_tab($auth_url, $access_token_exists, $refresh_token_exists, $has_oauth_credentials);
+                    rch_render_connect_tab(
+                        $auth_url,
+                        $access_token_exists,
+                        $refresh_token_exists,
+                        $has_oauth_credentials,
+                        $uses_hub_oauth,
+                        $has_local_oauth
+                    );
                     break;
                     
                 case 'general-settings':
@@ -222,8 +235,14 @@ function rch_render_sync_data_tab($access_token_exists)
 /*******************************
  * Render Connect to Rechat tab
  ******************************/
-function rch_render_connect_tab($auth_url, $access_token_exists, $refresh_token_exists, $has_oauth_credentials)
-{
+function rch_render_connect_tab(
+    $auth_url,
+    $access_token_exists,
+    $refresh_token_exists,
+    $has_oauth_credentials,
+    $uses_hub_oauth = false,
+    $has_local_oauth = false
+) {
     if (!defined('RCH_PLUGIN_ASSETS_URL_IMG')) {
         return;
     }
@@ -237,6 +256,22 @@ function rch_render_connect_tab($auth_url, $access_token_exists, $refresh_token_
             <?php esc_html_e('Connecting to Rechat is necessary to ensure your information is securely retrieved from the Rechat platform. You will be redirected to the Rechat platform where you can authorize this plugin to access your data safely.', 'rechat-plugin'); ?>
         </p>
 
+        <?php if (isset($_GET['hub_oauth']) && $_GET['hub_oauth'] === '1') : ?>
+            <div class="notice notice-info inline" style="margin:12px 0;">
+                <p>
+                    <?php esc_html_e('This site’s own Rechat connection was removed. The main network site’s connection still applies here until you connect this site separately.', 'rechat-plugin'); ?>
+                </p>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($uses_hub_oauth) : ?>
+            <div class="notice notice-info inline" style="margin:12px 0;">
+                <p>
+                    <?php esc_html_e('This site is using the main network site’s Rechat connection (brand ID and tokens). Listings and API calls work without connecting here. Use “Connect to Rechat” below to sign in with a different Rechat account for this site only.', 'rechat-plugin'); ?>
+                </p>
+            </div>
+        <?php endif; ?>
+
         <div class="rch-container-connect-rechat">
             <?php if (!$has_oauth_credentials) : ?>
                 <a href="<?php echo esc_url($auth_url); ?>" class="button button-primary">
@@ -246,20 +281,35 @@ function rch_render_connect_tab($auth_url, $access_token_exists, $refresh_token_
                     <?php esc_html_e('To sync your data with Rechat, please connect your Rechat account.', 'rechat-plugin'); ?>
                 </p>
             <?php else : ?>
-                <form id="disconnect-form" method="post" action="">
+                <?php if ($uses_hub_oauth && ! $has_local_oauth) : ?>
+                    <a href="<?php echo esc_url($auth_url); ?>" class="button button-primary" style="margin-right:8px;">
+                        <?php esc_html_e('Connect this site to Rechat', 'rechat-plugin'); ?>
+                    </a>
+                <?php endif; ?>
+                <?php if ($has_local_oauth) : ?>
+                <form id="disconnect-form" method="post" action="" style="display:inline-block;">
                     <input type="hidden" name="action" value="disconnect_rechat">
                     <?php wp_nonce_field('disconnect_rechat_nonce', 'disconnect_rechat_nonce_field'); ?>
                     <button type="button" class="button rch-disconnect-rechat" id="show-disconnect-modal">
                         <?php esc_html_e('Disconnect from Rechat', 'rechat-plugin'); ?>
                     </button>
                 </form>
+                <?php endif; ?>
                 <?php if ($access_token_exists) : ?>
                     <p class="rch-connected-text">
                         <img 
                             src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'ph_check.svg'); ?>" 
                             alt="<?php esc_attr_e('Connected', 'rechat-plugin'); ?>"
                         >
-                        <?php esc_html_e('You are connected to Rechat (access token present).', 'rechat-plugin'); ?>
+                        <?php
+                        if ($uses_hub_oauth) {
+                            esc_html_e('Rechat is available via the main network site (access token from hub).', 'rechat-plugin');
+                        } elseif ($has_local_oauth) {
+                            esc_html_e('You are connected to Rechat on this site (access token present).', 'rechat-plugin');
+                        } else {
+                            esc_html_e('You are connected to Rechat (access token present).', 'rechat-plugin');
+                        }
+                        ?>
                     </p>
                 <?php else : ?>
                     <p class="rch-connected-text" style="border-left:4px solid #d63638;padding-left:12px;">
