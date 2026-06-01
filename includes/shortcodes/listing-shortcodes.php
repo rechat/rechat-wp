@@ -147,7 +147,13 @@ function rch_prepare_listing_atts_from_block(array $block_attributes)
     && ! empty($block_attributes['selectedStatuses'])
     && is_array($block_attributes['selectedStatuses'])
   ) {
-    $out['listing_statuses'] = $block_attributes['selectedStatuses'];
+    $out['listing_statuses'] = function_exists('rch_expand_listing_status_groups')
+      ? rch_expand_listing_status_groups($block_attributes['selectedStatuses'])
+      : $block_attributes['selectedStatuses'];
+  }
+
+  if (! empty($out['listing_statuses']) && function_exists('rch_expand_listing_status_groups')) {
+    $out['listing_statuses'] = rch_expand_listing_status_groups($out['listing_statuses']);
   }
 
   if (array_key_exists('own_listing', $block_attributes)) {
