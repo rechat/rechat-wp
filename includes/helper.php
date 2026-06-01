@@ -1658,22 +1658,118 @@ function rch_get_listing_block_attributes()
     );
 }
 
+/**
+ * Active listing statuses used on single agent pages (agents-listings-section.php).
+ *
+ * @return string[] Rechat API status labels.
+ */
+function rch_get_agent_single_active_listing_statuses(): array
+{
+    return [
+        'Active',
+        'Incoming',
+        'Coming Soon',
+    ];
+}
+
+/**
+ * Sold/leased statuses on single agent pages (separate listings mode).
+ *
+ * @return string[]
+ */
+function rch_get_agent_single_sold_listing_statuses(): array
+{
+    return [
+        'Sold',
+        'Leased',
+    ];
+}
+
+/**
+ * Comma-separated active statuses for filter_listing_statuses (agent single parity).
+ *
+ * @return string
+ */
+function rch_get_agent_single_active_listing_statuses_string(): string
+{
+    return implode(', ', rch_get_agent_single_active_listing_statuses());
+}
+
+/**
+ * UI group keys (Active, Pending, …) → Rechat status lists for shortcode/block.
+ *
+ * “Active” matches agent single pages and the Listing block editor.
+ *
+ * @return array<string, string[]>
+ */
+function rch_get_listing_status_group_mappings(): array
+{
+    return [
+        'Active'   => rch_get_agent_single_active_listing_statuses(),
+        'Pending'  => ['Pending'],
+        'Closed'   => rch_get_agent_single_sold_listing_statuses(),
+        'Archived' => ['Withdrawn', 'Expired'],
+    ];
+}
+
+/**
+ * Expand group aliases and normalize legacy “Active” bundles from older block saves.
+ *
+ * @param array|string $listing_statuses Raw shortcode/block value.
+ * @return string[] Unique status labels.
+ */
+function rch_expand_listing_status_groups($listing_statuses): array
+{
+    if (is_string($listing_statuses)) {
+        $listing_statuses = $listing_statuses === ''
+            ? []
+            : array_map('trim', explode(',', $listing_statuses));
+    }
+
+    if (! is_array($listing_statuses)) {
+        return [];
+    }
+
+    $mappings = rch_get_listing_status_group_mappings();
+    $out      = [];
+
+    foreach ($listing_statuses as $status) {
+        $status = trim((string) $status);
+
+        if ($status === '') {
+            continue;
+        }
+
+        if (isset($mappings[$status])) {
+            $out = array_merge($out, $mappings[$status]);
+            continue;
+        }
+
+        $out[] = $status;
+    }
+
+    return array_values(array_unique($out));
+}
+
 /*******************************
  * Sanitize listing statuses array to comma-separated string
  ******************************/
 function rch_sanitize_listing_statuses($listing_statuses)
 {
-    if (is_array($listing_statuses)) {
-        $sanitized = array_filter(
-            array_map('sanitize_text_field', $listing_statuses),
-            function ($status) {
-                return $status !== '';
-            }
-        );
-        return implode(',', $sanitized);
+    $expanded = rch_expand_listing_status_groups($listing_statuses);
+
+    if ($expanded === []) {
+        return '';
     }
 
-    return sanitize_text_field((string) $listing_statuses);
+    $sanitized = array_filter(
+        array_map('sanitize_text_field', $expanded),
+        static function ($status) {
+            return $status !== '';
+        }
+    );
+
+    return implode(',', $sanitized);
 }
 
 /*******************************

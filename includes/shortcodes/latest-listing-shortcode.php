@@ -138,12 +138,22 @@ function rch_latest_listings_get_property_type_mappings()
  */
 function rch_latest_listings_get_status_mappings()
 {
-    return [
-        'Active' => 'Active,Incoming,Coming Soon',
-        'Pending' => 'Pending',
-        'Closed' => 'Sold,Leased',
-        'Archived' => 'Withdrawn,Expired',
-    ];
+    if (! function_exists('rch_get_listing_status_group_mappings')) {
+        return [
+            'Active'   => 'Active, Active Contingent, Active Kick Out, Active Option Contract, Active Under Contract',
+            'Pending'  => 'Pending',
+            'Closed'   => 'Sold, Leased',
+            'Archived' => 'Withdrawn, Expired',
+        ];
+    }
+
+    $out = [];
+
+    foreach (rch_get_listing_status_group_mappings() as $group => $statuses) {
+        $out[ $group ] = implode(',', $statuses);
+    }
+
+    return $out;
 }
 
 /**
