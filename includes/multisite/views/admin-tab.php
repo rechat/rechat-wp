@@ -27,6 +27,7 @@ function rch_multisite_render_admin_tab(): void
     $reassign_roles_nonce = wp_create_nonce('rch_multisite_reassign_agent_roles');
     $resync_themes_nonce   = wp_create_nonce('rch_multisite_resync_themes');
     $migrate_urls_nonce    = wp_create_nonce('rch_multisite_migrate_agent_urls');
+    $dedupe_cleanup_nonce  = wp_create_nonce('rch_multisite_subsite_dedupe');
     $saved_agent_theme  = (string) get_site_option('rch_multisite_agent_theme_stylesheet', '');
     $saved_office_theme = (string) get_site_option('rch_multisite_office_theme_stylesheet', '');
     $theme_choices      = rch_multisite_get_theme_choices();
@@ -393,6 +394,32 @@ function rch_multisite_render_admin_tab(): void
         </button>
 
         <span id="rch-multisite-provision-spinner" class="spinner" style="float:none;margin-top:4px;"></span>
+
+        <hr style="margin:24px 0;max-width:900px;" />
+
+        <h3 style="margin-bottom:8px;"><?php esc_html_e('Remove duplicate sub-sites', 'rechat-plugin'); ?></h3>
+        <p class="description" style="max-width:900px;">
+            <?php esc_html_e('Keeps one sub-site per published agent and office on the hub (prefers the base URL, e.g. cmoreland not cmoreland2). Trashes duplicate hub agent posts that share the same Rechat API ID. Permanently deletes extra network sites. Back up the network first.', 'rechat-plugin'); ?>
+        </p>
+        <p style="margin-top:12px;">
+            <button
+                type="button"
+                id="rch-multisite-dedupe-preview-btn"
+                class="button button-secondary"
+                data-nonce="<?php echo esc_attr($dedupe_cleanup_nonce); ?>"
+            >
+                <?php esc_html_e('Preview duplicate cleanup', 'rechat-plugin'); ?>
+            </button>
+            <button
+                type="button"
+                id="rch-multisite-dedupe-run-btn"
+                class="button"
+                style="margin-left:8px;"
+                data-nonce="<?php echo esc_attr($dedupe_cleanup_nonce); ?>"
+            >
+                <?php esc_html_e('Run duplicate cleanup (permanent)', 'rechat-plugin'); ?>
+            </button>
+        </p>
 
         <div id="rch-multisite-provision-result" style="margin-top:12px;"></div>
 
@@ -917,6 +944,73 @@ function rch_multisite_render_admin_tab(): void
                     '<div class="notice notice-error inline"><p><?php echo esc_js(__('Request failed. Please try again.', 'rechat-plugin')); ?></p></div>'
                 );
             });
+        });
+
+        function rchMultisiteDedupeCleanup(execute) {
+            var $preview = $('#rch-multisite-dedupe-preview-btn');
+            var $run     = $('#rch-multisite-dedupe-run-btn');
+            var $btn     = execute ? $run : $preview;
+            var $spinner = $('#rch-multisite-provision-spinner');
+            var $result  = $('#rch-multisite-provision-result');
+
+            if (execute) {
+                var msg = '<?php echo esc_js(__('Permanently delete duplicate agent/office sub-sites and trash duplicate hub agent posts? This cannot be undone. Continue?', 'rechat-plugin')); ?>';
+                if (! window.confirm(msg)) {
+                    return;
+                }
+            }
+
+            $preview.prop('disabled', true);
+            $run.prop('disabled', true);
+            $spinner.addClass('is-active');
+            $result.html('');
+
+            $.post(ajaxurl, {
+                action:   'rch_multisite_subsite_dedupe_cleanup',
+                _nonce:   $btn.data('nonce'),
+                execute:  execute ? '1' : '0',
+                confirm:  execute ? 'yes' : ''
+            }, function (response) {
+                $preview.prop('disabled', false);
+                $run.prop('disabled', false);
+                $spinner.removeClass('is-active');
+
+                if (response.success) {
+                    var d    = response.data;
+                    var html = '<div class="notice notice-success inline"><p><strong>' + d.message + '</strong></p>';
+                    if (d.detail) {
+                        html += '<p>' + d.detail + '</p>';
+                    }
+                    if (d.errors && d.errors.length) {
+                        html += '<p><strong><?php echo esc_js(__('Errors:', 'rechat-plugin')); ?></strong></p><ul>';
+                        $.each(d.errors, function (i, err) { html += '<li>' + err + '</li>'; });
+                        html += '</ul>';
+                    }
+                    html += '</div>';
+                    $result.html(html);
+                } else {
+                    $result.html(
+                        '<div class="notice notice-error inline"><p>' +
+                        (response.data || '<?php echo esc_js(__('An error occurred.', 'rechat-plugin')); ?>') +
+                        '</p></div>'
+                    );
+                }
+            }).fail(function () {
+                $preview.prop('disabled', false);
+                $run.prop('disabled', false);
+                $spinner.removeClass('is-active');
+                $result.html(
+                    '<div class="notice notice-error inline"><p><?php echo esc_js(__('Request failed. Please try again.', 'rechat-plugin')); ?></p></div>'
+                );
+            });
+        }
+
+        $('#rch-multisite-dedupe-preview-btn').on('click', function () {
+            rchMultisiteDedupeCleanup(false);
+        });
+
+        $('#rch-multisite-dedupe-run-btn').on('click', function () {
+            rchMultisiteDedupeCleanup(true);
         });
 
         // ── Migrate existing agent URL slugs (rename subsites) ─────────────────

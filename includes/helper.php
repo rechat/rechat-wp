@@ -876,8 +876,8 @@ function rch_process_agents_data($access_token, $api_url_base)
     $existing_api_ids = array();
     foreach ($existing_posts as $post_id) {
         $api_id = get_post_meta($post_id, 'api_id', true);
-        if ($api_id) {
-            $existing_api_ids[$api_id] = $post_id;
+        if ($api_id !== '' && $api_id !== null) {
+            $existing_api_ids[(string) $api_id] = (int) $post_id;
         }
     }
 
@@ -910,8 +910,11 @@ function rch_process_agents_data($access_token, $api_url_base)
 
         if (isset($data['data']) && is_array($data['data'])) {
             foreach ($data['data'] as $item) {
-                $api_id = $item['id']; // Store API ID for later use
-                $new_api_ids[] = $api_id; // Add to new API IDs
+                $api_id = isset($item['id']) ? (string) $item['id'] : '';
+                if ($api_id === '') {
+                    continue;
+                }
+                $new_api_ids[] = $api_id;
 
                 $regions_for_agent = [];
                 $offices_for_agent = [];
