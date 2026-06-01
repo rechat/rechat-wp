@@ -177,7 +177,168 @@ function rch_multisite_resolve_agent_site_slug(
 ): string {
     $base = rch_multisite_agent_site_slug_base($agent_post_id, $agent_name, $format);
 
-    return rch_multisite_unique_agent_site_slug($base, $exclude_blog_id, $format);
+    return rch_multisite_unique_agent_site_slug($base, $exclude_blog_id, $format, $agent_post_id);
+}
+
+/**
+ * Agent hub post that owns a subsite (via `_rch_agent_site_id`), if any.
+ *
+ * @param int $blog_id Subsite blog ID.
+ * @return int Agent post ID, or 0 if unlinked / not an agent post.
+ */
+function rch_multisite_find_agent_post_id_by_site_id(int $blog_id): int
+{
+    if ($blog_id <= 0) {
+        return 0;
+    }
+
+    $posts = get_posts([
+        'post_type'      => 'agents',
+        'post_status'    => 'any',
+        'posts_per_page' => 1,
+        'fields'         => 'ids',
+        'meta_query'     => [
+            [
+                'key'     => '_rch_agent_site_id',
+                'value'   => $blog_id,
+                'compare' => '=',
+            ],
+        ],
+    ]);
+
+    return ! empty($posts) ? (int) $posts[0] : 0;
+}
+
+/**
+ * Whether this agent post may link to the given subsite (unclaimed or already theirs).
+ *
+ * @param int $agent_post_id Agent post ID on the hub.
+ * @param int $blog_id       Network site ID.
+ * @return bool
+ */
+function rch_multisite_can_agent_claim_blog_id(int $agent_post_id, int $blog_id): bool
+{
+    if ($blog_id <= 0 || $agent_post_id <= 0) {
+        return false;
+    }
+
+    if (! get_site($blog_id)) {
+        return false;
+    }
+
+    $owner = rch_multisite_find_agent_post_id_by_site_id($blog_id);
+
+    return $owner === 0 || $owner === $agent_post_id;
+}
+
+/**
+ * Blog ID for an existing network site at the agent slug location, or 0.
+ *
+ * @param string $slug Agent subsite slug (subdomain label or path segment).
+ * @return int
+ */
+function rch_multisite_blog_id_for_agent_site_slug(string $slug): int
+{
+    $slug = trim($slug);
+
+    if ($slug === '') {
+        return 0;
+    }
+
+    $loc = rch_multisite_build_site_location($slug);
+
+    $existing = get_sites([
+        'domain' => $loc['domain'],
+        'path'   => $loc['path'],
+        'number' => 1,
+        'fields' => 'ids',
+    ]);
+
+    return ! empty($existing) ? (int) $existing[0] : 0;
+}
+
+/**
+ * Link an agent post to an existing subsite (adopt orphan / repair missing meta).
+ *
+ * @param int    $post_id Agent post ID.
+ * @param int    $blog_id Subsite blog ID.
+ * @param string $slug    Slug used for the site location.
+ * @return int Blog ID on success, 0 if claim not allowed.
+ */
+function rch_multisite_link_agent_to_existing_site(int $post_id, int $blog_id, string $slug): int
+{
+    if (! rch_multisite_can_agent_claim_blog_id($post_id, $blog_id)) {
+        return 0;
+    }
+
+    update_post_meta($post_id, '_rch_agent_site_id', $blog_id);
+    update_post_meta($post_id, '_rch_agent_slug', $slug);
+
+    if (function_exists('rch_multisite_set_subsite_role_option')) {
+        rch_multisite_set_subsite_role_option($blog_id, 'agent');
+    }
+
+    $site = get_site($blog_id);
+    if ($site) {
+        error_log(
+            'Rechat Plugin Multisite: Linked agent post ' . $post_id .
+            ' to existing site ' . $site->domain . $site->path .
+            ' (blog_id=' . $blog_id . ')'
+        );
+    }
+
+    return $blog_id;
+}
+
+/**
+ * If the agent post lost `_rch_agent_site_id`, try to relink to an existing subsite at the base or stored slug.
+ *
+ * @param int    $post_id     Agent post ID.
+ * @param string $agent_name  Agent display name.
+ * @return int Linked blog ID, or 0 if none found.
+ */
+function rch_multisite_relink_agent_site_if_orphaned(int $post_id, string $agent_name): int
+{
+    if (rch_multisite_get_agent_blog_id($post_id) > 0) {
+        return rch_multisite_get_agent_blog_id($post_id);
+    }
+
+    $candidates = [];
+    $base       = rch_multisite_normalize_agent_site_slug(
+        rch_multisite_agent_site_slug_base($post_id, $agent_name)
+    );
+
+    if ($base !== '') {
+        $candidates[] = $base;
+    }
+
+    $stored = trim((string) get_post_meta($post_id, '_rch_agent_slug', true));
+
+    if ($stored !== '' && ! in_array($stored, $candidates, true)) {
+        $candidates[] = $stored;
+    }
+
+    foreach ($candidates as $slug) {
+        $blog_id = rch_multisite_blog_id_for_agent_site_slug($slug);
+
+        if ($blog_id <= 0) {
+            continue;
+        }
+
+        $linked = rch_multisite_link_agent_to_existing_site($post_id, $blog_id, $slug);
+
+        if ($linked > 0) {
+            if (function_exists('rch_multisite_schedule_broadcast_to_new_blog')) {
+                rch_multisite_schedule_broadcast_to_new_blog($linked);
+            }
+
+            do_action('rch_multisite_agent_site_created', $post_id, $linked);
+
+            return $linked;
+        }
+    }
+
+    return 0;
 }
 
 /**
@@ -185,12 +346,18 @@ function rch_multisite_resolve_agent_site_slug(
  *
  * In subdomain mode this guarantees unique subdomains.
  *
- * @param string      $base_slug        Sanitized slug base.
- * @param int|null    $exclude_blog_id  Blog ID allowed to already own the target domain/path (used for renames).
- * @param string|null $format           Optional format override.
+ * @param string      $base_slug         Sanitized slug base.
+ * @param int|null    $exclude_blog_id   Blog ID allowed to already own the target domain/path (used for renames).
+ * @param string|null $format            Optional format override.
+ * @param int|null    $for_agent_post_id When set, an unclaimed existing site at the slug may be reused (no numeric suffix).
  * @return string Unique slug (base or base + numeric suffix).
  */
-function rch_multisite_unique_agent_site_slug(string $base_slug, ?int $exclude_blog_id = null, ?string $format = null): string
+function rch_multisite_unique_agent_site_slug(
+    string $base_slug,
+    ?int $exclude_blog_id = null,
+    ?string $format = null,
+    ?int $for_agent_post_id = null
+): string
 {
     $format    = $format ?? rch_multisite_get_agent_slug_format();
     $base_slug = rch_multisite_normalize_agent_site_slug($base_slug, $format);
@@ -218,6 +385,10 @@ function rch_multisite_unique_agent_site_slug(string $base_slug, ?int $exclude_b
 
         $existing_id = (int) $existing[0];
         if ($exclude_blog_id && $existing_id === (int) $exclude_blog_id) {
+            return $candidate;
+        }
+
+        if ($for_agent_post_id > 0 && rch_multisite_can_agent_claim_blog_id($for_agent_post_id, $existing_id)) {
             return $candidate;
         }
 
@@ -940,6 +1111,12 @@ function rch_multisite_create_site_for_agent(int $post_id, string $agent_name)
         return $broadcast_err;
     }
 
+    $relinked = rch_multisite_relink_agent_site_if_orphaned($post_id, $agent_name);
+
+    if ($relinked > 0) {
+        return $relinked;
+    }
+
     $slug = rch_multisite_resolve_agent_site_slug($post_id, $agent_name, null);
 
     if (empty($slug)) {
@@ -967,24 +1144,26 @@ function rch_multisite_create_site_for_agent(int $post_id, string $agent_name)
 
     if (! empty($existing_sites)) {
         $existing_blog_id = (int) $existing_sites[0];
-        update_post_meta($post_id, '_rch_agent_site_id', $existing_blog_id);
-        update_post_meta($post_id, '_rch_agent_slug', $slug);
-        error_log(
-            'Rechat Plugin Multisite: Adopted existing site ' . $domain . $path .
-            ' (blog_id=' . $existing_blog_id . ') for agent post ' . $post_id
-        );
+        $linked           = rch_multisite_link_agent_to_existing_site($post_id, $existing_blog_id, $slug);
 
-        if (function_exists('rch_multisite_set_subsite_role_option')) {
-            rch_multisite_set_subsite_role_option($existing_blog_id, 'agent');
+        if ($linked <= 0) {
+            return new WP_Error(
+                'rch_site_slug_taken',
+                sprintf(
+                    /* translators: %s: site slug */
+                    __('Sub-site slug "%s" is already linked to another agent.', 'rechat-plugin'),
+                    $slug
+                )
+            );
         }
 
         if (function_exists('rch_multisite_schedule_broadcast_to_new_blog')) {
-            rch_multisite_schedule_broadcast_to_new_blog($existing_blog_id);
+            rch_multisite_schedule_broadcast_to_new_blog($linked);
         }
 
-        do_action('rch_multisite_agent_site_created', $post_id, $existing_blog_id);
+        do_action('rch_multisite_agent_site_created', $post_id, $linked);
 
-        return $existing_blog_id;
+        return $linked;
     }
 
     // ── Resolve the admin user that will own the new site ──────────────────────
@@ -3851,4 +4030,5 @@ function rch_multisite_save_settings(): void
 add_action('admin_init', 'rch_multisite_save_settings');
 
 require_once __DIR__ . '/agent-listing-scope.php';
+require_once __DIR__ . '/subsite-dedupe-cleanup.php';
 require_once __DIR__ . '/views/admin-tab.php';
