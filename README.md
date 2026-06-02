@@ -1,219 +1,394 @@
-# Rechat WordPress Plugin – User Guide
+# Rechat Plugin (WordPress) — Documentation
 
-The Rechat WordPress Plugin allows you to seamlessly integrate your Rechat agents, offices, regions, and listings into your WordPress website. This guide explains how to use the plugin, customize its templates, and utilize available shortcodes.
+Rechat plugin pulls data from Rechat (agents/offices/regions + listing search) and renders pages/blocks/shortcodes using Rechat Web Components (`<rechat-root>`, `<rechat-listings>`, etc.).
 
-## 🔄 Automatic Data Sync
+This README is user-facing: install, setup, features, templates, multisite, and **all shortcodes + accepted parameters**.
 
-The plugin automatically fetches and updates the following data from your Rechat account every 12 hours:
+---
+
+## Features (what plugin does)
+
+- **OAuth connection to Rechat**
+  - Connect in WP admin, store `access_token` + `refresh_token`, auto-refresh.
+  - Saves **brand id**, primary color, logo for UI usage.
+- **Automatic data sync (cron)**
+  - Scheduled sync every **12 hours** (Agents / Offices / Regions / Branding).
+  - Manual trigger exists (admin AJAX).
+- **Custom Post Types (CPT)**
+  - `agents` — agent profiles (archive + single).
+  - `offices` — office profiles (archive + single) + **Office ID** meta from Rechat when synced.
+  - `regions` — region pages (archive + single).
+  - `neighborhoods` — neighborhood pages + cards, optional broadcast to agent subsites.
+- **Listings experience**
+  - `[listings]` shortcode and Listing block render full listing search experience.
+  - Listing detail route rewrite: `/listing-detail/{city}/{street}/{id}/` (legacy route also supported).
+- **Lead capture**
+  - `[rch_leads_form]` shortcode and Leads Form block.
+  - Sends leads via Rechat SDK integration.
+- **Search form**
+  - `[rch_search_listing_form]` shortcode renders property search form that redirects to a listings page.
+- **Gutenberg blocks**
+  - Agents block
+  - Offices/Regions block
+  - Listing block
+  - Leads Form block
+- **Template override system**
+  - Copy plugin templates into your theme folder `rechat/` to customize output.
+- **WordPress Multisite support (optional)**
+  - Auto-create **agent sub-sites** and **office sub-sites**.
+  - Agent subsites auto-scope listings to that agent.
+  - Office subsites auto-scope listings to that office brand id (Office ID).
+  - Theme sync / bulk provision / URL migration / cleanup tools in Network Admin.
+
+---
+
+## Requirements
+
+- WordPress with permalinks enabled.
+- Rechat account.
+- For maps: Google Maps API key (configured in plugin settings).
+- For multisite provisioning: WordPress Multisite + Broadcast (ThreeWP Broadcast) network-active (when agent/office subsites enabled).
+
+---
+
+## Install + setup
+
+### Install
+
+1. Upload plugin folder to `wp-content/plugins/rechat-plugin/`
+2. Activate from WP Admin → Plugins.
+
+### Connect to Rechat (OAuth)
+
+WP Admin → Rechat → **Connect to Rechat** tab.
+
+After success, plugin stores:
+
+- `rch_rechat_access_token`
+- `rch_rechat_refresh_token`
+- `rch_rechat_brand_id` (brand UUID for SDK auth)
+- optional appearance values (primary color, logo)
+
+---
+
+## Automatic data sync
+
+Plugin schedules a cron job (every 12 hours) that syncs:
 
 - Agents
 - Offices
 - Regions
-- Listings
+- Branding / associations
 
-No manual syncing is required.
+Notes:
 
-## 🖥️ Default Templates & Customization
-
-All data views (agents, regions, offices, listings) are rendered using default plugin templates. However, you can override these templates by creating a custom folder in your active theme.
-
-### Custom Templates
-
-To customize the layout or appearance of Rechat pages:
-
-1. In your active theme (or child theme) directory, create a folder named `rechat`.
-
-2. Inside the `rechat` folder, you can add any of the following files to override the corresponding plugin template:
-
-| File Name | Description |
-|-----------|-------------|
-| agents-archive-custom.php | Overrides the archive view for agents |
-| agents-single-custom.php | Overrides the single agent page |
-| regions-archive-custom.php | Overrides the archive view for regions |
-| regions-single-custom.php | Overrides the single region page |
-| offices-archive-custom.php | Overrides the archive view for offices |
-| offices-single-custom.php | Overrides the single office page |
-| listing-item.php | Customizes the listing item (box) |
-| listing-single-custom.php | Overrides the single listing page |
-
-**Important**: Always copy the original template files from the plugin's templates folder into your theme's `rechat` folder before editing.
-
-## 🔧 Listings Shortcode
-
-You can display listings anywhere on your site using the `[listings]` shortcode. It outputs the Rechat web components (`<rechat-root>` and `<rechat-listings>`). Most attributes are passed through to the SDK; see the [Rechat Listings (Web Components) reference](https://sdk.rechat.com/classes/Listings.html) for the underlying attribute names.
-
-**Example:**
-
-```
-[listings minimum_price="100000" maximum_price="500000" listing_per_page="12" filter_search_limit="200" filter_pool="true"]
-```
-
-### Available attributes (`[listings]`)
-
-| Attribute | Description | Type / example |
-|------------|-------------|----------------|
-| `listing_per_page` | How many listing cards to load per page (maps to SDK `filter_pagination_limit`) | String number, e.g. `20` |
-| `minimum_price` / `maximum_price` | Price range in dollars (maps to `filter_minimum_price` / `filter_maximum_price`) | String number |
-| `minimum_square_feet` / `maximum_square_feet` | Interior size in square feet | String number |
-| `minimum_lot_square_feet` / `maximum_lot_square_feet` | Lot size in square feet | String number |
-| `minimum_bathrooms` / `maximum_bathrooms` | Bath count (maps to `filter_minimum_bathrooms` / `filter_maximum_bathrooms`) | String number |
-| `filter_baths` | Exact number of bathrooms (SDK `filter_baths`) | String number |
-| `minimum_bedrooms` / `maximum_bedrooms` | Bedroom count | String number |
-| `minimum_parking_spaces` | Minimum parking spaces (SDK `filter_minimum_parking_spaces`) | String number |
-| `minimum_year_built` / `maximum_year_built` | Year built range | String number |
-| `minimum_sold_date` | Minimum sold date, Unix time in **milliseconds** (SDK `filter_minimum_sold_date`) | String number |
-| `sort_by` | Sort, e.g. `-price`, `-list_date` (SDK `filter_sort_by`) | String |
-| `listing_statuses` | Comma-separated statuses, e.g. `Active` or `Active,Sold` (SDK `filter_listing_statuses`) | String |
-| `property_types` | Comma-separated types (e.g. `Residential,Commercial`); also accepts mapped labels in the Gutenberg block | Comma-separated string |
-| `property_subtypes` | Comma-separated subtypes (SDK `filter_property_subtypes`) | Comma-separated string |
-| `architectural_styles` | Comma-separated styles (SDK `filter_architectural_styles`) | Comma-separated string |
-| `filter_address` | Initial address/area for map boundary search (SDK `filter_address`) | String |
-| `filter_search_limit` | **Cap on total search results** returned (SDK `filter_search_limit`); not the same as per-page | String number |
-| `filter_suggestions_limit` | Max address suggestions in search (default in SDK is often `5`) | String number |
-| `filter_pagination_offset` | Start listing results at this index (0-based) | String number |
-| `filter_open_houses` | Only open houses (SDK `filter_open_houses`) | `true` or `false` |
-| `office_exclusive` | Office-exclusives only (SDK `filter_office_exclusives`) | `true` or `false` |
-| `filter_pool` | Pool only (SDK `filter_pool`, use `true` to enable) | `true` or `false` |
-| `filter_agents` | Comma-separated Rechat agent IDs (SDK `filter_agents`) | Comma-separated string |
-| `list_offices` | Comma-separated office IDs (SDK `filter_list_offices`) | Comma-separated string |
-| `filter_brand_id` | Override brand for this list (`filter_brand_id` on `<rechat-listings>`); `brand_id` on `<rechat-root>` still comes from settings | String |
-| `own_listing` | When `true`, scopes listings to the configured brand (`filter_brand_id` on `<rechat-listings>`) | `true` or `false` (default: `false`) |
-| `map_latitude` / `map_longitude` | Default map center (used with `map_default_center`) | Decimal string |
-| `map_zoom` | Initial map zoom (SDK `map_zoom`) | String number, e.g. `12` |
-| `map_id` | Google **Cloud** map style ID, if you use one (SDK `map_id`) | String |
-| `layout_style` | Markup order: `default` (map left), `layout2` (list left, map right), or `layout3` | String |
-| `disable_sort` | Hides the `<rechat-listings-sort>` control | `true` or `false` |
-| `disable_filter_address` | Hides the address control; filter can still be set by attributes/URL (SDK `disable_filter_address`) | `true` or `false` |
-| `disable_filter_price` | (SDK `disable_filter_price`) | `true` or `false` |
-| `disable_filter_beds` | (SDK `disable_filter_beds`) | `true` or `false` |
-| `disable_filter_baths` | (SDK `disable_filter_baths`) | `true` or `false` |
-| `disable_filter_property_types` | (SDK `disable_filter_property_types`) | `true` or `false` |
-| `disable_filter_advanced` | (SDK `disable_filter_advanced`) | `true` or `false` |
-| `disable_filter_loading_indicator` | (SDK `disable_filter_loading_indicator`) | `true` or `false` |
-| `listing_hyperlink_href` | Custom listing detail URL; use `{id}` in the path if supported by the SDK (plugin default includes `{street_address}`) | URL string |
-| `listing_hyperlink_target` | e.g. `_blank` (SDK `listing_hyperlink_target`) | String |
-
-Google Maps API key is set in the plugin options; the shortcode does not need to pass a map key.
-
-### Gutenberg support
-
-The same controls are available in the **Listing** block, including an **Additional Rechat filters (optional)** panel for many of the fields above. Place the block or use the `[listings]` shortcode in a Shortcode block or classic editor.
-
-## 📩 Lead Form Shortcode
-
-Use the following shortcode to place a customizable lead capture form anywhere on your site:
-
-```
-[rch_leads_form form_title="Contact Agent" show_first_name="true" show_last_name="false" show_phone_number="false" show_email="true" show_note="false"]
-```
-
-### Lead Form Attributes:
-
-| Attribute | Description | Type |
-|-----------|-------------|------|
-| form_title | Title displayed on top of the form | Text |
-| show_first_name | Show First Name field | true or false |
-| show_last_name | Show Last Name field | true or false |
-| show_phone_number | Show Phone Number field | true or false |
-| show_email | Show Email field | true or false |
-| show_note | Show Message/Note field | true or false |
-
-## 📝 Notes
-
-- Make sure your API credentials and configuration are set up correctly in the plugin settings.
-- Templates must be placed in `wp-content/themes/your-theme/rechat/`, not the root directory of the theme.
-- Use a child theme for template customizations to avoid losing changes on theme updates.
-- If you need further help, contact the plugin developer or refer to the documentation included in the plugin folder.
+- Cron hook: `rch_data_sync_hook`
+- Interval: `rch_every_12_hours`
 
 ---
 
-## `rch_latest_listings` shortcode
+## Custom post types (CPT) + what they represent
 
-The `rch_latest_listings` shortcode shows a compact list of listings using the Rechat web components. You can use **`display_type`**: `swiper` (default), `normal` (list + Rechat pagination), or `grid` (list only). The same [Rechat Listings / `rechat-listings` filters](https://sdk.rechat.com/classes/Listings.html) as the main listings shortcode are supported where listed below—values are passed through to `rch_get_rechat_listings_attributes()` in PHP.
+- **Agents** (`agents`)
+  - Used for agent profile pages, agent blocks, and agent multisite subsites.
+- **Offices** (`offices`)
+  - Has `office_id` meta when pulled from Rechat API.
+  - Locally created offices may not have `office_id` (no Rechat UUID).
+- **Regions** (`regions`)
+  - Region pages + region blocks.
+- **Neighborhoods** (`neighborhoods`)
+  - Neighborhood pages, optionally linked to offices and broadcast to agent subsites (multisite).
 
-**Basic usage**
+---
+
+## Template overrides (theme customization)
+
+All data views (agents/regions/offices/listings) have default plugin templates. Override by adding files to your theme:
+
+1. In your active theme (or child theme) create folder: `rechat/`
+2. Copy the original templates from plugin into that folder and edit.
+
+Supported override filenames:
+
+| File name | What it overrides |
+| --- | --- |
+| `agents-archive-custom.php` | Agents archive page |
+| `agents-single-custom.php` | Agent single page |
+| `regions-archive-custom.php` | Regions archive page |
+| `regions-single-custom.php` | Region single page |
+| `offices-archive-custom.php` | Offices archive page |
+| `offices-single-custom.php` | Office single page |
+| `listing-item.php` | Listing card/item template (legacy AJAX listing renderer) |
+| `listing-single-custom.php` | Listing detail page template |
+
+Important:
+
+- Put files in `wp-content/themes/your-theme/rechat/` (not theme root).
+- Use child theme for safe updates.
+
+---
+
+## Gutenberg blocks
+
+Blocks are registered by plugin and render server-side.
+
+- **Listing block**: `rch-rechat-plugin/listing-block`
+  - Same filter capabilities as `[listings]` (see shortcode section).
+- **Agents block**: `rch-rechat-plugin/agents-block`
+- **Offices/Regions block**: registered via `block-offices-regions.php`
+- **Leads form block**: `block-lead-form.php`
+
+Tip:
+
+- Listing block + `[listings]` share the same PHP renderer. Most attributes map 1:1.
+
+---
+
+## WordPress Multisite (agents + offices)
+
+If WordPress Multisite enabled, plugin can provision a network sub-site for each agent and office.
+
+### What gets created
+
+- **Agent subsite**
+  - Linked to hub agent post via `_rch_agent_site_id`
+  - URL can be subdomain or subdirectory depending on network
+- **Office subsite**
+  - Linked to hub office post via `_rch_office_site_id`
+  - Uses `o-` prefix in slug to avoid collisions with agent slugs
+
+### Listing scope behavior on subsites
+
+- **Agent subsite**
+  - Auto-inject `filter_agents="<csv>"` into `<rechat-listings>` for:
+    - `[listings]`
+    - Listing block
+    - `[rch_latest_listings]`
+- **Office subsite**
+  - Auto-inject `filter_brand_id="<office_id>"` into `<rechat-listings>` for:
+    - `[listings]`
+    - Listing block
+    - `[rch_latest_listings]`
+  - Value comes from hub office CPT meta `office_id` (Rechat Office brand UUID). If office is locally created with no `office_id`, scope is skipped.
+
+### Where to manage it
+
+Network Admin / hub site → Rechat Settings → **Multisite** tab:
+
+- enable/disable subsite creation
+- bulk provision
+- apply themes (agent sites / office sites)
+- migrate agent URL slugs
+- cleanup duplicates
+
+---
+
+## Shortcodes (all + parameters)
+
+All shortcodes can be used in:
+
+- WP classic editor
+- Gutenberg “Shortcode” block
+- Theme templates (via `do_shortcode()` / plugin helper `rch_do_shortcode()` when available)
+
+### 1) `[listings]` — full listing search experience
+
+Renders `<rechat-root>` + `<rechat-listings>` + filters + map + grid + pagination.
+
+Basic example:
 
 ```text
-[rch_latest_listings listing_statuses="Sale" limit="10" display_type="swiper" filter_search_limit="200"]
+[listings minimum_price="100000" maximum_price="500000" listing_per_page="12" filter_search_limit="200" filter_pool="true"]
 ```
 
-### Core attributes (`rch_latest_listings`)
+Accepted parameters (from `rch_get_listings_default_atts()`):
 
-| Attribute | Description | Type | Default |
-|-----------|-------------|------|---------|
-| `display_type` | `swiper` \| `normal` \| `grid` | string | `swiper` |
-| `limit` | Shorthand for `listing_per_page` (per-page / `filter_pagination_limit`) | string | (see `listing_per_page` in code) |
-| `listing_per_page` | Listings per page (same meaning as in `[listings]`) | string | `10` in defaults |
-| `listing_statuses` | Status filter; can use **mapping** values like `Active`, `Closed`, or comma-separated | string | `` |
-| `property_types` | Property type filter; can use **mapping** labels (e.g. `Sale`, `All Listings`) or a raw CSV list | string | `` |
-| `sort_by` / `order_by` | Sort order; `order_by` maps to known labels, or set `sort_by` directly | string | `-list_date` |
-| `own_listing` | Whether to scope to the site brand (same as `[listings]`) | boolean | `false` |
-| `open_houses_only` | Legacy: open house filter; combined with `filter_open_houses` for the SDK | boolean | `false` |
-| `template` | CSS class suffix for the `grid` layout container | string | `` |
-| `content` | (Reserved / advanced) | string | `` |
-| `map_points` | (Reserved; not used the same as old AJAX) | string | `` |
-| `map_latitude` / `map_longitude` / `map_zoom` / `map_id` | Map options when you use a map field in the flow | string | `` |
-| `filter_address` | Initial area/address for search | string | `` |
-| `minimum_price`, `maximum_price`, bedroom/bath/year/sqft fields | Same as `[listings]`; see the table above for SDK names | strings | `` |
+| Attribute | Type | Notes |
+| --- | --- | --- |
+| `minimum_price` / `maximum_price` | string number | dollars |
+| `minimum_square_feet` / `maximum_square_feet` | string number | |
+| `minimum_lot_square_feet` / `maximum_lot_square_feet` | string number | |
+| `minimum_bathrooms` / `maximum_bathrooms` | string number | |
+| `minimum_bedrooms` / `maximum_bedrooms` | string number | |
+| `minimum_year_built` / `maximum_year_built` | string number | |
+| `minimum_parking_spaces` | string number | |
+| `minimum_sold_date` | string number | unix ms |
+| `listing_per_page` | string number | maps to SDK pagination limit |
+| `brand` | string | set from settings in render |
+| `listing_statuses` | string or csv | may be expanded from groups |
+| `own_listing` | boolean | sets `filter_brand_id` to brand |
+| `property_types` | string or csv | |
+| `filter_open_houses` | boolean | |
+| `office_exclusive` | boolean | |
+| `filter_pool` | boolean | |
+| `disable_sort` | boolean | hide sort UI |
+| `map_latitude` / `map_longitude` | string | |
+| `map_zoom` | string number | default `12` in code |
+| `map_style` / `map_style_url` / `map_id` | string | |
+| `filter_address` | string | |
+| `filter_search_limit` | string number | cap total results |
+| `filter_suggestions_limit` | string number | |
+| `filter_pagination_offset` | string number | |
+| `property_subtypes` | string | csv |
+| `architectural_styles` | string | csv |
+| `filter_baths` | string number | exact baths |
+| `filter_agents` | string | csv of Rechat agent UUIDs |
+| `list_offices` | string | csv of office UUIDs |
+| `filter_brand_id` | string | overrides scope for this listing surface |
+| `disable_filter_address` | boolean | |
+| `disable_filter_price` | boolean | |
+| `disable_filter_beds` | boolean | |
+| `disable_filter_baths` | boolean | |
+| `disable_filter_property_types` | boolean | |
+| `disable_filter_advanced` | boolean | |
+| `disable_filter_loading_indicator` | boolean | |
+| `sort_by` | string | default `-list_date` |
+| `filter_boundary_country` | string | ISO 2-letter in some flows |
+| `filter_boundary_state` | string | state title |
 
-### Rechat SDK pass-through (same as `[listings]`)
+Notes:
 
-The following (and the rest of the `[listings]` table above) can be set on `rch_latest_listings` and are whitelisted in the shortcode:  
-`filter_search_limit`, `filter_suggestions_limit`, `filter_pagination_offset`, `property_subtypes`, `architectural_styles`, `filter_baths`, `minimum_parking_spaces`, `minimum_sold_date`, `filter_pool`, `filter_agents`, `list_offices`, `filter_brand_id`, `filter_open_houses`, `office_exclusive`, and all `disable_filter_*` flags, plus `listing_hyperlink_href` / `listing_hyperlink_target` when you need custom listing URLs.
+- Google Maps API key comes from settings, not from shortcode.
+- Most filters become attributes on `<rechat-listings>`. For SDK meaning reference: `https://sdk.rechat.com/classes/Listings.html`
 
-### Swiper options (`display_type="swiper"` only)
+### 2) `[rch_latest_listings]` — compact latest listings widget
 
-| Attribute | Description | Type | Default |
-|-----------|-------------|------|---------|
-| `slides_per_view` | Swiper `slidesPerView` (e.g. `auto` or a number) | string | `auto` |
-| `space_between` | Spacing in px | string | `32` |
-| `loop` | Swiper loop | boolean | `false` |
-| `breakpoints` | JSON for Swiper breakpoints | JSON string | `` |
-| `pagination` / `navigation` / `pagination_clickable` / `pagination_type` | Swiper UI | mixed | `false` |
-| `centered_slides` | Center slides | boolean | `false` |
-| `speed` | Swiper speed (ms) | string | `300` |
-| `effect` | Swiper effect (e.g. `slide`, `coverflow`) | string | `slide` |
-| `grab_cursor` / `simulate_touch` | Interaction | boolean | `` |
-| `autoplay` | JSON for autoplay | JSON string | `` |
+Renders `<rechat-root>` + `<rechat-listings>` using one of 3 layouts:
 
-### `listing_statuses` and `property_types` mapping
+- `swiper` (default)
+- `normal` (list + SDK pagination)
+- `grid` (simple grid)
 
-The shortcode maps a small set of **labels** to the comma-separated values the Rechat SDK expects. If you pass a value that is not a known label, it is sent as-is (for example a full CSV like `Residential,Commercial`).
-
-**Property type labels (examples)**
-
-- `All Listings` → `Residential,Residential Lease,Lots & Acreage,Commercial,Multi-Family`
-- `Sale` → `Residential,Lots & Acreage,Commercial,Multi-Family`
-- `Lease` → `Residential Lease`
-- `Lots & Acreage` → `Lots & Acreage`
-- `Commercial` → `Commercial`
-
-**Status labels (examples)** — e.g. `Active` maps to a bundle of live statuses; see `latest-listing-shortcode.php` for the full list.
-
-**Implementation:** HTML is built in `includes/shortcodes/latest-listing-shortcode.php` with `<rechat-root>` and `<rechat-listings>`. For Swiper, the script listens for `rechat-listings:fetched` and then initializes Swiper. Enqueued assets include the Rechat SDK and Swiper from the plugin.
-
-### Examples
-
-1) Swiper carousel for Sale listings (10 items per page, cap 100 results)
+Basic example:
 
 ```text
-[rch_latest_listings listing_statuses="Sale" limit="10" display_type="swiper" filter_search_limit="100"]
+[rch_latest_listings property_types="Residential" listing_statuses="Active" filter_search_limit="200"]
 ```
 
-2) Grid for Lease listings with a template class
+Core parameters (from defaults):
+
+| Attribute | Type | Default | Notes |
+| --- | ---: | ---: | --- |
+| `display_type` | string | `swiper` | `swiper` \| `normal` \| `grid` |
+| `listing_per_page` | string | `10` | per page |
+| `limit` | string | (empty) | alias for `listing_per_page` |
+| `listing_statuses` | string | (empty) | supports group labels (Active/Pending/Closed/Archived) |
+| `expand_status_aliases` | boolean | `true` | expands status groups |
+| `property_types` | string | (empty) | supports labels: `Sale`, `Lease`, `All Listings`, etc. |
+| `sort_by` | string | `-list_date` | |
+| `order_by` | string | (empty) | maps to known labels in code |
+| `own_listing` | boolean | `false` | scopes to brand |
+| `open_houses_only` | boolean | `false` | legacy alias |
+| `filter_open_houses` | boolean | `false` | |
+| `office_exclusive` | boolean | `false` | |
+| `filter_pool` | boolean | `false` | |
+| `filter_agents` | string | (empty) | csv |
+| `list_offices` | string | (empty) | csv |
+| `filter_brand_id` | string | (empty) | office subsites may auto-set |
+| `map_default_center` | string | (empty) | `"lat,lng"` string |
+| `map_latitude` / `map_longitude` / `map_zoom` / `map_id` | string | (empty) | |
+| `minimum_price` / `maximum_price` etc. | mixed | (empty) | same family as `[listings]` |
+| `disable_filter_*` | boolean | `false` | same names as `[listings]` |
+| `listing_hyperlink_href` / `listing_hyperlink_target` | string | (empty) | |
+
+Swiper-only parameters:
+
+| Attribute | Type | Default |
+| --- | ---: | ---: |
+| `slides_per_view` | string | `auto` |
+| `space_between` | string | `32` |
+| `loop` | boolean | `false` |
+| `centered_slides` | boolean | `false` |
+| `speed` | string | `300` |
+| `effect` | string | `slide` |
+| `grab_cursor` | boolean | `true` |
+| `simulate_touch` | boolean | `true` |
+| `autoplay` | JSON string | (empty) |
+| `breakpoints` | JSON string | (empty) |
+| `pagination` | boolean | `false` |
+| `pagination_clickable` | boolean | `false` |
+| `pagination_type` | string | `bullets` |
+| `navigation` | boolean | `false` |
+
+Examples:
 
 ```text
-[rch_latest_listings listing_statuses="Lease" display_type="grid" template="lease-template" limit="6"]
+[rch_latest_listings display_type="swiper" listing_statuses="Active" limit="10" filter_search_limit="100"]
 ```
-
-3) Custom comma-separated property types
 
 ```text
-[rch_latest_listings listing_statuses="Residential,Commercial" limit="8"]
+[rch_latest_listings display_type="grid" property_types="Sale" limit="6" sort_by="-list_date"]
 ```
 
-### Implementation notes
+### 3) `[rch_leads_form]` — lead capture form
 
-- `includes/shortcodes/latest-listing-shortcode.php` — shortcode output, property/status mapping, and `rch_get_rechat_listings_attributes()` for the SDK.
-- `includes/helper.php` — `rch_get_rechat_listings_attributes()` builds the attribute string for `<rechat-listings>`; keep in sync with the [Rechat SDK](https://sdk.rechat.com/classes/Listings.html).
-- For custom Swiper or grid styling, use your theme CSS; the `template` argument adds a class to the grid wrapper (e.g. `lease-template-grid`).
+Basic example:
+
+```text
+[rch_leads_form form_title="Contact Us" show_first_name="true" show_last_name="true" show_phone_number="true" show_email="true" show_note="true"]
+```
+
+Accepted parameters (from `rch_parse_shortcode_attributes()`):
+
+| Attribute | Type | Default | Notes |
+| --- | ---: | ---: | --- |
+| `form_title` | string | `Contact Us` | |
+| `show_first_name` | boolean | `true` | |
+| `show_last_name` | boolean | `true` | |
+| `show_phone_number` | boolean | `true` | |
+| `show_email` | boolean | `true` | |
+| `show_note` | boolean | `true` | |
+| `lead_channel` | string | (empty) | falls back to option `rch_lead_channels` |
+| `assignee_email` | string | (empty) | agent subsites may auto-fill when empty |
+| `tags` | string csv | (empty) | falls back to option `rch_selected_tags` |
+
+### 4) `[rch_search_listing_form]` — search bar that redirects to listings page
+
+This shortcode renders `<rechat-property-search-form>` inside `<rechat-listings>`. On submit it redirects (GET) to `target_page` with query parameters.
+
+Basic example:
+
+```text
+[rch_search_listing_form target_page="/listings/" show_background="false"]
+```
+
+Accepted parameters (from `shortcode_atts` defaults):
+
+| Attribute | Type | Default | Notes |
+| --- | ---: | ---: | --- |
+| `target_page` | string | `/listings/` | page path or URL path |
+| `brand_id` | string | (empty) | falls back to option `rch_rechat_brand_id` |
+| `map_zoom` | string | (empty) | |
+| `map_api_key` | string | option | default from option `rch_rechat_google_map_api_key` |
+| `map_default_center` | string | (empty) | `"lat,lng"` |
+| `filter_address` | string | (empty) | |
+| `disable_filter_address` | boolean | `false` | |
+| `disable_filter_price` | boolean | `false` | |
+| `disable_filter_beds` | boolean | `false` | |
+| `disable_filter_baths` | boolean | `false` | |
+| `disable_filter_property_types` | boolean | `false` | |
+| `disable_filter_advanced` | boolean | `false` | |
+| `disable_filter_loading_indicator` | boolean | `false` | |
+| `filter_minimum_price` | string | (empty) | used as initial min price |
+| `filter_minimum_bathrooms` | string | (empty) | |
+| `filter_minimum_bedrooms` | string | (empty) | |
+| `filter_maximum_bedrooms` | string | (empty) | |
+| `filter_maximum_year_built` | string | (empty) | |
+| `filter_listing_statuses` | string | (empty) | |
+| `show_background` | boolean | `false` | adds background image layer |
+| `background_image` | string URL | (empty) | used only when `show_background=true` |
+
+---
+
+## Notes + troubleshooting
+
+- **Permalinks / rewrite**
+  - After activation or URL changes, re-save WP Settings → Permalinks.
+- **No data / empty pages**
+  - Confirm OAuth connected and brand id exists in settings.
+  - Check WP cron runs (or server cron).
+- **Multisite provisioning not working**
+  - Must be WordPress Multisite.
+  - If subsite creation enabled, Broadcast must be network-active.
+- **Office subsite listing scope missing**
+  - Hub office must have `office_id` meta (synced from Rechat). Locally added offices have no id.

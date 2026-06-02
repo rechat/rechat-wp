@@ -190,6 +190,12 @@ function rch_general_setting()
         'sanitize_callback' => 'sanitize_text_field'
     ));
 
+    register_setting('general_settings', 'rch_agent_active_listings_use_agent_brand', array(
+        'type' => 'boolean',
+        'default' => false,
+        'sanitize_callback' => 'rch_sanitize_general_settings_checkbox',
+    ));
+
     register_setting('general_settings', 'rch_selected_country', array(
         'type' => 'string',
         'default' => '',
@@ -215,6 +221,14 @@ function rch_general_setting()
         'rch_listing_display_mode',
         __('Listing Display Mode', 'rechat-plugin'),
         'rch_render_listing_display_mode_field',
+        'general_settings',
+        'rch_agents_listing_display_section'
+    );
+
+    add_settings_field(
+        'rch_agent_active_listings_use_agent_brand',
+        __('Active listings scope', 'rechat-plugin'),
+        'rch_render_agent_active_listings_use_agent_brand_field',
         'general_settings',
         'rch_agents_listing_display_section'
     );
@@ -317,6 +331,44 @@ function rch_render_agents_listing_display_description()
     echo '<p>' . __('Choose how listings should be displayed on agent pages.', 'rechat-plugin') . '</p>';
 }
 
+/**
+ * Sanitize checkbox values saved from General Settings (hidden 0 + checkbox 1).
+ *
+ * @param mixed $value Submitted value.
+ * @return bool
+ */
+function rch_sanitize_general_settings_checkbox($value): bool
+{
+    return $value === '1' || $value === 1 || $value === true;
+}
+
+/**
+ * Whether agent profile active listing sections should use the agent Rechat ID as filter_brand_id.
+ *
+ * @return bool
+ */
+function rch_agent_active_listings_use_agent_brand_filter(): bool
+{
+    return (bool) get_option('rch_agent_active_listings_use_agent_brand', false);
+}
+
+/**
+ * Agent post Rechat UUID from api_id meta (synced agents only).
+ *
+ * @param int $post_id Agent post ID.
+ * @return string
+ */
+function rch_get_agent_rechat_api_id(int $post_id): string
+{
+    if ($post_id <= 0) {
+        return '';
+    }
+
+    $raw = get_post_meta($post_id, 'api_id', true);
+
+    return is_string($raw) ? trim($raw) : '';
+}
+
 /*******************************
  * Render listing display mode field
  ******************************/
@@ -349,6 +401,29 @@ function rch_render_listing_display_mode_field()
             <p class="description" style="margin-left: 25px;"><?php _e('Show only Sold listings (Sold, Leased)', 'rechat-plugin'); ?></p>
         </label>
     </fieldset>
+    <?php
+}
+
+/**
+ * Checkbox: scope active agent-page listings with filter_brand_id = agent Rechat ID (api_id).
+ */
+function rch_render_agent_active_listings_use_agent_brand_field()
+{
+    $enabled = rch_agent_active_listings_use_agent_brand_filter();
+    ?>
+    <input type="hidden" name="rch_agent_active_listings_use_agent_brand" value="0" />
+    <label>
+        <input
+            type="checkbox"
+            name="rch_agent_active_listings_use_agent_brand"
+            value="1"
+            <?php checked($enabled); ?>
+        />
+        <?php esc_html_e('Show all active listings for the agent (not only brokerage)', 'rechat-plugin'); ?>
+    </label>
+    <p class="description">
+        <?php esc_html_e('When enabled, active listing blocks on agent profile pages add filter_brand_id using that agent’s Rechat ID (Agents → Rechat ID field). Sold listing sections are unchanged. Agents without a Rechat ID are unchanged.', 'rechat-plugin'); ?>
+    </p>
     <?php
 }
 
