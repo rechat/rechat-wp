@@ -34,8 +34,6 @@ function rch_render_agent_listings_section($post_id)
         $agents_string = $agents;
     }
 
-    // Define common property types and subtypes
-    $property_subtypes = 'RES-Single Family, RES-Half Duplex, RES-Farm/Ranch, RES-Condo, RES-Townhouse, LSE-Apartment, LSE-Condo/Townhome, LSE-Duplex, LSE-Fourplex, LSE-House, LSE-Mobile, LSE-Triplex, LND-Commercial, LND-Farm/Ranch, LND-Residential, MUL-Full Duplex, MUL-Apartment/5Plex+, MUL-Fourplex, MUL-Multiple Single Units, MUL-Triplex, COM-Lease, COM-Sale, Lot/Land';
     $property_types = 'Residential, Residential Lease, Lots & Acreage, Multi-Family, Commercial';
     $active_statuses = function_exists('rch_get_agent_single_active_listing_statuses_string')
         ? rch_get_agent_single_active_listing_statuses_string()
@@ -50,10 +48,19 @@ function rch_render_agent_listings_section($post_id)
     // For rechat-root (only brand_id)
     $root_attrs = !empty($brand_id) ? 'brand_id="' . esc_attr($brand_id) . '"' : '';
 
+    $active_filter_brand_id = '';
+    if (
+        function_exists('rch_agent_active_listings_use_agent_brand_filter')
+        && rch_agent_active_listings_use_agent_brand_filter()
+        && function_exists('rch_get_agent_rechat_api_id')
+    ) {
+        $active_filter_brand_id = rch_get_agent_rechat_api_id($post_id);
+    }
+
     // Generate attributes strings for combined/active/sold sections
-    $combined_attrs = rch_get_agent_listings_attrs($brand_id, $agents_string, $property_subtypes, $property_types, $active_statuses);
-    $active_attrs = rch_get_agent_listings_attrs($brand_id, $agents_string, $property_subtypes, $property_types, $active_statuses);
-    $sold_attrs = rch_get_agent_listings_attrs($brand_id, $agents_string, $property_subtypes, $property_types, $sold_statuses);
+    $combined_attrs = rch_get_agent_listings_attrs($agents_string, $property_types, $active_statuses, $active_filter_brand_id);
+    $active_attrs = rch_get_agent_listings_attrs($agents_string, $property_types, $active_statuses, $active_filter_brand_id);
+    $sold_attrs = rch_get_agent_listings_attrs($agents_string, $property_types, $sold_statuses);
 
     // Get agent title for display
     $agent_title = get_the_title($post_id);
@@ -73,14 +80,13 @@ function rch_render_agent_listings_section($post_id)
 /**
  * Generate rechat-listings attributes for agent pages
  * 
- * @param string $brand_id Brand ID
  * @param string $agents_string Comma-separated agent IDs
- * @param string $property_subtypes Property subtypes string
  * @param string $property_types Property types string
  * @param string $listing_statuses Listing statuses string
+ * @param string $filter_brand_id Optional Rechat brand UUID (agent api_id) for filter_brand_id on <rechat-listings>
  * @return string Formatted attributes string
  */
-function rch_get_agent_listings_attrs($brand_id, $agents_string, $property_subtypes, $property_types, $listing_statuses)
+function rch_get_agent_listings_attrs($agents_string, $property_types, $listing_statuses, $filter_brand_id = '')
 {
     $attrs = array();
 
@@ -89,7 +95,9 @@ function rch_get_agent_listings_attrs($brand_id, $agents_string, $property_subty
     if ('' === trim((string) $agents_string)) {
         $attrs[] = 'disabled="true"';
     }
-    $attrs[] = 'filter_property_subtypes="' . esc_attr($property_subtypes) . '"';
+    if ('' !== trim((string) $filter_brand_id)) {
+        $attrs[] = 'filter_brand_id="' . esc_attr($filter_brand_id) . '"';
+    }
     $attrs[] = 'filter_property_types="' . esc_attr($property_types) . '"';
     $attrs[] = 'filter_listing_statuses="' . esc_attr($listing_statuses) . '"';
     $attrs[] = 'listing_hyperlink_href="' . home_url() . '/listing-detail/{city}/{street_address}/{id}/"';
