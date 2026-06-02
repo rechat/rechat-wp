@@ -21,17 +21,23 @@ if (!defined('ABSPATH')) {
  */
 function rch_render_agent_listings_section($post_id)
 {
-    // Get the agents meta value
-    $agents = get_post_meta($post_id, 'agents', true);
-
     // Get admin settings for listing display mode
     $display_mode = get_option('rch_listing_display_mode', 'combined'); // Default: combined
 
-    // Convert agents array to comma-separated string for web component
-    if (is_array($agents)) {
-        $agents_string = implode(',', $agents);
-    } else {
-        $agents_string = $agents;
+    $default_agents_string = rch_normalize_agent_listings_filter_agents_meta(
+        get_post_meta($post_id, 'agents', true)
+    );
+
+    $active_agents_string = $default_agents_string;
+    if (
+        function_exists('rch_agent_active_listings_use_agent_brand_filter')
+        && rch_agent_active_listings_use_agent_brand_filter()
+        && function_exists('rch_get_agent_rechat_api_id')
+    ) {
+        $rechat_id = rch_get_agent_rechat_api_id($post_id);
+        if ($rechat_id !== '') {
+            $active_agents_string = $rechat_id;
+        }
     }
 
     $property_types = 'Residential, Residential Lease, Lots & Acreage, Multi-Family, Commercial';
@@ -48,19 +54,10 @@ function rch_render_agent_listings_section($post_id)
     // For rechat-root (only brand_id)
     $root_attrs = !empty($brand_id) ? 'brand_id="' . esc_attr($brand_id) . '"' : '';
 
-    $active_filter_brand_id = '';
-    if (
-        function_exists('rch_agent_active_listings_use_agent_brand_filter')
-        && rch_agent_active_listings_use_agent_brand_filter()
-        && function_exists('rch_get_agent_rechat_api_id')
-    ) {
-        $active_filter_brand_id = rch_get_agent_rechat_api_id($post_id);
-    }
-
     // Generate attributes strings for combined/active/sold sections
-    $combined_attrs = rch_get_agent_listings_attrs($agents_string, $property_types, $active_statuses, $active_filter_brand_id);
-    $active_attrs = rch_get_agent_listings_attrs($agents_string, $property_types, $active_statuses, $active_filter_brand_id);
-    $sold_attrs = rch_get_agent_listings_attrs($agents_string, $property_types, $sold_statuses);
+    $combined_attrs = rch_get_agent_listings_attrs($active_agents_string, $property_types, $active_statuses);
+    $active_attrs = rch_get_agent_listings_attrs($active_agents_string, $property_types, $active_statuses);
+    $sold_attrs = rch_get_agent_listings_attrs($default_agents_string, $property_types, $sold_statuses);
 
     // Get agent title for display
     $agent_title = get_the_title($post_id);
@@ -78,15 +75,41 @@ function rch_render_agent_listings_section($post_id)
 }
 
 /**
+ * Normalize agents post meta to a comma-separated filter_agents value.
+ *
+ * @param mixed $raw Value from get_post_meta( $post_id, 'agents', true ).
+ * @return string
+ */
+function rch_normalize_agent_listings_filter_agents_meta($raw): string
+{
+    if (is_array($raw)) {
+        $parts = array_filter(array_map('trim', $raw), static function ($v) {
+            return $v !== '' && $v !== null;
+        });
+
+        return implode(',', $parts);
+    }
+
+    if (is_string($raw)) {
+        return trim($raw);
+    }
+
+    if (is_scalar($raw) && (string) $raw !== '') {
+        return trim((string) $raw);
+    }
+
+    return '';
+}
+
+/**
  * Generate rechat-listings attributes for agent pages
  * 
- * @param string $agents_string Comma-separated agent IDs
+ * @param string $agents_string Comma-separated Rechat agent IDs for filter_agents
  * @param string $property_types Property types string
  * @param string $listing_statuses Listing statuses string
- * @param string $filter_brand_id Optional Rechat brand UUID (agent api_id) for filter_brand_id on <rechat-listings>
  * @return string Formatted attributes string
  */
-function rch_get_agent_listings_attrs($agents_string, $property_types, $listing_statuses, $filter_brand_id = '')
+function rch_get_agent_listings_attrs($agents_string, $property_types, $listing_statuses)
 {
     $attrs = array();
 
@@ -94,9 +117,6 @@ function rch_get_agent_listings_attrs($agents_string, $property_types, $listing_
     $attrs[] = 'filter_agents="' . esc_attr($agents_string) . '"';
     if ('' === trim((string) $agents_string)) {
         $attrs[] = 'disabled="true"';
-    }
-    if ('' !== trim((string) $filter_brand_id)) {
-        $attrs[] = 'filter_brand_id="' . esc_attr($filter_brand_id) . '"';
     }
     $attrs[] = 'filter_property_types="' . esc_attr($property_types) . '"';
     $attrs[] = 'filter_listing_statuses="' . esc_attr($listing_statuses) . '"';

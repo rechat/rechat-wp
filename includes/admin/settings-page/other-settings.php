@@ -343,7 +343,7 @@ function rch_sanitize_general_settings_checkbox($value): bool
 }
 
 /**
- * Whether agent profile active listing sections should use the agent Rechat ID as filter_brand_id.
+ * Whether agent profile active listing sections should use the agent Rechat ID (api_id) for filter_agents.
  *
  * @return bool
  */
@@ -405,7 +405,7 @@ function rch_render_listing_display_mode_field()
 }
 
 /**
- * Checkbox: scope active agent-page listings with filter_brand_id = agent Rechat ID (api_id).
+ * Checkbox: active agent-page listings use filter_agents = agent Rechat ID (api_id) instead of agents meta.
  */
 function rch_render_agent_active_listings_use_agent_brand_field()
 {
@@ -422,7 +422,7 @@ function rch_render_agent_active_listings_use_agent_brand_field()
         <?php esc_html_e('Show all active listings for the agent (not only brokerage)', 'rechat-plugin'); ?>
     </label>
     <p class="description">
-        <?php esc_html_e('When enabled, active listing blocks on agent profile pages add filter_brand_id using that agent’s Rechat ID (Agents → Rechat ID field). Sold listing sections are unchanged. Agents without a Rechat ID are unchanged.', 'rechat-plugin'); ?>
+        <?php esc_html_e('When enabled, active listing blocks use filter_agents with that agent’s Rechat ID (Agents → Rechat ID / api_id) instead of the agents post meta list. Sold sections still use agents meta. If Rechat ID is empty, agents meta is used.', 'rechat-plugin'); ?>
     </p>
     <?php
 }
