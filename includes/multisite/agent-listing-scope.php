@@ -6,6 +6,9 @@
  * - Agent-only subsites (linked to a hub `agents` post via `_rch_agent_site_id`) auto-scope every
  *   `<rechat-listings>` / `[listings]` / Gutenberg listing block / `[rch_latest_listings]` /
  *   legacy archive AJAX with `filter_agents` from the hub agent's `agents` post meta.
+ * - Office-only subsites (linked to a hub `offices` post via `_rch_office_site_id`) auto-scope
+ *   the same listing surfaces with `filter_brand_id` from the hub office's `office_id` post meta
+ *   (Rechat Office brand UUID from API sync; empty for locally added offices).
  * - On agent/office subsites, when local OAuth options are empty, `rch_rechat_access_token`,
  *   `rch_rechat_refresh_token`, `rch_rechat_brand_id`, and `rch_rechat_expires_in` fall back to the hub.
  *   Non-empty local values always win so a subsite can connect its own Rechat account via OAuth.
@@ -44,6 +47,82 @@ function rch_multisite_is_agent_listing_scope_active(): bool
     }
 
     return function_exists('rch_is_rechat_agent_only_subsite') && rch_is_rechat_agent_only_subsite();
+}
+
+/**
+ * Whether this request should apply office-only listing scoping (not main hub, not agent-only).
+ */
+function rch_multisite_is_office_listing_scope_active(): bool
+{
+    if (! is_multisite() || get_current_blog_id() === (int) get_main_site_id()) {
+        return false;
+    }
+
+    return function_exists('rch_is_rechat_office_only_subsite') && rch_is_rechat_office_only_subsite();
+}
+
+/**
+ * Rechat Office brand UUID (`office_id` post meta on the hub offices CPT) for the current office subsite.
+ */
+function rch_multisite_get_main_site_office_filter_brand_id(): string
+{
+    static $brand_id = null;
+
+    if ($brand_id !== null) {
+        return $brand_id;
+    }
+
+    $brand_id = '';
+
+    if (! rch_multisite_is_office_listing_scope_active()) {
+        return $brand_id;
+    }
+
+    $office_post_id = function_exists('rch_multisite_resolve_office_post_id_for_current_blog')
+        ? rch_multisite_resolve_office_post_id_for_current_blog()
+        : 0;
+
+    if ($office_post_id <= 0) {
+        return $brand_id;
+    }
+
+    $main_id = (int) get_main_site_id();
+    switch_to_blog($main_id);
+    $raw = get_post_meta($office_post_id, 'office_id', true);
+    restore_current_blog();
+
+    if (is_string($raw)) {
+        $brand_id = trim($raw);
+    } elseif (is_scalar($raw)) {
+        $brand_id = trim((string) $raw);
+    }
+
+    return $brand_id;
+}
+
+/**
+ * Merge agent/office subsite listing scope into shortcode or block attributes.
+ *
+ * @param array<string, mixed> $atts Listing attributes.
+ * @return array<string, mixed>
+ */
+function rch_multisite_merge_subsite_listing_scope_atts(array $atts): array
+{
+    if (rch_multisite_is_agent_listing_scope_active()) {
+        $csv = rch_multisite_get_main_site_agent_ids_csv();
+        if ($csv !== '') {
+            $atts['filter_agents'] = $csv;
+        }
+    }
+
+    if (rch_multisite_is_office_listing_scope_active()) {
+        $office_brand_id = rch_multisite_get_main_site_office_filter_brand_id();
+        if ($office_brand_id !== '') {
+            $atts['filter_brand_id'] = $office_brand_id;
+        }
+    }
+
+    return $atts;
 }
 
 /**
@@ -638,16 +717,19 @@ add_filter('shortcode_atts_rch_leads_form', static function ($out, $pairs, $atts
 add_filter('shortcode_atts_listings', static function ($out, $pairs, $atts) {
     unset($pairs, $atts);
 
-    if (! rch_multisite_is_agent_listing_scope_active()) {
-        return $out;
+    if (rch_multisite_is_agent_listing_scope_active()) {
+        $csv = rch_multisite_get_main_site_agent_ids_csv();
+        if ($csv !== '') {
+            $out['filter_agents'] = $csv;
+        }
     }
 
-    $csv = rch_multisite_get_main_site_agent_ids_csv();
-    if ($csv === '') {
-        return $out;
+    if (rch_multisite_is_office_listing_scope_active()) {
+        $office_brand_id = rch_multisite_get_main_site_office_filter_brand_id();
+        if ($office_brand_id !== '') {
+            $out['filter_brand_id'] = $office_brand_id;
+        }
     }
-
-    $out['filter_agents'] = $csv;
 
     return $out;
 }, 10, 3);
@@ -674,20 +756,23 @@ function rch_multisite_render_block_data_inject_listing_filter_agents($parsed_bl
         return $parsed_block;
     }
 
-    if (! rch_multisite_is_agent_listing_scope_active()) {
-        return $parsed_block;
-    }
-
-    $csv = rch_multisite_get_main_site_agent_ids_csv();
-    if ($csv === '') {
-        return $parsed_block;
-    }
-
     if (! isset($parsed_block['attrs']) || ! is_array($parsed_block['attrs'])) {
         $parsed_block['attrs'] = [];
     }
 
-    $parsed_block['attrs']['filter_agents'] = $csv;
+    if (rch_multisite_is_agent_listing_scope_active()) {
+        $csv = rch_multisite_get_main_site_agent_ids_csv();
+        if ($csv !== '') {
+            $parsed_block['attrs']['filter_agents'] = $csv;
+        }
+    }
+
+    if (rch_multisite_is_office_listing_scope_active()) {
+        $office_brand_id = rch_multisite_get_main_site_office_filter_brand_id();
+        if ($office_brand_id !== '') {
+            $parsed_block['attrs']['filter_brand_id'] = $office_brand_id;
+        }
+    }
 
     return $parsed_block;
 }
@@ -737,6 +822,13 @@ function rch_multisite_proxy_latest_listings_shortcode($atts)
         $csv = rch_multisite_get_main_site_agent_ids_csv();
         if ($csv !== '') {
             $atts['filter_agents'] = $csv;
+        }
+    }
+
+    if (rch_multisite_is_office_listing_scope_active()) {
+        $office_brand_id = rch_multisite_get_main_site_office_filter_brand_id();
+        if ($office_brand_id !== '') {
+            $atts['filter_brand_id'] = $office_brand_id;
         }
     }
 
@@ -981,6 +1073,52 @@ function rch_multisite_ob_inject_filter_agents($html)
 }
 
 /**
+ * Inject or replace filter_brand_id on parent <rechat-listings> for office subsites.
+ *
+ * @param string $html Full page HTML.
+ * @return string
+ */
+function rch_multisite_ob_inject_filter_brand_id_for_office($html)
+{
+    if (! is_string($html) || $html === '') {
+        return $html;
+    }
+
+    if (! rch_multisite_is_office_listing_scope_active()) {
+        return $html;
+    }
+
+    $brand_id = rch_multisite_get_main_site_office_filter_brand_id();
+    if ($brand_id === '') {
+        return $html;
+    }
+
+    $attr = 'filter_brand_id="' . esc_attr($brand_id) . '"';
+
+    return rch_multisite_preg_replace_callback_safe(
+        rch_multisite_rechat_listings_parent_open_tag_pattern(),
+        static function ($m) use ($attr) {
+            $inner = $m[1];
+            if (preg_match('/\bfilter_brand_id\s*=/i', $inner)) {
+                $inner = rch_multisite_preg_replace_safe(
+                    '/\sfilter_brand_id\s*=\s*(["\'])[^"\']*\1/i',
+                    ' ' . $attr,
+                    $inner,
+                    1
+                );
+
+                return '<rechat-listings' . $inner . '>';
+            }
+
+            $prefix = rch_multisite_ob_attr_append_prefix($inner);
+
+            return '<rechat-listings' . $inner . $prefix . $attr . '>';
+        },
+        $html
+    );
+}
+
+/**
  * When the agent subsite has no main-site `agents` CSV, set disabled="true" on <rechat-listings>
  * (parity with rch_get_agent_listings_attrs in agents-listings-section.php).
  *
@@ -1119,6 +1257,7 @@ function rch_multisite_ob_patch_rechat_markup(string $html)
 
     try {
         $html = rch_multisite_ob_inject_filter_agents($html);
+        $html = rch_multisite_ob_inject_filter_brand_id_for_office($html);
         $html = rch_multisite_ob_strip_filter_agents_on_listing_children($html);
         $html = rch_multisite_ob_disable_rechat_listings_when_no_hub_agents($html);
 
@@ -1170,6 +1309,10 @@ function rch_multisite_should_buffer_listing_markup(): bool
         // Always buffer agent subsites: inject filter_agents, hub brand_id on <rechat-root>, strip
         // map_api_key from <rechat-listings>, and/or disabled="true" when hub agents empty.
         return true;
+    }
+
+    if (rch_multisite_is_office_listing_scope_active()) {
+        return rch_multisite_get_main_site_office_filter_brand_id() !== '';
     }
 
     $here = get_current_blog_id();

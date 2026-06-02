@@ -172,6 +172,10 @@ function rch_render_listing_list($atts)
   // Parse shortcode attributes with defaults
   $atts = shortcode_atts(rch_get_listings_default_atts(), $atts);
 
+  if (function_exists('rch_multisite_merge_subsite_listing_scope_atts')) {
+    $atts = rch_multisite_merge_subsite_listing_scope_atts($atts);
+  }
+
   $atts['own_listing'] = rch_attr_to_bool($atts['own_listing']);
 
   // brand for rechat-root brand_id; own_listing / filter_brand_id set filter_brand_id on <rechat-listings> via rch_get_rechat_listings_attributes()
