@@ -349,6 +349,10 @@ function rch_latest_listings_parse_attributes($atts)
     // Set brand from settings
     $atts['brand'] = get_option('rch_rechat_brand_id');
 
+    if (function_exists('rch_multisite_merge_subsite_listing_scope_atts')) {
+        $atts = rch_multisite_merge_subsite_listing_scope_atts($atts);
+    }
+
     return $atts;
 }
 
