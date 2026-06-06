@@ -209,6 +209,7 @@ function rch_latest_listings_normalize_booleans($atts)
         'pagination',
         'pagination_clickable',
         'navigation',
+        'auto_center_few_slides',
         'disable_filter_address',
         'disable_filter_price',
         'disable_filter_beds',
