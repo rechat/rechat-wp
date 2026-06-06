@@ -70,6 +70,8 @@ function rch_get_listings_default_atts()
     'office_exclusive' => false,
     'filter_pool' => false,
     'disable_sort' => false,
+    'hide_map' => false,
+    'hide_filters' => false,
     'map_latitude' => '',
     'map_longitude' => '',
     'map_zoom' => '12',
@@ -118,6 +120,8 @@ function rch_prepare_listing_atts_from_block(array $block_attributes)
     'office_exclusive',
     'filter_pool',
     'disable_sort',
+    'hide_map',
+    'hide_filters',
   );
 
   foreach ($block_attributes as $key => $value) {
@@ -190,6 +194,8 @@ function rch_render_listing_list($atts)
   $atts['office_exclusive'] = rch_attr_to_bool($atts['office_exclusive']);
   $atts['filter_pool'] = rch_attr_to_bool($atts['filter_pool']);
   $atts['disable_sort'] = rch_attr_to_bool($atts['disable_sort']);
+  $atts['hide_map'] = rch_attr_to_bool($atts['hide_map']);
+  $atts['hide_filters'] = rch_attr_to_bool($atts['hide_filters']);
   $atts['disable_filter_loading_indicator'] = rch_attr_to_bool($atts['disable_filter_loading_indicator']);
 
   rch_listings_shortcode_enqueue_assets();
@@ -273,6 +279,15 @@ function rch_render_listing_list($atts)
   }
 
   $wrapper_classes = 'rch-listing-block-gutenberg';
+  if ($atts['hide_map']) {
+    $wrapper_classes .= ' rch-listings-no-map';
+  }
+  if ($atts['hide_filters']) {
+    $wrapper_classes .= ' rch-listings-no-filters';
+  }
+  if ($atts['disable_sort']) {
+    $wrapper_classes .= ' rch-listings-no-sort';
+  }
   $wrapper_style_attr = rch_listings_shortcode_wrapper_style_attr($primary_color);
 
   // Get rechat root attributes (only brand_id in new SDK)
@@ -281,8 +296,8 @@ function rch_render_listing_list($atts)
   // Get rechat-listings attributes (all filter/map attributes in new SDK)
   $rechat_listings_attrs = rch_get_rechat_listings_attributes($atts, $map_default_center, $listing_statuses_str);
 
-  // MapLibre + viewport on <rechat-map>
-  $rechat_map_attrs = rch_get_rechat_map_attributes($atts, $map_default_center);
+  // MapLibre + viewport on <rechat-map> (skipped when hide_map).
+  $rechat_map_attrs = $atts['hide_map'] ? '' : rch_get_rechat_map_attributes($atts, $map_default_center);
 
   // Check if all filters are disabled
   $all_filters_disabled = $atts['disable_filter_address'] &&
@@ -299,13 +314,15 @@ function rch_render_listing_list($atts)
     <rechat-root <?php echo $rechat_attrs; ?>>
       <rechat-listings <?php echo $rechat_listings_attrs; ?>>
         <div class="rechat-shell">
-          <?php if (!$all_filters_disabled): ?>
+          <?php if (!$atts['hide_filters'] && !$all_filters_disabled): ?>
               <?php echo rch_render_listing_filters_html($atts); ?>
           <?php endif; ?>
           <?php if (!$atts['disable_sort']): ?>
             <rechat-listings-sort></rechat-listings-sort>
           <?php endif; ?>
+          <?php if (!$atts['hide_map']): ?>
           <rechat-map<?php echo $rechat_map_attrs !== '' ? ' ' . $rechat_map_attrs : ''; ?>></rechat-map>
+          <?php endif; ?>
             <rechat-map-listings-grid></rechat-map-listings-grid>
             <rechat-listings-pagination></rechat-listings-pagination>
         </div>

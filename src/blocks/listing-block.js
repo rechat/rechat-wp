@@ -71,6 +71,8 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         filter_open_houses: { type: 'boolean', default: false },
         office_exclusive: { type: 'boolean', default: false },
         disable_sort: { type: 'boolean', default: false },
+        hide_map: { type: 'boolean', default: false },
+        hide_filters: { type: 'boolean', default: false },
         map_latitude: { type: 'string', default: '' },
         map_longitude: { type: 'string', default: '' },
         map_zoom: { type: 'string', default: '12' },
@@ -105,7 +107,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             listing_per_page, filterByRegions, filterByOffices, selectedStatuses, 
             disable_filter_address, disable_filter_price, disable_filter_beds, 
             disable_filter_baths, disable_filter_property_types, disable_filter_advanced,
-            own_listing, property_types, filter_open_houses, office_exclusive, filter_pool, disable_sort, listing_statuses, map_latitude, map_longitude, map_zoom, map_style, map_style_url, map_id,
+            own_listing, property_types, filter_open_houses, office_exclusive, filter_pool, disable_sort, hide_map, hide_filters, listing_statuses, map_latitude, map_longitude, map_zoom, map_style, map_style_url, map_id,
             sort_by, filter_address, filter_search_limit, filter_suggestions_limit, filter_pagination_offset, property_subtypes, architectural_styles, filter_baths, minimum_parking_spaces, minimum_sold_date, filter_agents, list_offices, filter_brand_id, disable_filter_loading_indicator,
             filter_boundary_country, filter_boundary_state,
         } = attributes;
@@ -295,11 +297,6 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                             onChange={() => setAttributes({ filter_open_houses: !filter_open_houses })}
                         />
                         <CheckboxControl
-                            label="Hide Sort By"
-                            checked={disable_sort}
-                            onChange={() => setAttributes({ disable_sort: !disable_sort })}
-                        />
-                        <CheckboxControl
                             label="Office Exclusive"
                             checked={office_exclusive}
                             onChange={() => setAttributes({ office_exclusive: !office_exclusive })}
@@ -456,6 +453,26 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                             onChange={(value) => setAttributes({ sort_by: value })}
                         />
                     </PanelBody>
+                    <PanelBody title="Display" initialOpen={true}>
+                        <CheckboxControl
+                            label="Hide filters"
+                            help="Omits rechat-map-filter (and individual filter components) from the listing layout."
+                            checked={hide_filters}
+                            onChange={() => setAttributes({ hide_filters: !hide_filters })}
+                        />
+                        <CheckboxControl
+                            label="Hide sort"
+                            help="Omits rechat-listings-sort from the listing layout."
+                            checked={disable_sort}
+                            onChange={() => setAttributes({ disable_sort: !disable_sort })}
+                        />
+                        <CheckboxControl
+                            label="Hide map"
+                            help="Omits rechat-map from the listing layout."
+                            checked={hide_map}
+                            onChange={() => setAttributes({ hide_map: !hide_map })}
+                        />
+                    </PanelBody>
                     <PanelBody title="Filter Visibility Settings" initialOpen={false}>
                         <p><strong>Disable Filters (check to hide)</strong></p>
                         <CheckboxControl
@@ -573,6 +590,8 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                         />
                     </PanelBody>
                     <PanelBody title="Map Settings">
+                        {!hide_map && (
+                        <>
                         <SelectControl
                             label="Map style (preset)"
                             value={map_style || ''}
@@ -623,6 +642,8 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                             </>
                         ) : (
                             <p>Google Maps API key not found. Please make sure it is configured in the WordPress settings.</p>
+                        )}
+                        </>
                         )}
                     </PanelBody>
                 </InspectorControls>
