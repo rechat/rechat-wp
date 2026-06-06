@@ -121,6 +121,14 @@
   display: none !important;
 }
 
+[data-rechat-listings-section]:not([data-rch-listings-section-resolved="loaded"]) {
+  display: none !important;
+}
+
+[data-rechat-listings-section][data-rch-listings-section-resolved="loaded"] {
+  display: block !important;
+}
+
 [data-rechat-listings-section][data-rch-listings-section-resolved="empty"],
 [data-rechat-listings-section][data-rechat-listings-state="empty"] {
   display: none !important;
