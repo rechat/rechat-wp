@@ -8,9 +8,23 @@
   'use strict';
 
   var SLIDE_SELECTOR = '.rechat-listings-list__item';
+  var REAL_LISTING_SELECTOR = '.listing-card, a.listing-card__hyperlink, a[href*="listing-detail"]';
+  var FEW_SLIDES_CENTER_THRESHOLD = 4;
 
   function countSlides(swiperEl) {
-    return swiperEl.querySelectorAll(SLIDE_SELECTOR).length;
+    var slides = swiperEl.querySelectorAll(SLIDE_SELECTOR);
+    if (!slides.length) {
+      return 0;
+    }
+
+    var realCount = 0;
+    slides.forEach(function (slide) {
+      if (slide.querySelector(REAL_LISTING_SELECTOR)) {
+        realCount += 1;
+      }
+    });
+
+    return realCount > 0 ? realCount : slides.length;
   }
 
   /**
@@ -80,6 +94,34 @@
   }
 
   /**
+   * Center the track when there are fewer slides than a full row (default: < 4).
+   *
+   * @param {Record<string, unknown>} swiperConfig
+   * @param {number} slideCount
+   * @param {HTMLElement} container
+   */
+  function applyFewSlidesCentering(swiperConfig, slideCount, container) {
+    var threshold = FEW_SLIDES_CENTER_THRESHOLD;
+    if (typeof swiperConfig.autoCenterFewSlidesThreshold === 'number' && !isNaN(swiperConfig.autoCenterFewSlidesThreshold)) {
+      threshold = swiperConfig.autoCenterFewSlidesThreshold;
+    }
+    if (swiperConfig.autoCenterFewSlides === false) {
+      return;
+    }
+    if (slideCount < 1 || slideCount >= threshold) {
+      return;
+    }
+
+    container.classList.add('rch-latest-listings-swiper--few-slides');
+    container.setAttribute('data-rch-slide-count', String(slideCount));
+
+    swiperConfig.centeredSlides = true;
+    swiperConfig.centerInsufficientSlides = true;
+    swiperConfig.loop = false;
+    delete swiperConfig.loopAdditionalSlides;
+  }
+
+  /**
    * @param {{ update: Function, destroyed?: boolean }} swiper
    */
   function schedulePostInitLayoutFix(swiper) {
@@ -124,10 +166,15 @@
     var swiperConfig = JSON.parse(JSON.stringify(rawConfig));
     swiperConfig.slideClass = 'rechat-listings-list__item';
 
+    applyFewSlidesCentering(swiperConfig, slideCount, container);
     maybeDisableLoop(swiperConfig, slideCount);
     if (swiperConfig.loop) {
       applyLoopStabilityFixes(swiperConfig, slideCount);
     }
+
+    // Custom shortcode keys — not passed to Swiper constructor.
+    delete swiperConfig.autoCenterFewSlides;
+    delete swiperConfig.autoCenterFewSlidesThreshold;
 
     // Breakpoints often only set slidesPerView; ensure spaceBetween is not dropped on merge.
     var sb = swiperConfig.spaceBetween;
