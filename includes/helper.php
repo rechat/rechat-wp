@@ -1630,6 +1630,8 @@ function rch_get_listing_block_attributes()
         'filter_open_houses' => array('type' => 'boolean', 'default' => false),
         'office_exclusive' => array('type' => 'boolean', 'default' => false),
         'disable_sort' => array('type' => 'boolean', 'default' => false),
+        'hide_map' => array('type' => 'boolean', 'default' => false),
+        'hide_filters' => array('type' => 'boolean', 'default' => false),
         'map_latitude' => array('type' => 'string', 'default' => ''),
         'map_longitude' => array('type' => 'string', 'default' => ''),
         'map_zoom' => array('type' => 'string', 'default' => '12'),
