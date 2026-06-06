@@ -3,6 +3,9 @@
  *
  * Do not set Swiper observer/observeParents on Rechat-managed slides: it breaks React
  * inside the SDK (FilterContext / store errors). Init only after listings are fetched.
+ *
+ * When listing count is below the threshold (default 4), skip Swiper and use flex centering
+ * so a single card is not pushed off-screen by transform math.
  */
 (function (window) {
   'use strict';
@@ -46,19 +49,13 @@
     return FEW_SLIDES_CENTER_THRESHOLD;
   }
 
-  function shouldCenterFewSlides(swiperConfig, slideCount) {
+  function shouldUseStaticCenter(swiperConfig, slideCount) {
     if (swiperConfig.autoCenterFewSlides === false) {
       return false;
     }
     return slideCount > 0 && slideCount < getFewSlidesThreshold(swiperConfig);
   }
 
-  /**
-   * Largest numeric slidesPerView from root config and breakpoints (for loop math).
-   *
-   * @param {Record<string, unknown>} swiperConfig
-   * @returns {number}
-   */
   function getMaxNumericSlidesPerView(swiperConfig) {
     var maxSpv = 1;
     var root = swiperConfig.slidesPerView;
@@ -77,30 +74,6 @@
     return maxSpv;
   }
 
-  function capSlidesPerViewForCount(swiperConfig, slideCount) {
-    if (slideCount <= 1) {
-      return;
-    }
-    if (typeof swiperConfig.slidesPerView === 'number' && !isNaN(swiperConfig.slidesPerView)) {
-      swiperConfig.slidesPerView = Math.min(swiperConfig.slidesPerView, slideCount);
-    }
-    if (swiperConfig.breakpoints && typeof swiperConfig.breakpoints === 'object') {
-      Object.keys(swiperConfig.breakpoints).forEach(function (key) {
-        var bp = swiperConfig.breakpoints[key];
-        if (bp && typeof bp.slidesPerView === 'number' && !isNaN(bp.slidesPerView)) {
-          bp.slidesPerView = Math.min(bp.slidesPerView, slideCount);
-        }
-      });
-    }
-  }
-
-  /**
-   * Swiper 11: loop + centeredSlides + fractional slidesPerView needs extra duplicated slides
-   * and stable lengths; see migration guide (loopAdditionalSlides replaces loopedSlides).
-   *
-   * @param {Record<string, unknown>} swiperConfig
-   * @param {number} slideCount
-   */
   function applyLoopStabilityFixes(swiperConfig, slideCount) {
     if (!swiperConfig.loop || slideCount < 1) {
       return;
@@ -109,7 +82,6 @@
     var ceilSpv = Math.ceil(maxSpv);
     var extra = Math.max(ceilSpv * 2, 4);
     swiperConfig.loopAdditionalSlides = Math.min(slideCount, extra);
-
     swiperConfig.watchSlidesProgress = true;
   }
 
@@ -127,88 +99,60 @@
     }
   }
 
-  function markFewSlidesContainer(container, slideCount) {
-    container.classList.add('rch-latest-listings-swiper--few-slides');
-    container.setAttribute('data-rch-slide-count', String(slideCount));
-  }
-
-  function applyFewSlidesCentering(swiperConfig, slideCount, container) {
-    if (!shouldCenterFewSlides(swiperConfig, slideCount)) {
-      return false;
-    }
-
-    markFewSlidesContainer(container, slideCount);
-    swiperConfig.centeredSlides = true;
-    swiperConfig.centerInsufficientSlides = true;
-    swiperConfig.loop = false;
-    delete swiperConfig.loopAdditionalSlides;
-    capSlidesPerViewForCount(swiperConfig, slideCount);
-    return true;
-  }
-
-  function centerFewSlidesTrack(swiper, slideCount) {
-    if (!swiper || swiper.destroyed || slideCount < 1) {
-      return;
-    }
-
-    var slides = swiper.slides;
-    if (!slides || !slides.length) {
-      return;
-    }
-
-    var count = Math.min(slideCount, slides.length);
-    var space = Number(swiper.params.spaceBetween) || 0;
-    var totalWidth = 0;
-
-    for (var i = 0; i < count; i++) {
-      totalWidth += slides[i].offsetWidth;
-    }
-    if (count > 1) {
-      totalWidth += space * (count - 1);
-    }
-
-    var offset = Math.max(0, (swiper.width - totalWidth) / 2);
-    swiper.setTranslate(offset);
-    swiper.updateProgress();
-    swiper.updateSlidesClasses();
-  }
-
-  function scheduleFewSlidesCenter(swiper, slideCount) {
-    [0, 50, 150, 400].forEach(function (delay) {
-      window.setTimeout(function () {
-        if (swiper && !swiper.destroyed) {
-          swiper.update();
-          centerFewSlidesTrack(swiper, slideCount);
-        }
-      }, delay);
-    });
-  }
-
-  function refreshFewSlidesLayout(swiper, rawConfig, container, swiperEl) {
-    var slideCount = countSlides(swiperEl);
-    if (!shouldCenterFewSlides(rawConfig, slideCount)) {
-      return;
-    }
-
-    markFewSlidesContainer(container, slideCount);
-    swiper.params.centeredSlides = true;
-    swiper.params.centerInsufficientSlides = true;
-    swiper.params.loop = false;
-    capSlidesPerViewForCount(swiper.params, slideCount);
-    swiper.update();
-    scheduleFewSlidesCenter(swiper, slideCount);
-  }
-
   function stripCustomConfigKeys(swiperConfig) {
     delete swiperConfig.autoCenterFewSlides;
     delete swiperConfig.autoCenterFewSlidesThreshold;
   }
 
-  function buildSwiperConfig(rawConfig, slideCount, container) {
+  function hideSkeletonSlides(swiperEl) {
+    swiperEl.querySelectorAll(SLIDE_SELECTOR).forEach(function (slide) {
+      if (slideHasRealListing(slide)) {
+        slide.style.removeProperty('display');
+        slide.removeAttribute('aria-hidden');
+        return;
+      }
+      slide.style.display = 'none';
+      slide.setAttribute('aria-hidden', 'true');
+    });
+  }
+
+  function destroySwiperIfAny(swiperEl) {
+    if (swiperEl.swiper && !swiperEl.swiper.destroyed) {
+      swiperEl.swiper.destroy(true, true);
+    }
+  }
+
+  function resetWrapperTransform(wrapper) {
+    if (!wrapper) {
+      return;
+    }
+    wrapper.style.transform = 'none';
+    wrapper.style.transitionDuration = '0ms';
+  }
+
+  function applyStaticCenterLayout(container, swiperEl, slideCount) {
+    container.classList.add('rch-latest-listings-swiper--few-slides');
+    container.classList.add('rch-latest-listings-swiper-static-active');
+    container.setAttribute('data-rch-slide-count', String(slideCount));
+    container.setAttribute('data-rch-listings-swiper-mode', 'static-centered');
+
+    swiperEl.classList.add('rch-latest-listings-swiper-static');
+    hideSkeletonSlides(swiperEl);
+    resetWrapperTransform(swiperEl.querySelector('rechat-listings-list.swiper-wrapper, .swiper-wrapper'));
+  }
+
+  function clearStaticCenterLayout(container, swiperEl) {
+    container.classList.remove('rch-latest-listings-swiper--few-slides');
+    container.classList.remove('rch-latest-listings-swiper-static-active');
+    container.removeAttribute('data-rch-slide-count');
+    container.removeAttribute('data-rch-listings-swiper-mode');
+    swiperEl.classList.remove('rch-latest-listings-swiper-static');
+  }
+
+  function buildSwiperConfig(rawConfig, slideCount) {
     var swiperConfig = JSON.parse(JSON.stringify(rawConfig));
     swiperConfig.slideClass = 'rechat-listings-list__item';
 
-    var fewSlides = applyFewSlidesCentering(swiperConfig, slideCount, container);
     maybeDisableLoop(swiperConfig, slideCount);
     if (swiperConfig.loop) {
       applyLoopStabilityFixes(swiperConfig, slideCount);
@@ -226,20 +170,23 @@
       });
     }
 
-    return { config: swiperConfig, fewSlides: fewSlides };
+    return swiperConfig;
   }
 
-  function bindFewSlidesEvents(swiper, slideCount) {
-    swiper.on('resize', function () {
-      centerFewSlidesTrack(swiper, slideCount);
+  function schedulePostInitLayoutFix(swiper) {
+    window.requestAnimationFrame(function () {
+      window.requestAnimationFrame(function () {
+        if (swiper && typeof swiper.update === 'function' && !swiper.destroyed) {
+          swiper.update();
+        }
+      });
     });
-    scheduleFewSlidesCenter(swiper, slideCount);
   }
 
   /**
    * @param {string} uniqueId
    * @param {Record<string, unknown>} rawConfig
-   * @returns {boolean} true if Swiper was constructed or already exists
+   * @returns {boolean} true if layout is ready or Swiper was constructed
    */
   function initSwiperInstance(uniqueId, rawConfig) {
     var container = document.getElementById(uniqueId);
@@ -252,25 +199,28 @@
       return false;
     }
 
-    if (typeof window.Swiper === 'undefined') {
-      return false;
-    }
-
     var slideCount = countSlides(swiperEl);
-
-    if (swiperEl.swiper) {
-      if (slideCount > 0) {
-        refreshFewSlidesLayout(swiperEl.swiper, rawConfig, container, swiperEl);
-      }
-      return true;
-    }
-
     if (slideCount < 1) {
       return false;
     }
 
-    var built = buildSwiperConfig(rawConfig, slideCount, container);
-    var swiperConfig = built.config;
+    if (shouldUseStaticCenter(rawConfig, slideCount)) {
+      destroySwiperIfAny(swiperEl);
+      applyStaticCenterLayout(container, swiperEl, slideCount);
+      return true;
+    }
+
+    clearStaticCenterLayout(container, swiperEl);
+
+    if (typeof window.Swiper === 'undefined') {
+      return false;
+    }
+
+    if (swiperEl.swiper) {
+      return true;
+    }
+
+    var swiperConfig = buildSwiperConfig(rawConfig, slideCount);
 
     var paginationEl = container.querySelector('.swiper-pagination');
     if (paginationEl && swiperConfig.pagination) {
@@ -293,18 +243,7 @@
     }
 
     var swiper = new window.Swiper(swiperEl, swiperConfig);
-    if (built.fewSlides) {
-      bindFewSlidesEvents(swiper, slideCount);
-    } else {
-      window.requestAnimationFrame(function () {
-        window.requestAnimationFrame(function () {
-          if (swiper && typeof swiper.update === 'function' && !swiper.destroyed) {
-            swiper.update();
-          }
-        });
-      });
-    }
-
+    schedulePostInitLayoutFix(swiper);
     return true;
   }
 

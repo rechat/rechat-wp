@@ -94,22 +94,37 @@
   background: #333;
 }
 
-.rch-latest-listings-shortcode-swiper.rch-latest-listings-swiper--few-slides .swiper {
+.rch-latest-listings-shortcode-swiper.rch-latest-listings-swiper-static-active .swiper {
   overflow: hidden;
+  touch-action: auto;
+  padding-bottom: 16px;
 }
 
-.rch-latest-listings-shortcode-swiper.rch-latest-listings-swiper--few-slides rechat-listings-list.swiper-wrapper {
-  justify-content: center;
+.rch-latest-listings-shortcode-swiper.rch-latest-listings-swiper-static-active rechat-listings-list.swiper-wrapper {
+  display: flex !important;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center !important;
+  align-items: stretch;
+  transform: none !important;
+  transition: none !important;
+  width: 100% !important;
+  max-width: 100%;
+  gap: 16px;
+  box-sizing: border-box;
 }
 
-.rch-latest-listings-shortcode-swiper.rch-latest-listings-swiper--few-slides .rechat-listings-list__item:last-child {
+.rch-latest-listings-shortcode-swiper.rch-latest-listings-swiper-static-active .rechat-listings-list__item {
+  width: clamp(220px, 28vw, 340px) !important;
+  flex: 0 0 clamp(220px, 28vw, 340px) !important;
+  max-width: min(100%, 340px) !important;
   margin-right: 0 !important;
 }
 
-.rch-latest-listings-shortcode-swiper.rch-latest-listings-swiper--few-slides[data-rch-slide-count="1"] .swiper-button-prev,
-.rch-latest-listings-shortcode-swiper.rch-latest-listings-swiper--few-slides[data-rch-slide-count="1"] .swiper-button-next,
-.rch-latest-listings-shortcode-swiper.rch-latest-listings-swiper--few-slides[data-rch-slide-count="1"] .swiper-pagination {
-  display: none;
+.rch-latest-listings-shortcode-swiper.rch-latest-listings-swiper-static-active .swiper-button-prev,
+.rch-latest-listings-shortcode-swiper.rch-latest-listings-swiper-static-active .swiper-button-next,
+.rch-latest-listings-shortcode-swiper.rch-latest-listings-swiper-static-active .swiper-pagination {
+  display: none !important;
 }
 
 .rch-grid-container {
