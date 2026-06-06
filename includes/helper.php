@@ -2141,8 +2141,7 @@ function rch_get_rechat_listings_attributes($attributes, $map_default_center, $l
         $attrs[] = 'filter_listing_statuses="' . esc_attr($listing_statuses_str) . '"';
     }
 
-    // {street_address} is substituted by the SDK. A raw # in the path breaks the URL (fragment).
-    // assets/js/rch-listing-hyperlink-fix.js rewrites those links by omitting the # in the slug.
+    // {street_address} is substituted by the SDK (including # in street slugs).
     if (!empty($attributes['listing_hyperlink_href'])) {
         $attrs[] = 'listing_hyperlink_href="' . esc_attr($attributes['listing_hyperlink_href']) . '"';
     } else {

@@ -31,13 +31,6 @@ function rch_enqueue_frontend_styles()
 
     // Enqueue JavaScript files with version
     wp_enqueue_script('rch-ajax-front', RCH_PLUGIN_ASSETS . 'js/rch-ajax-front.js', ['jquery'], RCH_VERSION, true);
-    wp_enqueue_script(
-        'rch-listing-hyperlink-fix',
-        RCH_PLUGIN_ASSETS . 'js/rch-listing-hyperlink-fix.js',
-        [],
-        RCH_VERSION,
-        true
-    );
     wp_enqueue_script('rch-swiper-js', RCH_PLUGIN_ASSETS . 'js/swiper-bundle.min.js', [], RCH_VERSION_SWIPER, true);
     wp_register_script(
         'rch-latest-listings-swiper',
@@ -45,6 +38,13 @@ function rch_enqueue_frontend_styles()
         ['rch-swiper-js'],
         RCH_VERSION,
         true
+    );
+    wp_register_script(
+        'rch-latest-listings-empty',
+        RCH_PLUGIN_ASSETS . 'js/rch-latest-listings-empty.js',
+        ['rechat-sdk-js'],
+        RCH_VERSION,
+        false
     );
     wp_register_style(
         'rch-lead-capture-shortcode-css',
@@ -115,6 +115,7 @@ function rch_enqueue_frontend_styles()
     if (! is_admin()) {
         wp_enqueue_style('rechat-sdk-css');
         wp_enqueue_script('rechat-sdk-js');
+        wp_enqueue_script('rch-latest-listings-empty');
     }
 }
 add_action('wp_enqueue_scripts', 'rch_enqueue_frontend_styles');
