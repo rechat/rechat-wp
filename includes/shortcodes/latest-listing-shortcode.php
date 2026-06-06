@@ -108,6 +108,8 @@ function rch_latest_listings_get_defaults()
         'pagination_clickable' => 'false',
         'pagination_type' => 'bullets',
         'navigation' => 'false',
+        'auto_center_few_slides' => 'true',
+        'auto_center_few_slides_threshold' => '4',
         // Advanced
         'template' => '',
         'content' => '',
@@ -421,6 +423,9 @@ function rch_latest_listings_build_swiper_config($atts)
             'slideShadows' => false,
         ];
     }
+
+    $config['autoCenterFewSlides'] = filter_var($atts['auto_center_few_slides'], FILTER_VALIDATE_BOOLEAN);
+    $config['autoCenterFewSlidesThreshold'] = max(1, intval($atts['auto_center_few_slides_threshold']));
 
     return $config;
 }

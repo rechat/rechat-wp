@@ -94,6 +94,16 @@
   background: #333;
 }
 
+.rch-latest-listings-shortcode-swiper.rch-latest-listings-swiper--few-slides .swiper {
+  overflow: hidden;
+}
+
+.rch-latest-listings-shortcode-swiper.rch-latest-listings-swiper--few-slides[data-rch-slide-count="1"] .swiper-button-prev,
+.rch-latest-listings-shortcode-swiper.rch-latest-listings-swiper--few-slides[data-rch-slide-count="1"] .swiper-button-next,
+.rch-latest-listings-shortcode-swiper.rch-latest-listings-swiper--few-slides[data-rch-slide-count="1"] .swiper-pagination {
+  display: none;
+}
+
 .rch-grid-container {
   display: grid;
   gap: 20px;
