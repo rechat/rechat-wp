@@ -98,6 +98,14 @@
   overflow: hidden;
 }
 
+.rch-latest-listings-shortcode-swiper.rch-latest-listings-swiper--few-slides rechat-listings-list.swiper-wrapper {
+  justify-content: center;
+}
+
+.rch-latest-listings-shortcode-swiper.rch-latest-listings-swiper--few-slides .rechat-listings-list__item:last-child {
+  margin-right: 0 !important;
+}
+
 .rch-latest-listings-shortcode-swiper.rch-latest-listings-swiper--few-slides[data-rch-slide-count="1"] .swiper-button-prev,
 .rch-latest-listings-shortcode-swiper.rch-latest-listings-swiper--few-slides[data-rch-slide-count="1"] .swiper-button-next,
 .rch-latest-listings-shortcode-swiper.rch-latest-listings-swiper--few-slides[data-rch-slide-count="1"] .swiper-pagination {
