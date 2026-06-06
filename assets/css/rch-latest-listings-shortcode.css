@@ -115,3 +115,13 @@
   color: #666;
   font-size: 16px;
 }
+
+.rch-latest-listings-is-empty,
+[data-rch-listings-resolved="empty"] {
+  display: none !important;
+}
+
+[data-rechat-listings-section][data-rch-listings-section-resolved="empty"],
+[data-rechat-listings-section][data-rechat-listings-state="empty"] {
+  display: none !important;
+}

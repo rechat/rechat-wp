@@ -20,6 +20,7 @@ function rch_latest_listings_enqueue_assets(array $atts)
 {
     // Rechat SDK is enqueued globally on wp_enqueue_scripts (see enqueue-front.php) so it loads in <head>.
     wp_enqueue_style('rch-latest-listings-shortcode');
+    wp_enqueue_script('rch-latest-listings-empty');
 
     if (($atts['display_type'] ?? '') === 'swiper') {
         wp_enqueue_style('rch-swiper');
@@ -424,6 +425,17 @@ function rch_latest_listings_build_swiper_config($atts)
     return $config;
 }
 
+function rch_latest_listings_render_wrapper_attrs($unique_id, $extra_classes = '')
+{
+    $classes = trim('main-listing-sdk ' . $extra_classes);
+
+    return sprintf(
+        'id="%1$s" class="%2$s" data-rch-latest-listings-instance="%1$s" data-rch-listings-resolved="pending"',
+        esc_attr($unique_id),
+        esc_attr($classes)
+    );
+}
+
 /**
  * Render Swiper layout HTML
  * 
@@ -435,7 +447,7 @@ function rch_latest_listings_build_swiper_config($atts)
 function rch_latest_listings_render_swiper($atts, $unique_id, $rechat_attrs, $rechat_listings_attrs)
 {
 ?>
-    <div class="main-listing-sdk rch-latest-listings-shortcode-swiper" id="<?php echo esc_attr($unique_id); ?>">
+    <div <?php echo rch_latest_listings_render_wrapper_attrs($unique_id, 'rch-latest-listings-shortcode-swiper'); ?>>
         <rechat-root <?php echo $rechat_attrs; ?>>
             <rechat-listings <?php echo $rechat_listings_attrs; ?>>
                 <div class="swiper">
@@ -468,7 +480,7 @@ function rch_latest_listings_render_normal($atts, $unique_id, $rechat_attrs, $re
 {
     // filter_pagination_limit is already set from listing_per_page in rch_get_rechat_listings_attributes()
 ?>
-    <div class="main-listing-sdk rch-latest-listings-shortcode-normal" id="<?php echo esc_attr($unique_id); ?>">
+    <div <?php echo rch_latest_listings_render_wrapper_attrs($unique_id, 'rch-latest-listings-shortcode-normal'); ?>>
         <div class="rch-latest-listings-normal-inner">
             <rechat-root <?php echo $rechat_attrs; ?>>
                 <rechat-listings <?php echo $rechat_listings_attrs; ?>>
@@ -498,7 +510,7 @@ function rch_latest_listings_render_grid($atts, $unique_id, $rechat_attrs, $rech
 {
     $template_class = !empty($atts['template']) ? esc_attr($atts['template']) : 'default';
 ?>
-    <div class="rch-grid-container <?php echo $template_class; ?>-grid" id="<?php echo esc_attr($unique_id); ?>">
+    <div <?php echo rch_latest_listings_render_wrapper_attrs($unique_id, 'rch-grid-container ' . $template_class . '-grid'); ?>>
         <rechat-root <?php echo $rechat_attrs; ?>>
             <rechat-listings <?php echo $rechat_listings_attrs; ?>>
                 <rechat-listings-list></rechat-listings-list>
