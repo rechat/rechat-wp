@@ -240,6 +240,60 @@ function rch_agent_wizard_collect_broadcast_parent_post_ids(int $source_blog_id)
 }
 
 /**
+ * Target blog IDs that do not yet have a verified Broadcast child for this parent post.
+ *
+ * @param int   $source_blog_id  Parent blog.
+ * @param int   $parent_post_id  Parent post ID on source blog.
+ * @param int[] $target_blog_ids Candidate targets.
+ * @return int[]
+ */
+function rch_multisite_broadcast_unlinked_target_blog_ids(int $source_blog_id, int $parent_post_id, array $target_blog_ids): array
+{
+    $target_blog_ids = array_values(
+        array_unique(
+            array_filter(
+                array_map('absint', $target_blog_ids),
+                static function (int $id): bool {
+                    return $id > 0;
+                }
+            )
+        )
+    );
+
+    if ($source_blog_id <= 0 || $parent_post_id <= 0 || $target_blog_ids === []) {
+        return [];
+    }
+
+    if (apply_filters('rch_multisite_broadcast_force_rebroadcast', false)) {
+        return $target_blog_ids;
+    }
+
+    $unlinked = [];
+
+    foreach ($target_blog_ids as $blog_id) {
+        if ($blog_id === $source_blog_id) {
+            continue;
+        }
+
+        if (rch_multisite_broadcast_child_post_id_on_blog($source_blog_id, $parent_post_id, $blog_id) > 0) {
+            continue;
+        }
+
+        $unlinked[] = $blog_id;
+    }
+
+    return $unlinked;
+}
+
+/**
+ * Whether a parent post on the source blog already has a Broadcast child on a target blog.
+ */
+function rch_multisite_broadcast_has_child_on_blog(int $source_blog_id, int $parent_post_id, int $target_blog_id): bool
+{
+    return rch_multisite_broadcast_child_post_id_on_blog($source_blog_id, $parent_post_id, $target_blog_id) > 0;
+}
+
+/**
  * User ID used while running Broadcast API (capabilities). Default: first super admin, else multisite owner option, else 1.
  */
 function rch_multisite_broadcast_runner_user_id(): int
@@ -412,8 +466,12 @@ function rch_multisite_run_broadcast_to_new_blog(int $new_blog_id): void
 
                 $children = $bcd->get_linked_children();
 
-                if (is_array($children) && array_key_exists($new_blog_id, $children)) {
-                    continue;
+                if (is_array($children)) {
+                    $has_child = array_key_exists($new_blog_id, $children)
+                        || array_key_exists((string) $new_blog_id, $children);
+                    if ($has_child && rch_multisite_broadcast_has_child_on_blog($source, $post_id, $new_blog_id)) {
+                        continue;
+                    }
                 }
 
                 try {

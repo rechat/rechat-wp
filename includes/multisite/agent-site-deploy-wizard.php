@@ -1834,6 +1834,7 @@ function rch_agent_wizard_broadcast_posts_to_targets(array $post_ids, string $ta
     $out = [
         'ok'           => 0,
         'fail'         => 0,
+        'skipped'      => 0,
         'errors'       => [],
         'target_count' => 0,
     ];
@@ -1911,7 +1912,16 @@ function rch_agent_wizard_broadcast_posts_to_targets(array $post_ids, string $ta
         }
 
         try {
-            $api->broadcast_children($pid, $targets);
+            $targets_for_post = function_exists('rch_multisite_broadcast_unlinked_target_blog_ids')
+                ? rch_multisite_broadcast_unlinked_target_blog_ids($source, $pid, $targets)
+                : $targets;
+
+            if ($targets_for_post === []) {
+                $out['skipped']++;
+                continue;
+            }
+
+            $api->broadcast_children($pid, $targets_for_post);
             $out['ok']++;
         } catch (Throwable $e) {
             $out['fail']++;
@@ -2158,9 +2168,10 @@ function rch_agent_wizard_ajax_broadcast_posts(): void
     $result = rch_agent_wizard_broadcast_posts_to_targets($post_ids, $mode);
 
     $msg = sprintf(
-        /* translators: 1: success count, 2: failure count, 3: target blog count */
-        __('Finished: %1$d succeeded, %2$d failed, across %3$d target site(s).', 'rechat-plugin'),
+        /* translators: 1: success count, 2: skipped count, 3: failure count, 4: target blog count */
+        __('Finished: %1$d broadcast, %2$d already on target site(s) (skipped), %3$d failed, across %4$d target site(s).', 'rechat-plugin'),
         $result['ok'],
+        isset($result['skipped']) ? (int) $result['skipped'] : 0,
         $result['fail'],
         $result['target_count']
     );
@@ -2169,6 +2180,7 @@ function rch_agent_wizard_ajax_broadcast_posts(): void
         [
             'message'      => $msg,
             'ok'           => $result['ok'],
+            'skipped'      => isset($result['skipped']) ? (int) $result['skipped'] : 0,
             'fail'         => $result['fail'],
             'target_count' => $result['target_count'],
             'errors'       => $result['errors'],

@@ -305,6 +305,16 @@ function rch_broadcast_post_to_blog(int $parent_post_id, int $target_blog_id): b
             $api->low_priority();
         }
 
+        if (
+            function_exists('rch_multisite_broadcast_has_child_on_blog')
+            && rch_multisite_broadcast_has_child_on_blog($source, $parent_post_id, $target_blog_id)
+        ) {
+            restore_current_blog();
+            wp_set_current_user($prev);
+
+            return true;
+        }
+
         $api->broadcast_children($parent_post_id, [$target_blog_id]);
     } catch (Throwable $e) {
         error_log(
