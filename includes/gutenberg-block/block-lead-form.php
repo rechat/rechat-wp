@@ -495,11 +495,6 @@ function rch_render_leads_form_block($attributes)
                 <h2 class="rch-leads-form-block__title"><?php echo esc_html($form_title); ?></h2>
             <?php endif; ?>
 
-            <?php if ($lead_channel_name !== '') : ?>
-                <p class="rch-leads-form-block__lead-channel">
-                    <?php echo esc_html($lead_channel_name); ?>
-                </p>
-            <?php endif; ?>
 
             <?php if ($show_first_name) : ?>
                 <div class="form-group">
