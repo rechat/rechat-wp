@@ -2029,6 +2029,17 @@ function rch_multisite_configure_new_site(int $blog_id, string $site_title, ?int
 
     update_option('rch_rechat_subsite_role', $is_office ? 'office' : 'agent', true);
 
+    // Remove the default "Hello World!" post and "Sample Page" that WordPress
+    // creates automatically for every new subsite.
+    $default_post = get_posts(array('name' => 'hello-world', 'post_type' => 'post', 'post_status' => 'any', 'numberposts' => 1));
+    if (!empty($default_post)) {
+        wp_delete_post($default_post[0]->ID, true);
+    }
+    $default_page = get_posts(array('name' => 'sample-page', 'post_type' => 'page', 'post_status' => 'any', 'numberposts' => 1));
+    if (!empty($default_page)) {
+        wp_delete_post($default_page[0]->ID, true);
+    }
+
     foreach (rch_multisite_hub_inherited_option_names() as $option_name) {
         if ($option_name === '') {
             continue;
