@@ -18,14 +18,15 @@ require_once RCH_PLUGIN_INCLUDES . 'multisite/testimonial-cpt-subfields.php';
 /** Post meta on sub-site testimonial posts — source agent ID (main site). */
 const RCH_TESTIMONIAL_SYNC_AGENT_META = '_rch_sync_agent_id';
 
-/** Post meta on sub-site testimonial posts — stable row key for upsert. */
-const RCH_TESTIMONIAL_SYNC_KEY_META = '_rch_sync_key';
-
-/** Post meta on sub-site testimonial posts — star rating (1–5, half steps). */
-const RCH_TESTIMONIAL_STARS_META = 'testimonial_stars';
-
-/** Post meta on sub-site testimonial posts — optional URL. */
-const RCH_TESTIMONIAL_LINK_META = 'testimonial_link';
+if (! defined('RCH_TESTIMONIAL_SYNC_KEY_META')) {
+    define('RCH_TESTIMONIAL_SYNC_KEY_META', '_rch_sync_key');
+}
+if (! defined('RCH_TESTIMONIAL_STARS_META')) {
+    define('RCH_TESTIMONIAL_STARS_META', 'testimonial_stars');
+}
+if (! defined('RCH_TESTIMONIAL_LINK_META')) {
+    define('RCH_TESTIMONIAL_LINK_META', 'testimonial_link');
+}
 
 /**
  * Stable key for one testimonial row (index + content).
