@@ -29,16 +29,6 @@ function rch_render_agent_listings_section($post_id)
     );
 
     $active_agents_string = $default_agents_string;
-    if (
-        function_exists('rch_agent_active_listings_use_agent_brand_filter')
-        && rch_agent_active_listings_use_agent_brand_filter()
-        && function_exists('rch_get_agent_rechat_api_id')
-    ) {
-        $rechat_id = rch_get_agent_rechat_api_id($post_id);
-        if ($rechat_id !== '') {
-            $active_agents_string = $rechat_id;
-        }
-    }
 
     $property_types = 'Residential, Residential Lease, Lots & Acreage, Multi-Family, Commercial';
     $active_statuses = function_exists('rch_get_agent_single_active_listing_statuses_string')

@@ -26,7 +26,6 @@
     background: var(--wz-bg);
     border-radius: var(--wz-radius);
     padding: 1.5rem 1.5rem 2rem;
-    max-width: 920px;
 }
 
 .rch-agent-wizard *,
