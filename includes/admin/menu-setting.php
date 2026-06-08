@@ -120,7 +120,12 @@ function rch_rechat_menu_page()
     ?>
     <div class="wrap wrap-for-rechat">
         <div class="rch-setting-header">
-            <h1 class="rch-main-title"><?php echo esc_html(get_admin_page_title()); ?></h1>
+            <h1 class="rch-main-title">
+                <?php if (defined('RCH_PLUGIN_URL')) : ?>
+                    <img src="<?php echo esc_url(RCH_PLUGIN_URL . 'assets/images/favicon.png'); ?>" alt="" aria-hidden="true">
+                <?php endif; ?>
+                <?php echo esc_html(get_admin_page_title()); ?>
+            </h1>
             <?php rch_render_tab_navigation($active_tab); ?>
         </div>
 
@@ -187,47 +192,52 @@ function rch_render_sync_data_tab($access_token_exists)
 
     ?>
     <div class="tab-content">
-        <table class="form-table">
-            <tr valign="top">
-                <th scope="row" style="padding-block-end: 0;">
-                    <?php esc_html_e('Update Your Data From API:', 'rechat-plugin'); ?>
-                </th>
-                <td style="padding-block-end: 0;">
-                    <button 
-                        id="update_agents_data" 
-                        type="button" 
-                        class="button button-primary rch-button-sync"
-                        <?php disabled(!$access_token_exists); ?>
-                    >
-                        <?php esc_html_e('Sync', 'rechat-plugin'); ?>
-                    </button>
+        <div class="rch-tab-intro">
+            <h2>
+                <span class="dashicons dashicons-update" aria-hidden="true"></span>
+                <?php esc_html_e('Sync your data', 'rechat-plugin'); ?>
+            </h2>
+            <p><?php esc_html_e('Pull the latest agents, offices, regions, and listings from the Rechat API into this site. Safe to run any time; existing records are updated in place.', 'rechat-plugin'); ?></p>
+        </div>
 
-                    <div id="progress-container" class="rch-progress-container" style="display: none;">
-                        <div id="progress-bar"></div>
-                    </div>
-
-                    <div id="agents_update_status" style="margin-top: 20px;"></div>
-
-                    <?php if (!$access_token_exists) : ?>
-                        <p style="display: flex; align-items: center;">
-                            <img 
-                                src="<?php echo esc_url(RCH_PLUGIN_ASSETS_URL_IMG . 'ph_info.png'); ?>" 
-                                alt="<?php esc_attr_e('Info', 'rechat-plugin'); ?>" 
-                                style="margin-inline-end: 5px;"
+        <div class="rch-card">
+            <div class="rch-card__head">
+                <span class="dashicons dashicons-database-import" aria-hidden="true"></span>
+                <h3><?php esc_html_e('Update from Rechat API', 'rechat-plugin'); ?></h3>
+            </div>
+            <div class="rch-card__body">
+                <?php if (!$access_token_exists) : ?>
+                    <div class="notice notice-warning inline" style="margin:0 0 16px;">
+                        <p style="display:flex;align-items:center;gap:6px;">
+                            <span class="dashicons dashicons-info-outline" aria-hidden="true"></span>
+                            <?php esc_html_e('You are not yet connected to Rechat. Connect your account to enable syncing.', 'rechat-plugin'); ?>
+                            <a
+                                href="<?php echo esc_url(admin_url('admin.php?page=rechat-setting&tab=connect-to-rechat')); ?>"
+                                style="font-weight:600;"
                             >
-                            <?php esc_html_e('You are not yet connected to Rechat. Please connect your Rechat account to enable syncing your data.', 'rechat-plugin'); ?>
-                            <a 
-                                href="<?php echo esc_url(admin_url('admin.php?page=rechat-setting&tab=connect-to-rechat')); ?>" 
-                                class="nav-tab-link" 
-                                style="font-weight: bold; margin-inline-start: 3px;"
-                            >
-                                <?php esc_html_e('Connect To Rechat', 'rechat-plugin'); ?>
+                                <?php esc_html_e('Connect to Rechat', 'rechat-plugin'); ?>
                             </a>
                         </p>
-                    <?php endif; ?>
-                </td>
-            </tr>
-        </table>
+                    </div>
+                <?php endif; ?>
+
+                <button
+                    id="update_agents_data"
+                    type="button"
+                    class="button button-primary rch-button-sync"
+                    <?php disabled(!$access_token_exists); ?>
+                >
+                    <span class="dashicons dashicons-update" aria-hidden="true"></span>
+                    <?php esc_html_e('Sync now', 'rechat-plugin'); ?>
+                </button>
+
+                <div id="progress-container" class="rch-progress-container" style="display: none;">
+                    <div id="progress-bar"></div>
+                </div>
+
+                <div id="agents_update_status" style="margin-top: 16px;"></div>
+            </div>
+        </div>
     </div>
     <?php
 }
@@ -249,12 +259,31 @@ function rch_render_connect_tab(
 
     ?>
     <div class="tab-content">
-        <h2 class="rch-title-connect">
-            <?php esc_html_e('Connect to Rechat (OAuth)', 'rechat-plugin'); ?>
-        </h2>
-        <p>
-            <?php esc_html_e('Connecting to Rechat is necessary to ensure your information is securely retrieved from the Rechat platform. You will be redirected to the Rechat platform where you can authorize this plugin to access your data safely.', 'rechat-plugin'); ?>
-        </p>
+        <div class="rch-tab-intro">
+            <h2>
+                <span class="dashicons dashicons-admin-network" aria-hidden="true"></span>
+                <?php esc_html_e('Connect to Rechat (OAuth)', 'rechat-plugin'); ?>
+            </h2>
+            <p>
+                <?php esc_html_e('Securely link this site to the Rechat platform. You will be redirected to Rechat to authorize access, then returned here.', 'rechat-plugin'); ?>
+            </p>
+        </div>
+
+        <div class="rch-card">
+            <div class="rch-card__head">
+                <span class="dashicons dashicons-admin-links" aria-hidden="true"></span>
+                <h3><?php esc_html_e('Connection', 'rechat-plugin'); ?></h3>
+                <span style="margin-left:auto;">
+                    <?php if ($access_token_exists) : ?>
+                        <span class="rch-badge rch-badge--ok"><span class="dashicons dashicons-yes-alt" aria-hidden="true"></span><?php esc_html_e('Connected', 'rechat-plugin'); ?></span>
+                    <?php elseif ($has_oauth_credentials) : ?>
+                        <span class="rch-badge rch-badge--warn"><span class="dashicons dashicons-warning" aria-hidden="true"></span><?php esc_html_e('Token missing', 'rechat-plugin'); ?></span>
+                    <?php else : ?>
+                        <span class="rch-badge rch-badge--err"><span class="dashicons dashicons-dismiss" aria-hidden="true"></span><?php esc_html_e('Not connected', 'rechat-plugin'); ?></span>
+                    <?php endif; ?>
+                </span>
+            </div>
+            <div class="rch-card__body">
 
         <?php if (isset($_GET['hub_oauth']) && $_GET['hub_oauth'] === '1') : ?>
             <div class="notice notice-info inline" style="margin:12px 0;">
@@ -319,13 +348,24 @@ function rch_render_connect_tab(
             <?php endif; ?>
         </div>
 
+            </div><!-- .rch-card__body -->
+        </div><!-- .rch-card (connection) -->
+
         <?php if ($has_oauth_credentials) : ?>
-            <?php
-            rch_render_token_information(
-                $access_token_exists,
-                $refresh_token_exists
-            );
-            ?>
+            <div class="rch-card">
+                <div class="rch-card__head">
+                    <span class="dashicons dashicons-clock" aria-hidden="true"></span>
+                    <h3><?php esc_html_e('Token & refresh status', 'rechat-plugin'); ?></h3>
+                </div>
+                <div class="rch-card__body">
+                    <?php
+                    rch_render_token_information(
+                        $access_token_exists,
+                        $refresh_token_exists
+                    );
+                    ?>
+                </div>
+            </div>
         <?php endif; ?>
 
         <?php rch_render_disconnect_modal(); ?>
@@ -395,7 +435,6 @@ function rch_render_token_information($access_token_exists, $refresh_token_exist
 
     ?>
     <div class="rch-information-token">
-        <h2><?php esc_html_e('Token & refresh status', 'rechat-plugin'); ?></h2>
         <p>
             <?php esc_html_e('OAuth access tokens expire. The plugin uses your refresh token to get a new access token (when you open this screen if the access token is empty, and on the scheduled WordPress cron job when the token is expired). The same log is updated for every attempt — including background cron — so you can see success, errors, and which trigger ran.', 'rechat-plugin'); ?>
         </p>
@@ -568,21 +607,45 @@ function rch_render_general_settings_tab()
     $appearance_group = defined('RCH_APPEARANCE_SETTINGS_GROUP') ? RCH_APPEARANCE_SETTINGS_GROUP : 'appearance_settings';
     ?>
     <div class="tab-content">
-        <form method="POST" action="options.php" style="margin-bottom: 24px;">
-            <?php
-            settings_fields('general_settings');
-            do_settings_sections('general_settings');
-            submit_button();
-            ?>
-        </form>
+        <div class="rch-tab-intro">
+            <h2>
+                <span class="dashicons dashicons-admin-generic" aria-hidden="true"></span>
+                <?php esc_html_e('General settings', 'rechat-plugin'); ?>
+            </h2>
+            <p><?php esc_html_e('Control how listings display, the default country/state boundary, and the lead-capture sources shown on listing and agent pages.', 'rechat-plugin'); ?></p>
+        </div>
 
-        <form method="POST" action="options.php">
-            <?php
-            settings_fields($appearance_group);
-            do_settings_sections('appearance_setting');
-            submit_button();
-            ?>
-        </form>
+        <div class="rch-card">
+            <div class="rch-card__head">
+                <span class="dashicons dashicons-admin-settings" aria-hidden="true"></span>
+                <h3><?php esc_html_e('Listings & location', 'rechat-plugin'); ?></h3>
+            </div>
+            <div class="rch-card__body">
+                <form method="POST" action="options.php">
+                    <?php
+                    settings_fields('general_settings');
+                    do_settings_sections('general_settings');
+                    submit_button();
+                    ?>
+                </form>
+            </div>
+        </div>
+
+        <div class="rch-card">
+            <div class="rch-card__head">
+                <span class="dashicons dashicons-megaphone" aria-hidden="true"></span>
+                <h3><?php esc_html_e('Lead capture', 'rechat-plugin'); ?></h3>
+            </div>
+            <div class="rch-card__body">
+                <form method="POST" action="options.php">
+                    <?php
+                    settings_fields($appearance_group);
+                    do_settings_sections('appearance_setting');
+                    submit_button();
+                    ?>
+                </form>
+            </div>
+        </div>
     </div>
     <?php
 }
@@ -594,13 +657,29 @@ function rch_render_local_logic_tab()
 {
     ?>
     <div class="tab-content">
-        <form method="POST" action="options.php">
-            <?php
-            settings_fields('local_logic_settings');
-            do_settings_sections('local_logic_settings');
-            submit_button();
-            ?>
-        </form>
+        <div class="rch-tab-intro">
+            <h2>
+                <span class="dashicons dashicons-location-alt" aria-hidden="true"></span>
+                <?php esc_html_e('Local Logic & Google Maps', 'rechat-plugin'); ?>
+            </h2>
+            <p><?php esc_html_e('Add the API keys that power neighborhood widgets, maps, schools, and demographics across listing and neighborhood pages.', 'rechat-plugin'); ?></p>
+        </div>
+
+        <div class="rch-card">
+            <div class="rch-card__head">
+                <span class="dashicons dashicons-admin-network" aria-hidden="true"></span>
+                <h3><?php esc_html_e('API keys & features', 'rechat-plugin'); ?></h3>
+            </div>
+            <div class="rch-card__body">
+                <form method="POST" action="options.php">
+                    <?php
+                    settings_fields('local_logic_settings');
+                    do_settings_sections('local_logic_settings');
+                    submit_button();
+                    ?>
+                </form>
+            </div>
+        </div>
     </div>
     <?php
 }

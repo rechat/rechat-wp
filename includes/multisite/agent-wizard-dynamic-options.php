@@ -102,7 +102,9 @@ function rch_agent_wizard_discover_from_themeoption_php(string $stylesheet): ?ar
             // Ignore wp_kses allowlists like ['br' => []] — not theme option keys.
             $vl = strtolower($v);
 
-            return strpos($vl, 'rch-') === 0 || strpos($vl, 'rch_') === 0;
+            // Accept rch-/rch_ keys and any hyphenated key (theme option keys use hyphens; HTML tag/attribute names don't).
+            return strpos($vl, 'rch-') === 0 || strpos($vl, 'rch_') === 0
+                || (strpos($vl, '-') !== false && strlen($vl) > 3);
         })));
     }
 
@@ -137,7 +139,8 @@ function rch_agent_wizard_is_theme_option_key(string $key): bool
     }
     $kl = strtolower($key);
 
-    return strpos($kl, 'rch-') === 0 || strpos($kl, 'rch_') === 0;
+    return strpos($kl, 'rch-') === 0 || strpos($kl, 'rch_') === 0
+        || (strpos($kl, '-') !== false && strlen($kl) > 3);
 }
 
 /**
