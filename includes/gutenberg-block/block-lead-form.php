@@ -275,7 +275,12 @@ function rch_ajax_submit_lead_rechat_api()
     $assignee_email = rch_leads_form_resolve_assignee_email(
         isset($_POST['assignee_email']) ? (string) wp_unslash($_POST['assignee_email']) : ''
     );
-    if ($assignee_email === '') {
+
+    // Agent subsites must assign the lead to their linked hub agent. On the main
+    // site (or non-agent subsites) leads are unassigned, so no assignee is required.
+    $is_agent_subsite = function_exists('rch_multisite_is_agent_listing_scope_active')
+        && rch_multisite_is_agent_listing_scope_active();
+    if ($is_agent_subsite && $assignee_email === '') {
         wp_send_json_error(array('message' => 'A valid agent assignee email is required.'), 400);
     }
 
@@ -314,25 +319,31 @@ function rch_ajax_submit_lead_rechat_api()
         wp_send_json_error(array('message' => 'Rechat is not connected (missing token or brand).'), 503);
     }
 
+    $lead = array(
+        'first_name'   => $first_name,
+        'last_name'    => $last_name,
+        'email'        => $email,
+        'phone_number' => $phone_number,
+        'source_type'  => 'Website',
+        'lead_source'  => $lead_source,
+        'note'         => $note,
+        'tag'          => $tags,
+    );
+
+    // Only assign the lead when an assignee email is resolved (agent subsites).
+    if ($assignee_email !== '') {
+        $lead['assignees'] = array(
+            array(
+                'email' => $assignee_email,
+            ),
+        );
+    }
+
     $body = array(
         'metadata' => array(
             'lead_channel' => $lead_channel,
         ),
-        'lead'     => array(
-            'first_name'   => $first_name,
-            'last_name'    => $last_name,
-            'email'        => $email,
-            'phone_number' => $phone_number,
-            'source_type'  => 'Website',
-            'lead_source'  => $lead_source,
-            'note'         => $note,
-            'tag'          => $tags,
-            'assignees'    => array(
-                array(
-                    'email' => $assignee_email,
-                ),
-            ),
-        ),
+        'lead'     => $lead,
     );
 
     $response = wp_remote_post(
