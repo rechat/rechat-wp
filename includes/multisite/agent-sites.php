@@ -279,6 +279,14 @@ function rch_multisite_link_agent_to_existing_site(int $post_id, int $blog_id, s
     }
 
     $site = get_site($blog_id);
+
+    // Reactivate the site if a previous agent record (changed Rechat id) left it
+    // archived. Adopting brings the same site back online instead of duplicating.
+    if ($site && ('1' === (string) $site->archived || '1' === (string) $site->deleted)) {
+        update_blog_status($blog_id, 'archived', '0');
+        update_blog_status($blog_id, 'deleted', '0');
+    }
+
     if ($site) {
         error_log(
             'Rechat Plugin Multisite: Linked agent post ' . $post_id .
@@ -1897,6 +1905,13 @@ function rch_multisite_create_site_for_office(int $post_id, string $office_name)
             ' (blog_id=' . $existing_blog_id . ') for office post ' . $post_id
         );
 
+        // Reactivate if a previous office record left the site archived.
+        $existing_site = get_site($existing_blog_id);
+        if ($existing_site && ('1' === (string) $existing_site->archived || '1' === (string) $existing_site->deleted)) {
+            update_blog_status($existing_blog_id, 'archived', '0');
+            update_blog_status($existing_blog_id, 'deleted', '0');
+        }
+
         if (function_exists('rch_multisite_set_subsite_role_option')) {
             rch_multisite_set_subsite_role_option($existing_blog_id, 'office');
         }
@@ -2965,6 +2980,28 @@ function rch_multisite_on_agent_synced_counted(int $post_id, string $agent_name)
         return;
     }
 
+    // During a full API sync, defer provisioning until the sync finishes (after
+    // rch_delete_outdated_posts removes stale agents). Otherwise a re-created
+    // agent (new Rechat api_id) provisions a "-2" duplicate while the old post
+    // still owns the base slug, then the old site gets archived when the old
+    // post is deleted. Flushed in rch_multisite_append_sync_result().
+    if (function_exists('rch_is_doing_agent_sync') && rch_is_doing_agent_sync()) {
+        $GLOBALS['rch_multisite_deferred_agent_provision'][$post_id] = $agent_name;
+        return;
+    }
+
+    rch_multisite_provision_agent_site_now($post_id, $agent_name);
+}
+
+/**
+ * Create/update one agent sub-site now and update the sync counters.
+ *
+ * @param  int    $post_id     Agent post ID.
+ * @param  string $agent_name  Agent display name.
+ * @return void
+ */
+function rch_multisite_provision_agent_site_now(int $post_id, string $agent_name): void
+{
     if (! rch_multisite_is_agent_site_enabled($post_id)) {
         rch_multisite_sync_counter('skipped');
         return;
@@ -3000,6 +3037,30 @@ add_action('rch_after_agent_synced', 'rch_multisite_on_agent_synced_counted', 10
  */
 function rch_multisite_append_sync_result(array $data): array
 {
+    // Flush provisioning deferred during the sync. This runs after both
+    // rch_delete_outdated_posts() calls, so a re-created agent/office (changed
+    // Rechat id) adopts and reactivates its existing sub-site instead of getting
+    // a "-2" duplicate or leaving the original archived.
+    if (! empty($GLOBALS['rch_multisite_deferred_agent_provision'])) {
+        $queue = $GLOBALS['rch_multisite_deferred_agent_provision'];
+        $GLOBALS['rch_multisite_deferred_agent_provision'] = [];
+        foreach ($queue as $queued_post_id => $queued_name) {
+            if (get_post_type((int) $queued_post_id) === 'agents') {
+                rch_multisite_provision_agent_site_now((int) $queued_post_id, (string) $queued_name);
+            }
+        }
+    }
+
+    if (! empty($GLOBALS['rch_multisite_deferred_office_provision'])) {
+        $queue = $GLOBALS['rch_multisite_deferred_office_provision'];
+        $GLOBALS['rch_multisite_deferred_office_provision'] = [];
+        foreach ($queue as $queued_post_id => $queued_name) {
+            if (get_post_type((int) $queued_post_id) === 'offices') {
+                rch_multisite_provision_office_site_now((int) $queued_post_id, (string) $queued_name);
+            }
+        }
+    }
+
     $counts        = rch_multisite_sync_counter();
     $office_counts = rch_multisite_office_sync_counter();
 
@@ -3068,6 +3129,27 @@ function rch_multisite_on_office_synced_counted(int $post_id, string $office_nam
         return;
     }
 
+    // Defer during sync (see rch_multisite_on_agent_synced_counted): provisioning
+    // before the stale office post is deleted lets the old post's deletion archive
+    // the shared site. Offices sync under the rch_doing_rechat_sync flag. Flushed
+    // in rch_multisite_append_sync_result().
+    if (function_exists('rch_is_doing_rechat_sync') && rch_is_doing_rechat_sync()) {
+        $GLOBALS['rch_multisite_deferred_office_provision'][$post_id] = $office_name;
+        return;
+    }
+
+    rch_multisite_provision_office_site_now($post_id, $office_name);
+}
+
+/**
+ * Create/update one office sub-site now and update the office sync counters.
+ *
+ * @param  int    $post_id      Office post ID.
+ * @param  string $office_name  Office display name.
+ * @return void
+ */
+function rch_multisite_provision_office_site_now(int $post_id, string $office_name): void
+{
     if (! rch_multisite_is_office_site_enabled($post_id)) {
         rch_multisite_office_sync_counter('skipped');
 
