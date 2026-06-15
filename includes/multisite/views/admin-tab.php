@@ -12,6 +12,7 @@ function rch_multisite_render_admin_tab(): void
 {
     $create_sites    = rch_multisite_is_create_agent_sites_enabled();
     $create_offices  = rch_multisite_is_create_office_sites_enabled();
+    $send_agent_creds = rch_multisite_is_agent_credentials_email_enabled();
     $admin_user_id   = absint(get_site_option('rch_multisite_admin_user_id', 0));
     $delete_on_del   = (bool) get_site_option('rch_multisite_delete_site_on_agent_delete', 0);
     $url_type        = rch_multisite_get_url_type();
@@ -142,6 +143,27 @@ function rch_multisite_render_admin_tab(): void
                                 </label>
                                 <p class="description">
                                     <?php esc_html_e('When checked, syncing offices from the API, manual saves, and “Provision” can create and update a network site per office. Office URLs use an o- prefix (e.g. o-main-office) so they never clash with agent slugs.', 'rechat-plugin'); ?>
+                                </p>
+                            </td>
+                        </tr>
+
+                        <?php /* Send WordPress credential emails to agents (off by default) */ ?>
+                        <tr valign="top">
+                            <th scope="row">
+                                <?php esc_html_e('Agent login emails', 'rechat-plugin'); ?>
+                            </th>
+                            <td>
+                                <label>
+                                    <input
+                                        type="checkbox"
+                                        name="rch_multisite_send_agent_credentials_email"
+                                        value="1"
+                                        <?php checked($send_agent_creds); ?>
+                                    >
+                                    <?php esc_html_e('Email WordPress login credentials to agents when their sub-site account is provisioned', 'rechat-plugin'); ?>
+                                </label>
+                                <p class="description">
+                                    <?php esc_html_e('Off by default. While off, agent accounts are still created/updated but no username/password email is sent to the agent (and “Update editor” will not reset their password). Turn this on only for the runs where you want credentials emailed out, then turn it off again.', 'rechat-plugin'); ?>
                                 </p>
                             </td>
                         </tr>
