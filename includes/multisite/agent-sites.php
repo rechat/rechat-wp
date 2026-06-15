@@ -473,6 +473,19 @@ function rch_multisite_is_create_agent_sites_enabled(): bool
 }
 
 /**
+ * Whether agent sub-site login/credential emails are sent to agents.
+ *
+ * Disabled by default — turn on from the Multisite settings tab only when you
+ * actually want WordPress credentials emailed out to agents.
+ *
+ * @return bool
+ */
+function rch_multisite_is_agent_credentials_email_enabled(): bool
+{
+    return (bool) get_site_option('rch_multisite_send_agent_credentials_email', '0');
+}
+
+/**
  * Whether the network creates one sub-site per office post.
  *
  * @return bool
@@ -1669,7 +1682,9 @@ function rch_multisite_sync_agent_site_editor(int $agent_post_id, int $blog_id, 
         $treat_as_new   = false;
         $existing_user  = true;
 
-        if ($bypass_idempotency) {
+        // Only reset the password when we will actually email it — otherwise the
+        // agent would be locked out of a freshly-randomized password they never receive.
+        if ($bypass_idempotency && rch_multisite_is_agent_credentials_email_enabled()) {
             $plain_pass = wp_generate_password(24, true, true);
             wp_set_password($plain_pass, $uid);
             $treat_as_new  = true;
@@ -1812,6 +1827,12 @@ function rch_multisite_send_agent_site_editor_email(
     bool $existing_user,
     string $username_label
 ): void {
+    // Disabled by default. Admins enable this from the Multisite settings tab
+    // only when they want WordPress credentials emailed to agents.
+    if (! rch_multisite_is_agent_credentials_email_enabled()) {
+        return;
+    }
+
     $main_id   = get_main_site_id();
     $site_name = wp_specialchars_decode((string) get_blog_option($main_id, 'blogname'), ENT_QUOTES);
 
@@ -4069,6 +4090,10 @@ function rch_multisite_save_settings(): void
 
     $create_office_sites = isset($_POST['rch_multisite_create_office_sites']) && '1' === $_POST['rch_multisite_create_office_sites'];
     update_site_option('rch_multisite_create_office_sites', $create_office_sites ? '1' : '0');
+
+    // Send WordPress login/credential emails to agents (off by default).
+    $send_agent_credentials = isset($_POST['rch_multisite_send_agent_credentials_email']) && '1' === $_POST['rch_multisite_send_agent_credentials_email'];
+    update_site_option('rch_multisite_send_agent_credentials_email', $send_agent_credentials ? '1' : '0');
 
     // Owner user ID.
     if (isset($_POST['rch_multisite_admin_user_id'])) {
