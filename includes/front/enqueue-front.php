@@ -115,7 +115,12 @@ function rch_enqueue_frontend_styles()
     if (! is_admin()) {
         wp_enqueue_style('rechat-sdk-css');
         wp_enqueue_script('rechat-sdk-js');
-        wp_enqueue_script('rch-latest-listings-empty');
+
+        // Hide-on-empty latest-listings feature is SUBSITE-ONLY (main site keeps the
+        // SDK "No listings found" empty state). See rch_latest_listings_enqueue_assets().
+        if (is_multisite() && get_current_blog_id() !== (int) get_main_site_id()) {
+            wp_enqueue_script('rch-latest-listings-empty');
+        }
     }
 }
 add_action('wp_enqueue_scripts', 'rch_enqueue_frontend_styles');

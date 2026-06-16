@@ -149,20 +149,8 @@
   font-size: 16px;
 }
 
-.rch-latest-listings-is-empty,
-[data-rch-listings-resolved="empty"] {
-  display: none !important;
-}
-
-[data-rechat-listings-section]:not([data-rch-listings-section-resolved="loaded"]) {
-  display: none !important;
-}
-
-[data-rechat-listings-section][data-rch-listings-section-resolved="loaded"] {
-  display: block !important;
-}
-
-[data-rechat-listings-section][data-rch-listings-section-resolved="empty"],
-[data-rechat-listings-section][data-rechat-listings-state="empty"] {
-  display: none !important;
-}
+/*
+ * Empty/hide-on-no-listings rules are SUBSITE-ONLY. They are injected inline
+ * from rch_latest_listings_enqueue_assets() when on a multisite subsite, so the
+ * main site keeps rendering the SDK "No listings found" empty state.
+ */
