@@ -22,6 +22,13 @@ function rch_latest_listings_enqueue_assets(array $atts)
     wp_enqueue_style('rch-latest-listings-shortcode');
     wp_enqueue_script('rch-latest-listings-empty');
 
+    // Subsites only: hide the latest-listings instance when the SDK resolves to no listings.
+    if (is_multisite() && get_current_blog_id() !== (int) get_main_site_id()) {
+        $empty_css = '.rch-latest-listings-is-empty,[data-rch-listings-resolved="empty"]{display:none!important}'
+            . '.rch-latest-listings-shortcode-swiper[data-rch-listings-resolved="loaded"]{display:flex}';
+        wp_add_inline_style('rch-latest-listings-shortcode', $empty_css);
+    }
+
     if (($atts['display_type'] ?? '') === 'swiper') {
         wp_enqueue_style('rch-swiper');
         wp_enqueue_script('rch-swiper-js');
