@@ -20,11 +20,17 @@ function rch_latest_listings_enqueue_assets(array $atts)
 {
     // Rechat SDK is enqueued globally on wp_enqueue_scripts (see enqueue-front.php) so it loads in <head>.
     wp_enqueue_style('rch-latest-listings-shortcode');
-    wp_enqueue_script('rch-latest-listings-empty');
 
-    // Subsites only: hide the latest-listings instance when the SDK resolves to no listings.
+    // Hide-on-empty feature is SUBSITE-ONLY. On the main site the SDK keeps rendering
+    // its "No listings found" empty state. The empty.js (adds `hidden` attr + classes)
+    // and the matching CSS are only loaded for multisite subsites.
     if (is_multisite() && get_current_blog_id() !== (int) get_main_site_id()) {
+        wp_enqueue_script('rch-latest-listings-empty');
+
         $empty_css = '.rch-latest-listings-is-empty,[data-rch-listings-resolved="empty"]{display:none!important}'
+            . '[data-rechat-listings-section]:not([data-rch-listings-section-resolved="loaded"]){display:none!important}'
+            . '[data-rechat-listings-section][data-rch-listings-section-resolved="loaded"]{display:block!important}'
+            . '[data-rechat-listings-section][data-rch-listings-section-resolved="empty"],[data-rechat-listings-section][data-rechat-listings-state="empty"]{display:none!important}'
             . '.rch-latest-listings-shortcode-swiper[data-rch-listings-resolved="loaded"]{display:flex}';
         wp_add_inline_style('rch-latest-listings-shortcode', $empty_css);
     }
