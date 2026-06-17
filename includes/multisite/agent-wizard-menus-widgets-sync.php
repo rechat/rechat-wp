@@ -266,13 +266,25 @@ function rch_agent_wizard_recreate_empty_menu_on_blog(int $target_blog, string $
 /**
  * Clone menu items from source payload onto target menu_id; returns old_item_id => new_item_id.
  *
+ * When $relink_broadcast is true, menu items that point to a page/post on the source blog are
+ * recreated as post_type items linking to that page's Broadcast child on the target sub-site
+ * (auto-broadcasting it first when missing), so links resolve to each sub-site's own copy
+ * instead of the template site. Items with no resolvable child fall back to custom links.
+ *
  * @param WP_Post[] $items
+ * @param int       $source_blog       Template blog the items came from (required for relink).
+ * @param bool      $relink_broadcast  Rewrite post links to sub-site Broadcast copies.
  * @return array<int, int>|WP_Error
  */
-function rch_agent_wizard_clone_menu_items_on_blog(int $target_blog, int $target_menu_id, array $items)
+function rch_agent_wizard_clone_menu_items_on_blog(int $target_blog, int $target_menu_id, array $items, int $source_blog = 0, bool $relink_broadcast = false)
 {
     if ($target_menu_id <= 0 || $items === []) {
         return [];
+    }
+
+    if ($source_blog <= 0) {
+        $source_blog          = rch_agent_wizard_menus_widgets_source_blog_id();
+        $relink_broadcast     = $relink_broadcast && $source_blog > 0;
     }
 
     switch_to_blog($target_blog);
@@ -307,6 +319,37 @@ function rch_agent_wizard_clone_menu_items_on_blog(int $target_blog, int $target
 
             $classes = is_array($item->classes) ? implode(' ', array_filter($item->classes)) : '';
 
+            // Default: recreate as a custom link pointing at the source-site URL.
+            $item_type      = 'custom';
+            $item_object    = '';
+            $item_object_id = 0;
+            $item_url       = $url !== '' ? $url : '#';
+
+            // Relink mode: point page/post items at this sub-site's own Broadcast copy.
+            if (
+                $relink_broadcast
+                && $item->type === 'post_type'
+                && (int) $item->object_id > 0
+                && function_exists('rch_multisite_broadcast_child_post_id_on_blog')
+            ) {
+                $src_pid  = (int) $item->object_id;
+                $local_id = rch_multisite_broadcast_child_post_id_on_blog($source_blog, $src_pid, $target_blog);
+
+                if ($local_id <= 0 && function_exists('rch_agent_wizard_broadcast_post_to_blog')) {
+                    $local_id = rch_agent_wizard_broadcast_post_to_blog($source_blog, $src_pid, $target_blog);
+                }
+
+                if ($local_id > 0) {
+                    $local_post = get_post($local_id);
+                    if ($local_post instanceof WP_Post) {
+                        $item_type      = 'post_type';
+                        $item_object    = (string) $local_post->post_type;
+                        $item_object_id = $local_id;
+                        $item_url       = '';
+                    }
+                }
+            }
+
             $args = [
                 'menu-item-title'       => $item->title,
                 'menu-item-description' => $item->post_content,
@@ -314,11 +357,11 @@ function rch_agent_wizard_clone_menu_items_on_blog(int $target_blog, int $target
                 'menu-item-target'      => $item->target,
                 'menu-item-classes'     => $classes,
                 'menu-item-xfn'         => $item->xfn,
-                'menu-item-url'         => $url !== '' ? $url : '#',
+                'menu-item-url'         => $item_url,
                 'menu-item-status'      => $item->post_status === 'publish' ? 'publish' : 'draft',
-                'menu-item-type'        => 'custom',
-                'menu-item-object'      => '',
-                'menu-item-object-id'   => 0,
+                'menu-item-type'        => $item_type,
+                'menu-item-object'      => $item_object,
+                'menu-item-object-id'   => $item_object_id,
                 'menu-item-parent-id'   => $pnew,
                 'menu-item-position'    => (int) $item->menu_order,
             ];
@@ -398,9 +441,10 @@ function rch_agent_wizard_apply_menu_locations_on_blog(
 /**
  * Clone one nav menu from source to target blog; returns target menu term_id or WP_Error.
  *
+ * @param bool $relink_broadcast Rewrite page/post links to the target sub-site's Broadcast copies.
  * @return int|WP_Error
  */
-function rch_agent_wizard_clone_nav_menu_between_blogs(int $source_blog, int $source_menu_term_id, int $target_blog)
+function rch_agent_wizard_clone_nav_menu_between_blogs(int $source_blog, int $source_menu_term_id, int $target_blog, bool $relink_broadcast = false)
 {
     switch_to_blog($source_blog);
     $menu = wp_get_nav_menu_object($source_menu_term_id);
@@ -418,7 +462,7 @@ function rch_agent_wizard_clone_nav_menu_between_blogs(int $source_blog, int $so
     }
 
     if ($items !== []) {
-        $map = rch_agent_wizard_clone_menu_items_on_blog($target_blog, (int) $new_menu, $items);
+        $map = rch_agent_wizard_clone_menu_items_on_blog($target_blog, (int) $new_menu, $items, $source_blog, $relink_broadcast);
         if (is_wp_error($map)) {
             rch_agent_wizard_delete_nav_menu_on_blog($target_blog, (int) $new_menu);
 
@@ -440,7 +484,8 @@ function rch_agent_wizard_sync_menus_widgets_to_blog(
     int $target_blog,
     array $source_menu_term_ids,
     bool $copy_widgets,
-    array $widget_export
+    array $widget_export,
+    bool $relink_broadcast = false
 ) {
     if ($target_blog <= 0 || $target_blog === $source_blog) {
         return new WP_Error('rch_mw_bad_blog', __('Invalid target blog.', 'rechat-plugin'));
@@ -453,7 +498,7 @@ function rch_agent_wizard_sync_menus_widgets_to_blog(
         if ($mid <= 0) {
             continue;
         }
-        $new_id = rch_agent_wizard_clone_nav_menu_between_blogs($source_blog, $mid, $target_blog);
+        $new_id = rch_agent_wizard_clone_nav_menu_between_blogs($source_blog, $mid, $target_blog, $relink_broadcast);
         if (is_wp_error($new_id)) {
             return $new_id;
         }

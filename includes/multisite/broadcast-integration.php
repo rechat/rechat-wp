@@ -240,6 +240,70 @@ function rch_agent_wizard_collect_broadcast_parent_post_ids(int $source_blog_id)
 }
 
 /**
+ * Broadcast a single source page/post to one target blog (when not already linked) and
+ * return the resulting child post ID on that blog.
+ *
+ * Reuses an existing Broadcast child when one is present — never duplicates. Returns 0
+ * when Broadcast is unavailable, the post is invalid, or the broadcast did not produce a
+ * linked child.
+ *
+ * @param int $source_blog_id Parent (template) blog.
+ * @param int $parent_post_id Parent post ID on the source blog.
+ * @param int $target_blog_id Sub-site to broadcast onto.
+ */
+function rch_agent_wizard_broadcast_post_to_blog(int $source_blog_id, int $parent_post_id, int $target_blog_id): int
+{
+    if ($source_blog_id <= 0 || $parent_post_id <= 0 || $target_blog_id <= 0) {
+        return 0;
+    }
+
+    if ($target_blog_id === $source_blog_id || ! function_exists('ThreeWP_Broadcast')) {
+        return 0;
+    }
+
+    // Already broadcasted? Reuse the existing child — no duplicate broadcast.
+    $existing = rch_multisite_broadcast_child_post_id_on_blog($source_blog_id, $parent_post_id, $target_blog_id);
+    if ($existing > 0) {
+        return $existing;
+    }
+
+    $unlinked = rch_multisite_broadcast_unlinked_target_blog_ids($source_blog_id, $parent_post_id, [$target_blog_id]);
+    if ($unlinked === []) {
+        return 0;
+    }
+
+    $runner = function_exists('rch_multisite_broadcast_runner_user_id')
+        ? rch_multisite_broadcast_runner_user_id()
+        : get_current_user_id();
+    $prev   = get_current_user_id();
+
+    wp_set_current_user($runner);
+    switch_to_blog($source_blog_id);
+
+    $ok = false;
+    try {
+        $post = get_post($parent_post_id);
+        if ($post instanceof WP_Post && in_array($post->post_type, ['post', 'page'], true)) {
+            $broadcast = ThreeWP_Broadcast();
+            $api       = $broadcast->api();
+            $api->broadcast_children($parent_post_id, $unlinked);
+            $ok = true;
+        }
+    } catch (Throwable $e) {
+        $ok = false;
+    }
+
+    restore_current_blog();
+    wp_set_current_user($prev);
+
+    if (! $ok) {
+        return 0;
+    }
+
+    return rch_multisite_broadcast_child_post_id_on_blog($source_blog_id, $parent_post_id, $target_blog_id);
+}
+
+/**
  * Target blog IDs that do not yet have a verified Broadcast child for this parent post.
  *
  * @param int   $source_blog_id  Parent blog.

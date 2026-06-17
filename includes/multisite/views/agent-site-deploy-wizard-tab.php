@@ -208,7 +208,7 @@ $wz_broadcast_step = function_exists('rch_agent_wizard_broadcast_step_enabled') 
                 </div>
             </div>
             <div class="rch-wz-card__footer">
-                <button type="button" class="button rch-wz-btn-ghost" id="rch-wz-load-draft"><?php esc_html_e('Restore draft', 'rechat-plugin'); ?></button>
+                <button type="button" class="button rch-wz-btn-ghost" id="rch-wz-load-draft"><?php esc_html_e('Restore my draft', 'rechat-plugin'); ?></button>
                 <button type="button" class="button button-primary rch-wz-btn-primary rch-wz-next" data-next="2"><?php esc_html_e('Continue', 'rechat-plugin'); ?></button>
             </div>
         </div>
@@ -395,11 +395,12 @@ $wz_broadcast_step = function_exists('rch_agent_wizard_broadcast_step_enabled') 
                                 <th scope="col"><?php esc_html_e('Title', 'rechat-plugin'); ?></th>
                                 <th scope="col"><?php esc_html_e('Type', 'rechat-plugin'); ?></th>
                                 <th scope="col"><?php esc_html_e('Status', 'rechat-plugin'); ?></th>
+                                <th scope="col"><?php esc_html_e('Broadcasted', 'rechat-plugin'); ?></th>
                                 <th scope="col"><?php esc_html_e('Modified', 'rechat-plugin'); ?></th>
                             </tr>
                         </thead>
                         <tbody id="rch-wz-bc-tbody">
-                            <tr class="rch-wz-bc-placeholder"><td colspan="5"><?php esc_html_e('Click “Load list” to show posts and pages from the source site.', 'rechat-plugin'); ?></td></tr>
+                            <tr class="rch-wz-bc-placeholder"><td colspan="6"><?php esc_html_e('Click “Load list” to show posts and pages from the source site.', 'rechat-plugin'); ?></td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -558,12 +559,28 @@ $wz_broadcast_step = function_exists('rch_agent_wizard_broadcast_step_enabled') 
                 <fieldset class="rch-wz-fieldset">
                     <legend class="rch-wz-field__label"><?php esc_html_e('Widgets', 'rechat-plugin'); ?></legend>
                     <label class="rch-wz-choice rch-wz-choice--compact">
-                        <input type="checkbox" id="rch-wz-mw-copy-widgets" class="rch-wz-choice__input" />
+                        <input type="radio" name="rch_wz_mw_widget_mode" id="rch-wz-mw-widgets-none" value="none" class="rch-wz-choice__input" checked />
                         <span class="rch-wz-choice__box">
-                            <span class="rch-wz-choice__title"><?php esc_html_e('Copy all widget settings from the template site', 'rechat-plugin'); ?></span>
-                            <span class="rch-wz-choice__desc"><?php esc_html_e('Overwrites sidebars_widgets and every widget_* option on each target. Media URLs may still point at the template site until you adjust widgets.', 'rechat-plugin'); ?></span>
+                            <span class="rch-wz-choice__title"><?php esc_html_e('Don’t copy widgets', 'rechat-plugin'); ?></span>
+                            <span class="rch-wz-choice__desc"><?php esc_html_e('Leave each target site’s widget areas untouched.', 'rechat-plugin'); ?></span>
                         </span>
                     </label>
+                    <label class="rch-wz-choice rch-wz-choice--compact">
+                        <input type="radio" name="rch_wz_mw_widget_mode" id="rch-wz-mw-widgets-asis" value="asis" class="rch-wz-choice__input" />
+                        <span class="rch-wz-choice__box">
+                            <span class="rch-wz-choice__title"><?php esc_html_e('Copy widgets as-is (links stay on the template site)', 'rechat-plugin'); ?></span>
+                            <span class="rch-wz-choice__desc"><?php esc_html_e('Overwrites sidebars_widgets and every widget_* option on each target. Menu and media links keep pointing at the template site.', 'rechat-plugin'); ?></span>
+                        </span>
+                    </label>
+                    <?php if ($wz_broadcast_step) : ?>
+                    <label class="rch-wz-choice rch-wz-choice--compact">
+                        <input type="radio" name="rch_wz_mw_widget_mode" id="rch-wz-mw-widgets-broadcast" value="broadcast" class="rch-wz-choice__input" />
+                        <span class="rch-wz-choice__box">
+                            <span class="rch-wz-choice__title"><?php esc_html_e('Copy widgets + broadcast linked pages (links point to each sub-site’s own copy)', 'rechat-plugin'); ?></span>
+                            <span class="rch-wz-choice__desc"><?php esc_html_e('Copies widgets, then for every page/post linked in the copied menus broadcasts it to each target sub-site (re-using existing copies — no duplicates) and rewrites the menu links to that sub-site’s own page.', 'rechat-plugin'); ?></span>
+                        </span>
+                    </label>
+                    <?php endif; ?>
                     <div id="rch-wz-mw-sidebars-note" class="rch-wz-hint" hidden></div>
                 </fieldset>
                 <div id="rch-wz-mw-result" class="rch-wz-deploy-result" aria-live="polite"></div>
