@@ -1571,6 +1571,13 @@ function rch_multisite_send_agent_site_editor_admin_notice(
     string $site_url,
     bool $existing_user
 ): void {
+    // Gated by the same Multisite setting as the agent credential email. While credential
+    // emailing is off (default), no provisioning emails go out at all — agents’ sites are
+    // often not ready yet, so neither they nor admins should receive login details.
+    if (! rch_multisite_is_agent_credentials_email_enabled()) {
+        return;
+    }
+
     $recipients = rch_multisite_get_agent_editor_admin_notice_recipients();
 
     if ($recipients === []) {
