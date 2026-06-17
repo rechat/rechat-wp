@@ -22,6 +22,21 @@ function rch_agent_wizard_str_contains_ci(string $haystack, string $needle): boo
 }
 
 /**
+ * Sanitize a theme option key WITHOUT lowercasing.
+ *
+ * Theme option keys are array keys in wp_options and may legitimately contain uppercase
+ * letters (e.g. `rch-rodeo-agent-theme-workUs-title`). `sanitize_key()` lowercases, which
+ * makes the wizard write the deployed value under a different key than the theme reads —
+ * so those fields silently fall back to the theme default. Strip only unsafe characters.
+ */
+function rch_agent_wizard_sanitize_option_key(string $key): string
+{
+    $key = preg_replace('/[^A-Za-z0-9_\-]/', '', trim($key));
+
+    return is_string($key) ? $key : '';
+}
+
+/**
  * @param string $haystack
  */
 function rch_agent_wizard_str_ends_with(string $haystack, string $suffix): bool
@@ -821,7 +836,7 @@ function rch_agent_wizard_build_dynamic_profile_from_data(
             if (! is_array($field) || empty($field['key']) || ! is_string($field['key'])) {
                 continue;
             }
-            $k = sanitize_key($field['key']);
+            $k = rch_agent_wizard_sanitize_option_key($field['key']);
             if ($k === '') {
                 continue;
             }
@@ -899,7 +914,7 @@ function rch_agent_wizard_build_dynamic_profile_from_data(
             if (! is_string($k) || $k === '') {
                 continue;
             }
-            $sk = sanitize_key($k);
+            $sk = rch_agent_wizard_sanitize_option_key($k);
             if ($sk === '' || $sk !== $k) {
                 continue;
             }
