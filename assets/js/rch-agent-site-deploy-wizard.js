@@ -131,6 +131,25 @@
         return normalizeWizardTargetMode(String($('input[name="rch_wz_mw_target"]:checked').val() || 'agent_only'));
     }
 
+    // Widget copy mode: 'none' | 'asis' | 'broadcast' (broadcast = copy + relink menu links to sub-site copies).
+    function getMwWidgetMode() {
+        var v = String($('input[name="rch_wz_mw_widget_mode"]:checked').val() || 'none');
+        if (v !== 'asis' && v !== 'broadcast') {
+            return 'none';
+        }
+        return v;
+    }
+
+    function setMwWidgetMode(mode) {
+        var v = mode === 'asis' || mode === 'broadcast' ? mode : 'none';
+        var $el = $('#rch-wz-mw-widgets-' + v);
+        if (!$el.length) {
+            v = 'none';
+            $el = $('#rch-wz-mw-widgets-none');
+        }
+        $el.prop('checked', true);
+    }
+
     function fillMwTargetSummary() {
         var c = rchAgentWizard.menusWidgetsTargetCounts || {};
         var na = c.agent_only != null ? c.agent_only : 0;
@@ -530,7 +549,7 @@
                 $tb.empty();
                 if (!res.success || !res.data) {
                     $tb.append(
-                        '<tr class="rch-wz-bc-placeholder"><td colspan="5">' + escapeHtml('Error') + '</td></tr>'
+                        '<tr class="rch-wz-bc-placeholder"><td colspan="6">' + escapeHtml('Error') + '</td></tr>'
                     );
                     return;
                 }
@@ -555,7 +574,7 @@
                 $('#rch-wz-bc-next').prop('disabled', state.bcPaged >= state.bcMaxPages);
                 if (!items.length) {
                     $tb.append(
-                        '<tr class="rch-wz-bc-placeholder"><td colspan="5">' +
+                        '<tr class="rch-wz-bc-placeholder"><td colspan="6">' +
                             escapeHtml(str('bcEmpty')) +
                             '</td></tr>'
                     );
@@ -566,8 +585,20 @@
                     var it = items[i];
                     var id = it.id;
                     var checked = state.broadcastPick[id] ? ' checked' : '';
+                    var bcCount = it.child_count != null ? parseInt(it.child_count, 10) || 0 : 0;
+                    var bcCell = bcCount > 0
+                        ? '<span class="rch-wz-bc-badge" title="' +
+                              escapeHtml(
+                                  (str('bcBroadcastedCount') || '%d sub-site(s)').replace('%d', String(bcCount))
+                              ) +
+                              '">⇨ ' +
+                              String(bcCount) +
+                              '</span>'
+                        : '<span class="rch-wz-bc-none">—</span>';
                     $tb.append(
-                        '<tr>' +
+                        '<tr class="' +
+                            (bcCount > 0 ? 'rch-wz-bc-is-broadcasted' : '') +
+                            '">' +
                             '<td><input type="checkbox" class="rch-wz-bc-check" data-id="' +
                             id +
                             '"' +
@@ -583,6 +614,9 @@
                             escapeHtml(it.status || '') +
                             '</td>' +
                             '<td>' +
+                            bcCell +
+                            '</td>' +
+                            '<td>' +
                             escapeHtml(it.modified || '') +
                             '</td>' +
                             '</tr>'
@@ -592,7 +626,7 @@
             .fail(function () {
                 spin($('#rch-wz-bc-spinner'), false);
                 $('#rch-wz-bc-tbody').html(
-                    '<tr class="rch-wz-bc-placeholder"><td colspan="5">Request failed</td></tr>'
+                    '<tr class="rch-wz-bc-placeholder"><td colspan="6">Request failed</td></tr>'
                 );
             });
     }
@@ -1212,7 +1246,7 @@
             payload.broadcastTargetMode = getBcTargetMode();
         }
         payload.mwMenuTermIds = collectMwMenuTermIds();
-        payload.mwCopyWidgets = $('#rch-wz-mw-copy-widgets').prop('checked') === true;
+        payload.mwWidgetMode = getMwWidgetMode();
         payload.mwTargetMode = getMwTargetMode();
         payload.menuBuilderName = String($('#rch-wz-mb-name').val() || '');
         payload.menuBuilderItems = state.menuBuilderItems.map(function (x) {
@@ -1289,15 +1323,18 @@
         showStep(1);
         fillMwTargetSummary();
 
-        function loadDraft(silent) {
+        // prefer: 'deployed' (default, on form open — global last-deployed config) or
+        // 'personal' (explicit Load-draft button — this user's saved draft only).
+        function loadDraft(silent, prefer) {
             return $.post(rchAgentWizard.ajaxurl, {
                 action: 'rch_agent_wizard_load_draft',
                 nonce: rchAgentWizard.nonce,
+                prefer: prefer === 'personal' ? 'personal' : 'deployed',
             })
                 .done(function (res) {
                 if (!res.success || !res.data || !res.data.draft) {
                     if (!silent) {
-                        alert('No draft');
+                        alert(prefer === 'personal' ? (str('draftNonePersonal') || 'No saved draft for your account.') : 'No deployed data yet.');
                     }
                     draftHydrationDone = true;
                     return;
@@ -1349,10 +1386,13 @@
                             }
                         });
                     }
-                    if (dr.mwCopyWidgets) {
-                        $('#rch-wz-mw-copy-widgets').prop('checked', true);
+                    if (dr.mwWidgetMode) {
+                        setMwWidgetMode(dr.mwWidgetMode);
+                    } else if (dr.mwCopyWidgets) {
+                        // Legacy draft: old boolean checkbox → copy as-is.
+                        setMwWidgetMode('asis');
                     } else {
-                        $('#rch-wz-mw-copy-widgets').prop('checked', false);
+                        setMwWidgetMode('none');
                     }
                     state.menuBuilderLoc = {};
                     if (dr.menuBuilderLocSlugs && Array.isArray(dr.menuBuilderLocSlugs)) {
@@ -1522,7 +1562,7 @@
          * If there's no draft (or draft has no agentId), fall back to the per-user last-loaded agent
          * so opening the wizard in a new tab after a deploy still shows the previously deployed data.
          */
-        loadDraft(true);
+        loadDraft(true, 'deployed');
 
         (function pollHydrate() {
             if (!draftHydrationDone) {
@@ -1669,14 +1709,14 @@
             });
 
         $('#rch-wz-load-draft').on('click', function () {
-            loadDraft(false);
+            loadDraft(false, 'personal');
         });
 
         $(document).on('change', '.rch-wz-row-mode, .rch-wz-row-meta', scheduleFieldDraftAutosave);
         $(document).on('change input', '.rch-wz-row-value', scheduleFieldDraftAutosave);
         $(document).on('change', 'input[name="rch_wz_bc_target"]', scheduleFieldDraftAutosave);
         $(document).on('change', 'input[name="rch_wz_mw_target"]', scheduleFieldDraftAutosave);
-        $(document).on('change', '#rch-wz-mw-copy-widgets', scheduleFieldDraftAutosave);
+        $(document).on('change', 'input[name="rch_wz_mw_widget_mode"]', scheduleFieldDraftAutosave);
         $(document).on('change', '.rch-wz-mw-menu-check', function () {
             var tid = parseInt($(this).data('term-id'), 10);
             if (tid) {
@@ -1813,7 +1853,9 @@
         });
         $('#rch-wz-mw-apply').on('click', function () {
             var ids = collectMwMenuTermIds();
-            var copyW = $('#rch-wz-mw-copy-widgets').prop('checked') === true;
+            var mode = getMwWidgetMode();
+            var copyW = mode === 'asis' || mode === 'broadcast';
+            var relink = mode === 'broadcast';
             if (!ids.length && !copyW) {
                 alert(str('mwApplyNone'));
                 return;
@@ -1825,6 +1867,7 @@
                 nonce: rchAgentWizard.nonce,
                 menu_term_ids: JSON.stringify(ids),
                 copy_widgets: copyW ? 1 : 0,
+                relink_broadcast: relink ? 1 : 0,
                 target_mode: getMwTargetMode(),
             })
                 .done(function (res) {

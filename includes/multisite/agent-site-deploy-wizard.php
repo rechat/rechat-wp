@@ -18,6 +18,14 @@ require_once RCH_PLUGIN_INCLUDES . 'multisite/agent-wizard-testimonials-sync.php
 const RCH_AGENT_WIZARD_DRAFT_META = 'rch_agent_site_wizard_draft';
 
 /**
+ * Network-wide (site) option holding the last DEPLOYED theme-option configuration (JSON).
+ *
+ * Written on deploy and shown by default to every network admin (any device) when the
+ * wizard opens. Personal drafts (user meta) are separate and only loaded on request.
+ */
+const RCH_AGENT_WIZARD_SHARED_DRAFT_OPTION = 'rch_agent_wizard_shared_draft';
+
+/**
  * AJAX nonce action.
  */
 const RCH_AGENT_WIZARD_NONCE_ACTION = 'rch_agent_wizard';
@@ -1528,6 +1536,7 @@ function rch_agent_wizard_ajax_save_draft(): void
         wp_send_json_error(['message' => __('Draft save was rejected.', 'rechat-plugin')]);
     }
 
+    // Drafts are personal: stored only in this user's meta, never shared.
     update_user_meta($uid, RCH_AGENT_WIZARD_DRAFT_META, wp_json_encode($decoded));
 
     $push_message = '';
@@ -1552,7 +1561,52 @@ function rch_agent_wizard_ajax_save_draft(): void
 }
 
 /**
- * AJAX: load draft from user meta.
+ * Persist the last-deployed theme configuration network-wide (the default for every admin).
+ *
+ * Stored in a draft-shaped payload so the wizard can hydrate it the same way as a personal
+ * draft. Only theme rows + scope are kept — per-agent runtime data (meta, picks) is not a
+ * deploy artifact and is fetched fresh when an agent is selected.
+ *
+ * @param array<string, array{mode:string, value?:mixed, meta_key?:string}> $theme_rows Cleaned rows.
+ */
+function rch_agent_wizard_store_deployed_default(array $theme_rows, string $scope, int $agent_id): void
+{
+    $scope   = in_array($scope, ['single', 'all'], true) ? $scope : 'single';
+    $payload = [
+        'draftVersion' => 4,
+        'scope'        => $scope,
+        'agentId'      => $scope === 'all' ? 0 : (int) $agent_id,
+        'themeRows'    => $theme_rows,
+        'savedAt'      => time(),
+        '_deployed'    => true,
+    ];
+
+    update_site_option(RCH_AGENT_WIZARD_SHARED_DRAFT_OPTION, wp_json_encode($payload));
+}
+
+/**
+ * Read the network-wide last-deployed theme configuration.
+ *
+ * @return array<string, mixed>|null
+ */
+function rch_agent_wizard_get_deployed_default(): ?array
+{
+    $json = get_site_option(RCH_AGENT_WIZARD_SHARED_DRAFT_OPTION, '');
+    if (! is_string($json) || $json === '') {
+        return null;
+    }
+
+    $decoded = json_decode($json, true);
+
+    return is_array($decoded) ? $decoded : null;
+}
+
+/**
+ * AJAX: load wizard form data.
+ *
+ * `prefer=personal` → this user's saved draft (user meta), loaded only on explicit request.
+ * `prefer=deployed` (default, used on form open) → the network-wide last-deployed config so
+ * every admin, on any device, sees the same deployed defaults.
  */
 function rch_agent_wizard_ajax_load_draft(): void
 {
@@ -1562,13 +1616,24 @@ function rch_agent_wizard_ajax_load_draft(): void
         wp_send_json_error(['message' => __('Permission denied.', 'rechat-plugin')], 403);
     }
 
-    $json = get_user_meta(get_current_user_id(), RCH_AGENT_WIZARD_DRAFT_META, true);
-    if (! is_string($json) || $json === '') {
-        wp_send_json_success(['draft' => null]);
+    $prefer = isset($_POST['prefer']) ? sanitize_key(wp_unslash($_POST['prefer'])) : 'deployed';
+
+    if ($prefer === 'personal') {
+        $json  = get_user_meta(get_current_user_id(), RCH_AGENT_WIZARD_DRAFT_META, true);
+        $draft = is_string($json) && $json !== '' ? json_decode($json, true) : null;
+
+        wp_send_json_success([
+            'draft'  => is_array($draft) ? $draft : null,
+            'source' => 'personal',
+        ]);
     }
 
-    $decoded = json_decode($json, true);
-    wp_send_json_success(['draft' => is_array($decoded) ? $decoded : null]);
+    $deployed = rch_agent_wizard_get_deployed_default();
+
+    wp_send_json_success([
+        'draft'  => is_array($deployed) ? $deployed : null,
+        'source' => 'deployed',
+    ]);
 }
 
 /**
@@ -1623,6 +1688,11 @@ function rch_agent_wizard_ajax_deploy(): void
             $entry['meta_key'] = $mk;
         }
         $clean_rows[ $tk ] = $entry;
+    }
+
+    // Deploying makes this configuration the global default shown to every admin on form open.
+    if ($clean_rows !== []) {
+        rch_agent_wizard_store_deployed_default($clean_rows, $scope, $agent_id);
     }
 
     if ($scope === 'all') {
@@ -1982,13 +2052,23 @@ function rch_agent_wizard_ajax_list_broadcast_posts(): void
         if (! $p instanceof WP_Post) {
             continue;
         }
+
+        $child_count = 0;
+        $bcd         = function_exists('rch_multisite_get_post_broadcast_data')
+            ? rch_multisite_get_post_broadcast_data($source, (int) $p->ID)
+            : null;
+        if ($bcd && method_exists($bcd, 'has_linked_children') && $bcd->has_linked_children()) {
+            $child_count = count($bcd->get_linked_children());
+        }
+
         $items[] = [
-            'id'         => (int) $p->ID,
-            'title'      => get_the_title($p),
-            'type'       => $p->post_type,
-            'type_label' => $p->post_type === 'page' ? __('Page', 'rechat-plugin') : __('Post', 'rechat-plugin'),
-            'status'     => $p->post_status,
-            'modified'   => mysql2date('Y-m-d H:i', $p->post_modified, false),
+            'id'          => (int) $p->ID,
+            'title'       => get_the_title($p),
+            'type'        => $p->post_type,
+            'type_label'  => $p->post_type === 'page' ? __('Page', 'rechat-plugin') : __('Post', 'rechat-plugin'),
+            'status'      => $p->post_status,
+            'modified'    => mysql2date('Y-m-d H:i', $p->post_modified, false),
+            'child_count' => $child_count,
         ];
     }
 
@@ -2492,7 +2572,8 @@ function rch_agent_wizard_ajax_apply_menus_widgets(): void
         )
     );
 
-    $copy_widgets = ! empty($_POST['copy_widgets']);
+    $copy_widgets     = ! empty($_POST['copy_widgets']);
+    $relink_broadcast = ! empty($_POST['relink_broadcast']) && rch_agent_wizard_broadcast_step_enabled();
 
     if ($menu_ids === [] && ! $copy_widgets) {
         wp_send_json_error(['message' => __('Select at least one menu, or enable widget copy.', 'rechat-plugin')]);
@@ -2541,7 +2622,7 @@ function rch_agent_wizard_ajax_apply_menus_widgets(): void
     $errors = [];
 
     foreach ($targets as $blog_id) {
-        $r = rch_agent_wizard_sync_menus_widgets_to_blog($source, $blog_id, $menu_ids, $copy_widgets, $widget_export);
+        $r = rch_agent_wizard_sync_menus_widgets_to_blog($source, $blog_id, $menu_ids, $copy_widgets, $widget_export, $relink_broadcast);
         if (is_wp_error($r)) {
             $failed++;
             $errors[] = sprintf(
@@ -2745,6 +2826,8 @@ function rch_agent_wizard_enqueue_assets(string $hook): void
                 'bcNoneSelected'  => __('Select at least one post or page.', 'rechat-plugin'),
                 'bcLoading'       => __('Loading…', 'rechat-plugin'),
                 'bcEmpty'         => __('No posts or pages found.', 'rechat-plugin'),
+                'bcBroadcastedCount' => /* translators: %d: sub-site count */ __('Already broadcast to %d sub-site(s)', 'rechat-plugin'),
+                'draftNonePersonal'  => __('No saved draft for your account yet.', 'rechat-plugin'),
                 'bcColTitle'      => __('Title', 'rechat-plugin'),
                 'bcColType'       => __('Type', 'rechat-plugin'),
                 'bcColStatus'     => __('Status', 'rechat-plugin'),

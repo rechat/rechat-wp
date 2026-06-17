@@ -859,6 +859,21 @@
     text-align: center;
 }
 
+.rch-agent-wizard .rch-wz-bc-badge {
+    display: inline-block;
+    font-weight: 600;
+    color: #2271b1;
+    white-space: nowrap;
+}
+
+.rch-agent-wizard .rch-wz-bc-none {
+    color: #8c8f94;
+}
+
+.rch-agent-wizard .rch-wz-bc-is-broadcasted {
+    background: #f0f6fc;
+}
+
 .rch-agent-wizard .rch-wz-bc-pager {
     display: flex;
     flex-wrap: wrap;
