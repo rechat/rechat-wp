@@ -757,6 +757,96 @@ function rch_agent_wizard_assign_menu_to_locations_on_blog(int $blog_id, int $me
 }
 
 /**
+ * Create the same flat menu on an explicit list of blog IDs and assign display locations.
+ *
+ * Per-blog the menu's location slugs are intersected with that blog's theme-registered locations.
+ * Used by both the synchronous push and the chunked background job, so it does NOT enforce any
+ * target-count cap — callers decide sync vs. background based on size.
+ *
+ * @param int[]                                                            $blog_ids
+ * @param array<int, array{title:string,url:string,source_post_id?:int}> $items
+ * @param string[]                                                         $location_slugs Template slugs (validated here).
+ * @return array{ok:int,fail:int,errors:string[]}
+ */
+function rch_agent_wizard_push_builder_menu_to_blog_ids(
+    array $blog_ids,
+    string $menu_name,
+    array $items,
+    array $location_slugs
+): array {
+    $out = [
+        'ok'     => 0,
+        'fail'   => 0,
+        'errors' => [],
+    ];
+
+    $source = rch_agent_wizard_menus_widgets_source_blog_id();
+
+    $blog_ids = array_values(
+        array_unique(
+            array_filter(
+                array_map('intval', $blog_ids),
+                static function (int $bid) use ($source): bool {
+                    return $bid > 0 && $bid !== $source;
+                }
+            )
+        )
+    );
+
+    if ($blog_ids === []) {
+        return $out;
+    }
+
+    $template_slugs = array_flip(
+        array_column(rch_agent_wizard_get_nav_menu_locations_catalog($source), 'slug')
+    );
+
+    $location_slugs = array_values(
+        array_unique(
+            array_filter(
+                array_map('sanitize_key', $location_slugs),
+                static function (string $s) use ($template_slugs): bool {
+                    return $s !== '' && isset($template_slugs[ $s ]);
+                }
+            )
+        )
+    );
+
+    foreach ($blog_ids as $blog_id) {
+        switch_to_blog((int) $blog_id);
+        $reg = get_registered_nav_menus();
+        if (! is_array($reg)) {
+            $reg = [];
+        }
+        restore_current_blog();
+
+        $for_blog = [];
+        foreach ($location_slugs as $slug) {
+            if (isset($reg[ $slug ])) {
+                $for_blog[] = $slug;
+            }
+        }
+
+        $mid = rch_agent_wizard_create_flat_custom_menu_on_blog((int) $blog_id, $menu_name, $items);
+        if (is_wp_error($mid)) {
+            $out['fail']++;
+            $out['errors'][] = sprintf(
+                /* translators: 1: blog ID, 2: message */
+                __('Blog %1$d: %2$s', 'rechat-plugin'),
+                $blog_id,
+                $mid->get_error_message()
+            );
+            continue;
+        }
+
+        rch_agent_wizard_assign_menu_to_locations_on_blog((int) $blog_id, (int) $mid, $for_blog);
+        $out['ok']++;
+    }
+
+    return $out;
+}
+
+/**
  * Create the same flat menu on many blogs and assign display locations.
  *
  * @param array<int, array{title:string,url:string,source_post_id?:int}> $items
@@ -805,51 +895,5 @@ function rch_agent_wizard_push_builder_menu_to_targets(
         return $out;
     }
 
-    $template_slugs = array_flip(
-        array_column(rch_agent_wizard_get_nav_menu_locations_catalog($source), 'slug')
-    );
-
-    $location_slugs = array_values(
-        array_unique(
-            array_filter(
-                array_map('sanitize_key', $location_slugs),
-                static function (string $s) use ($template_slugs): bool {
-                    return $s !== '' && isset($template_slugs[ $s ]);
-                }
-            )
-        )
-    );
-
-    foreach ($targets as $blog_id) {
-        switch_to_blog((int) $blog_id);
-        $reg = get_registered_nav_menus();
-        if (! is_array($reg)) {
-            $reg = [];
-        }
-        restore_current_blog();
-
-        $for_blog = [];
-        foreach ($location_slugs as $slug) {
-            if (isset($reg[ $slug ])) {
-                $for_blog[] = $slug;
-            }
-        }
-
-        $mid = rch_agent_wizard_create_flat_custom_menu_on_blog((int) $blog_id, $menu_name, $items);
-        if (is_wp_error($mid)) {
-            $out['fail']++;
-            $out['errors'][] = sprintf(
-                /* translators: 1: blog ID, 2: message */
-                __('Blog %1$d: %2$s', 'rechat-plugin'),
-                $blog_id,
-                $mid->get_error_message()
-            );
-            continue;
-        }
-
-        rch_agent_wizard_assign_menu_to_locations_on_blog((int) $blog_id, (int) $mid, $for_blog);
-        $out['ok']++;
-    }
-
-    return $out;
+    return rch_agent_wizard_push_builder_menu_to_blog_ids($targets, $menu_name, $items, $location_slugs);
 }
