@@ -2728,24 +2728,30 @@ function rch_agent_wizard_start_menu_build_job(string $menu_name, array $items, 
 }
 
 /**
- * Cron handler: process one chunk of target blogs, then reschedule until the job is done.
+ * Process one chunk of the pending menu-build job (shared by cron + browser-driven AJAX).
+ *
+ * @return array{done:bool,remaining:int,total:int,ok:int,fail:int,errors:string[],active:bool}
  */
-function rch_agent_wizard_run_menu_build_chunk(): void
+function rch_agent_wizard_process_menu_build_chunk(): array
 {
+    $status = ['done' => true, 'remaining' => 0, 'total' => 0, 'ok' => 0, 'fail' => 0, 'errors' => [], 'active' => false];
+
     if (! is_multisite() || ! function_exists('rch_agent_wizard_push_builder_menu_to_blog_ids')) {
-        return;
+        return $status;
     }
 
     $raw = get_site_option(RCH_AGENT_WIZARD_MENU_JOB_OPTION, '');
     if (! is_string($raw) || $raw === '') {
-        return;
+        return $status;
     }
 
     $job = json_decode($raw, true);
     if (! is_array($job) || empty($job['blog_ids']) || ! is_array($job['blog_ids'])) {
         delete_site_option(RCH_AGENT_WIZARD_MENU_JOB_OPTION);
-        return;
+        return $status;
     }
+
+    $status['active'] = true;
 
     $chunk_size = (int) apply_filters('rch_agent_wizard_menu_build_chunk_size', 25);
     if ($chunk_size < 1) {
@@ -2771,24 +2777,75 @@ function rch_agent_wizard_run_menu_build_chunk(): void
         }
     }
 
+    $total = (int) ($job['total'] ?? 0);
+
     if ($job['blog_ids'] !== []) {
         update_site_option(RCH_AGENT_WIZARD_MENU_JOB_OPTION, wp_json_encode($job));
-        wp_schedule_single_event(time() + 10, 'rch_agent_wizard_run_menu_build_chunk');
-        return;
+
+        return [
+            'done'      => false,
+            'remaining' => count($job['blog_ids']),
+            'total'     => $total,
+            'ok'        => (int) $job['ok'],
+            'fail'      => (int) $job['fail'],
+            'errors'    => array_slice($job['errors'], 0, 50),
+            'active'    => true,
+        ];
     }
 
     delete_site_option(RCH_AGENT_WIZARD_MENU_JOB_OPTION);
     error_log(
         sprintf(
-            'Rechat Agent Wizard: background menu build finished — %d created, %d failed, of %d target site(s).',
+            'Rechat Agent Wizard: menu build finished — %d created, %d failed, of %d target site(s).',
             (int) $job['ok'],
             (int) $job['fail'],
-            (int) ($job['total'] ?? 0)
+            $total
         )
     );
+
+    return [
+        'done'      => true,
+        'remaining' => 0,
+        'total'     => $total,
+        'ok'        => (int) $job['ok'],
+        'fail'      => (int) $job['fail'],
+        'errors'    => array_slice($job['errors'], 0, 50),
+        'active'    => true,
+    ];
+}
+
+/**
+ * Cron fallback: process one chunk, reschedule until done.
+ */
+function rch_agent_wizard_run_menu_build_chunk(): void
+{
+    $status = rch_agent_wizard_process_menu_build_chunk();
+
+    if (! $status['done'] && $status['remaining'] > 0) {
+        wp_schedule_single_event(time() + 10, 'rch_agent_wizard_run_menu_build_chunk');
+    }
 }
 
 add_action('rch_agent_wizard_run_menu_build_chunk', 'rch_agent_wizard_run_menu_build_chunk');
+
+/**
+ * AJAX: browser-driven chunk runner (does not depend on WP-cron). The wizard calls this
+ * repeatedly until `done` so large networks complete even when cron is disabled.
+ */
+function rch_agent_wizard_ajax_run_menu_build_chunk(): void
+{
+    check_ajax_referer(RCH_AGENT_WIZARD_NONCE_ACTION, 'nonce');
+
+    if (is_wp_error(rch_agent_wizard_user_can_run())) {
+        wp_send_json_error(['message' => __('Permission denied.', 'rechat-plugin')], 403);
+    }
+
+    $status = rch_agent_wizard_process_menu_build_chunk();
+
+    wp_send_json_success($status);
+}
+
+add_action('wp_ajax_rch_agent_wizard_run_menu_build_chunk', 'rch_agent_wizard_ajax_run_menu_build_chunk');
 
 /**
  * AJAX: clone selected menus + optionally all widget options to target blogs.

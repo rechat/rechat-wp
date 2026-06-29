@@ -2136,6 +2136,13 @@
                         );
                         return;
                     }
+                    persistWizardDraft(true);
+                    // Large networks are queued server-side; drive the batches from the browser so it
+                    // finishes even when WP-cron is disabled. Cron remains a fallback if the tab closes.
+                    if (res.data && res.data.queued) {
+                        driveMenuBuildJob(res.data.target_count || 0);
+                        return;
+                    }
                     var html =
                         '<div class="notice notice-success inline"><p>' + escapeHtml(res.data.message) + '</p>';
                     if (res.data.errors && res.data.errors.length) {
@@ -2147,7 +2154,6 @@
                     }
                     html += '</div>';
                     $('#rch-wz-mb-result').html(html);
-                    persistWizardDraft(true);
                 })
                 .fail(function () {
                     spin($('#rch-wz-mb-spinner'), false);
@@ -2156,6 +2162,80 @@
                     );
                 });
         });
+
+        // Repeatedly process one background menu-build chunk until done, showing live progress.
+        function driveMenuBuildJob(total) {
+            var $res = $('#rch-wz-mb-result');
+
+            function renderProgress(processed, totalCount, ok, fail) {
+                $res.html(
+                    '<div class="notice notice-info inline"><p>' +
+                        escapeHtml(
+                            'Building menu on sub-sites: ' +
+                                processed +
+                                ' / ' +
+                                totalCount +
+                                ' processed (' +
+                                ok +
+                                ' created, ' +
+                                fail +
+                                ' failed). Keep this tab open…'
+                        ) +
+                        '</p></div>'
+                );
+            }
+
+            renderProgress(0, total, 0, 0);
+            spin($('#rch-wz-mb-spinner'), true);
+
+            function step() {
+                $.post(rchAgentWizard.ajaxurl, {
+                    action: 'rch_agent_wizard_run_menu_build_chunk',
+                    nonce: rchAgentWizard.nonce,
+                })
+                    .done(function (r) {
+                        if (!r || !r.success || !r.data) {
+                            spin($('#rch-wz-mb-spinner'), false);
+                            $res.html(
+                                '<div class="notice notice-error inline"><p>Background run failed. WP-cron will retry, or reload and try again.</p></div>'
+                            );
+                            return;
+                        }
+                        var d = r.data;
+                        var tot = d.total || total || 0;
+                        var processed = tot - (d.remaining || 0);
+
+                        if (d.done) {
+                            spin($('#rch-wz-mb-spinner'), false);
+                            var html =
+                                '<div class="notice notice-success inline"><p>' +
+                                escapeHtml('Menu created on ' + (d.ok || 0) + ' site(s). Failed: ' + (d.fail || 0) + '.') +
+                                '</p>';
+                            if (d.errors && d.errors.length) {
+                                html += '<ul>';
+                                $.each(d.errors, function (i, err) {
+                                    html += '<li>' + escapeHtml(err) + '</li>';
+                                });
+                                html += '</ul>';
+                            }
+                            html += '</div>';
+                            $res.html(html);
+                            return;
+                        }
+
+                        renderProgress(processed, tot, d.ok || 0, d.fail || 0);
+                        setTimeout(step, 400);
+                    })
+                    .fail(function () {
+                        spin($('#rch-wz-mb-spinner'), false);
+                        $res.html(
+                            '<div class="notice notice-error inline"><p>Background run request failed. WP-cron will continue, or reload to resume.</p></div>'
+                        );
+                    });
+            }
+
+            step();
+        }
 
         if (rchAgentWizard.broadcastStep) {
             $(document).on('change', '.rch-wz-bc-check', function () {
