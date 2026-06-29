@@ -1571,15 +1571,37 @@ function rch_agent_wizard_ajax_save_draft(): void
  */
 function rch_agent_wizard_store_deployed_default(array $theme_rows, string $scope, int $agent_id): void
 {
-    $scope   = in_array($scope, ['single', 'all'], true) ? $scope : 'single';
-    $payload = [
-        'draftVersion' => 4,
-        'scope'        => $scope,
-        'agentId'      => $scope === 'all' ? 0 : (int) $agent_id,
-        'themeRows'    => $theme_rows,
-        'savedAt'      => time(),
-        '_deployed'    => true,
-    ];
+    $scope = in_array($scope, ['single', 'all'], true) ? $scope : 'single';
+
+    rch_agent_wizard_update_shared_deploy_profile([
+        'scope'     => $scope,
+        'agentId'   => $scope === 'all' ? 0 : (int) $agent_id,
+        'themeRows' => $theme_rows,
+    ]);
+}
+
+/**
+ * Merge a partial config into the network-wide deployed wizard profile (shared draft option).
+ *
+ * Each wizard step (theme options, broadcast picks, built menu, menus/widgets) writes only its own
+ * keys here, so deploying one step never wipes another. The whole profile is what the wizard hydrates
+ * on form open (for re-edit + redeploy) and what new agent sub-sites auto-apply on first provision.
+ *
+ * Top-level keys consumed by the wizard JS / auto-deploy: themeRows, scope, agentId, menuBuilderName,
+ * menuBuilderItems, menuBuilderLocSlugs, broadcastPostIds, broadcastTargetMode, mwMenuTermIds,
+ * mwTargetMode, mwWidgetMode.
+ *
+ * @param array<string, mixed> $patch
+ */
+function rch_agent_wizard_update_shared_deploy_profile(array $patch): void
+{
+    $existing = rch_agent_wizard_get_deployed_default();
+    $existing = is_array($existing) ? $existing : [];
+
+    $payload = array_merge($existing, $patch);
+    $payload['draftVersion'] = 4;
+    $payload['_deployed']    = true;
+    $payload['savedAt']      = time();
 
     update_site_option(RCH_AGENT_WIZARD_SHARED_DRAFT_OPTION, wp_json_encode($payload));
 }
@@ -1907,6 +1929,7 @@ function rch_agent_wizard_broadcast_posts_to_targets(array $post_ids, string $ta
         'skipped'      => 0,
         'errors'       => [],
         'target_count' => 0,
+        'queued'       => false,
     ];
 
     if (! rch_agent_wizard_broadcast_step_enabled() || ! function_exists('ThreeWP_Broadcast')) {
@@ -1941,12 +1964,29 @@ function rch_agent_wizard_broadcast_posts_to_targets(array $post_ids, string $ta
         return $out;
     }
 
-    $max_targets = (int) apply_filters('rch_agent_wizard_broadcast_max_targets', 500);
-    if ($max_targets > 0 && count($targets) > $max_targets) {
+    $target_count = count($targets);
+
+    // Large target sets must use Broadcast's background queue (low priority), otherwise a single
+    // synchronous HTTP request copying content to hundreds of sub-sites times out / exhausts memory.
+    // Default: queue automatically once we exceed the synchronous-safe threshold.
+    $queue_threshold = (int) apply_filters('rch_agent_wizard_broadcast_queue_threshold', 50);
+    $use_low_priority = (bool) apply_filters(
+        'rch_multisite_broadcast_use_low_priority',
+        $queue_threshold > 0 && $target_count > $queue_threshold
+    );
+    $out['queued'] = $use_low_priority;
+
+    // The cap is a guard against a runaway synchronous run. Queued (background) runs can safely
+    // fan out to far more sites, so they get a much higher default ceiling.
+    $max_targets = (int) apply_filters(
+        'rch_agent_wizard_broadcast_max_targets',
+        $use_low_priority ? 5000 : 500
+    );
+    if ($max_targets > 0 && $target_count > $max_targets) {
         $out['errors'][] = sprintf(
             /* translators: 1: current target count, 2: max allowed */
-            __('Too many target sites (%1$d). Maximum is %2$d. Use the agent/office mode, raise the limit via filter, or split the network.', 'rechat-plugin'),
-            count($targets),
+            __('Too many target sites (%1$d). Maximum is %2$d. Use the agent/office mode, raise the limit via the rch_agent_wizard_broadcast_max_targets filter, or split the network.', 'rechat-plugin'),
+            $target_count,
             $max_targets
         );
 
@@ -1965,7 +2005,7 @@ function rch_agent_wizard_broadcast_posts_to_targets(array $post_ids, string $ta
     $broadcast = ThreeWP_Broadcast();
     $api       = $broadcast->api();
 
-    if (apply_filters('rch_multisite_broadcast_use_low_priority', false)) {
+    if ($use_low_priority) {
         $api->low_priority();
     }
 
@@ -2247,14 +2287,44 @@ function rch_agent_wizard_ajax_broadcast_posts(): void
 
     $result = rch_agent_wizard_broadcast_posts_to_targets($post_ids, $mode);
 
-    $msg = sprintf(
-        /* translators: 1: success count, 2: skipped count, 3: failure count, 4: target blog count */
-        __('Finished: %1$d broadcast, %2$d already on target site(s) (skipped), %3$d failed, across %4$d target site(s).', 'rechat-plugin'),
-        $result['ok'],
-        isset($result['skipped']) ? (int) $result['skipped'] : 0,
-        $result['fail'],
-        $result['target_count']
+    // Remember which posts/pages were broadcast (+ target scope) in the shared deployed profile so the
+    // selection re-shows on form open and survives across admins/devices.
+    $store_bc = array_values(
+        array_filter(
+            array_map('absint', $post_ids),
+            static function (int $id): bool {
+                return $id > 0;
+            }
+        )
     );
+    if ($store_bc !== []) {
+        rch_agent_wizard_update_shared_deploy_profile([
+            'broadcastPostIds'    => $store_bc,
+            'broadcastTargetMode' => $mode,
+        ]);
+    }
+
+    $queued = ! empty($result['queued']);
+
+    if ($queued) {
+        $msg = sprintf(
+            /* translators: 1: queued count, 2: skipped count, 3: failure count, 4: target blog count */
+            __('Queued: %1$d item(s) queued for background broadcast, %2$d already on target site(s) (skipped), %3$d failed, across %4$d target site(s). Large networks run in the background — give Broadcast a few minutes to finish copying.', 'rechat-plugin'),
+            $result['ok'],
+            isset($result['skipped']) ? (int) $result['skipped'] : 0,
+            $result['fail'],
+            $result['target_count']
+        );
+    } else {
+        $msg = sprintf(
+            /* translators: 1: success count, 2: skipped count, 3: failure count, 4: target blog count */
+            __('Finished: %1$d broadcast, %2$d already on target site(s) (skipped), %3$d failed, across %4$d target site(s).', 'rechat-plugin'),
+            $result['ok'],
+            isset($result['skipped']) ? (int) $result['skipped'] : 0,
+            $result['fail'],
+            $result['target_count']
+        );
+    }
 
     wp_send_json_success(
         [
@@ -2262,6 +2332,7 @@ function rch_agent_wizard_ajax_broadcast_posts(): void
             'ok'           => $result['ok'],
             'skipped'      => isset($result['skipped']) ? (int) $result['skipped'] : 0,
             'fail'         => $result['fail'],
+            'queued'       => $queued,
             'target_count' => $result['target_count'],
             'errors'       => $result['errors'],
         ]
@@ -2517,6 +2588,30 @@ function rch_agent_wizard_ajax_create_builder_menu(): void
 
     $result = rch_agent_wizard_push_builder_menu_to_targets($mode, $menu_name, $items, $location_slugs);
 
+    // Persist the built menu into the shared deployed profile so it re-shows on form open (edit +
+    // redeploy) and new agent sub-sites can auto-create it on first provision.
+    $store_items = [];
+    foreach ($items as $row) {
+        if (! is_array($row)) {
+            continue;
+        }
+        $title = isset($row['title']) ? sanitize_text_field((string) $row['title']) : '';
+        $url   = isset($row['url']) ? esc_url_raw((string) $row['url']) : '';
+        $sid   = isset($row['source_post_id']) ? absint($row['source_post_id']) : 0;
+        if ($title === '' || ($url === '' && $sid <= 0)) {
+            continue;
+        }
+        $store_items[] = ['title' => $title, 'url' => $url, 'source_post_id' => $sid];
+    }
+    if ($store_items !== []) {
+        rch_agent_wizard_update_shared_deploy_profile([
+            'menuBuilderName'     => $menu_name,
+            'menuBuilderItems'    => $store_items,
+            'menuBuilderLocSlugs' => $location_slugs,
+            'mwTargetMode'        => $mode,
+        ]);
+    }
+
     if ($result['ok'] === 0 && $result['fail'] === 0 && $result['errors'] !== []) {
         wp_send_json_error(['message' => implode(' ', $result['errors'])]);
     }
@@ -2617,6 +2712,13 @@ function rch_agent_wizard_ajax_apply_menus_widgets(): void
 
     $widget_export = $copy_widgets ? rch_agent_wizard_export_widget_options($source) : [];
 
+    // Persist menu/widget selection in the shared deployed profile (re-shows on form open).
+    rch_agent_wizard_update_shared_deploy_profile([
+        'mwMenuTermIds' => $menu_ids,
+        'mwTargetMode'  => $mode,
+        'mwWidgetMode'  => $copy_widgets ? 'asis' : 'none',
+    ]);
+
     $ok     = 0;
     $failed = 0;
     $errors = [];
@@ -2664,6 +2766,171 @@ add_action('wp_ajax_rch_agent_wizard_apply_menus_widgets', 'rch_agent_wizard_aja
 add_action('wp_ajax_rch_agent_wizard_menu_builder_search', 'rch_agent_wizard_ajax_menu_builder_search_posts');
 add_action('wp_ajax_rch_agent_wizard_menu_builder_posts_by_ids', 'rch_agent_wizard_ajax_menu_builder_posts_by_ids');
 add_action('wp_ajax_rch_agent_wizard_create_builder_menu', 'rch_agent_wizard_ajax_create_builder_menu');
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUTO-DEPLOY DEPLOYED WIZARD CONFIG TO NEWLY CREATED AGENT SUB-SITES (FIRST-TIME ONLY)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Per-subsite option flag: set to '1' once the deployed wizard config has been auto-applied.
+ * Its presence guarantees the auto-deploy runs at most once per site, so later agent/admin edits
+ * are never overwritten.
+ */
+const RCH_AGENT_WIZARD_AUTODEPLOY_DONE_OPTION = 'rch_agent_wizard_autodeployed';
+
+/**
+ * Whether new agent sub-sites auto-apply the last deployed wizard config (theme options + built menu)
+ * on first provision. Disable with:
+ *   add_filter('rch_agent_wizard_autodeploy_new_sites_enabled', '__return_false');
+ */
+function rch_agent_wizard_autodeploy_new_sites_enabled(): bool
+{
+    return (bool) apply_filters('rch_agent_wizard_autodeploy_new_sites_enabled', true);
+}
+
+/**
+ * On new agent sub-site creation, schedule a one-time apply of the deployed wizard config.
+ *
+ * Deferred via cron so site creation / sync HTTP requests are not blocked, and so it runs after the
+ * Broadcast content push (+15s) — menu items that reference template posts can then resolve to each
+ * site's own Broadcast child.
+ *
+ * @param int $post_id Agent hub post ID.
+ * @param int $blog_id New sub-site blog ID.
+ */
+function rch_agent_wizard_schedule_autodeploy_for_new_site(int $post_id, int $blog_id): void
+{
+    if (! is_multisite() || $post_id <= 0 || $blog_id <= 0) {
+        return;
+    }
+
+    if (! rch_agent_wizard_autodeploy_new_sites_enabled()) {
+        return;
+    }
+
+    $hook = 'rch_agent_wizard_run_autodeploy_new_site';
+    $args = [$post_id, $blog_id];
+
+    if (wp_next_scheduled($hook, $args)) {
+        return;
+    }
+
+    wp_schedule_single_event(time() + 45, $hook, $args);
+}
+
+add_action('rch_multisite_agent_site_created', 'rch_agent_wizard_schedule_autodeploy_for_new_site', 30, 2);
+
+/**
+ * One-time apply of the deployed wizard config (theme options + built menu) to a fresh agent sub-site.
+ *
+ * Idempotent: bails if the site was already auto-deployed (per-subsite flag) and only touches sites
+ * created within the freshness window, so an adopted or already-edited site is never clobbered.
+ *
+ * @param int $post_id Agent hub post ID.
+ * @param int $blog_id New sub-site blog ID.
+ */
+function rch_agent_wizard_run_autodeploy_new_site(int $post_id, int $blog_id): void
+{
+    if (! is_multisite() || $post_id <= 0 || $blog_id <= 0) {
+        return;
+    }
+
+    if (! rch_agent_wizard_autodeploy_new_sites_enabled()) {
+        return;
+    }
+
+    $site = get_site($blog_id);
+    if (! $site) {
+        return;
+    }
+
+    // First-time guard.
+    switch_to_blog($blog_id);
+    $already = (string) get_option(RCH_AGENT_WIZARD_AUTODEPLOY_DONE_OPTION, '');
+    restore_current_blog();
+
+    if ($already === '1') {
+        return;
+    }
+
+    // Safety: only auto-apply to genuinely fresh sites. An adopted/relinked older site (which an agent
+    // may already have edited) is marked done and left untouched.
+    $registered   = $site->registered ? strtotime($site->registered . ' UTC') : 0;
+    $fresh_window = (int) apply_filters('rch_agent_wizard_autodeploy_fresh_window', HOUR_IN_SECONDS);
+    if ($registered > 0 && $fresh_window > 0 && (time() - $registered) > $fresh_window) {
+        switch_to_blog($blog_id);
+        update_option(RCH_AGENT_WIZARD_AUTODEPLOY_DONE_OPTION, '1', false);
+        restore_current_blog();
+        return;
+    }
+
+    $profile = rch_agent_wizard_get_deployed_default();
+    if (! is_array($profile) || $profile === []) {
+        // Nothing deployed yet — leave the flag unset so a re-provision retries once config exists.
+        return;
+    }
+
+    // Run as a privileged user: cron has no current user, but rch_agent_wizard_deploy_to_agent_blog()
+    // and menu creation require network/admin capabilities.
+    $runner = function_exists('rch_multisite_broadcast_runner_user_id')
+        ? rch_multisite_broadcast_runner_user_id()
+        : 0;
+    $prev = get_current_user_id();
+    if ($runner > 0) {
+        wp_set_current_user($runner);
+    }
+
+    // 1) Theme options (first-time). Merges into the sub-site theme option array — never wipes existing.
+    $theme_rows = isset($profile['themeRows']) && is_array($profile['themeRows']) ? $profile['themeRows'] : [];
+    if ($theme_rows !== []) {
+        rch_agent_wizard_deploy_to_agent_blog($post_id, $theme_rows);
+    }
+
+    // 2) Built menu — broadcast each referenced template post to this site first so links resolve to
+    // its own copy, then create the flat menu and assign theme locations.
+    $menu_name  = isset($profile['menuBuilderName']) ? (string) $profile['menuBuilderName'] : '';
+    $menu_items = isset($profile['menuBuilderItems']) && is_array($profile['menuBuilderItems']) ? $profile['menuBuilderItems'] : [];
+    $loc_slugs  = isset($profile['menuBuilderLocSlugs']) && is_array($profile['menuBuilderLocSlugs']) ? $profile['menuBuilderLocSlugs'] : [];
+
+    if ($menu_name !== '' && $menu_items !== [] && function_exists('rch_agent_wizard_create_flat_custom_menu_on_blog')) {
+        $source = function_exists('rch_multisite_broadcast_source_blog_id')
+            ? rch_multisite_broadcast_source_blog_id()
+            : (int) get_main_site_id();
+
+        if (function_exists('rch_agent_wizard_broadcast_post_to_blog')) {
+            foreach ($menu_items as $row) {
+                $sid = is_array($row) && isset($row['source_post_id']) ? absint($row['source_post_id']) : 0;
+                if ($sid > 0) {
+                    rch_agent_wizard_broadcast_post_to_blog($source, $sid, $blog_id);
+                }
+            }
+        }
+
+        $mid = rch_agent_wizard_create_flat_custom_menu_on_blog($blog_id, $menu_name, $menu_items);
+        if (! is_wp_error($mid) && $loc_slugs !== [] && function_exists('rch_agent_wizard_assign_menu_to_locations_on_blog')) {
+            rch_agent_wizard_assign_menu_to_locations_on_blog($blog_id, (int) $mid, $loc_slugs);
+        }
+    }
+
+    if ($runner > 0) {
+        wp_set_current_user($prev);
+    }
+
+    // Mark done: this site is never auto-deployed again — agent/admin edits are preserved.
+    switch_to_blog($blog_id);
+    update_option(RCH_AGENT_WIZARD_AUTODEPLOY_DONE_OPTION, '1', false);
+    restore_current_blog();
+
+    error_log(
+        sprintf(
+            'Rechat Agent Wizard: auto-deployed wizard config to new agent sub-site blog_id=%d (agent post %d).',
+            $blog_id,
+            $post_id
+        )
+    );
+}
+
+add_action('rch_agent_wizard_run_autodeploy_new_site', 'rch_agent_wizard_run_autodeploy_new_site', 10, 2);
 
 /**
  * Enqueue wizard assets on Rechat settings tab.

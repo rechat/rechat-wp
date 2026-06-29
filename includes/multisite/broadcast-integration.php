@@ -284,6 +284,7 @@ function rch_agent_wizard_broadcast_post_to_blog(int $source_blog_id, int $paren
     try {
         $post = get_post($parent_post_id);
         if ($post instanceof WP_Post && in_array($post->post_type, ['post', 'page'], true)) {
+            /** @var \threewp_broadcast\ThreeWP_Broadcast $broadcast */
             $broadcast = ThreeWP_Broadcast();
             $api       = $broadcast->api();
             $api->broadcast_children($parent_post_id, $unlinked);
