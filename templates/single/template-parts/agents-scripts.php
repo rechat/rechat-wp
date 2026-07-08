@@ -37,6 +37,17 @@ function rch_enqueue_agent_single_scripts($email = '') {
         true
     );
 
+    // Hide Active/Sold listing sections when a status returns no listings.
+    // Sections carry data-rechat-listings-section / data-rechat-listings-mount
+    // (see agents-listings-section.php). Theme-agnostic; works on all sites.
+    wp_enqueue_script(
+        'rch-agent-single-empty-sections',
+        RCH_PLUGIN_ASSETS . 'js/rch-agent-single-empty-sections.js',
+        ['rechat-sdk'],
+        RCH_VERSION,
+        true
+    );
+
     // Pass PHP data to JavaScript for lead capture form functionality
     wp_localize_script('rch-agent-single', 'rchAgentData', [
         'ajaxUrl' => admin_url('admin-ajax.php'),
