@@ -875,6 +875,17 @@ function rch_agent_wizard_sanitize_theme_options_row(array $row, ?array $profile
             continue;
         }
 
+        // Email keys (even `*-email-url`) must be sanitized as emails, never esc_url_raw() — which
+        // would prepend http:// to a bare address. Guard before the URL branch (also covers legacy
+        // profiles that cached the key in the `urls` bucket).
+        if (
+            rch_agent_wizard_str_contains_ci($key, 'email')
+            || rch_agent_wizard_str_contains_ci($key, 'mail')
+        ) {
+            $out[ $key ] = sanitize_email(is_string($value) ? $value : '');
+            continue;
+        }
+
         if (in_array($key, $profile['urls'] ?? [], true)) {
             if (
                 rch_agent_wizard_str_contains_ci($key, 'button-url')
