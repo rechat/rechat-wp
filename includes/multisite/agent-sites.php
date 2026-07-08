@@ -61,13 +61,13 @@ function rch_multisite_sanitize_slug(string $name): string
 /**
  * Configured agent sub-site slug format.
  *
- * @return string `initial_lastname` (default) or `firstname_lastname`.
+ * @return string `initial_lastname` (default), `firstname_lastname`, or `firstname_lastname_nodash`.
  */
 function rch_multisite_get_agent_slug_format(): string
 {
     $saved = (string) get_site_option('rch_multisite_agent_slug_format', 'initial_lastname');
 
-    if (! in_array($saved, ['initial_lastname', 'firstname_lastname'], true)) {
+    if (! in_array($saved, ['initial_lastname', 'firstname_lastname', 'firstname_lastname_nodash'], true)) {
         return 'initial_lastname';
     }
 
@@ -78,8 +78,9 @@ function rch_multisite_get_agent_slug_format(): string
  * Build the agent sub-site slug base from post meta using the configured format.
  *
  * Formats:
- *  - initial_lastname:  first initial + last name, no separators (e.g. "afreeman")
- *  - firstname_lastname: first name + last name with hyphens (e.g. "amy-freeman")
+ *  - initial_lastname:          first initial + last name, no separators (e.g. "afreeman")
+ *  - firstname_lastname:        first name + last name with hyphens (e.g. "amy-freeman")
+ *  - firstname_lastname_nodash: first name + last name, no separators (e.g. "amyfreeman")
  *
  * Falls back to the agent display name when name meta is missing.
  *
@@ -112,7 +113,18 @@ function rch_multisite_agent_site_slug_base(int $agent_post_id, string $agent_na
         return rch_multisite_sanitize_slug($agent_name);
     }
 
-    if ($last !== '') {
+    if ($format === 'firstname_lastname_nodash') {
+        if ($first !== '' || $last !== '') {
+            $raw = remove_accents($first . $last);
+            $raw = strtolower($raw);
+            $raw = preg_replace('/[^a-z0-9]+/', '', $raw);
+            $raw = substr((string) $raw, 0, 63);
+            if ($raw !== '') {
+                return (string) $raw;
+            }
+        }
+        // No usable name meta — fall through to the display-name fallback below.
+    } elseif ($last !== '') {
         $initial = $first !== '' ? mb_substr($first, 0, 1) : '';
         $raw     = remove_accents($initial . $last);
         $raw     = strtolower($raw);
@@ -438,23 +450,28 @@ function rch_multisite_office_public_slug(string $name): string
 }
 
 /**
- * Return the configured URL type for agent sites.
+ * Return the URL type for agent sites.
  *
- * When the admin has not explicitly chosen a type yet, we auto-detect from
- * the WordPress SUBDOMAIN_INSTALL constant so the default always matches the
- * network's actual setup.
+ * A WordPress network's install type is fixed globally by SUBDOMAIN_INSTALL, so we trust WordPress's
+ * own is_subdomain_install() first. This prevents a stale or mis-saved rch_multisite_url_type option
+ * from contradicting the real network layout — which would break both site creation and the agent
+ * URL migration tool (e.g. reporting a subdomain network as subdirectory).
  *
  * @return string  'subdomain' or 'subdirectory'.
  */
 function rch_multisite_get_url_type(): string
 {
+    if (function_exists('is_subdomain_install')) {
+        return is_subdomain_install() ? 'subdomain' : 'subdirectory';
+    }
+
     $saved = (string) get_site_option('rch_multisite_url_type', '');
 
     if (in_array($saved, ['subdomain', 'subdirectory'], true)) {
         return $saved;
     }
 
-    // Auto-detect: respect the WordPress network configuration.
+    // Fallback: respect the WordPress network configuration constant.
     return (defined('SUBDOMAIN_INSTALL') && SUBDOMAIN_INSTALL) ? 'subdomain' : 'subdirectory';
 }
 
@@ -3855,8 +3872,12 @@ function rch_multisite_migrate_agent_subsite_urls(): array
         return compact('renamed', 'unchanged', 'skipped', 'errors');
     }
 
-    // Subdomain install required for this migration tool.
-    if (rch_multisite_get_url_type() !== 'subdomain') {
+    // Subdomain install required for this migration tool. Trust WordPress's own detection
+    // (is_subdomain_install) as well as the plugin option, so a genuinely subdomain network is not
+    // blocked when the stored rch_multisite_url_type option is stale or mis-saved.
+    $is_subdomain = rch_multisite_get_url_type() === 'subdomain'
+        || (function_exists('is_subdomain_install') && is_subdomain_install());
+    if (! $is_subdomain) {
         $errors[] = __('This migration is only available for subdomain installs.', 'rechat-plugin');
         return compact('renamed', 'unchanged', 'skipped', 'errors');
     }
@@ -4119,7 +4140,7 @@ function rch_multisite_save_settings(): void
     $slug_format = isset($_POST['rch_multisite_agent_slug_format'])
         ? sanitize_key(wp_unslash($_POST['rch_multisite_agent_slug_format']))
         : 'initial_lastname';
-    if (! in_array($slug_format, ['initial_lastname', 'firstname_lastname'], true)) {
+    if (! in_array($slug_format, ['initial_lastname', 'firstname_lastname', 'firstname_lastname_nodash'], true)) {
         $slug_format = 'initial_lastname';
     }
     update_site_option('rch_multisite_agent_slug_format', $slug_format);
