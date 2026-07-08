@@ -122,9 +122,9 @@ function rch_render_combined_listings($agent_title, $root_attrs, $combined_attrs
 {
 ?>
     <!-- Combined Listings Section -->
-    <div class="rch-agents-list rch-agents-combined-section">
+    <div class="rch-agents-list rch-agents-combined-section" data-rechat-listings-section="active">
         <h2><?php echo esc_html($agent_title); ?>'s Properties</h2>
-        <rechat-root <?php echo $root_attrs; ?>>
+        <rechat-root <?php echo $root_attrs; ?> data-rechat-listings-mount>
             <rechat-listings <?php echo $combined_attrs; ?>>
                 <div class="rechat-shell">
                     <rechat-map-listings-grid></rechat-map-listings-grid>
@@ -143,9 +143,9 @@ function rch_render_separate_listings($agent_title, $root_attrs, $active_attrs, 
 {
 ?>
     <!-- Active Listings Section -->
-    <div class="rch-agents-list rch-agents-active-section">
+    <div class="rch-agents-list rch-agents-active-section" data-rechat-listings-section="active">
         <h2><?php echo esc_html($agent_title); ?>'s Active Listings</h2>
-        <rechat-root <?php echo $root_attrs; ?>>
+        <rechat-root <?php echo $root_attrs; ?> data-rechat-listings-mount>
             <rechat-listings <?php echo $active_attrs; ?>>
                 <div class="rechat-shell">
                     <rechat-map-listings-grid></rechat-map-listings-grid>
@@ -156,9 +156,9 @@ function rch_render_separate_listings($agent_title, $root_attrs, $active_attrs, 
     </div>
 
     <!-- Sold Listings Section -->
-    <div class="rch-agents-list rch-agents-sold-section">
+    <div class="rch-agents-list rch-agents-sold-section" data-rechat-listings-section="sold">
         <h2><?php echo esc_html($agent_title); ?>'s Sold Listings</h2>
-        <rechat-root <?php echo $root_attrs; ?>>
+        <rechat-root <?php echo $root_attrs; ?> data-rechat-listings-mount>
             <rechat-listings <?php echo $sold_attrs; ?>>
             <div class="rechat-shell">
                     <rechat-map-listings-grid></rechat-map-listings-grid>
@@ -177,9 +177,9 @@ function rch_render_active_only_listings($agent_title, $root_attrs, $active_attr
 {
 ?>
     <!-- Active Listings Only Section -->
-    <div class="rch-agents-list rch-agents-active-section">
+    <div class="rch-agents-list rch-agents-active-section" data-rechat-listings-section="active">
         <h2><?php echo esc_html($agent_title); ?>'s Active Listings</h2>
-        <rechat-root <?php echo $root_attrs; ?>>
+        <rechat-root <?php echo $root_attrs; ?> data-rechat-listings-mount>
             <rechat-listings <?php echo $active_attrs; ?>>
             <div class="rechat-shell">
                     <rechat-map-listings-grid></rechat-map-listings-grid>
@@ -198,9 +198,9 @@ function rch_render_sold_only_listings($agent_title, $root_attrs, $sold_attrs)
 {
 ?>
     <!-- Sold Listings Only Section -->
-    <div class="rch-agents-list rch-agents-sold-section">
+    <div class="rch-agents-list rch-agents-sold-section" data-rechat-listings-section="sold">
         <h2><?php echo esc_html($agent_title); ?>'s Sold Listings</h2>
-        <rechat-root <?php echo $root_attrs; ?>>
+        <rechat-root <?php echo $root_attrs; ?> data-rechat-listings-mount>
             <rechat-listings <?php echo $sold_attrs; ?>>
             <div class="rechat-shell">
                     <rechat-map-listings-grid></rechat-map-listings-grid>
