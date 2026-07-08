@@ -684,6 +684,15 @@ function rch_agent_wizard_infer_field_shape(string $key, $sample_value): array
         return ['type' => 'url', 'media' => 'image', 'buckets' => $b];
     }
 
+    // Email keys must never be classified as URLs — even when named like `*-email-url` — otherwise
+    // esc_url_raw() would prepend http:// to a bare address. Keep them out of the `urls` bucket.
+    if (
+        rch_agent_wizard_str_contains_ci($kl, 'email')
+        || rch_agent_wizard_str_contains_ci($kl, 'mail')
+    ) {
+        return ['type' => 'email', 'media' => '', 'buckets' => $b];
+    }
+
     if (
         rch_agent_wizard_str_contains_ci($kl, 'url')
         || rch_agent_wizard_str_contains_ci($kl, 'link')
