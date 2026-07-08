@@ -40,8 +40,9 @@ function rch_multisite_render_admin_tab(): void
     // URL pattern examples for the helper text.
     $example_subdomain    = 'john.' . $base_domain;
     $example_subdirectory = $base_domain . rtrim($network_path, '/') . '/john';
-    $example_agent_initial_lastname = 'afreeman.' . $base_domain;
-    $example_agent_firstname_lastname = 'amy-freeman.' . $base_domain;
+    $example_agent_initial_lastname = 'jdoe.' . $base_domain;
+    $example_agent_firstname_lastname = 'john-doe.' . $base_domain;
+    $example_agent_firstname_lastname_nodash = 'johndoe.' . $base_domain;
 
     // All published agent posts for the status table.
     $agents = get_posts([
@@ -304,15 +305,25 @@ function rch_multisite_render_admin_tab(): void
                                         <?php esc_html_e('First initial + last name', 'rechat-plugin'); ?>
                                         &nbsp;<code><?php echo esc_html($example_agent_initial_lastname); ?></code>
                                     </label>
-                                    <label style="display:block;">
+                                    <label style="display:block;margin-bottom:6px;">
                                         <input
                                             type="radio"
                                             name="rch_multisite_agent_slug_format"
                                             value="firstname_lastname"
                                             <?php checked($agent_slug_format, 'firstname_lastname'); ?>
                                         >
-                                        <?php esc_html_e('First name + last name', 'rechat-plugin'); ?>
+                                        <?php esc_html_e('First name + last name (hyphen)', 'rechat-plugin'); ?>
                                         &nbsp;<code><?php echo esc_html($example_agent_firstname_lastname); ?></code>
+                                    </label>
+                                    <label style="display:block;">
+                                        <input
+                                            type="radio"
+                                            name="rch_multisite_agent_slug_format"
+                                            value="firstname_lastname_nodash"
+                                            <?php checked($agent_slug_format, 'firstname_lastname_nodash'); ?>
+                                        >
+                                        <?php esc_html_e('First name + last name (no separator)', 'rechat-plugin'); ?>
+                                        &nbsp;<code><?php echo esc_html($example_agent_firstname_lastname_nodash); ?></code>
                                     </label>
                                 </fieldset>
                                 <p class="description" style="margin-top:6px;">
