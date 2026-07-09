@@ -207,7 +207,9 @@ ul.rch-single-agents-social li a img {
   font-weight: 500;
   line-height: 150%;
 }
-
+.rch-main-content p {
+  margin-block-end:1rem;
+}
 .rch-single-call {
   display: flex;
   flex-direction: row-reverse;
@@ -414,6 +416,23 @@ START: Agent Single Page - Rechat Web Components Display Modes
 /*********************
 END: Agent Single Page - Rechat Web Components Display Modes
 *********************/
+/* let flex children shrink below content width */
+.rch-main-layout-single-agent .rch-left-main-layout-single-agent,
+.rch-main-layout-single-agent .rch-right-main-layout-single-agent {
+  min-width: 0;
+}
+/* break long words/URLs instead of pushing width */
+.rch-main-content {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+/* stack the columns on mobile */
+@media (max-width: 768px) {
+  .rch-main-layout-single-agent .rch-left-main-layout-single-agent,
+  .rch-main-layout-single-agent .rch-right-main-layout-single-agent {
+    flex-basis: 100%;
+  }
+}
 
 /*********************
 END: Single Agent page style
