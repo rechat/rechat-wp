@@ -289,6 +289,25 @@
     background: #e2e8f0 !important;
 }
 
+.rch-agent-wizard .rch-wz-btn-danger.button {
+    border-radius: var(--wz-radius-sm);
+    background: #b32d2e !important;
+    border-color: #b32d2e !important;
+    color: #fff !important;
+    box-shadow: none !important;
+}
+
+.rch-agent-wizard .rch-wz-btn-danger.button:hover,
+.rch-agent-wizard .rch-wz-btn-danger.button:focus {
+    background: #8a2424 !important;
+    border-color: #8a2424 !important;
+    color: #fff !important;
+}
+
+.rch-agent-wizard .rch-wz-hint--danger {
+    color: #b32d2e;
+}
+
 /* Scope choices */
 .rch-agent-wizard .rch-wz-fieldset {
     border: 0;
