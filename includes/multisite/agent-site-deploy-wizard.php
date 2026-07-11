@@ -3373,6 +3373,8 @@ function rch_agent_wizard_enqueue_assets(string $hook): void
                 'testimonialsBulkHint'    => __('Imports testimonials for every agent that has a sub-site (uses each agent’s testimonial list).', 'rechat-plugin'),
                 'testimonialsPickAgent'   => __('Select an agent and load profile first, or switch to “All agent sub-sites”.', 'rechat-plugin'),
                 'testimonialsNoBlog'      => __('This agent has no sub-site yet.', 'rechat-plugin'),
+                'testimonialsDeleteConfirm'    => __('Permanently delete all testimonials on this agent sub-site and clear the agent testimonial list on the main site? This cannot be undone.', 'rechat-plugin'),
+                'testimonialsDeleteConfirmAll' => __('Permanently delete testimonials for EVERY agent sub-site and clear every agent testimonial list on the main site? This cannot be undone.', 'rechat-plugin'),
             ],
         ]
     );

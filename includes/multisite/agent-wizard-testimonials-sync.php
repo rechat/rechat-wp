@@ -565,3 +565,221 @@ function rch_agent_wizard_ajax_sync_testimonials(): void
 }
 
 add_action('wp_ajax_rch_agent_wizard_sync_testimonials', 'rch_agent_wizard_ajax_sync_testimonials');
+
+/**
+ * Delete every testimonial CPT post on the current blog (call inside switch_to_blog target).
+ *
+ * Removes ALL testimonial posts, including any added manually on the sub-site — not just synced rows.
+ *
+ * @return int Number of posts deleted.
+ */
+function rch_agent_testimonial_delete_all_on_current_blog(): int
+{
+    if (! post_type_exists('testimonial')) {
+        return 0;
+    }
+
+    $ids = get_posts([
+        'post_type'      => 'testimonial',
+        'post_status'    => ['publish', 'draft', 'private', 'pending', 'future', 'trash'],
+        'posts_per_page' => -1,
+        'fields'         => 'ids',
+    ]);
+
+    $deleted = 0;
+    foreach ($ids as $id) {
+        if (wp_delete_post((int) $id, true)) {
+            ++$deleted;
+        }
+    }
+
+    return $deleted;
+}
+
+/**
+ * Delete the agent_testimonials repeater meta on the main (storage) blog.
+ *
+ * @return bool True if any meta was removed.
+ */
+function rch_agent_testimonial_clear_source_meta(int $agent_id): bool
+{
+    if ($agent_id <= 0) {
+        return false;
+    }
+
+    $storage_blog = function_exists('rch_agent_testimonials_storage_blog_id')
+        ? rch_agent_testimonials_storage_blog_id()
+        : (int) get_current_blog_id();
+    $switched = false;
+
+    if (is_multisite() && get_current_blog_id() !== $storage_blog) {
+        switch_to_blog($storage_blog);
+        $switched = true;
+    }
+
+    $cleared = false;
+    if (defined('RCH_AGENT_TESTIMONIALS_META_KEY')) {
+        $cleared = delete_post_meta($agent_id, RCH_AGENT_TESTIMONIALS_META_KEY) || $cleared;
+    }
+    $cleared = delete_post_meta($agent_id, 'rch_agent_testimonials') || $cleared;
+
+    if ($switched) {
+        restore_current_blog();
+    }
+
+    return $cleared;
+}
+
+/**
+ * Delete an agent's source testimonials on the main site AND every testimonial post on its sub-site.
+ *
+ * @return array{main_cleared:bool, sub_deleted:int, blog_id:int}|WP_Error
+ */
+function rch_agent_wizard_delete_testimonials_for_agent(int $agent_id)
+{
+    if (! is_multisite()) {
+        return new WP_Error('rch_testimonial_ms', __('Multisite only.', 'rechat-plugin'));
+    }
+
+    if ($agent_id <= 0) {
+        return new WP_Error('rch_testimonial_agent', __('Invalid agent.', 'rechat-plugin'));
+    }
+
+    if (! function_exists('rch_multisite_get_agent_blog_id')) {
+        return new WP_Error('rch_testimonial_missing', __('Multisite helpers are not loaded.', 'rechat-plugin'));
+    }
+
+    $blog_id = (int) rch_multisite_get_agent_blog_id($agent_id);
+    if ($blog_id <= 0) {
+        return new WP_Error(
+            'rch_testimonial_no_blog',
+            __('This agent has no linked sub-site. Provision the site first.', 'rechat-plugin')
+        );
+    }
+
+    $main_cleared = rch_agent_testimonial_clear_source_meta($agent_id);
+
+    switch_to_blog($blog_id);
+    $sub_deleted = rch_agent_testimonial_delete_all_on_current_blog();
+    restore_current_blog();
+
+    return [
+        'main_cleared' => $main_cleared,
+        'sub_deleted'  => $sub_deleted,
+        'blog_id'      => $blog_id,
+    ];
+}
+
+/**
+ * Delete testimonials (main meta + sub-site posts) for every published agent that has a sub-site.
+ *
+ * @return array{agents:int, main_cleared:int, sub_deleted:int, errors:list<string>}
+ */
+function rch_agent_wizard_delete_testimonials_for_all_agents(): array
+{
+    $summary = [
+        'agents'       => 0,
+        'main_cleared' => 0,
+        'sub_deleted'  => 0,
+        'errors'       => [],
+    ];
+
+    $storage_blog = function_exists('rch_agent_testimonials_storage_blog_id')
+        ? rch_agent_testimonials_storage_blog_id()
+        : (int) get_current_blog_id();
+    $switched = false;
+
+    if (is_multisite() && get_current_blog_id() !== $storage_blog) {
+        switch_to_blog($storage_blog);
+        $switched = true;
+    }
+
+    $agent_ids = get_posts([
+        'post_type'      => 'agents',
+        'post_status'    => 'publish',
+        'posts_per_page' => -1,
+        'fields'         => 'ids',
+    ]);
+
+    if ($switched) {
+        restore_current_blog();
+    }
+
+    foreach ($agent_ids as $agent_id) {
+        $agent_id = (int) $agent_id;
+        $result   = rch_agent_wizard_delete_testimonials_for_agent($agent_id);
+
+        if (is_wp_error($result)) {
+            if ($result->get_error_code() === 'rch_testimonial_no_blog') {
+                continue;
+            }
+            $summary['errors'][] = sprintf(
+                '%s (ID %d): %s',
+                get_the_title($agent_id),
+                $agent_id,
+                $result->get_error_message()
+            );
+            continue;
+        }
+
+        ++$summary['agents'];
+        $summary['main_cleared'] += $result['main_cleared'] ? 1 : 0;
+        $summary['sub_deleted']  += (int) $result['sub_deleted'];
+    }
+
+    return $summary;
+}
+
+/**
+ * AJAX: delete all testimonials (main-site meta + sub-site posts).
+ */
+function rch_agent_wizard_ajax_delete_testimonials(): void
+{
+    check_ajax_referer(RCH_AGENT_WIZARD_NONCE_ACTION, 'nonce');
+
+    if (is_wp_error(rch_agent_wizard_user_can_run())) {
+        wp_send_json_error(['message' => __('Permission denied.', 'rechat-plugin')], 403);
+    }
+
+    $scope    = isset($_POST['scope']) ? sanitize_key(wp_unslash($_POST['scope'])) : 'single';
+    $agent_id = isset($_POST['agent_id']) ? absint($_POST['agent_id']) : 0;
+
+    if ($scope === 'all') {
+        $bulk = rch_agent_wizard_delete_testimonials_for_all_agents();
+        $msg  = sprintf(
+            /* translators: 1: agents affected, 2: posts removed from sub-sites, 3: main-site lists cleared */
+            __('Deleted testimonials for %1$d agent sub-site(s): %2$d removed from sub-sites, %3$d testimonial list(s) cleared on the main site.', 'rechat-plugin'),
+            $bulk['agents'],
+            $bulk['sub_deleted'],
+            $bulk['main_cleared']
+        );
+        wp_send_json_success([
+            'message' => $msg,
+            'summary' => $bulk,
+        ]);
+        return;
+    }
+
+    if ($agent_id <= 0) {
+        wp_send_json_error(['message' => __('Select an agent and load profile first, or choose “All agent sub-sites”.', 'rechat-plugin')]);
+    }
+
+    $result = rch_agent_wizard_delete_testimonials_for_agent($agent_id);
+
+    if (is_wp_error($result)) {
+        wp_send_json_error(['message' => $result->get_error_message()]);
+    }
+
+    $msg = sprintf(
+        /* translators: %d: posts removed from the sub-site */
+        __('Deleted %d testimonial(s) on the sub-site and cleared the agent testimonial list on the main site.', 'rechat-plugin'),
+        (int) $result['sub_deleted']
+    );
+
+    wp_send_json_success([
+        'message' => $msg,
+        'summary' => $result,
+    ]);
+}
+
+add_action('wp_ajax_rch_agent_wizard_delete_testimonials', 'rch_agent_wizard_ajax_delete_testimonials');

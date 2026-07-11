@@ -1669,6 +1669,84 @@
             postTestimonialSync(scope, agentId);
         });
 
+        function postTestimonialDelete(scope, agentId) {
+            spin($('#rch-wz-delete-testimonials-spinner'), true);
+            $('#rch-wz-delete-testimonials-result').empty();
+            return $.post(rchAgentWizard.ajaxurl, {
+                action: 'rch_agent_wizard_delete_testimonials',
+                nonce: rchAgentWizard.nonce,
+                scope: scope,
+                agent_id: agentId,
+            })
+                .done(function (res) {
+                    spin($('#rch-wz-delete-testimonials-spinner'), false);
+                    if (!res.success) {
+                        $('#rch-wz-delete-testimonials-result').html(
+                            '<div class="notice notice-error inline"><p>' +
+                                escapeHtml(res.data && res.data.message ? res.data.message : 'Error') +
+                                '</p></div>'
+                        );
+                        return;
+                    }
+                    var html =
+                        '<div class="notice notice-success inline"><p>' +
+                        escapeHtml(res.data.message) +
+                        '</p>';
+                    if (res.data.summary && res.data.summary.errors && res.data.summary.errors.length) {
+                        html += '<ul>';
+                        $.each(res.data.summary.errors, function (i, err) {
+                            html += '<li>' + escapeHtml(err) + '</li>';
+                        });
+                        html += '</ul>';
+                    }
+                    html += '</div>';
+                    $('#rch-wz-delete-testimonials-result').html(html);
+                    if (scope === 'single') {
+                        state.testimonialCount = 0;
+                        refreshTestimonialsSyncUi();
+                    }
+                })
+                .fail(function () {
+                    spin($('#rch-wz-delete-testimonials-spinner'), false);
+                    $('#rch-wz-delete-testimonials-result').html(
+                        '<div class="notice notice-error inline"><p>Request failed</p></div>'
+                    );
+                });
+        }
+
+        $('#rch-wz-delete-testimonials').on('click', function () {
+            var scope = getScope();
+            var agentId = resolveWizardAgentId();
+
+            if (scope === 'single' && !agentId) {
+                alert(str('testimonialsPickAgent') || str('pickAgent'));
+                return;
+            }
+            if (scope === 'all' && !(rchAgentWizard.bulkCount > 0)) {
+                alert(rchAgentWizard.strings.bulkNoSites);
+                return;
+            }
+
+            var confirmMsg = scope === 'all'
+                ? (str('testimonialsDeleteConfirmAll') || 'Permanently delete testimonials for EVERY agent sub-site and clear every agent testimonial list on the main site? This cannot be undone.')
+                : (str('testimonialsDeleteConfirm') || 'Permanently delete all testimonials on this agent sub-site and clear the agent testimonial list on the main site? This cannot be undone.');
+            if (!window.confirm(confirmMsg)) {
+                return;
+            }
+
+            if (scope === 'single' && (agentId !== state.agentId || !state.blogId)) {
+                loadAgentAndRepaint(agentId, { silent: true }).done(function (res) {
+                    if (!res || !res.success || !res.data || !res.data.blog_id) {
+                        alert(str('testimonialsNoBlog') || str('noBlog'));
+                        return;
+                    }
+                    postTestimonialDelete(scope, agentId);
+                });
+                return;
+            }
+            postTestimonialDelete(scope, agentId);
+        });
+
         $('#rch-wz-load-agent').on('click', function () {
             var id = parseInt($('#rch-wz-agent-select').val(), 10);
             if (!id) {

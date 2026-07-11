@@ -205,6 +205,16 @@ $wz_broadcast_step = function_exists('rch_agent_wizard_broadcast_step_enabled') 
                         <span class="spinner" id="rch-wz-sync-testimonials-spinner"></span>
                     </div>
                     <div id="rch-wz-sync-testimonials-result" class="rch-wz-deploy-result" aria-live="polite"></div>
+                    <div class="rch-wz-field__row">
+                        <button type="button" class="button rch-wz-btn-danger" id="rch-wz-delete-testimonials">
+                            <?php esc_html_e('Delete all testimonials (main site + sub-site)', 'rechat-plugin'); ?>
+                        </button>
+                        <span class="spinner" id="rch-wz-delete-testimonials-spinner"></span>
+                    </div>
+                    <p class="rch-wz-hint rch-wz-hint--danger">
+                        <?php esc_html_e('Permanently removes every testimonial post on the sub-site and clears the agent testimonial list on the main site. Cannot be undone.', 'rechat-plugin'); ?>
+                    </p>
+                    <div id="rch-wz-delete-testimonials-result" class="rch-wz-deploy-result" aria-live="polite"></div>
                 </div>
             </div>
             <div class="rch-wz-card__footer">
