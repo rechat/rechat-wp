@@ -18,7 +18,7 @@ if (! defined('ABSPATH')) {
 // define required constants.
 define('RCH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('RCH_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('RCH_VERSION', '7.0.6');
+define('RCH_VERSION', '7.0.7');
 define('RCH_VERSION_SWIPER', '11.2.5');
 if (! function_exists('rch_is_localhost_environment')) {
     /**
