@@ -886,6 +886,14 @@ function rch_agent_wizard_sanitize_theme_options_row(array $row, ?array $profile
             continue;
         }
 
+        // Address keys (even `*-address-url`) are plain text, never esc_url_raw() — which would
+        // prepend http:// to a bare address and %20-encode the spaces. Guard before the URL branch
+        // (also covers legacy profiles that cached the key in the `urls` bucket).
+        if (rch_agent_wizard_str_contains_ci($key, 'address')) {
+            $out[ $key ] = sanitize_textarea_field(is_string($value) ? $value : '');
+            continue;
+        }
+
         if (in_array($key, $profile['urls'] ?? [], true)) {
             if (
                 rch_agent_wizard_str_contains_ci($key, 'button-url')

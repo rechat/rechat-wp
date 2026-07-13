@@ -693,6 +693,14 @@ function rch_agent_wizard_infer_field_shape(string $key, $sample_value): array
         return ['type' => 'email', 'media' => '', 'buckets' => $b];
     }
 
+    // Address keys must never be classified as URLs — even when named like `*-address-url` —
+    // otherwise esc_url_raw() prepends http:// to a bare address and %20-encodes the spaces.
+    if (rch_agent_wizard_str_contains_ci($kl, 'address')) {
+        $b['textareas'][] = $key;
+
+        return ['type' => 'textarea', 'media' => '', 'buckets' => $b];
+    }
+
     if (
         rch_agent_wizard_str_contains_ci($kl, 'url')
         || rch_agent_wizard_str_contains_ci($kl, 'link')
