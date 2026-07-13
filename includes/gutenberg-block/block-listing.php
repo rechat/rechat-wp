@@ -167,10 +167,91 @@ function rch_rest_boundary_states(WP_REST_Request $request)
 }
 
 /**
+ * REST: free-text boundary search for the block editor (neighborhoods, places, etc.).
+ *
+ * Proxies Rechat `boundaries/search?q=…&limit=…` through {@see rch_rechat_public_api_get()}
+ * so the editor never hits api.rechat.com directly (avoids CORS + keeps the OAuth token server-side).
+ * Returns `{ options: [{ label, value }] }`; both are the boundary title (fed into filter_address).
+ *
+ * @param WP_REST_Request $request Request.
+ * @return WP_REST_Response|WP_Error
+ */
+function rch_rest_boundary_search(WP_REST_Request $request)
+{
+    if (! function_exists('rch_rechat_public_api_get')) {
+        return new WP_Error('rch_no_helper', __('Rechat helpers are not available.', 'rechat-plugin'), array('status' => 500));
+    }
+
+    $q = trim(sanitize_text_field((string) $request->get_param('q')));
+    if (strlen($q) < 2) {
+        return rest_ensure_response(array('options' => array()));
+    }
+
+    $limit = (int) $request->get_param('limit');
+    if ($limit <= 0 || $limit > 20) {
+        $limit = 5;
+    }
+
+    $res = rch_rechat_public_api_get('boundaries/search', array('q' => $q, 'limit' => $limit));
+    if (empty($res['success']) || ! is_array($res['data'])) {
+        return rest_ensure_response(array('options' => array()));
+    }
+
+    $list = array();
+    if (isset($res['data']['data']) && is_array($res['data']['data'])) {
+        $list = $res['data']['data'];
+    }
+
+    $out  = array();
+    $seen = array();
+    foreach ($list as $row) {
+        if (! is_array($row)) {
+            continue;
+        }
+        $label = isset($row['title']) ? trim((string) $row['title']) : '';
+        if ($label === '' || isset($seen[$label])) {
+            continue;
+        }
+        $seen[$label] = true;
+        $out[]        = array('label' => $label, 'value' => $label);
+        if (count($out) >= $limit) {
+            break;
+        }
+    }
+
+    return rest_ensure_response(array('options' => $out));
+}
+
+/**
  * Register REST routes used by the listing block editor (boundary selects).
  */
 function rch_register_listing_block_boundary_rest_routes()
 {
+    register_rest_route(
+        'rch/v1',
+        '/boundary-search',
+        array(
+            'methods'             => 'GET',
+            'callback'            => 'rch_rest_boundary_search',
+            'permission_callback' => static function () {
+                return current_user_can('edit_posts');
+            },
+            'args'                => array(
+                'q' => array(
+                    'required'          => true,
+                    'type'              => 'string',
+                    'sanitize_callback' => static function ($param) {
+                        return sanitize_text_field((string) $param);
+                    },
+                ),
+                'limit' => array(
+                    'required' => false,
+                    'type'     => 'integer',
+                ),
+            ),
+        )
+    );
+
     register_rest_route(
         'rch/v1',
         '/boundary-countries',

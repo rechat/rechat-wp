@@ -1,6 +1,6 @@
 const { registerBlockType } = wp.blocks;
 const { InspectorControls, MediaUpload, MediaUploadCheck } = wp.blockEditor || wp.editor;
-const { PanelBody, RangeControl, SelectControl, TextControl, CheckboxControl, RadioControl, Button, Spinner } = wp.components;
+const { PanelBody, RangeControl, SelectControl, TextControl, CheckboxControl, RadioControl, Spinner } = wp.components;
 import { useEffect, useState, useRef } from '@wordpress/element';
 import ServerSideRender from '@wordpress/server-side-render';
 import apiFetch from '@wordpress/api-fetch';
@@ -121,6 +121,13 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         const [boundaryStatesLoading, setBoundaryStatesLoading] = useState(false);
         const defaultsSeededRef = useRef(false);
 
+        // Neighborhood / place free-text search (Rechat boundaries/search proxy).
+        const [nbhQuery, setNbhQuery] = useState('');
+        const [nbhResults, setNbhResults] = useState([]);
+        const [nbhLoading, setNbhLoading] = useState(false);
+        const [nbhHover, setNbhHover] = useState(-1);
+        const nbhTimerRef = useRef(null);
+
         const statusOptions = [
             { label: 'Active', value: 'Active' },
             { label: 'Pending', value: 'Pending' },
@@ -222,6 +229,37 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             setAttributes({ [attr]: value });
         };
 
+        // Debounced boundary search: fire after >=2 chars, 300ms idle. Dropdown shows up to 5 hits.
+        const handleNeighborhoodSearch = (value) => {
+            setNbhQuery(value);
+            if (nbhTimerRef.current) {
+                clearTimeout(nbhTimerRef.current);
+            }
+            if (!value || value.trim().length < 2) {
+                setNbhResults([]);
+                setNbhLoading(false);
+                return;
+            }
+            setNbhLoading(true);
+            nbhTimerRef.current = setTimeout(() => {
+                apiFetch({ path: `/rch/v1/boundary-search?q=${encodeURIComponent(value.trim())}&limit=5` })
+                    .then((res) => {
+                        setNbhResults(parseBoundaryRestOptions(res));
+                    })
+                    .catch((error) => {
+                        console.error('Error searching boundaries:', error);
+                        setNbhResults([]);
+                    })
+                    .finally(() => setNbhLoading(false));
+            }, 300);
+        };
+
+        const handleNeighborhoodSelect = (option) => {
+            setAttributes({ filter_address: option.value });
+            setNbhQuery(option.label);
+            setNbhResults([]);
+        };
+
         const handleStatusChange = (status) => {
             const updatedStatuses = selectedStatuses.includes(status)
                 ? selectedStatuses.filter(s => s !== status)
@@ -301,6 +339,76 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                             checked={office_exclusive}
                             onChange={() => setAttributes({ office_exclusive: !office_exclusive })}
                         />
+                        <div style={{ marginBottom: 16 }}>
+                            <div style={{ position: 'relative' }} className="rch-nbh-search">
+                            <TextControl
+                                __nextHasNoMarginBottom
+                                label="Search neighborhood / place"
+                                value={nbhQuery}
+                                onChange={handleNeighborhoodSearch}
+                            />
+                            {(nbhLoading || nbhResults.length > 0) ? (
+                                <div
+                                    style={{
+                                        position: 'absolute',
+                                        top: '100%',
+                                        left: 0,
+                                        right: 0,
+                                        zIndex: 20,
+                                        marginTop: 2,
+                                        background: '#fff',
+                                        border: '1px solid #949494',
+                                        borderRadius: 4,
+                                        boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                                        maxHeight: 240,
+                                        overflowY: 'auto',
+                                    }}
+                                >
+                                    {nbhLoading ? (
+                                        <div
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 8,
+                                                padding: '8px 12px',
+                                                color: '#757575',
+                                            }}
+                                        >
+                                            <Spinner />
+                                            Searching…
+                                        </div>
+                                    ) : (
+                                        nbhResults.map((option, i) => (
+                                            <button
+                                                type="button"
+                                                key={`${option.value}-${i}`}
+                                                onClick={() => handleNeighborhoodSelect(option)}
+                                                onMouseEnter={() => setNbhHover(i)}
+                                                onMouseLeave={() => setNbhHover(-1)}
+                                                style={{
+                                                    display: 'block',
+                                                    width: '100%',
+                                                    textAlign: 'left',
+                                                    padding: '8px 12px',
+                                                    border: 'none',
+                                                    borderBottom: i < nbhResults.length - 1 ? '1px solid #f0f0f0' : 'none',
+                                                    background: nbhHover === i ? '#f0f6fc' : 'transparent',
+                                                    color: '#1e1e1e',
+                                                    fontSize: 13,
+                                                    cursor: 'pointer',
+                                                }}
+                                            >
+                                                {option.label}
+                                            </button>
+                                        ))
+                                    )}
+                                </div>
+                            ) : null}
+                            </div>
+                            <p className="components-base-control__help" style={{ marginTop: 8 }}>
+                                Type at least 2 characters to search Rechat boundaries (e.g. Westwood); pick a result to set filter_address.
+                            </p>
+                        </div>
                         <SelectControl
                             label="Boundary country (filter_boundary_country)"
                             help="Defaults from General Settings; change here to scope this block only. ISO code from Rechat (e.g. US)."
