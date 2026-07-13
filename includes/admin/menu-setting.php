@@ -368,7 +368,70 @@ function rch_render_connect_tab(
             </div>
         <?php endif; ?>
 
+        <?php rch_render_oauth_alert_emails_card(); ?>
+
         <?php rch_render_disconnect_modal(); ?>
+    </div>
+    <?php
+}
+
+/*******************************
+ * Render the "Token failure alerts" card (recipient emails)
+ ******************************/
+function rch_render_oauth_alert_emails_card()
+{
+    if (! function_exists('rch_oauth_get_alert_emails')) {
+        return;
+    }
+
+    $emails      = rch_oauth_get_alert_emails();
+    $stored       = (string) get_option(rch_oauth_alert_emails_option_name(), '');
+    $textarea_val = $stored !== '' ? $stored : implode(', ', $emails);
+    ?>
+    <div class="rch-card">
+        <div class="rch-card__head">
+            <span class="dashicons dashicons-email-alt" aria-hidden="true"></span>
+            <h3><?php esc_html_e('Token failure alerts', 'rechat-plugin'); ?></h3>
+        </div>
+        <div class="rch-card__body">
+            <p>
+                <?php esc_html_e('If the access token expires and the refresh token can no longer obtain a new one (so data sync stops), an email is sent to these recipients. Separate multiple emails with commas or new lines.', 'rechat-plugin'); ?>
+            </p>
+            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                <input type="hidden" name="action" value="rch_save_oauth_alert_emails">
+                <?php wp_nonce_field('rch_save_oauth_alert_emails', 'rch_oauth_alert_emails_nonce'); ?>
+                <table class="form-table">
+                    <tr valign="top">
+                        <th scope="row">
+                            <label for="rch_oauth_alert_emails"><?php esc_html_e('Alert recipients', 'rechat-plugin'); ?></label>
+                        </th>
+                        <td>
+                            <textarea
+                                id="rch_oauth_alert_emails"
+                                name="rch_oauth_alert_emails"
+                                rows="3"
+                                class="large-text code"
+                                placeholder="<?php echo esc_attr(implode(', ', rch_oauth_default_alert_emails())); ?>"
+                            ><?php echo esc_textarea($textarea_val); ?></textarea>
+                            <p class="description">
+                                <?php
+                                printf(
+                                    /* translators: %s: default recipient list */
+                                    esc_html__('Leave empty to use the defaults: %s', 'rechat-plugin'),
+                                    esc_html(implode(', ', rch_oauth_default_alert_emails()))
+                                );
+                                ?>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+                <p>
+                    <button type="submit" class="button button-primary">
+                        <?php esc_html_e('Save alert emails', 'rechat-plugin'); ?>
+                    </button>
+                </p>
+            </form>
+        </div>
     </div>
     <?php
 }
