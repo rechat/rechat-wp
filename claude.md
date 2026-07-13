@@ -106,6 +106,7 @@ Rewrite rules (registered in `index.php` and on `init`):
 
 ## Rules
 
+- **Release version bump — bump BOTH in `index.php`.** Every release must update TWO version strings in `index.php` in the same commit, kept identical: the plugin header `Version:` (line ~5, read by WordPress + the GitHub plugin updater) AND the `RCH_VERSION` constant (line ~21, used for asset cache-busting). Bumping only one ships a mismatch (updater reports the header, assets use the constant). Tag the release `v<version>` to match.
 - **Minimal diff.** Fix the requested surface only. No drive-by refactors in `helper.php` or unrelated shortcodes.
 - **Block JS:** edit `src/blocks/*.js`, then run `npm run build:scripts`. Never edit `build/index.js` by hand.
 - **Block + shortcode parity:** New listing attributes need all of: `src/blocks/listing-block.js` attributes, `rch_get_listing_block_attributes()` in `helper.php`, `rch_get_listings_default_atts()`, `rch_prepare_listing_atts_from_block()` bool/string lists, and render logic in `listing-shortcodes.php`.
