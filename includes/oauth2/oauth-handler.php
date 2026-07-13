@@ -350,8 +350,220 @@ function rch_oauth_save_refresh_log($ok, $message, $http_code = null, $source = 
         error_log('Rechat Plugin: OAuth token refresh OK ' . $src . '— ' . $message_text);
     } else {
         error_log('Rechat Plugin: OAuth token refresh FAILED ' . $src . '— ' . $message_text . $oauth_part);
+        // A failed refresh means data sync is broken (expired access token, refresh
+        // token rejected/expired, etc.). Alert the configured recipients.
+        rch_oauth_send_refresh_failure_alert($entry);
     }
 }
+
+/*******************************
+ * OAuth failure alert emails
+ ******************************/
+
+/**
+ * Option name storing the alert recipient list (comma/newline separated string).
+ */
+function rch_oauth_alert_emails_option_name(): string
+{
+    return 'rch_oauth_alert_emails';
+}
+
+/**
+ * Default alert recipients used when the option is empty.
+ *
+ * @return string[]
+ */
+function rch_oauth_default_alert_emails(): array
+{
+    return (array) apply_filters(
+        'rch_oauth_default_alert_emails',
+        array('angela@rechat.com', 'peyman@rechat.com')
+    );
+}
+
+/**
+ * Split a raw recipient string (commas, semicolons, or newlines) into a list.
+ *
+ * @param string $raw Raw stored value.
+ * @return string[]
+ */
+function rch_oauth_parse_alert_emails_string(string $raw): array
+{
+    $parts = preg_split('/[\s,;]+/', $raw) ?: array();
+    $out   = array();
+    foreach ($parts as $part) {
+        $email = sanitize_email(trim((string) $part));
+        if ($email !== '' && is_email($email)) {
+            $out[ strtolower($email) ] = $email;
+        }
+    }
+
+    return array_values($out);
+}
+
+/**
+ * Configured alert recipients (falls back to the defaults when none saved/valid).
+ *
+ * @return string[]
+ */
+function rch_oauth_get_alert_emails(): array
+{
+    $raw    = (string) get_option(rch_oauth_alert_emails_option_name(), '');
+    $emails = rch_oauth_parse_alert_emails_string($raw);
+    if (empty($emails)) {
+        $emails = array();
+        foreach (rch_oauth_default_alert_emails() as $default) {
+            $email = sanitize_email((string) $default);
+            if ($email !== '' && is_email($email)) {
+                $emails[ strtolower($email) ] = $email;
+            }
+        }
+        $emails = array_values($emails);
+    }
+
+    return (array) apply_filters('rch_oauth_alert_emails', $emails);
+}
+
+/**
+ * Minimum seconds between failure alert emails (throttle so hourly cron cannot spam).
+ */
+function rch_oauth_alert_min_interval(): int
+{
+    return (int) apply_filters('rch_oauth_alert_min_interval', 6 * HOUR_IN_SECONDS);
+}
+
+/**
+ * Send an alert email when a token refresh fails, throttled per site.
+ *
+ * @param array $entry The log entry saved by rch_oauth_save_refresh_log().
+ * @return void
+ */
+function rch_oauth_send_refresh_failure_alert($entry)
+{
+    if (! is_array($entry)) {
+        return;
+    }
+
+    /** Allow disabling alerts entirely. */
+    if (! apply_filters('rch_oauth_send_failure_alert', true, $entry)) {
+        return;
+    }
+
+    $recipients = rch_oauth_get_alert_emails();
+    if (empty($recipients)) {
+        return;
+    }
+
+    // Throttle: only one email per interval per site.
+    $now      = time();
+    $last     = (int) get_option('rch_oauth_last_alert_ts', 0);
+    $interval = rch_oauth_alert_min_interval();
+    if ($last > 0 && ($now - $last) < $interval) {
+        return;
+    }
+    update_option('rch_oauth_last_alert_ts', $now, false);
+
+    $site_name = wp_specialchars_decode(get_bloginfo('name'), ENT_QUOTES);
+    $site_url  = home_url('/');
+    $settings  = admin_url('admin.php?page=rechat-setting&tab=connect-to-rechat');
+
+    $subject = sprintf(
+        /* translators: %s: site name */
+        __('[%s] Rechat token refresh failed — data sync is down', 'rechat-plugin'),
+        $site_name
+    );
+
+    $lines   = array();
+    $lines[] = __('The Rechat access token could not be refreshed. Until this is fixed, Rechat data (agents, offices, regions, listings, leads) will not sync on this site.', 'rechat-plugin');
+    $lines[] = '';
+    $lines[] = sprintf(__('Site: %s', 'rechat-plugin'), $site_name);
+    $lines[] = sprintf(__('URL: %s', 'rechat-plugin'), $site_url);
+    if (! empty($entry['source'])) {
+        $lines[] = sprintf(__('Triggered by: %s', 'rechat-plugin'), (string) $entry['source']);
+    }
+    if (! empty($entry['message'])) {
+        $lines[] = sprintf(__('Message: %s', 'rechat-plugin'), (string) $entry['message']);
+    }
+    if (isset($entry['http_code']) && $entry['http_code'] !== null && $entry['http_code'] !== '') {
+        $lines[] = sprintf(__('HTTP code: %s', 'rechat-plugin'), (string) $entry['http_code']);
+    }
+    if (! empty($entry['oauth_error'])) {
+        $lines[] = sprintf(__('OAuth error: %s', 'rechat-plugin'), (string) $entry['oauth_error']);
+    }
+    if (! empty($entry['oauth_error_description'])) {
+        $lines[] = sprintf(__('OAuth error description: %s', 'rechat-plugin'), (string) $entry['oauth_error_description']);
+    }
+    if (! empty($entry['diagnostic'])) {
+        $lines[] = '';
+        $lines[] = sprintf(__('Hint: %s', 'rechat-plugin'), (string) $entry['diagnostic']);
+    }
+    if (! empty($entry['time'])) {
+        $lines[] = sprintf(__('Time: %s', 'rechat-plugin'), (string) $entry['time']);
+    }
+    $lines[] = '';
+    $lines[] = __('Fix it here (Disconnect, then Connect to Rechat again if the refresh token was revoked/expired):', 'rechat-plugin');
+    $lines[] = $settings;
+
+    $body = implode("\n", $lines);
+
+    $subject = apply_filters('rch_oauth_alert_subject', $subject, $entry);
+    $body    = apply_filters('rch_oauth_alert_body', $body, $entry);
+
+    wp_mail($recipients, $subject, $body);
+}
+
+/**
+ * Save the alert email list from the Connect to Rechat tab.
+ */
+function rch_handle_save_oauth_alert_emails()
+{
+    if (! function_exists('rch_current_user_can_manage_rechat') || ! rch_current_user_can_manage_rechat()) {
+        wp_die(esc_html__('You do not have sufficient permissions to perform this action.', 'rechat-plugin'));
+    }
+    check_admin_referer('rch_save_oauth_alert_emails', 'rch_oauth_alert_emails_nonce');
+
+    $raw    = isset($_POST['rch_oauth_alert_emails']) ? wp_unslash($_POST['rch_oauth_alert_emails']) : '';
+    $emails = rch_oauth_parse_alert_emails_string((string) $raw);
+
+    // Store the cleaned, validated list (empty string => fall back to defaults).
+    update_option(rch_oauth_alert_emails_option_name(), implode(', ', $emails));
+
+    wp_safe_redirect(
+        add_query_arg(
+            array(
+                'page'                => 'rechat-setting',
+                'tab'                 => 'connect-to-rechat',
+                'alert_emails_saved'  => '1',
+            ),
+            admin_url('admin.php')
+        )
+    );
+    exit;
+}
+add_action('admin_post_rch_save_oauth_alert_emails', 'rch_handle_save_oauth_alert_emails');
+
+/**
+ * Notice after saving the alert email list.
+ */
+function rch_maybe_show_oauth_alert_emails_notice()
+{
+    if (! is_admin() || ! function_exists('rch_current_user_can_manage_rechat') || ! rch_current_user_can_manage_rechat()) {
+        return;
+    }
+    if (! isset($_GET['page'], $_GET['tab']) || $_GET['page'] !== 'rechat-setting' || $_GET['tab'] !== 'connect-to-rechat') {
+        return;
+    }
+    if (! isset($_GET['alert_emails_saved']) || $_GET['alert_emails_saved'] !== '1') {
+        return;
+    }
+    add_settings_error(
+        'rechat_oauth',
+        'alert_emails_saved',
+        __('Failure alert recipients saved.', 'rechat-plugin'),
+        'success'
+    );
+}
+add_action('admin_init', 'rch_maybe_show_oauth_alert_emails_notice', 20);
 
 /**
  * If access token is missing but a refresh token exists, get a new access token.
