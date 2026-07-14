@@ -171,7 +171,8 @@ function rch_rest_boundary_states(WP_REST_Request $request)
  *
  * Proxies Rechat `boundaries/search?q=…&limit=…` through {@see rch_rechat_public_api_get()}
  * so the editor never hits api.rechat.com directly (avoids CORS + keeps the OAuth token server-side).
- * Returns `{ options: [{ label, value }] }`; both are the boundary title (fed into filter_address).
+ * Returns `{ options: [{ label, value }] }` where `label` is the boundary title and
+ * `value` is the boundary UUID (fed into filter_boundary_ids on <rechat-listings>).
  *
  * @param WP_REST_Request $request Request.
  * @return WP_REST_Response|WP_Error
@@ -209,11 +210,14 @@ function rch_rest_boundary_search(WP_REST_Request $request)
             continue;
         }
         $label = isset($row['title']) ? trim((string) $row['title']) : '';
-        if ($label === '' || isset($seen[$label])) {
+        $id    = isset($row['id']) ? trim((string) $row['id']) : '';
+        // value = boundary UUID (fed into filter_boundary_ids on <rechat-listings>);
+        // label = human title shown in the editor.
+        if ($label === '' || $id === '' || isset($seen[$id])) {
             continue;
         }
-        $seen[$label] = true;
-        $out[]        = array('label' => $label, 'value' => $label);
+        $seen[$id] = true;
+        $out[]     = array('label' => $label, 'value' => $id);
         if (count($out) >= $limit) {
             break;
         }

@@ -96,6 +96,8 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         disable_filter_loading_indicator: { type: 'boolean', default: false },
         filter_boundary_country: { type: 'string', default: '' },
         filter_boundary_state: { type: 'string', default: '' },
+        filter_boundary_ids: { type: 'string', default: '' },
+        filter_boundary_selection: { type: 'string', default: '' },
         // Legacy; no editor control — preserves old posts and satisfies REST attribute schema.
         layout_style: { type: 'string', default: '' },
     },
@@ -110,6 +112,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             own_listing, property_types, filter_open_houses, office_exclusive, filter_pool, disable_sort, hide_map, hide_filters, listing_statuses, map_latitude, map_longitude, map_zoom, map_style, map_style_url, map_id,
             sort_by, filter_address, filter_search_limit, filter_suggestions_limit, filter_pagination_offset, property_subtypes, architectural_styles, filter_baths, minimum_parking_spaces, minimum_sold_date, filter_agents, list_offices, filter_brand_id, disable_filter_loading_indicator,
             filter_boundary_country, filter_boundary_state,
+            filter_boundary_ids, filter_boundary_selection,
         } = attributes;
 
         const [regions, setRegions] = useState([]);
@@ -254,10 +257,48 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             }, 300);
         };
 
+        // Selected boundaries: display labels from filter_boundary_selection (JSON [{id,label}]),
+        // UUIDs sent to the SDK via filter_boundary_ids="id1,id2" on <rechat-listings>.
+        // Falls back to raw IDs as chips if selection JSON is missing (legacy / hand-set).
+        let selectedPlaces = [];
+        try {
+            const parsed = JSON.parse(filter_boundary_selection || '[]');
+            if (Array.isArray(parsed)) {
+                selectedPlaces = parsed
+                    .filter((p) => p && p.id)
+                    .map((p) => ({ id: String(p.id), label: String(p.label || p.id) }));
+            }
+        } catch (e) {
+            selectedPlaces = [];
+        }
+        if (selectedPlaces.length === 0 && filter_boundary_ids) {
+            selectedPlaces = filter_boundary_ids
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean)
+                .map((id) => ({ id, label: id }));
+        }
+
+        const commitSelection = (list) => {
+            setAttributes({
+                filter_boundary_ids: list.map((p) => p.id).join(','),
+                filter_boundary_selection: JSON.stringify(list),
+            });
+        };
+
         const handleNeighborhoodSelect = (option) => {
-            setAttributes({ filter_address: option.value });
-            setNbhQuery(option.label);
+            const id = ((option && option.value) || '').trim();
+            const label = ((option && option.label) || id).trim();
+            if (id && !selectedPlaces.some((p) => p.id === id)) {
+                commitSelection([...selectedPlaces, { id, label }]);
+            }
+            setNbhQuery('');
             setNbhResults([]);
+            setNbhHover(-1);
+        };
+
+        const handleRemovePlace = (id) => {
+            commitSelection(selectedPlaces.filter((p) => p.id !== id));
         };
 
         const handleStatusChange = (status) => {
@@ -340,6 +381,43 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                             onChange={() => setAttributes({ office_exclusive: !office_exclusive })}
                         />
                         <div style={{ marginBottom: 16 }}>
+                            {selectedPlaces.length > 0 ? (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                                    {selectedPlaces.map((place) => (
+                                        <span
+                                            key={place.id}
+                                            style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: 4,
+                                                background: '#e7f0fb',
+                                                color: '#1e40af',
+                                                borderRadius: 12,
+                                                padding: '2px 4px 2px 10px',
+                                                fontSize: 12,
+                                            }}
+                                        >
+                                            {place.label}
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemovePlace(place.id)}
+                                                aria-label={`Remove ${place.label}`}
+                                                style={{
+                                                    border: 'none',
+                                                    background: 'transparent',
+                                                    cursor: 'pointer',
+                                                    color: '#1e40af',
+                                                    fontSize: 16,
+                                                    lineHeight: 1,
+                                                    padding: '0 4px',
+                                                }}
+                                            >
+                                                ×
+                                            </button>
+                                        </span>
+                                    ))}
+                                </div>
+                            ) : null}
                             <div style={{ position: 'relative' }} className="rch-nbh-search">
                             <TextControl
                                 __nextHasNoMarginBottom
@@ -347,7 +425,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                                 value={nbhQuery}
                                 onChange={handleNeighborhoodSearch}
                             />
-                            {(nbhLoading || nbhResults.length > 0) ? (
+                            {(nbhLoading || nbhResults.length > 0 || nbhQuery.trim().length >= 2) ? (
                                 <div
                                     style={{
                                         position: 'absolute',
@@ -377,7 +455,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                                             <Spinner />
                                             Searching…
                                         </div>
-                                    ) : (
+                                    ) : nbhResults.length > 0 ? (
                                         nbhResults.map((option, i) => (
                                             <button
                                                 type="button"
@@ -401,12 +479,22 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                                                 {option.label}
                                             </button>
                                         ))
+                                    ) : (
+                                        <div
+                                            style={{
+                                                padding: '8px 12px',
+                                                color: '#757575',
+                                                fontSize: 13,
+                                            }}
+                                        >
+                                            No matches for “{nbhQuery.trim()}”. Try another neighborhood, city, or ZIP.
+                                        </div>
                                     )}
                                 </div>
                             ) : null}
                             </div>
                             <p className="components-base-control__help" style={{ marginTop: 8 }}>
-                                Type at least 2 characters to search Rechat boundaries (e.g. Westwood); pick a result to set filter_address.
+                                Type at least 2 characters to search Rechat boundaries (e.g. Westwood); pick results to add them. Add multiple places — their boundary IDs are sent to Rechat comma-separated (filter_boundary_ids).
                             </p>
                         </div>
                         <SelectControl

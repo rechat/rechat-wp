@@ -93,6 +93,7 @@ function rch_get_listings_default_atts()
     'sort_by' => '-list_date',
     'filter_boundary_country' => '',
     'filter_boundary_state' => '',
+    'filter_boundary_ids' => '',
   ];
 }
 

@@ -1655,6 +1655,10 @@ function rch_get_listing_block_attributes()
         'disable_filter_loading_indicator' => array('type' => 'boolean', 'default' => false),
         'filter_boundary_country' => array('type' => 'string', 'default' => ''),
         'filter_boundary_state' => array('type' => 'string', 'default' => ''),
+        // Comma-separated boundary UUIDs → filter_boundary_ids on <rechat-listings>.
+        'filter_boundary_ids' => array('type' => 'string', 'default' => ''),
+        // Editor-only: JSON [{id,label}] backing the neighborhood/place chips (not sent to SDK).
+        'filter_boundary_selection' => array('type' => 'string', 'default' => ''),
         // Legacy block attr (layout2/layout3 UI removed); keep registered so editor REST preview accepts saved posts.
         'layout_style' => array('type' => 'string', 'default' => ''),
     );
