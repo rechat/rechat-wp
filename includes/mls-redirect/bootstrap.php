@@ -6,7 +6,8 @@
  * Included from the plugin bootstrap (index.php).
  *
  * URL routes handled:
- *   /{mls_number}        (bare, only on an otherwise-404 request)
+ *   /{mls_number}                 (bare, only on an otherwise-404 request)
+ *   /{mls_source}/{mls_number}    (e.g. /NTREIS/21191513, only on an otherwise-404 request)
  *   /mls/{mls_number}
  *   /id/{mls_number}
  * Each 301-redirects to the listing's /listing-detail/... permalink, or 404s.

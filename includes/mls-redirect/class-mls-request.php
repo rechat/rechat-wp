@@ -77,7 +77,47 @@ class RCH_MLS_Request
     }
 
     /**
-     * MLS number coming from a bare top-level 404 request (e.g. /A12053930).
+     * Normalize + validate an MLS source/board name (e.g. "NTREIS", the listing `mls` field).
+     *
+     * Source names are letter-led alphanumerics. Requiring a leading letter keeps a
+     * numeric first segment from being mistaken for a source on the two-segment route.
+     *
+     * @param string $raw Raw value from the URL.
+     * @return string Normalized source, or '' when invalid.
+     */
+    public function normalize_source($raw)
+    {
+        $raw = is_scalar($raw) ? (string) $raw : '';
+        $candidate = strtoupper(trim(sanitize_text_field(wp_unslash($raw))));
+
+        if (! preg_match('/^[A-Z][A-Z0-9]{1,15}$/', $candidate)) {
+            return '';
+        }
+
+        return $candidate;
+    }
+
+    /**
+     * Current unresolved (404) request path split into trimmed segments.
+     *
+     * @return string[] Segments, or [] when unavailable.
+     */
+    protected function unresolved_segments()
+    {
+        if (empty($GLOBALS['wp']) || ! isset($GLOBALS['wp']->request)) {
+            return array();
+        }
+
+        $path = trim((string) $GLOBALS['wp']->request, '/');
+        if ($path === '') {
+            return array();
+        }
+
+        return explode('/', $path);
+    }
+
+    /**
+     * MLS number from a bare top-level 404 request (e.g. /A12053930).
      *
      * Only trusted when WordPress could not resolve the URL to any route, so real
      * pages, posts, and taxonomy terms are never intercepted.
@@ -86,16 +126,36 @@ class RCH_MLS_Request
      */
     public function from_unresolved_path()
     {
-        if (empty($GLOBALS['wp']) || ! isset($GLOBALS['wp']->request)) {
+        $segments = $this->unresolved_segments();
+        if (count($segments) !== 1) {
             return '';
         }
 
-        $path = trim((string) $GLOBALS['wp']->request, '/');
-        if ($path === '' || strpos($path, '/') !== false) {
-            // Only single-segment paths qualify for the bare MLS route.
-            return '';
+        return $this->normalize($segments[0]);
+    }
+
+    /**
+     * MLS source + number from a two-segment 404 request (e.g. /NTREIS/21191513).
+     *
+     * First segment = MLS source (listing `mls` field), second = MLS number. Both
+     * must validate. Only trusted on an otherwise-404 request.
+     *
+     * @return array{source:string, mls:string}|array{} Empty array when it does not qualify.
+     */
+    public function from_unresolved_source_pair()
+    {
+        $segments = $this->unresolved_segments();
+        if (count($segments) !== 2) {
+            return array();
         }
 
-        return $this->normalize($path);
+        $source = $this->normalize_source($segments[0]);
+        $mls    = $this->normalize($segments[1]);
+
+        if ($source === '' || $mls === '') {
+            return array();
+        }
+
+        return array('source' => $source, 'mls' => $mls);
     }
 }

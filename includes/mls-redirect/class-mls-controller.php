@@ -52,7 +52,9 @@ class RCH_MLS_Controller
      */
     public function register()
     {
-        add_action('template_redirect', array($this, 'handle'));
+        // Priority 1: run before a theme's own template_redirect 404 handler that
+        // might render/exit and preempt the MLS lookup.
+        add_action('template_redirect', array($this, 'handle'), 1);
     }
 
     /**
@@ -64,6 +66,17 @@ class RCH_MLS_Controller
     {
         if (is_admin() || is_robots() || is_favicon()) {
             return;
+        }
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log(sprintf(
+                'Rechat MLS handle: path="%s" is_404=%s qv="%s" bare="%s" pair=%s',
+                isset($GLOBALS['wp']->request) ? (string) $GLOBALS['wp']->request : '(none)',
+                is_404() ? '1' : '0',
+                $this->request->from_query_var(),
+                $this->request->from_unresolved_path(),
+                wp_json_encode($this->request->from_unresolved_source_pair())
+            ));
         }
 
         // 1) Explicit intent: /mls/{id} or /id/{id}. A miss here must be a 404,
@@ -78,15 +91,27 @@ class RCH_MLS_Controller
             return;
         }
 
-        // 2) Bare `/#{mls}` — only when WordPress found no matching route (404),
-        //    so pages/posts/terms are never intercepted. A miss leaves the 404 as-is.
-        if (is_404()) {
-            $bare = $this->request->from_unresolved_path();
-            if ($bare !== '') {
-                $url = $this->lookup->resolve($bare);
-                if ($url !== '') {
-                    $this->redirect->to_listing($url);
-                }
+        // 2) Bare `/#{mls}` and `/#{source}/#{mls}` (e.g. /NTREIS/21191513) — only
+        //    when WordPress found no matching route (404), so pages/posts/terms are
+        //    never intercepted. A miss leaves the 404 as-is.
+        if (! is_404()) {
+            return;
+        }
+
+        $bare = $this->request->from_unresolved_path();
+        if ($bare !== '') {
+            $url = $this->lookup->resolve($bare);
+            if ($url !== '') {
+                $this->redirect->to_listing($url);
+            }
+            return;
+        }
+
+        $pair = $this->request->from_unresolved_source_pair();
+        if (! empty($pair)) {
+            $url = $this->lookup->resolve($pair['mls'], $pair['source']);
+            if ($url !== '') {
+                $this->redirect->to_listing($url);
             }
         }
     }
