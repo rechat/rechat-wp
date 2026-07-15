@@ -338,7 +338,11 @@ function rch_api_request($url, $token, $brand = null)
     if (!empty($brand)) {
         $headers['X-RECHAT-BRAND'] = $brand;
     }
-    $response = wp_remote_get($url, array('headers' => $headers));
+    // Rechat single-listing responses can take >5s; the WP default timeout (5s)
+    // turns a slow-but-valid response into a WP_Error ("An error occurred while
+    // fetching the listing details"). Use a longer, filterable timeout.
+    $timeout = (int) apply_filters('rch_api_request_timeout', 20, $url);
+    $response = wp_remote_get($url, array('headers' => $headers, 'timeout' => $timeout));
     if (is_wp_error($response)) {
         return array(
             'success'         => false,
