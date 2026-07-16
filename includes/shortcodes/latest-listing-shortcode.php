@@ -97,6 +97,8 @@ function rch_latest_listings_get_defaults()
         'filter_agents' => '',
         'list_offices' => '',
         'filter_brand_id' => '',
+        // Comma-separated boundary UUIDs → filter_boundary_ids on <rechat-listings>.
+        'filter_boundary_ids' => '',
         'disable_filter_address' => false,
         'disable_filter_price' => false,
         'disable_filter_beds' => false,

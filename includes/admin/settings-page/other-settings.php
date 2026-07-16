@@ -241,9 +241,254 @@ function rch_general_setting()
         'general_settings',
         'rch_country_state_section'
     );
+
+    // ── Lead form spam protection (CAPTCHA) ──────────────────────────────
+    register_setting('general_settings', 'rch_lead_captcha_provider', array(
+        'type'              => 'string',
+        'default'           => 'none',
+        'sanitize_callback' => 'rch_sanitize_lead_captcha_provider',
+    ));
+    foreach (array(
+        'rch_lead_turnstile_site_key',
+        'rch_lead_turnstile_secret_key',
+        'rch_lead_recaptcha_site_key',
+        'rch_lead_recaptcha_secret_key',
+    ) as $rch_captcha_option) {
+        register_setting('general_settings', $rch_captcha_option, array(
+            'type'              => 'string',
+            'default'           => '',
+            'sanitize_callback' => 'sanitize_text_field',
+        ));
+    }
+
+    add_settings_section(
+        'rch_lead_spam_section',
+        __('Lead form spam protection', 'rechat-plugin'),
+        'rch_render_lead_spam_section_description',
+        'general_settings'
+    );
+
+    add_settings_field(
+        'rch_lead_captcha',
+        __('CAPTCHA', 'rechat-plugin'),
+        'rch_render_lead_captcha_field',
+        'general_settings',
+        'rch_lead_spam_section'
+    );
+
+    // ── Neighborhood / place boundary finder (lookup tool) ───────────────
+    add_settings_section(
+        'rch_boundary_finder_section',
+        __('Neighborhood / place boundary finder', 'rechat-plugin'),
+        'rch_render_boundary_finder_description',
+        'general_settings'
+    );
+
+    add_settings_field(
+        'rch_boundary_finder',
+        __('Find boundary ID', 'rechat-plugin'),
+        'rch_render_boundary_finder_field',
+        'general_settings',
+        'rch_boundary_finder_section'
+    );
 }
 
 add_action('admin_init', 'rch_general_setting');
+
+/**
+ * Section blurb for the boundary finder tool.
+ */
+function rch_render_boundary_finder_description()
+{
+    echo '<p>' . esc_html__('Search a neighborhood, city, or ZIP and copy its Rechat boundary ID (UUID) to use in the listing block or shortcodes (filter_boundary_ids).', 'rechat-plugin') . '</p>';
+}
+
+/**
+ * Render the boundary finder: search input + live results with copy-to-clipboard.
+ */
+function rch_render_boundary_finder_field()
+{
+    $rest_url = esc_url_raw(rest_url('rch/v1/boundary-search'));
+    $nonce    = wp_create_nonce('wp_rest');
+    ?>
+    <div class="rch-boundary-finder" style="max-width:560px;">
+        <input
+            type="text"
+            id="rch-boundary-finder-input"
+            class="regular-text"
+            placeholder="<?php esc_attr_e('Type a neighborhood, city, or ZIP…', 'rechat-plugin'); ?>"
+            autocomplete="off"
+            style="width:100%;"
+        />
+        <p class="description" style="margin:6px 0;"><?php esc_html_e('Type at least 2 characters. Click a result to copy its boundary ID.', 'rechat-plugin'); ?></p>
+        <div id="rch-boundary-finder-status" style="margin:6px 0;color:#787c82;font-size:12px;"></div>
+        <ul id="rch-boundary-finder-results" style="list-style:none;margin:8px 0 0;padding:0;"></ul>
+    </div>
+    <script>
+    (function () {
+        var input = document.getElementById('rch-boundary-finder-input');
+        var results = document.getElementById('rch-boundary-finder-results');
+        var status = document.getElementById('rch-boundary-finder-status');
+        if (!input) { return; }
+
+        var restUrl = <?php echo wp_json_encode($rest_url); ?>;
+        var nonce = <?php echo wp_json_encode($nonce); ?>;
+        var timer = null;
+
+        // Do not submit the settings form when pressing Enter in the finder.
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); }
+        });
+
+        function esc(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+
+        function copy(text, btn) {
+            var done = function () {
+                var old = btn.textContent;
+                btn.textContent = '<?php echo esc_js(__('Copied!', 'rechat-plugin')); ?>';
+                setTimeout(function () { btn.textContent = old; }, 1200);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(done).catch(function () { window.prompt('Copy', text); });
+            } else {
+                window.prompt('Copy', text);
+            }
+        }
+
+        function render(options) {
+            results.innerHTML = '';
+            if (!options || !options.length) {
+                status.textContent = '<?php echo esc_js(__('No matches.', 'rechat-plugin')); ?>';
+                return;
+            }
+            status.textContent = '';
+            options.forEach(function (opt) {
+                var li = document.createElement('li');
+                li.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid #e0e0e0;border-radius:6px;margin-bottom:6px;background:#fff;';
+                li.innerHTML =
+                    '<span style="flex:1;"><strong>' + esc(opt.label) + '</strong><br>' +
+                    '<code style="font-size:11px;color:#50575e;">' + esc(opt.value) + '</code></span>' +
+                    '<button type="button" class="button button-small">' + '<?php echo esc_js(__('Copy ID', 'rechat-plugin')); ?>' + '</button>';
+                var btn = li.querySelector('button');
+                btn.addEventListener('click', function () { copy(opt.value, btn); });
+                results.appendChild(li);
+            });
+        }
+
+        input.addEventListener('input', function () {
+            var q = input.value.trim();
+            if (timer) { clearTimeout(timer); }
+            results.innerHTML = '';
+            if (q.length < 2) { status.textContent = ''; return; }
+            status.textContent = '<?php echo esc_js(__('Searching…', 'rechat-plugin')); ?>';
+            timer = setTimeout(function () {
+                fetch(restUrl + '?q=' + encodeURIComponent(q) + '&limit=8', {
+                    headers: { 'X-WP-Nonce': nonce },
+                    credentials: 'same-origin'
+                })
+                    .then(function (res) { return res.json(); })
+                    .then(function (data) { render(data && data.options ? data.options : []); })
+                    .catch(function () { status.textContent = '<?php echo esc_js(__('Search failed. Is Rechat connected?', 'rechat-plugin')); ?>'; });
+            }, 300);
+        });
+    })();
+    </script>
+    <?php
+}
+
+/**
+ * Whitelist the CAPTCHA provider option.
+ *
+ * @param string $value Raw value.
+ * @return string
+ */
+function rch_sanitize_lead_captcha_provider($value)
+{
+    $value = sanitize_text_field((string) $value);
+    return in_array($value, array('turnstile', 'recaptcha_v3'), true) ? $value : 'none';
+}
+
+/**
+ * Section blurb for the spam-protection settings.
+ */
+function rch_render_lead_spam_section_description()
+{
+    echo '<p>' . esc_html__('Built-in anti-spam (honeypot, timing, rate limiting, validation) is always on for every lead form. Optionally add a CAPTCHA for stronger protection. It is enforced only when a provider is selected and both keys are filled in.', 'rechat-plugin') . '</p>';
+}
+
+/**
+ * Render the CAPTCHA provider selector + key fields.
+ */
+function rch_render_lead_captcha_field()
+{
+    $provider       = (string) get_option('rch_lead_captcha_provider', 'none');
+    $turnstile_site = (string) get_option('rch_lead_turnstile_site_key', '');
+    $turnstile_sec  = (string) get_option('rch_lead_turnstile_secret_key', '');
+    $recaptcha_site = (string) get_option('rch_lead_recaptcha_site_key', '');
+    $recaptcha_sec  = (string) get_option('rch_lead_recaptcha_secret_key', '');
+    ?>
+    <fieldset class="rch-lead-captcha-settings">
+        <label style="display:block;margin-bottom:6px;">
+            <input type="radio" name="rch_lead_captcha_provider" value="none" <?php checked($provider, 'none'); ?> />
+            <?php esc_html_e('None (built-in anti-spam only)', 'rechat-plugin'); ?>
+        </label>
+        <label style="display:block;margin-bottom:6px;">
+            <input type="radio" name="rch_lead_captcha_provider" value="turnstile" <?php checked($provider, 'turnstile'); ?> />
+            <?php esc_html_e('Cloudflare Turnstile', 'rechat-plugin'); ?>
+        </label>
+        <label style="display:block;margin-bottom:12px;">
+            <input type="radio" name="rch_lead_captcha_provider" value="recaptcha_v3" <?php checked($provider, 'recaptcha_v3'); ?> />
+            <?php esc_html_e('Google reCAPTCHA v3', 'rechat-plugin'); ?>
+        </label>
+
+        <div class="rch-captcha-keys" data-provider="turnstile" style="margin:0 0 14px;padding:12px 14px;border:1px solid #dcdcde;border-radius:8px;max-width:560px;">
+            <strong><?php esc_html_e('Cloudflare Turnstile keys', 'rechat-plugin'); ?></strong>
+            <p style="margin:6px 0;">
+                <label style="display:block;font-weight:600;"><?php esc_html_e('Site key', 'rechat-plugin'); ?></label>
+                <input type="text" class="regular-text" name="rch_lead_turnstile_site_key" value="<?php echo esc_attr($turnstile_site); ?>" autocomplete="off" />
+            </p>
+            <p style="margin:6px 0;">
+                <label style="display:block;font-weight:600;"><?php esc_html_e('Secret key', 'rechat-plugin'); ?></label>
+                <input type="password" class="regular-text" name="rch_lead_turnstile_secret_key" value="<?php echo esc_attr($turnstile_sec); ?>" autocomplete="off" />
+            </p>
+            <p class="description"><?php echo wp_kses_post(__('Get keys at <a href="https://dash.cloudflare.com/?to=/:account/turnstile" target="_blank" rel="noopener">Cloudflare → Turnstile</a>.', 'rechat-plugin')); ?></p>
+        </div>
+
+        <div class="rch-captcha-keys" data-provider="recaptcha_v3" style="margin:0 0 6px;padding:12px 14px;border:1px solid #dcdcde;border-radius:8px;max-width:560px;">
+            <strong><?php esc_html_e('reCAPTCHA v3 keys', 'rechat-plugin'); ?></strong>
+            <p style="margin:6px 0;">
+                <label style="display:block;font-weight:600;"><?php esc_html_e('Site key', 'rechat-plugin'); ?></label>
+                <input type="text" class="regular-text" name="rch_lead_recaptcha_site_key" value="<?php echo esc_attr($recaptcha_site); ?>" autocomplete="off" />
+            </p>
+            <p style="margin:6px 0;">
+                <label style="display:block;font-weight:600;"><?php esc_html_e('Secret key', 'rechat-plugin'); ?></label>
+                <input type="password" class="regular-text" name="rch_lead_recaptcha_secret_key" value="<?php echo esc_attr($recaptcha_sec); ?>" autocomplete="off" />
+            </p>
+            <p class="description"><?php echo wp_kses_post(__('Get keys at <a href="https://www.google.com/recaptcha/admin" target="_blank" rel="noopener">Google reCAPTCHA admin</a> (choose reCAPTCHA v3).', 'rechat-plugin')); ?></p>
+        </div>
+    </fieldset>
+    <script>
+    (function () {
+        var fs = document.querySelector('.rch-lead-captcha-settings');
+        if (!fs) { return; }
+        function sync() {
+            var val = (fs.querySelector('input[name="rch_lead_captcha_provider"]:checked') || {}).value || 'none';
+            fs.querySelectorAll('.rch-captcha-keys').forEach(function (box) {
+                box.style.display = (box.getAttribute('data-provider') === val) ? '' : 'none';
+            });
+        }
+        fs.addEventListener('change', function (e) {
+            if (e.target && e.target.name === 'rch_lead_captcha_provider') { sync(); }
+        });
+        sync();
+    })();
+    </script>
+    <?php
+}
 
 /**
  * Section blurb for country / state (General Settings).

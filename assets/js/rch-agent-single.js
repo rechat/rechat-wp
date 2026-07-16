@@ -93,14 +93,34 @@
             try {
                 this._showLoading();
 
-                const leadData = this._collectFormData();
-                const result = await this.sdk.Leads.capture(
-                    { lead_channel: this.config.leadChannel },
-                    leadData
-                );
+                const ajaxUrl = (this.config && this.config.ajaxUrl) || (window.ajaxurl || '');
+                const token = window.rchLeadToken ? await window.rchLeadToken(this.form) : '';
 
-                if (!this._isCaptureSuccess(result)) {
-                    throw new Error('Lead capture returned an unexpected response');
+                const cfg = this.config || {};
+                const fd = new FormData(this.form);
+                fd.set('action', 'rch_submit_lead_rechat_api');
+                fd.set('referer_url', window.location.href);
+
+                // Supply security + config from localized data so the form works even
+                // when the agent template is overridden by the theme (no hidden fields).
+                if (cfg.nonce) { fd.set('rch_lead_nonce_field', cfg.nonce); }
+                if (cfg.ts) { fd.set(cfg.tsField || 'rch_form_ts', cfg.ts); }
+                fd.set('lead_channel', cfg.leadChannel || '');
+                if (cfg.agentEmail) { fd.set('assignee_email', cfg.agentEmail); }
+                fd.set('tags_json', JSON.stringify(cfg.tags || []));
+                if (token) {
+                    fd.append('rch_captcha_token', token);
+                }
+
+                const res = await fetch(ajaxUrl, {
+                    method: 'POST',
+                    body: fd,
+                    credentials: 'same-origin',
+                });
+                const json = await res.json();
+
+                if (!json || !json.success) {
+                    throw new Error('Lead capture failed');
                 }
 
                 this._showSuccess();
@@ -189,16 +209,16 @@
         }
 
         initialize() {
-            if (!Validator.isRechatSDKAvailable() || !Validator.isConfigValid()) {
-                console.warn('Rechat SDK or configuration not available');
+            if (!Validator.isConfigValid()) {
+                console.warn('Rechat lead configuration not available');
                 return;
             }
 
-            const sdk = new Rechat.Sdk();
             const formRoot = DOMService.getElement('leadCaptureForm');
 
             if (formRoot) {
-                const leadForm = new LeadCaptureForm(formRoot, sdk, this.config);
+                // Submission goes through the WordPress server (anti-spam), not the SDK.
+                const leadForm = new LeadCaptureForm(formRoot, null, this.config);
                 leadForm.initialize();
             }
         }

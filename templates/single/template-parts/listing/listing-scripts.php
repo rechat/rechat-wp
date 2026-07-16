@@ -55,63 +55,90 @@ if (is_multisite()) {
 $rch_listing_tags = is_array($rch_listing_tags) ? array_values($rch_listing_tags) : [];
 $rch_listing_tags = array_map('sanitize_text_field', $rch_listing_tags);
 $rch_listing_tags_json = wp_json_encode($rch_listing_tags);
+
+// Anti-spam CAPTCHA assets (no-op unless a provider is configured).
+if (function_exists('rch_lead_antispam_enqueue_captcha')) {
+    rch_lead_antispam_enqueue_captcha();
+}
+$rch_listing_ajax_url = admin_url('admin-ajax.php');
 ?>
 
 <script src="https://unpkg.com/@rechat/sdk@latest/dist/rechat.min.js"></script>
 <script>
-    const sdk = new Rechat.Sdk({
-        tracker: {
-            cookie: {
-                name: 'rechat-sdk-tracker' // default: rechat-sdk-tracker
-            }
-        }
-    })
-
-    const channel = {
-        lead_channel: '<?php echo esc_js($rch_listing_lead_channel); ?>'
-    };
-    sdk.Leads.Tracker.capture({
-        listing_id: '<?php echo esc_js($listing_detail['id']) ?>'
-    })
-
-    document.getElementById('leadCaptureForm').addEventListener('submit', function(event) {
-        event.preventDefault(); // Prevent form from submitting normally
-
-        const input = {
-            first_name: document.getElementById('first_name').value,
-            last_name: document.getElementById('last_name').value,
-            phone_number: document.getElementById('phone_number').value,
-            email: document.getElementById('email').value,
-            note: document.getElementById('note').value,
-            tag: <?php echo $rch_listing_tags_json; ?>,
-            source_type: 'Website',
-            mlsid: '<?php echo esc_js($listing_detail['mls_number']) ?>',
-            listing_id: '<?php echo esc_js($listing_detail['id']) ?>',
-            referer_url: window.location.href
-        };
-
-        <?php if ($rch_listing_assignee !== '') : ?>
-        input.assignees = [{ email: '<?php echo esc_js($rch_listing_assignee); ?>' }];
-        <?php endif; ?>
-
-        // Hide success, error alerts, and show loading spinner
-        document.getElementById('rch-listing-success-sdk').style.display = 'none';
-        document.getElementById('rch-listing-cancel-sdk').style.display = 'none';
-        document.getElementById('loading-spinner').style.display = 'block';
-
-        sdk.Leads.capture(channel, input)
-            .then(() => {
-                // Hide loading spinner and show success message
-                document.getElementById('loading-spinner').style.display = 'none';
-                document.getElementById('rch-listing-success-sdk').style.display = 'block';
-            })
-            .catch((e) => {
-                // Hide loading spinner and show error message
-                document.getElementById('loading-spinner').style.display = 'none';
-                document.getElementById('rch-listing-cancel-sdk').style.display = 'block';
-                console.log('Error:', e);
+    // Listing view tracking (analytics only). Wrapped so any SDK failure can never
+    // break the lead form submit handler below.
+    try {
+        if (typeof Rechat !== 'undefined' && Rechat.Sdk) {
+            var sdk = new Rechat.Sdk({
+                tracker: { cookie: { name: 'rechat-sdk-tracker' } }
             });
-    });
+            sdk.Leads.Tracker.capture({
+                listing_id: '<?php echo esc_js($listing_detail['id']); ?>'
+            });
+        }
+    } catch (e) {
+        if (window.console) { console.warn('Rechat tracker unavailable:', e); }
+    }
+
+    // Lead capture posts to the WordPress server (anti-spam) which forwards to Rechat.
+    (function () {
+        var leadForm = document.querySelector('#leadCaptureForm form') || document.getElementById('leadCaptureForm');
+        if (!leadForm || leadForm.tagName !== 'FORM') { return; }
+
+        var rchListingAjaxUrl = '<?php echo esc_js($rch_listing_ajax_url); ?>';
+        var rchListingChannel = '<?php echo esc_js($rch_listing_lead_channel); ?>';
+        var rchListingTags = '<?php echo esc_js($rch_listing_tags_json); ?>';
+        var rchListingAssignee = '<?php echo esc_js($rch_listing_assignee); ?>';
+        var rchListingId = '<?php echo esc_js($listing_detail['id']); ?>';
+        var rchListingMls = '<?php echo esc_js($listing_detail['mls_number']); ?>';
+
+        leadForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            document.getElementById('rch-listing-success-sdk').style.display = 'none';
+            document.getElementById('rch-listing-cancel-sdk').style.display = 'none';
+            document.getElementById('loading-spinner').style.display = 'block';
+
+            var tokenPromise = window.rchLeadToken ? window.rchLeadToken(leadForm) : Promise.resolve('');
+
+            tokenPromise.then(function (token) {
+                var fd = new FormData(leadForm);
+                fd.set('action', 'rch_submit_lead_rechat_api');
+                // Security fields from PHP so submission works even when the listing
+                // template is overridden by the theme (no hidden fields in markup).
+                fd.set('rch_lead_nonce_field', '<?php echo esc_js(wp_create_nonce('rch_lead_form')); ?>');
+                fd.set('<?php echo esc_js(RCH_LEAD_TS_FIELD); ?>', '<?php echo esc_js(rch_lead_antispam_timestamp_value()); ?>');
+                fd.set('lead_channel', rchListingChannel);
+                fd.set('tags_json', rchListingTags);
+                fd.set('listing_id', rchListingId);
+                fd.set('mlsid', rchListingMls);
+                fd.set('referer_url', window.location.href);
+                if (rchListingAssignee) { fd.set('assignee_email', rchListingAssignee); }
+                if (token) { fd.append('rch_captcha_token', token); }
+
+                return fetch(rchListingAjaxUrl, {
+                    method: 'POST',
+                    body: fd,
+                    credentials: 'same-origin'
+                });
+            })
+                .then(function (res) { return res.json(); })
+                .then(function (json) {
+                    document.getElementById('loading-spinner').style.display = 'none';
+                    if (json && json.success) {
+                        document.getElementById('rch-listing-success-sdk').style.display = 'block';
+                        if (typeof leadForm.reset === 'function') { leadForm.reset(); }
+                    } else {
+                        document.getElementById('rch-listing-cancel-sdk').style.display = 'block';
+                    }
+                })
+                .catch(function (e) {
+                    document.getElementById('loading-spinner').style.display = 'none';
+                    document.getElementById('rch-listing-cancel-sdk').style.display = 'block';
+                    console.log('Error:', e);
+                });
+        });
+    })();
     var swiper = new Swiper(".rch-houses-mySwiper", {
         spaceBetween: 10,
         slidesPerView: 8, // Default for desktop

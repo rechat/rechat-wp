@@ -1,5 +1,6 @@
 /**
- * [rch_leads_form] — Rechat Leads.capture() with per-instance config from wp_add_inline_script.
+ * [rch_leads_form] — submits to the WordPress server (admin-ajax) which runs the
+ * anti-spam checks and forwards to Rechat. Per-instance config from wp_add_inline_script.
  */
 (function (window) {
   'use strict';
@@ -11,28 +12,6 @@
       invalidPhone: 'Please enter a valid phone number',
       invalidEmail: 'Please enter a valid email address',
     };
-  }
-
-  function waitForRechat(callback, attempt) {
-    attempt = attempt || 0;
-    if (typeof window.Rechat !== 'undefined') {
-      callback();
-      return;
-    }
-    if (attempt < 120) {
-      window.setTimeout(function () {
-        waitForRechat(callback, attempt + 1);
-      }, 50);
-      return;
-    }
-    console.error('Rechat SDK not loaded');
-  }
-
-  function sanitizeInput(value) {
-    if (!value) {
-      return '';
-    }
-    return String(value).trim().replace(/[<>]/g, '');
   }
 
   function isValidEmail(email) {
@@ -56,9 +35,7 @@
 
   function bindForm(config) {
     var formId = config.formId;
-    var leadChannel = config.leadChannel || '';
-    var tags = config.tags || [];
-    var assigneeEmail = config.assigneeEmail || '';
+    var ajaxUrl = config.ajaxUrl || (window.ajaxurl || '');
 
     var form = document.getElementById(formId);
     if (!form) {
@@ -66,8 +43,6 @@
       return;
     }
 
-    var sdk = new window.Rechat.Sdk();
-    var channel = { lead_channel: leadChannel };
     var loadingEl = document.getElementById(formId + '_loading');
     var successEl = document.getElementById(formId + '_success');
     var errorEl = document.getElementById(formId + '_error');
@@ -76,60 +51,47 @@
     form.addEventListener('submit', function (event) {
       event.preventDefault();
 
-      var firstNameEl = document.getElementById(formId + '_first_name');
-      var lastNameEl = document.getElementById(formId + '_last_name');
       var phoneEl = document.getElementById(formId + '_phone_number');
       var emailEl = document.getElementById(formId + '_email');
-      var noteEl = document.getElementById(formId + '_note');
 
-      var input = {
-        source_type: 'Website',
-        referer_url: window.location.href,
-      };
-
-      if (firstNameEl) {
-        input.first_name = sanitizeInput(firstNameEl.value);
+      if (phoneEl && !isValidPhone(phoneEl.value.trim())) {
+        window.alert(l10n.invalidPhone);
+        return;
       }
-      if (lastNameEl) {
-        input.last_name = sanitizeInput(lastNameEl.value);
-      }
-      if (phoneEl) {
-        var phone = sanitizeInput(phoneEl.value);
-        if (!isValidPhone(phone)) {
-          window.alert(l10n.invalidPhone);
-          return;
-        }
-        input.phone_number = phone;
-      }
-      if (emailEl) {
-        var email = sanitizeInput(emailEl.value);
-        if (!isValidEmail(email)) {
-          window.alert(l10n.invalidEmail);
-          return;
-        }
-        input.email = email;
-      }
-      if (noteEl) {
-        input.note = sanitizeInput(noteEl.value);
-      }
-
-      if (tags && tags.length > 0) {
-        input.tag = tags;
-      }
-
-      if (assigneeEmail) {
-        input.assignees = [{ email: assigneeEmail }];
+      if (emailEl && !isValidEmail(emailEl.value.trim())) {
+        window.alert(l10n.invalidEmail);
+        return;
       }
 
       setVisible(loadingEl, true);
       setVisible(successEl, false);
       setVisible(errorEl, false);
 
-      sdk.Leads.capture(channel, input)
-        .then(function () {
+      var tokenPromise = window.rchLeadToken ? window.rchLeadToken(form) : Promise.resolve('');
+
+      tokenPromise.then(function (token) {
+        var fd = new FormData(form);
+        fd.set('action', 'rch_submit_lead_rechat_api');
+        fd.set('referer_url', window.location.href);
+        if (token) {
+          fd.append('rch_captcha_token', token);
+        }
+
+        return fetch(ajaxUrl, {
+          method: 'POST',
+          body: fd,
+          credentials: 'same-origin',
+        });
+      })
+        .then(function (res) { return res.json(); })
+        .then(function (json) {
           setVisible(loadingEl, false);
-          setVisible(successEl, true);
-          form.reset();
+          if (json && json.success) {
+            setVisible(successEl, true);
+            form.reset();
+          } else {
+            setVisible(errorEl, true);
+          }
         })
         .catch(function (err) {
           setVisible(loadingEl, false);
@@ -139,12 +101,11 @@
     });
   }
 
-  /**
-   * @param {{ formId: string, leadChannel: string, tags: string[] }} config
-   */
   window.rchLeadCaptureInitInstance = function (config) {
-    waitForRechat(function () {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function () { bindForm(config); });
+    } else {
       bindForm(config);
-    });
+    }
   };
 })(window);
