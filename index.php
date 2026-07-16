@@ -2,7 +2,7 @@
 /*
 Plugin Name: Rechat Plugin
 Description: Fetches and manages agent, offices, regions, and Listing data from Rechat.
-Version: 7.0.14
+Version: 7.0.15
 Author URI: https://rechat.com/
 Text Domain: rechat-plugin
 License: GPL-2.0-or-later
@@ -18,7 +18,7 @@ if (! defined('ABSPATH')) {
 // define required constants.
 define('RCH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('RCH_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('RCH_VERSION', '7.0.14');
+define('RCH_VERSION', '7.0.15');
 define('RCH_VERSION_SWIPER', '11.2.5');
 if (! function_exists('rch_is_localhost_environment')) {
     /**
@@ -229,4 +229,5 @@ if (is_multisite() && is_admin()) {
 if (is_admin()) {
     include RCH_PLUGIN_INCLUDES . 'admin/enqueue-admin.php';
     require_once RCH_PLUGIN_INCLUDES . 'admin/agent-data-csv-importer.php';
+    require_once RCH_PLUGIN_INCLUDES . 'admin/agent-data-csv-exporter.php';
 }

@@ -67,7 +67,7 @@ function rch_render_tab_navigation($active_tab)
         'connect-to-rechat' => __('Connect To Rechat', 'rechat-plugin'),
         'general-settings' => __('General Settings', 'rechat-plugin'),
         'local-logic' => __('Local Logic and Google Map Setting', 'rechat-plugin'),
-        'agent-import'  => __('Import agents (CSV)', 'rechat-plugin'),
+        'agent-import'  => __('Import / Export Agents', 'rechat-plugin'),
     ];
 
     if (rch_rechat_settings_is_multisite_hub_admin_context()) {
