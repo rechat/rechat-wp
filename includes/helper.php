@@ -983,6 +983,28 @@ function rch_process_agents_data($access_token, $api_url_base)
                 // Prepare other fields
                 $user = $item['user'];
                 $full_name = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
+
+                // Agent bio from the API → agent post content. When present it REPLACES
+                // the WordPress content (Rechat wins); when empty/null the existing WP
+                // content is left untouched (never wiped). Path is robust + filterable.
+                $bio_raw = '';
+                if (isset($user['bio']) && is_string($user['bio'])) {
+                    $bio_raw = $user['bio'];
+                } elseif (isset($item['bio']) && is_string($item['bio'])) {
+                    $bio_raw = $item['bio'];
+                } elseif (isset($user['agents'][0]['bio']) && is_string($user['agents'][0]['bio'])) {
+                    $bio_raw = $user['agents'][0]['bio'];
+                }
+                $agent_bio = trim((string) apply_filters('rch_agent_sync_bio', $bio_raw, $item));
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    if ($agent_bio !== '') {
+                        error_log('Rechat agent sync bio [' . $api_id . ']: len=' . strlen($agent_bio));
+                    } else {
+                        // Empty bio: dump available keys so the correct API path can be found.
+                        $user_keys = is_array($user) ? implode(',', array_keys($user)) : '(no user)';
+                        error_log('Rechat agent sync bio [' . $api_id . ']: EMPTY. user keys: ' . $user_keys);
+                    }
+                }
                 $custom_fields = array(
                     'first_name' => $user['first_name'] ?? '',
                     'website' => $user['website'] ?? '',
@@ -1017,6 +1039,11 @@ function rch_process_agents_data($access_token, $api_url_base)
                         'post_title' => $full_name,
                         'menu_order' => $current_menu_order,
                     );
+                    // Only overwrite content when the API bio has data; empty bio keeps
+                    // the existing WordPress content intact.
+                    if ($agent_bio !== '') {
+                        $post_data['post_content'] = wp_kses_post($agent_bio);
+                    }
                     $updated_post_id = wp_update_post($post_data);
                     if (!is_wp_error($updated_post_id)) {
                         foreach ($custom_fields as $key => $value) {
@@ -1039,6 +1066,9 @@ function rch_process_agents_data($access_token, $api_url_base)
                         'post_status' => 'publish',
                         'menu_order' => $current_menu_order,
                     );
+                    if ($agent_bio !== '') {
+                        $post_data['post_content'] = wp_kses_post($agent_bio);
+                    }
                     $post_id = wp_insert_post($post_data);
                     if (!is_wp_error($post_id)) {
                         foreach ($custom_fields as $key => $value) {
