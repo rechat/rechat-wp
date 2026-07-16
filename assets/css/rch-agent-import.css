@@ -331,3 +331,116 @@
 .rch-agent-import__guide-foot {
   margin: 12px 0 0;
 }
+
+/* ── Import / Export switcher ─────────────────────────────── */
+.rch-agent-tool__switch {
+  display: inline-flex;
+  background: #f0f0f1;
+  border: 1px solid #dcdcde;
+  border-radius: 9px;
+  padding: 3px;
+  gap: 2px;
+  margin: 4px 0 22px;
+}
+.rch-agent-tool__switch button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 13px;
+  color: #50575e;
+  cursor: pointer;
+}
+.rch-agent-tool__switch button:hover { color: #1d2327; }
+.rch-agent-tool__switch button.is-active {
+  background: #fff;
+  color: #1d2327;
+  box-shadow: 0 1px 2px rgba(0,0,0,.09);
+}
+.rch-agent-tool__panel[hidden] { display: none; }
+
+/* ── Collapsible CSV guide ────────────────────────────────── */
+.rch-agent-import__guide-details {
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  background: #fff;
+  margin: 0 0 20px;
+}
+.rch-agent-import__guide-details > summary {
+  cursor: pointer;
+  padding: 14px 18px;
+  font-weight: 600;
+  list-style: none;
+  color: #1d2327;
+}
+.rch-agent-import__guide-details > summary::-webkit-details-marker { display: none; }
+.rch-agent-import__guide-details > summary::before {
+  content: "\25B8";
+  margin-right: 8px;
+  color: #787c82;
+}
+.rch-agent-import__guide-details[open] > summary::before { content: "\25BE"; }
+.rch-agent-import__guide-details .rch-agent-import__guide {
+  border: 0;
+  margin: 0;
+  padding: 0 18px 18px;
+}
+
+/* ── Export panel ─────────────────────────────────────────── */
+.rch-agent-export {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 22px;
+}
+.rch-agent-export__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 6px 0 12px;
+}
+.rch-agent-export__count { margin-left: auto; color: #50575e; font-size: 12px; }
+.rch-agent-export__list {
+  max-height: 380px;
+  overflow: auto;
+  border: 1px solid #e6e6e6;
+  border-radius: 8px;
+  padding: 8px;
+  margin: 0 0 16px;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+.rch-agent-export__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid #e4e4e7;
+  border-radius: 6px;
+  background: #fff;
+}
+.rch-agent-export__row:hover { border-color: #c3c4c7; background: #fbfbfc; }
+.rch-agent-export__row label { display: flex; align-items: center; gap: 8px; margin: 0; flex: 1; }
+.rch-agent-export__row code { opacity: .55; font-size: 11px; }
+.rch-agent-export__handle { cursor: grab; color: #a7aaad; }
+.rch-agent-export__preview {
+  background: #f6f7f7;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 0 0 16px;
+  font-size: 13px;
+}
+.rch-agent-export__preview strong { display: block; margin-bottom: 4px; color: #1d2327; }
+.rch-agent-export__preview-cols { color: #2271b1; word-break: break-word; }
+.rch-agent-export__helper { box-shadow: 0 4px 14px rgba(0,0,0,.14) !important; }
+.rch-agent-export__placeholder {
+  border: 1px dashed #2271b1 !important;
+  border-radius: 6px;
+  background: #f0f6fc;
+  height: 38px;
+}
