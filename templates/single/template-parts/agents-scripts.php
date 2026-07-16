@@ -48,12 +48,21 @@ function rch_enqueue_agent_single_scripts($email = '') {
         true
     );
 
-    // Pass PHP data to JavaScript for lead capture form functionality
+    if (function_exists('rch_lead_antispam_enqueue_captcha')) {
+        rch_lead_antispam_enqueue_captcha();
+    }
+
+    // Pass PHP data to JavaScript for lead capture form functionality.
+    // nonce/ts are provided here (not just as form fields) so the anti-spam gate
+    // works even when the agent template is overridden in the theme.
     wp_localize_script('rch-agent-single', 'rchAgentData', [
         'ajaxUrl' => admin_url('admin-ajax.php'),
         'brandId' => get_option('rch_rechat_brand_id'),
         'agentEmail' => $email,
         'leadChannel' => get_option('rch_agents_lead_channels'),
         'tags' => json_decode(get_option('rch_agents_selected_tags', '[]'), true),
+        'nonce' => wp_create_nonce('rch_lead_form'),
+        'tsField' => defined('RCH_LEAD_TS_FIELD') ? RCH_LEAD_TS_FIELD : 'rch_form_ts',
+        'ts' => function_exists('rch_lead_antispam_timestamp_value') ? rch_lead_antispam_timestamp_value() : '',
     ]);
 }

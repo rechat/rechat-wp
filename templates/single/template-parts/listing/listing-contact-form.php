@@ -25,7 +25,14 @@ if (!isset($listing_detail) || !is_array($listing_detail)) {
 
 <div class="rch-listing-form-lead" id="leadCaptureForm">
 
-    <form action="" method="post">
+    <form action="" method="post" data-rch-secure-lead="1">
+        <?php
+        if (function_exists('rch_lead_form_hidden_fields')) {
+            // Security fields only (action, nonce, honeypot, timestamp, CAPTCHA);
+            // channel/assignee/tags/listing are appended by the inline submit JS.
+            rch_lead_form_hidden_fields();
+        }
+        ?>
         <h2>Inquire About This Property</h2>
         <!-- First Name -->
         <div class="form-group">

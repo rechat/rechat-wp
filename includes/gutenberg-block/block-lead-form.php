@@ -263,8 +263,35 @@ add_action('rest_api_init', 'rch_register_leads_form_rest_routes');
  */
 function rch_ajax_submit_lead_rechat_api()
 {
-    if (! isset($_POST['rch_lead_nonce_field']) || ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['rch_lead_nonce_field'])), 'rch_lead_form')) {
+    // CSRF token: prefer the WP nonce. On full-page-cached pages (Kinsta) the nonce
+    // can expire (~24h); fall back to the signed anti-spam timestamp, which is also a
+    // server-issued HMAC token, so cached pages never lose real leads.
+    $nonce_ok = isset($_POST['rch_lead_nonce_field'])
+        && wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['rch_lead_nonce_field'])), 'rch_lead_form');
+    $ts_ok = function_exists('rch_lead_antispam_verify_timestamp')
+        && isset($_POST[ RCH_LEAD_TS_FIELD ])
+        && rch_lead_antispam_verify_timestamp((string) wp_unslash($_POST[ RCH_LEAD_TS_FIELD ]));
+
+    if (! $nonce_ok && ! $ts_ok) {
         wp_send_json_error(array('message' => 'Invalid security token.'), 403);
+    }
+
+    // Anti-spam gate (honeypot, timing, validation, rate limit, origin, CAPTCHA).
+    if (function_exists('rch_lead_antispam_check')) {
+        $spam = rch_lead_antispam_check($_POST);
+        if (empty($spam['ok'])) {
+            if (! empty($spam['code']) && defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('Rechat lead blocked: ' . $spam['code']);
+            }
+            // Honeypot/timing/etc. → fake success so bots do not learn; others → error.
+            if (! empty($spam['silent'])) {
+                wp_send_json_success(array('status' => 200, 'data' => null));
+            }
+            wp_send_json_error(
+                array('message' => ! empty($spam['message']) ? $spam['message'] : __('Submission rejected.', 'rechat-plugin')),
+                429
+            );
+        }
     }
 
     $lead_channel = isset($_POST['lead_channel']) ? sanitize_text_field(wp_unslash($_POST['lead_channel'])) : '';
@@ -329,6 +356,20 @@ function rch_ajax_submit_lead_rechat_api()
         'note'         => $note,
         'tag'          => $tags,
     );
+
+    // Listing / agent single forms pass property context; forward when present.
+    $listing_id  = isset($_POST['listing_id']) ? sanitize_text_field(wp_unslash($_POST['listing_id'])) : '';
+    $mlsid       = isset($_POST['mlsid']) ? sanitize_text_field(wp_unslash($_POST['mlsid'])) : '';
+    $referer_url = isset($_POST['referer_url']) ? esc_url_raw(wp_unslash($_POST['referer_url'])) : '';
+    if ($listing_id !== '') {
+        $lead['listing_id'] = $listing_id;
+    }
+    if ($mlsid !== '') {
+        $lead['mlsid'] = $mlsid;
+    }
+    if ($referer_url !== '') {
+        $lead['referer_url'] = $referer_url;
+    }
 
     // Only assign the lead when an assignee email is resolved (agent subsites).
     if ($assignee_email !== '') {
@@ -490,12 +531,22 @@ function rch_render_leads_form_block($attributes)
     $form_uid = wp_unique_id('rch-lead-form-');
     $nonce    = wp_create_nonce('rch_lead_form');
 
+    if (! $is_editor && function_exists('rch_lead_antispam_enqueue_captcha')) {
+        rch_lead_antispam_enqueue_captcha();
+    }
+
     ob_start();
     ?>
     <div class="rch-leads-form-block" data-rch-lead-form="1">
         <form id="<?php echo esc_attr($form_uid); ?>" class="rch-leads-form-block__form" method="post" action="<?php echo esc_url(admin_url('admin-ajax.php')); ?>">
             <input type="hidden" name="action" value="rch_submit_lead_rechat_api" />
             <input type="hidden" name="rch_lead_nonce_field" value="<?php echo esc_attr($nonce); ?>" />
+            <?php
+            if (! $is_editor && function_exists('rch_lead_antispam_render_fields')) {
+                rch_lead_antispam_render_fields();
+                rch_lead_antispam_render_captcha();
+            }
+            ?>
             <input type="hidden" name="lead_channel" value="<?php echo esc_attr($lead_channel); ?>" />
             <input type="hidden" name="assignee_email" value="<?php echo esc_attr($assignee_agent_email); ?>" />
             <input type="hidden" name="use_mortgage_question_lead_source" value="<?php echo $use_mortgage_question_lead_source ? '1' : '0'; ?>" />
@@ -565,8 +616,12 @@ function rch_render_leads_form_block($attributes)
                 if (successEl) { successEl.style.display = 'none'; }
                 if (errorEl) { errorEl.style.display = 'none'; }
 
-                var fd = new FormData(form);
-                fetch(ajaxUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
+                var tokenPromise = window.rchLeadToken ? window.rchLeadToken(form) : Promise.resolve('');
+                tokenPromise.then(function (token) {
+                    var fd = new FormData(form);
+                    if (token) { fd.append('rch_captcha_token', token); }
+                    return fetch(ajaxUrl, { method: 'POST', body: fd, credentials: 'same-origin' });
+                })
                     .then(function (res) { return res.json(); })
                     .then(function (json) {
                         if (loading) { loading.style.display = 'none'; }

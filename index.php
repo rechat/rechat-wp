@@ -2,7 +2,7 @@
 /*
 Plugin Name: Rechat Plugin
 Description: Fetches and manages agent, offices, regions, and Listing data from Rechat.
-Version: 7.0.15
+Version: 7.0.16
 Author URI: https://rechat.com/
 Text Domain: rechat-plugin
 License: GPL-2.0-or-later
@@ -18,7 +18,7 @@ if (! defined('ABSPATH')) {
 // define required constants.
 define('RCH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('RCH_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('RCH_VERSION', '7.0.15');
+define('RCH_VERSION', '7.0.16');
 define('RCH_VERSION_SWIPER', '11.2.5');
 if (! function_exists('rch_is_localhost_environment')) {
     /**
@@ -203,6 +203,8 @@ include RCH_PLUGIN_INCLUDES . 'oauth2/oauth-handler.php';
 include RCH_PLUGIN_INCLUDES . 'load-listing/fetch-archive-listings.php';
 // MLS-number redirects: /{mls}, /mls/{mls}, /id/{mls} → listing-detail permalink.
 include RCH_PLUGIN_INCLUDES . 'mls-redirect/bootstrap.php';
+// Lead form anti-spam (honeypot, timing, rate limit, validation, CAPTCHA).
+include RCH_PLUGIN_INCLUDES . 'lead-antispam/lead-antispam.php';
 include RCH_PLUGIN_INCLUDES . 'shortcodes/listing-shortcodes.php';
 include RCH_PLUGIN_INCLUDES . 'shortcodes/lead-capture-shortcode.php';
 include RCH_PLUGIN_INCLUDES . 'shortcodes/latest-listing-shortcode.php';

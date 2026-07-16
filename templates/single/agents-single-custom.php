@@ -145,7 +145,16 @@ $license_number = get_post_meta($post_id, 'license_number', true);
                 </div>
                 <div class="rch-right-main-layout-single-agent">
                     <div class="rch-inner-right-agents" id="leadCaptureForm">
-                        <form action="" method="post">
+                        <form action="" method="post" data-rch-secure-lead="1">
+                            <?php
+                            if (function_exists('rch_lead_form_hidden_fields')) {
+                                rch_lead_form_hidden_fields(array(
+                                    'lead_channel'   => (string) get_option('rch_agents_lead_channels', ''),
+                                    'assignee_email' => (string) $email,
+                                    'tags_json'      => wp_json_encode(array_values((array) json_decode((string) get_option('rch_agents_selected_tags', '[]'), true))),
+                                ));
+                            }
+                            ?>
                             <h2>Get in Touch with <?php echo esc_html(get_the_title()); ?></h2>
                             <!-- First Name -->
                             <div class="form-group">

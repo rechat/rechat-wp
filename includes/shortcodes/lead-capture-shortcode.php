@@ -22,6 +22,10 @@ function rch_enqueue_lead_form_assets()
     wp_enqueue_style('rch-lead-capture-shortcode-css');
     wp_enqueue_script('rch-lead-capture-shortcode');
 
+    if (function_exists('rch_lead_antispam_enqueue_captcha')) {
+        rch_lead_antispam_enqueue_captcha();
+    }
+
     if (! $localized) {
         wp_localize_script(
             'rch-lead-capture-shortcode',
@@ -50,6 +54,7 @@ function rch_lead_capture_enqueue_instance_script($form_id, $lead_channel, array
         'leadChannel'  => $lead_channel,
         'tags'         => array_values($selected_tags),
         'assigneeEmail' => $assignee_email,
+        'ajaxUrl'      => admin_url('admin-ajax.php'),
     ];
 
     wp_add_inline_script(
@@ -74,13 +79,13 @@ function rch_render_leads_form_shortcode($atts)
 
     $form_id = 'leadCaptureForm_' . uniqid('', false);
 
-    ob_start();
-    rch_render_form_html($atts, $form_id);
-    $html = ob_get_clean();
-
     $assignee_email = function_exists('rch_leads_form_resolve_assignee_email')
         ? rch_leads_form_resolve_assignee_email($atts['assignee_email'] ?? '')
         : sanitize_email((string) ($atts['assignee_email'] ?? ''));
+
+    ob_start();
+    rch_render_form_html($atts, $form_id, $lead_channel, $selected_tags, $assignee_email);
+    $html = ob_get_clean();
 
     rch_lead_capture_enqueue_instance_script($form_id, $lead_channel, $selected_tags, $assignee_email);
 
@@ -174,12 +179,21 @@ function rch_get_selected_tags($atts)
  * @param array  $atts    Form attributes
  * @param string $form_id Unique form id
  */
-function rch_render_form_html($atts, $form_id)
+function rch_render_form_html($atts, $form_id, $lead_channel = '', $selected_tags = array(), $assignee_email = '')
 {
     ?>
     <div class="rch-leads-form-shortcode">
-        <form id="<?php echo esc_attr($form_id); ?>" class="rch-lead-capture-form" method="post">
+        <form id="<?php echo esc_attr($form_id); ?>" class="rch-lead-capture-form" method="post" data-rch-secure-lead="1">
             <?php wp_nonce_field('rch_lead_capture_nonce', 'rch_nonce_field'); ?>
+            <?php
+            if (function_exists('rch_lead_form_hidden_fields')) {
+                rch_lead_form_hidden_fields(array(
+                    'lead_channel'   => (string) $lead_channel,
+                    'assignee_email' => (string) $assignee_email,
+                    'tags_json'      => wp_json_encode(array_values((array) $selected_tags)),
+                ));
+            }
+            ?>
 
             <?php if (! empty($atts['form_title'])) : ?>
                 <h2><?php echo esc_html($atts['form_title']); ?></h2>
