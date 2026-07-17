@@ -65,7 +65,22 @@ function agents_meta_box_html($post)
     if (! rch_agent_display_order_meta_is_empty($display_order_raw)) {
         $display_order_show = (string) (int) $display_order_raw;
     }
+    // Fields below are filled from the Rechat API on every sync. Lock them for synced
+    // agents (those with a Rechat ID); locally-added agents keep them editable.
+    $rch_is_synced = ($api_id !== '' && $api_id !== null);
+    $rch_api_ro = $rch_is_synced
+        ? ' readonly title="' . esc_attr__('Synced from Rechat — edit it in the Rechat app.', 'rechat-plugin') . '" style="background:#f0f0f1;color:#50575e;cursor:not-allowed;"'
+        : '';
 ?>
+    <?php if ($rch_is_synced) : ?>
+    <div class="notice notice-info inline" style="margin:0 0 14px;padding:10px 12px;">
+        <p style="margin:0;">
+            <strong><?php esc_html_e('These fields are synced from Rechat.', 'rechat-plugin'); ?></strong>
+            <?php esc_html_e('Edit them in the Rechat app — any change here is read-only and will be overwritten on the next sync. Only Display order and Agent title are editable in WordPress.', 'rechat-plugin'); ?>
+        </p>
+    </div>
+    <?php endif; ?>
+
     <label for="api_id_field">Rechat ID (not available for locally added agents): </label>
     <input type="text" id="api_id_field" name="api_id_field" value="<?php echo esc_attr($api_id); ?>" class="widefat" readonly />
     <br>
@@ -73,56 +88,56 @@ function agents_meta_box_html($post)
     <input type="number" id="agents_display_order" name="agents_display_order" value="<?php echo esc_attr($display_order_show); ?>" class="small-text" min="0" step="1" />
     <p class="description">Set 0, 1, 2… to pin order at the top of lists. Leave empty for no number — those agents appear after all numbered ones. Meta key: <code><?php echo esc_html(RCH_AGENT_DISPLAY_ORDER_META_KEY); ?></code></p>
     <br>
-    <label for="agents_profile_image_url">Profile Image URL</label>
-    <input type="text" id="agents_profile_image_url" name="agents_profile_image_url" value="<?php echo esc_attr($profile_image_url); ?>" class="widefat" />
+    <label for="agents_profile_image_url">Profile Image URL <em>(<?php esc_html_e('from Rechat', 'rechat-plugin'); ?>)</em></label>
+    <input type="text" id="agents_profile_image_url" name="agents_profile_image_url" value="<?php echo esc_attr($profile_image_url); ?>" class="widefat"<?php echo $rch_api_ro; ?> />
     <br>
-    <label for="agents_timezone">timezone</label>
-    <input type="text" id="agents_timezone" name="agents_timezone" value="<?php echo esc_attr($timezone); ?>" class="widefat" />
+    <label for="agents_timezone">timezone <em>(<?php esc_html_e('from Rechat', 'rechat-plugin'); ?>)</em></label>
+    <input type="text" id="agents_timezone" name="agents_timezone" value="<?php echo esc_attr($timezone); ?>" class="widefat"<?php echo $rch_api_ro; ?> />
     <br>
-    <label for="agents_first_name">First Name</label>
-    <input type="text" id="agents_first_name" name="agents_first_name" value="<?php echo esc_attr($first_name); ?>" class="widefat" />
+    <label for="agents_first_name">First Name <em>(<?php esc_html_e('from Rechat', 'rechat-plugin'); ?>)</em></label>
+    <input type="text" id="agents_first_name" name="agents_first_name" value="<?php echo esc_attr($first_name); ?>" class="widefat"<?php echo $rch_api_ro; ?> />
     <br>
-    <label for="agents_last_name">Last Name</label>
-    <input type="text" id="agents_last_name" name="agents_last_name" value="<?php echo esc_attr($last_name); ?>" class="widefat" />
+    <label for="agents_last_name">Last Name <em>(<?php esc_html_e('from Rechat', 'rechat-plugin'); ?>)</em></label>
+    <input type="text" id="agents_last_name" name="agents_last_name" value="<?php echo esc_attr($last_name); ?>" class="widefat"<?php echo $rch_api_ro; ?> />
     <br>
-    <label for="agents_website">Website</label>
-    <input type="text" id="agents_website" name="agents_website" value="<?php echo esc_attr($website); ?>" class="widefat" />
-    <br>
-
-    <label for="agents_instagram">Instagram</label>
-    <input type="text" id="agents_instagram" name="agents_instagram" value="<?php echo esc_attr($instagram); ?>" class="widefat" />
+    <label for="agents_website">Website <em>(<?php esc_html_e('from Rechat', 'rechat-plugin'); ?>)</em></label>
+    <input type="text" id="agents_website" name="agents_website" value="<?php echo esc_attr($website); ?>" class="widefat"<?php echo $rch_api_ro; ?> />
     <br>
 
-    <label for="agents_twitter">Twitter</label>
-    <input type="text" id="agents_twitter" name="agents_twitter" value="<?php echo esc_attr($twitter); ?>" class="widefat" />
+    <label for="agents_instagram">Instagram <em>(<?php esc_html_e('from Rechat', 'rechat-plugin'); ?>)</em></label>
+    <input type="text" id="agents_instagram" name="agents_instagram" value="<?php echo esc_attr($instagram); ?>" class="widefat"<?php echo $rch_api_ro; ?> />
     <br>
 
-    <label for="agents_linkedin">LinkedIn</label>
-    <input type="text" id="agents_linkedin" name="agents_linkedin" value="<?php echo esc_attr($linkedin); ?>" class="widefat" />
+    <label for="agents_twitter">Twitter <em>(<?php esc_html_e('from Rechat', 'rechat-plugin'); ?>)</em></label>
+    <input type="text" id="agents_twitter" name="agents_twitter" value="<?php echo esc_attr($twitter); ?>" class="widefat"<?php echo $rch_api_ro; ?> />
     <br>
 
-    <label for="agents_youtube">YouTube</label>
-    <input type="text" id="agents_youtube" name="agents_youtube" value="<?php echo esc_attr($youtube); ?>" class="widefat" />
+    <label for="agents_linkedin">LinkedIn <em>(<?php esc_html_e('from Rechat', 'rechat-plugin'); ?>)</em></label>
+    <input type="text" id="agents_linkedin" name="agents_linkedin" value="<?php echo esc_attr($linkedin); ?>" class="widefat"<?php echo $rch_api_ro; ?> />
     <br>
 
-    <label for="agents_facebook">Facebook</label>
-    <input type="text" id="agents_facebook" name="agents_facebook" value="<?php echo esc_attr($facebook); ?>" class="widefat" />
+    <label for="agents_youtube">YouTube <em>(<?php esc_html_e('from Rechat', 'rechat-plugin'); ?>)</em></label>
+    <input type="text" id="agents_youtube" name="agents_youtube" value="<?php echo esc_attr($youtube); ?>" class="widefat"<?php echo $rch_api_ro; ?> />
     <br>
 
-    <label for="agents_phone_number">Phone Number</label>
-    <input type="text" id="agents_phone_number" name="agents_phone_number" value="<?php echo esc_attr($phone_number); ?>" class="widefat" />
+    <label for="agents_facebook">Facebook <em>(<?php esc_html_e('from Rechat', 'rechat-plugin'); ?>)</em></label>
+    <input type="text" id="agents_facebook" name="agents_facebook" value="<?php echo esc_attr($facebook); ?>" class="widefat"<?php echo $rch_api_ro; ?> />
     <br>
-    <label for="agents_license_number">License Number</label>
-    <input type="text" id="agents_license_number" name="agents_license_number" value="<?php echo esc_attr($license_number); ?>" class="widefat" />
+
+    <label for="agents_phone_number">Phone Number <em>(<?php esc_html_e('from Rechat', 'rechat-plugin'); ?>)</em></label>
+    <input type="text" id="agents_phone_number" name="agents_phone_number" value="<?php echo esc_attr($phone_number); ?>" class="widefat"<?php echo $rch_api_ro; ?> />
     <br>
-    <label for="agents_email">Email</label>
-    <input type="text" id="agents_email" name="agents_email" value="<?php echo esc_attr($email); ?>" class="widefat" />
-    <label for="agents_designation">Designation</label>
-    <input type="text" id="agents_designation" name="agents_designation" value="<?php echo esc_attr(get_post_meta($post->ID, 'designation', true)); ?>" class="widefat" />
+    <label for="agents_license_number">License Number <em>(<?php esc_html_e('from Rechat', 'rechat-plugin'); ?>)</em></label>
+    <input type="text" id="agents_license_number" name="agents_license_number" value="<?php echo esc_attr($license_number); ?>" class="widefat"<?php echo $rch_api_ro; ?> />
+    <br>
+    <label for="agents_email">Email <em>(<?php esc_html_e('from Rechat', 'rechat-plugin'); ?>)</em></label>
+    <input type="text" id="agents_email" name="agents_email" value="<?php echo esc_attr($email); ?>" class="widefat"<?php echo $rch_api_ro; ?> />
+    <label for="agents_designation">Designation <em>(<?php esc_html_e('from Rechat', 'rechat-plugin'); ?>)</em></label>
+    <input type="text" id="agents_designation" name="agents_designation" value="<?php echo esc_attr(get_post_meta($post->ID, 'designation', true)); ?>" class="widefat"<?php echo $rch_api_ro; ?> />
     <br>
     <label for="agents_agent_title"><?php esc_html_e('Agent title', 'rechat-plugin'); ?></label>
     <input type="text" id="agents_agent_title" name="agents_agent_title" value="<?php echo esc_attr($agent_title); ?>" class="widefat" />
-    <p class="description"><?php esc_html_e('Optional display title (e.g. Senior Realtor). Stored as agent_title.', 'rechat-plugin'); ?></p>
+    <p class="description"><?php esc_html_e('Optional display title (e.g. Senior Realtor). Stored as agent_title. Editable in WordPress.', 'rechat-plugin'); ?></p>
     <br>
 <?php
 }

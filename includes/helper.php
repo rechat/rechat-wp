@@ -773,12 +773,24 @@ function rch_delete_outdated_posts($post_type, $current_brand_ids, $meta_key)
     ));
     foreach ($existing_posts as $post) {
         $stored_brand_id = get_post_meta($post->ID, $meta_key, true);
-        
+
         // Skip manually added posts (posts without Rechat ID)
         if (empty($stored_brand_id)) {
             continue;
         }
-        
+
+        // Never auto-delete a post that owns a provisioned network subsite. A subsite
+        // link means the site (and its theme options) belongs to this office/agent;
+        // deleting the hub post here would archive/orphan that subsite and strand its
+        // customizations. Stale entries with a subsite are kept and can be removed
+        // manually from the Multisite tools if truly gone.
+        if (
+            get_post_meta($post->ID, '_rch_office_site_id', true)
+            || get_post_meta($post->ID, '_rch_agent_site_id', true)
+        ) {
+            continue;
+        }
+
         // Only delete posts that came from API but are no longer in the current response
         if (!in_array($stored_brand_id, $current_brand_ids)) {
             wp_delete_post($post->ID, true);
