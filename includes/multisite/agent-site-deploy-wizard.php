@@ -11,6 +11,7 @@ if (! defined('ABSPATH')) {
 
 require_once RCH_PLUGIN_INCLUDES . 'multisite/agent-wizard-menus-widgets-sync.php';
 require_once RCH_PLUGIN_INCLUDES . 'multisite/agent-wizard-testimonials-sync.php';
+require_once RCH_PLUGIN_INCLUDES . 'multisite/agent-wizard-sync-refresh.php';
 
 /**
  * User meta key for draft wizard state (JSON).
@@ -1084,15 +1085,19 @@ function rch_agent_wizard_build_row_from_theme_rows(int $agent_id, array $theme_
 
 /**
  * @param array<string, array{mode:string, value?:mixed, meta_key?:string}> $theme_rows
- * @return true|WP_Error
+ * @param bool                                                              $require_cap Whether to enforce the network-admin capability
+ *                                                                                       check. System-triggered redeploys (e.g. the
+ *                                                                                       post-sync auto-refresh) run with no current user and
+ *                                                                                       pass false; the UI/AJAX path keeps the default true.
+ * @return array|WP_Error
  */
-function rch_agent_wizard_deploy_to_agent_blog(int $agent_id, array $theme_rows)
+function rch_agent_wizard_deploy_to_agent_blog(int $agent_id, array $theme_rows, bool $require_cap = true)
 {
     if (! is_multisite()) {
         return new WP_Error('rch_wizard_not_multisite', __('Multisite is not enabled.', 'rechat-plugin'));
     }
 
-    if (! current_user_can('manage_network_options')) {
+    if ($require_cap && ! current_user_can('manage_network_options')) {
         return new WP_Error('rch_wizard_cap', __('Insufficient permissions.', 'rechat-plugin'));
     }
 
