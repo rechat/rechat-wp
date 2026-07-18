@@ -31,6 +31,20 @@ add_filter('cron_schedules', 'rch_add_custom_cron_intervals');
  ******************************/
 function rch_schedule_data_sync_cron_job()
 {
+    // Sync is HUB-ONLY. Agents/offices/regions/branding all belong to the network main site.
+    // WP-Cron is per-site on multisite, and this runs on `wp` (every front-end pageview), so a
+    // visitor to any sub-site would otherwise schedule the sync there. Running the sync in a
+    // sub-site context inserts agent posts into the wrong blog and makes post IDs ambiguous
+    // across blogs. Never schedule off the main site — and clear any event that already leaked.
+    if (is_multisite() && !is_main_site()) {
+        $leaked = wp_next_scheduled(RCH_CRON_HOOK);
+        if ($leaked) {
+            wp_clear_scheduled_hook(RCH_CRON_HOOK);
+            error_log('Rechat Plugin: Cleared leaked data-sync cron on sub-site blog ' . get_current_blog_id());
+        }
+        return;
+    }
+
     // Only schedule if not already scheduled
     if (!wp_next_scheduled(RCH_CRON_HOOK)) {
         $scheduled = wp_schedule_event(time(), RCH_CRON_INTERVAL, RCH_CRON_HOOK);
@@ -49,6 +63,14 @@ add_action('wp', 'rch_schedule_data_sync_cron_job');
  ******************************/
 function rch_execute_data_sync_cron_job()
 {
+    // Hub-only guard (see rch_schedule_data_sync_cron_job): never run the sync in a sub-site
+    // context. Manual admin triggers run on the main site, so this only blocks stray sub-site
+    // cron events. Agents/offices/regions/branding are network main-site data.
+    if (is_multisite() && !is_main_site()) {
+        error_log('Rechat Plugin: Skipped data sync on sub-site blog ' . get_current_blog_id() . ' (hub-only).');
+        return;
+    }
+
     // Verify the function exists before calling
     if (!function_exists('rch_update_agents_offices_regions_data')) {
         error_log('Rechat Plugin: rch_update_agents_offices_regions_data function not found');

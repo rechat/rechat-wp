@@ -104,6 +104,14 @@ function rch_agent_wizard_refresh_subsite_after_agent_change(int $agent_id): voi
         return;
     }
 
+    // Hub-only. Agent posts and the wizard recipe live on the network main site. If this ever
+    // runs in a sub-site context (e.g. a stray sub-site cron), a numeric post ID means a
+    // different post on the main site (an attachment, an acf-field, …), so resolving it would
+    // write garbage into theme options. Never resolve/write off the main site.
+    if (! is_main_site()) {
+        return;
+    }
+
     if (get_post_type($agent_id) !== 'agents') {
         return;
     }
