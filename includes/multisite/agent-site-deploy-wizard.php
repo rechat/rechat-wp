@@ -2075,6 +2075,197 @@ function rch_agent_wizard_broadcast_posts_to_targets(array $post_ids, string $ta
 }
 
 /**
+ * Broadcast the given source posts/pages to an EXPLICIT batch of target blog IDs.
+ *
+ * Synchronous and intended for ONE small chunk. Large target sets are split into chunks by
+ * rch_agent_wizard_process_broadcast_chunk() and driven from the browser, so no single HTTP
+ * request ever fans out to hundreds of sub-sites (which times out / closes the connection on
+ * managed hosts like Kinsta). Because each chunk is small, we do NOT use the low-priority queue.
+ *
+ * @param int[] $post_ids Parent post IDs on the source blog.
+ * @param int[] $blog_ids Target blog IDs for this chunk.
+ * @return array{ok:int,skipped:int,fail:int,errors:string[]}
+ */
+function rch_agent_wizard_broadcast_posts_to_blog_ids(array $post_ids, array $blog_ids): array
+{
+    $out = ['ok' => 0, 'skipped' => 0, 'fail' => 0, 'errors' => []];
+
+    if (! rch_agent_wizard_broadcast_step_enabled() || ! function_exists('ThreeWP_Broadcast')) {
+        $out['errors'][] = __('Broadcast is not available.', 'rechat-plugin');
+
+        return $out;
+    }
+
+    $filter_positive = static function (int $id): bool {
+        return $id > 0;
+    };
+    $post_ids = array_values(array_unique(array_filter(array_map('absint', $post_ids), $filter_positive)));
+    $blog_ids = array_values(array_unique(array_filter(array_map('absint', $blog_ids), $filter_positive)));
+
+    if ($post_ids === [] || $blog_ids === []) {
+        return $out;
+    }
+
+    $source = rch_multisite_broadcast_source_blog_id();
+    $runner = rch_multisite_broadcast_runner_user_id();
+    $prev   = get_current_user_id();
+
+    wp_set_current_user($runner);
+    switch_to_blog($source);
+
+    /** @var \threewp_broadcast\ThreeWP_Broadcast $broadcast */
+    $broadcast = ThreeWP_Broadcast();
+    $api       = $broadcast->api();
+
+    foreach ($post_ids as $pid) {
+        $post = get_post($pid);
+        if (! $post || ! in_array($post->post_type, ['post', 'page'], true)) {
+            $out['fail']++;
+            $out['errors'][] = sprintf(
+                /* translators: %d: post ID */
+                __('Skipped invalid post or page (ID %d).', 'rechat-plugin'),
+                $pid
+            );
+            continue;
+        }
+
+        try {
+            $targets_for_post = function_exists('rch_multisite_broadcast_unlinked_target_blog_ids')
+                ? rch_multisite_broadcast_unlinked_target_blog_ids($source, $pid, $blog_ids)
+                : $blog_ids;
+
+            if ($targets_for_post === []) {
+                $out['skipped']++;
+                continue;
+            }
+
+            $api->broadcast_children($pid, $targets_for_post);
+            $out['ok']++;
+        } catch (Throwable $e) {
+            $out['fail']++;
+            $out['errors'][] = sprintf(
+                /* translators: 1: post ID, 2: error message */
+                __('Post %1$d: %2$s', 'rechat-plugin'),
+                $pid,
+                $e->getMessage()
+            );
+        }
+    }
+
+    restore_current_blog();
+    wp_set_current_user($prev);
+
+    return $out;
+}
+
+/**
+ * Process one chunk of the pending broadcast job (site option).
+ *
+ * Splices off a batch of target blog IDs, broadcasts the job's posts to just that batch, records
+ * progress, and returns status for the browser-driven loop. Mirrors the menu-build chunk runner.
+ *
+ * @return array{done:bool,remaining:int,total:int,ok:int,skipped:int,fail:int,errors:string[],active:bool}
+ */
+function rch_agent_wizard_process_broadcast_chunk(): array
+{
+    $status = ['done' => true, 'remaining' => 0, 'total' => 0, 'ok' => 0, 'skipped' => 0, 'fail' => 0, 'errors' => [], 'active' => false];
+
+    if (! is_multisite()) {
+        return $status;
+    }
+
+    $raw = get_site_option(RCH_AGENT_WIZARD_BROADCAST_JOB_OPTION, '');
+    if (! is_string($raw) || $raw === '') {
+        return $status;
+    }
+
+    $job = json_decode($raw, true);
+    if (! is_array($job) || empty($job['blog_ids']) || ! is_array($job['blog_ids']) || empty($job['post_ids'])) {
+        delete_site_option(RCH_AGENT_WIZARD_BROADCAST_JOB_OPTION);
+
+        return $status;
+    }
+
+    $status['active'] = true;
+
+    $chunk_size = (int) apply_filters('rch_agent_wizard_broadcast_chunk_size', 40);
+    if ($chunk_size < 1) {
+        $chunk_size = 40;
+    }
+
+    $chunk    = array_splice($job['blog_ids'], 0, $chunk_size);
+    $post_ids = array_map('absint', (array) $job['post_ids']);
+
+    $res = rch_agent_wizard_broadcast_posts_to_blog_ids($post_ids, $chunk);
+
+    $job['ok']      = (int) ($job['ok'] ?? 0) + (int) $res['ok'];
+    $job['skipped'] = (int) ($job['skipped'] ?? 0) + (int) $res['skipped'];
+    $job['fail']    = (int) ($job['fail'] ?? 0) + (int) $res['fail'];
+    if (! isset($job['errors']) || ! is_array($job['errors'])) {
+        $job['errors'] = [];
+    }
+    foreach ($res['errors'] as $e) {
+        if (count($job['errors']) < 50) {
+            $job['errors'][] = $e;
+        }
+    }
+
+    $total = (int) ($job['total'] ?? 0);
+
+    if ($job['blog_ids'] !== []) {
+        update_site_option(RCH_AGENT_WIZARD_BROADCAST_JOB_OPTION, wp_json_encode($job));
+
+        return [
+            'done'      => false,
+            'remaining' => count($job['blog_ids']),
+            'total'     => $total,
+            'ok'        => (int) $job['ok'],
+            'skipped'   => (int) $job['skipped'],
+            'fail'      => (int) $job['fail'],
+            'errors'    => array_slice($job['errors'], 0, 50),
+            'active'    => true,
+        ];
+    }
+
+    delete_site_option(RCH_AGENT_WIZARD_BROADCAST_JOB_OPTION);
+    error_log(
+        sprintf(
+            'Rechat Agent Wizard: broadcast finished — %d ok, %d skipped, %d failed, across %d target site(s).',
+            (int) $job['ok'],
+            (int) $job['skipped'],
+            (int) $job['fail'],
+            $total
+        )
+    );
+
+    return [
+        'done'      => true,
+        'remaining' => 0,
+        'total'     => $total,
+        'ok'        => (int) $job['ok'],
+        'skipped'   => (int) $job['skipped'],
+        'fail'      => (int) $job['fail'],
+        'errors'    => array_slice($job['errors'], 0, 50),
+        'active'    => true,
+    ];
+}
+
+/**
+ * AJAX: process one broadcast chunk (browser-driven loop for large target sets).
+ */
+function rch_agent_wizard_ajax_run_broadcast_chunk(): void
+{
+    check_ajax_referer(RCH_AGENT_WIZARD_NONCE_ACTION, 'nonce');
+
+    if (is_wp_error(rch_agent_wizard_user_can_run())) {
+        wp_send_json_error(['message' => __('Permission denied.', 'rechat-plugin')], 403);
+    }
+
+    wp_send_json_success(rch_agent_wizard_process_broadcast_chunk());
+}
+add_action('wp_ajax_rch_agent_wizard_run_broadcast_chunk', 'rch_agent_wizard_ajax_run_broadcast_chunk');
+
+/**
  * AJAX: paginated posts/pages on Broadcast source blog for picker.
  */
 function rch_agent_wizard_ajax_list_broadcast_posts(): void
@@ -2307,6 +2498,56 @@ function rch_agent_wizard_ajax_broadcast_posts(): void
     $allowed_modes = ['agent_only', 'office_only', 'all_subsites', 'agent_office'];
     if (! in_array($mode, $allowed_modes, true)) {
         $mode = 'agent_only';
+    }
+
+    // Large target sets: split into browser-driven background chunks so a single request never
+    // fans out to hundreds of sub-sites (which times out / drops the connection on managed hosts).
+    $targets       = rch_agent_wizard_broadcast_target_blog_ids($mode);
+    sort($targets);
+    $target_count  = count($targets);
+    $chunk_trigger = (int) apply_filters('rch_agent_wizard_broadcast_chunk_trigger', 40);
+
+    if ($chunk_trigger > 0 && $target_count > $chunk_trigger) {
+        $store_bc = array_values(
+            array_filter(
+                array_map('absint', $post_ids),
+                static function (int $id): bool {
+                    return $id > 0;
+                }
+            )
+        );
+        if ($store_bc !== []) {
+            rch_agent_wizard_update_shared_deploy_profile([
+                'broadcastPostIds'    => $store_bc,
+                'broadcastTargetMode' => $mode,
+            ]);
+        }
+
+        update_site_option(
+            RCH_AGENT_WIZARD_BROADCAST_JOB_OPTION,
+            wp_json_encode([
+                'post_ids' => $store_bc,
+                'blog_ids' => array_values($targets),
+                'total'    => $target_count,
+                'ok'       => 0,
+                'skipped'  => 0,
+                'fail'     => 0,
+                'errors'   => [],
+            ])
+        );
+
+        wp_send_json_success([
+            'message'      => sprintf(
+                /* translators: %d: target sub-site count */
+                __('Broadcasting to %d sub-site(s) in the background — keep this tab open until it finishes.', 'rechat-plugin'),
+                $target_count
+            ),
+            'queued'       => true,
+            'target_count' => $target_count,
+            'ok'           => 0,
+            'skipped'      => 0,
+            'fail'         => 0,
+        ]);
     }
 
     $result = rch_agent_wizard_broadcast_posts_to_targets($post_ids, $mode);
@@ -2706,6 +2947,7 @@ function rch_agent_wizard_ajax_create_builder_menu(): void
  * Network option holding the in-progress background menu-build job (JSON).
  */
 const RCH_AGENT_WIZARD_MENU_JOB_OPTION = 'rch_agent_wizard_menu_build_job';
+const RCH_AGENT_WIZARD_BROADCAST_JOB_OPTION = 'rch_agent_wizard_broadcast_job';
 
 /**
  * Persist a menu-build job and kick off the first cron chunk.
