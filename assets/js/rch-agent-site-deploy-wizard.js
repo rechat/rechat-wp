@@ -2315,6 +2315,92 @@
             step();
         }
 
+        // Repeatedly process one background broadcast chunk until done, showing live progress.
+        function driveBroadcastJob(total) {
+            var $res = $('#rch-wz-bc-result');
+
+            function renderProgress(processed, totalCount, ok, skipped, fail) {
+                $res.html(
+                    '<div class="notice notice-info inline"><p>' +
+                        escapeHtml(
+                            'Broadcasting to sub-sites: ' +
+                                processed +
+                                ' / ' +
+                                totalCount +
+                                ' processed (' +
+                                ok +
+                                ' sent, ' +
+                                skipped +
+                                ' already there, ' +
+                                fail +
+                                ' failed). Keep this tab open…'
+                        ) +
+                        '</p></div>'
+                );
+            }
+
+            renderProgress(0, total, 0, 0, 0);
+            spin($('#rch-wz-bc-run-spinner'), true);
+
+            function step() {
+                $.post(rchAgentWizard.ajaxurl, {
+                    action: 'rch_agent_wizard_run_broadcast_chunk',
+                    nonce: rchAgentWizard.nonce,
+                })
+                    .done(function (r) {
+                        if (!r || !r.success || !r.data) {
+                            spin($('#rch-wz-bc-run-spinner'), false);
+                            $res.html(
+                                '<div class="notice notice-error inline"><p>Background broadcast failed. Reload and run again to resume the rest.</p></div>'
+                            );
+                            return;
+                        }
+                        var d = r.data;
+                        var tot = d.total || total || 0;
+                        var processed = tot - (d.remaining || 0);
+
+                        if (d.done) {
+                            spin($('#rch-wz-bc-run-spinner'), false);
+                            var html =
+                                '<div class="notice notice-success inline"><p>' +
+                                escapeHtml(
+                                    'Broadcast finished: ' +
+                                        (d.ok || 0) +
+                                        ' sent, ' +
+                                        (d.skipped || 0) +
+                                        ' already there, ' +
+                                        (d.fail || 0) +
+                                        ' failed, across ' +
+                                        tot +
+                                        ' sub-site(s).'
+                                ) +
+                                '</p>';
+                            if (d.errors && d.errors.length) {
+                                html += '<ul>';
+                                $.each(d.errors, function (i, err) {
+                                    html += '<li>' + escapeHtml(err) + '</li>';
+                                });
+                                html += '</ul>';
+                            }
+                            html += '</div>';
+                            $res.html(html);
+                            return;
+                        }
+
+                        renderProgress(processed, tot, d.ok || 0, d.skipped || 0, d.fail || 0);
+                        setTimeout(step, 400);
+                    })
+                    .fail(function () {
+                        spin($('#rch-wz-bc-run-spinner'), false);
+                        $res.html(
+                            '<div class="notice notice-error inline"><p>Background broadcast request failed. Reload to resume the rest.</p></div>'
+                        );
+                    });
+            }
+
+            step();
+        }
+
         if (rchAgentWizard.broadcastStep) {
             $(document).on('change', '.rch-wz-bc-check', function () {
                 var id = parseInt($(this).data('id'), 10);
@@ -2378,6 +2464,13 @@
                                     escapeHtml(res.data && res.data.message ? res.data.message : 'Error') +
                                     '</p></div>'
                             );
+                            return;
+                        }
+                        // Large networks are chunked server-side; drive the batches from the browser so
+                        // each request stays short and it finishes even when WP-cron is disabled.
+                        if (res.data && res.data.queued) {
+                            persistWizardDraft(true);
+                            driveBroadcastJob(res.data.target_count || 0);
                             return;
                         }
                         var html =
