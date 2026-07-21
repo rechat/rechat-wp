@@ -45,6 +45,7 @@ function rch_get_active_tab()
     if (rch_rechat_settings_is_multisite_hub_admin_context()) {
         $allowed_tabs[] = 'multisite';
         $allowed_tabs[] = 'agent-site-wizard';
+        $allowed_tabs[] = 'office-site-wizard';
     }
 
     $tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'sync-data';
@@ -63,16 +64,17 @@ function rch_get_active_tab()
 function rch_render_tab_navigation($active_tab)
 {
     $tabs = [
-        'sync-data' => __('Sync Your Data', 'rechat-plugin'),
-        'connect-to-rechat' => __('Connect To Rechat', 'rechat-plugin'),
-        'general-settings' => __('General Settings', 'rechat-plugin'),
-        'local-logic' => __('Local Logic and Google Map Setting', 'rechat-plugin'),
-        'agent-import'  => __('Import / Export Agents', 'rechat-plugin'),
+        'sync-data' => __('Sync Data', 'rechat-plugin'),
+        'connect-to-rechat' => __('Connect', 'rechat-plugin'),
+        'general-settings' => __('General', 'rechat-plugin'),
+        'local-logic' => __('Local Logic & Maps', 'rechat-plugin'),
+        'agent-import'  => __('Import / Export', 'rechat-plugin'),
     ];
 
     if (rch_rechat_settings_is_multisite_hub_admin_context()) {
         $tabs['multisite']          = __('Multisite', 'rechat-plugin');
-        $tabs['agent-site-wizard'] = __('Agent site wizard', 'rechat-plugin');
+        $tabs['agent-site-wizard'] = __('Agent wizard', 'rechat-plugin');
+        $tabs['office-site-wizard'] = __('Office wizard', 'rechat-plugin');
     }
 
     echo '<h2 class="nav-tab-wrapper">';
@@ -172,6 +174,12 @@ function rch_rechat_menu_page()
                 case 'agent-site-wizard':
                     if (is_multisite() && function_exists('rch_agent_wizard_render_tab')) {
                         rch_agent_wizard_render_tab();
+                    }
+                    break;
+
+                case 'office-site-wizard':
+                    if (is_multisite() && function_exists('rch_office_wizard_render_tab')) {
+                        rch_office_wizard_render_tab();
                     }
                     break;
             }

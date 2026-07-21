@@ -780,6 +780,52 @@ function rch_multisite_render_block_data_inject_listing_filter_agents($parsed_bl
 add_filter('render_block_data', 'rch_multisite_render_block_data_inject_listing_filter_agents', 10, 3);
 
 /**
+ * Agent subsites only: strip map position (map_latitude / map_longitude / map_zoom) from a
+ * broadcast Listing block so agent sites never inherit the main-site map center/zoom.
+ *
+ * Runs at render time on the agent subsite — the stored block on the main site (and on office
+ * subsites) is never modified. Only the three map keys are blanked, and only when the block
+ * actually set them; every other listing attribute is left untouched.
+ *
+ * The keys are blanked (set to '') rather than unset so the registered block-attribute default
+ * (map_zoom = "12" in rch_get_listing_block_attributes()) does not silently re-appear during
+ * render. Blank map_zoom is omitted from <rechat-map> (helper: `if (! empty($map_zoom))`), and
+ * blank lat/long yield no map_default_center.
+ *
+ * @param array         $parsed_block Parsed block (see WP_Block_Parser_Block).
+ * @param array         $source_block Unmodified copy (unused).
+ * @param \WP_Block|null $parent_block Parent block (unused).
+ * @return array
+ */
+function rch_multisite_render_block_data_strip_listing_map_on_agent($parsed_block, $source_block = null, $parent_block = null)
+{
+    unset($source_block, $parent_block);
+
+    if (! is_array($parsed_block) || ($parsed_block['blockName'] ?? '') !== 'rch-rechat-plugin/listing-block') {
+        return $parsed_block;
+    }
+
+    // Agent-only subsites: not the main hub, not office subsites.
+    if (! rch_multisite_is_agent_listing_scope_active()) {
+        return $parsed_block;
+    }
+
+    if (! isset($parsed_block['attrs']) || ! is_array($parsed_block['attrs'])) {
+        return $parsed_block;
+    }
+
+    foreach (['map_latitude', 'map_longitude', 'map_zoom'] as $map_key) {
+        if (array_key_exists($map_key, $parsed_block['attrs'])) {
+            $parsed_block['attrs'][$map_key] = '';
+        }
+    }
+
+    return $parsed_block;
+}
+
+add_filter('render_block_data', 'rch_multisite_render_block_data_strip_listing_map_on_agent', 10, 3);
+
+/**
  * Leads Form block on agent subsites: set assigneeAgentEmail from linked hub agent profile.
  *
  * @param array         $parsed_block Parsed block.

@@ -61,13 +61,13 @@ function rch_multisite_sanitize_slug(string $name): string
 /**
  * Configured agent sub-site slug format.
  *
- * @return string `initial_lastname` (default), `firstname_lastname`, or `firstname_lastname_nodash`.
+ * @return string `initial_lastname` (default), `firstname_lastname`, `firstname_lastname_nodash`, or `firstname_only`.
  */
 function rch_multisite_get_agent_slug_format(): string
 {
     $saved = (string) get_site_option('rch_multisite_agent_slug_format', 'initial_lastname');
 
-    if (! in_array($saved, ['initial_lastname', 'firstname_lastname', 'firstname_lastname_nodash'], true)) {
+    if (! in_array($saved, ['initial_lastname', 'firstname_lastname', 'firstname_lastname_nodash', 'firstname_only'], true)) {
         return 'initial_lastname';
     }
 
@@ -81,6 +81,7 @@ function rch_multisite_get_agent_slug_format(): string
  *  - initial_lastname:          first initial + last name, no separators (e.g. "afreeman")
  *  - firstname_lastname:        first name + last name with hyphens (e.g. "amy-freeman")
  *  - firstname_lastname_nodash: first name + last name, no separators (e.g. "amyfreeman")
+ *  - firstname_only:            first name only, no separators (e.g. "amy") — collision-prone.
  *
  * Falls back to the agent display name when name meta is missing.
  *
@@ -111,6 +112,21 @@ function rch_multisite_agent_site_slug_base(int $agent_post_id, string $agent_na
         }
 
         return rch_multisite_sanitize_slug($agent_name);
+    }
+
+    if ($format === 'firstname_only') {
+        $raw = '';
+        if ($first !== '') {
+            $raw = preg_replace('/[^a-z0-9]+/', '', strtolower(remove_accents($first)));
+            $raw = substr((string) $raw, 0, 63);
+        }
+        if ($raw !== '') {
+            return (string) $raw;
+        }
+        // No usable first name — use the shared display-name fallback (not initial+lastname).
+        $fallback = preg_replace('/[^a-z0-9]+/', '', strtolower(remove_accents($agent_name)));
+
+        return (string) substr((string) $fallback, 0, 63);
     }
 
     if ($format === 'firstname_lastname_nodash') {
@@ -428,25 +444,44 @@ function rch_multisite_unique_agent_site_slug(
 }
 
 /**
- * Build a URL slug for office sub-sites (prefixed so agent + office names never collide).
+ * Configured office sub-site slug format.
  *
- * @param  string $name Office display name.
- * @return string       e.g. o-main-office, or empty if invalid.
+ * @return string `prefixed` (default, e.g. "o-syracuse") or `plain` (e.g. "syracuse").
  */
-function rch_multisite_office_public_slug(string $name): string
+function rch_multisite_get_office_slug_format(): string
 {
-    $base = rch_multisite_sanitize_slug($name);
+    $saved = (string) get_site_option('rch_multisite_office_slug_format', 'prefixed');
+
+    return $saved === 'plain' ? 'plain' : 'prefixed';
+}
+
+/**
+ * Build a URL slug for office sub-sites.
+ *
+ * Default `prefixed` format adds an `o-` prefix so office slugs never collide with agent
+ * slugs. The `plain` format drops the prefix (e.g. "syracuse") — cleaner URLs, but the admin
+ * must ensure office names do not clash with agent sub-site slugs.
+ *
+ * @param  string      $name   Office display name.
+ * @param  string|null $format Optional format override (`prefixed` | `plain`).
+ * @return string              e.g. "o-main-office" or "main-office", or empty if invalid.
+ */
+function rch_multisite_office_public_slug(string $name, ?string $format = null): string
+{
+    $format = $format ?? rch_multisite_get_office_slug_format();
+    $limit  = $format === 'plain' ? 63 : 60; // leave room for the "o-" prefix.
+    $base   = rch_multisite_sanitize_slug($name);
 
     if ($base === '') {
         return '';
     }
 
-    if (strlen($base) > 60) {
-        $base = substr($base, 0, 60);
+    if (strlen($base) > $limit) {
+        $base = substr($base, 0, $limit);
         $base = rtrim($base, '-');
     }
 
-    return 'o-' . $base;
+    return $format === 'plain' ? $base : 'o-' . $base;
 }
 
 /**
@@ -4140,10 +4175,19 @@ function rch_multisite_save_settings(): void
     $slug_format = isset($_POST['rch_multisite_agent_slug_format'])
         ? sanitize_key(wp_unslash($_POST['rch_multisite_agent_slug_format']))
         : 'initial_lastname';
-    if (! in_array($slug_format, ['initial_lastname', 'firstname_lastname', 'firstname_lastname_nodash'], true)) {
+    if (! in_array($slug_format, ['initial_lastname', 'firstname_lastname', 'firstname_lastname_nodash', 'firstname_only'], true)) {
         $slug_format = 'initial_lastname';
     }
     update_site_option('rch_multisite_agent_slug_format', $slug_format);
+
+    // Office sub-site slug format: prefixed ("o-syracuse") or plain ("syracuse").
+    $office_slug_format = isset($_POST['rch_multisite_office_slug_format'])
+        ? sanitize_key(wp_unslash($_POST['rch_multisite_office_slug_format']))
+        : 'prefixed';
+    if (! in_array($office_slug_format, ['prefixed', 'plain'], true)) {
+        $office_slug_format = 'prefixed';
+    }
+    update_site_option('rch_multisite_office_slug_format', $office_slug_format);
 
     // Delete on agent delete flag.
     $delete_flag = isset($_POST['rch_multisite_delete_on_delete']) ? 1 : 0;

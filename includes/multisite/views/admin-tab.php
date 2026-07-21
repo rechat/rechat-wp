@@ -17,6 +17,9 @@ function rch_multisite_render_admin_tab(): void
     $delete_on_del   = (bool) get_site_option('rch_multisite_delete_site_on_agent_delete', 0);
     $url_type        = rch_multisite_get_url_type();
     $agent_slug_format = rch_multisite_get_agent_slug_format();
+    $office_slug_format = function_exists('rch_multisite_get_office_slug_format')
+        ? rch_multisite_get_office_slug_format()
+        : 'prefixed';
     $network         = get_network();
     $base_domain     = preg_replace('/^www\./i', '', $network->domain);
     $network_path    = trailingslashit($network->path); // e.g. '/rechat-plugin/'
@@ -43,6 +46,9 @@ function rch_multisite_render_admin_tab(): void
     $example_agent_initial_lastname = 'jdoe.' . $base_domain;
     $example_agent_firstname_lastname = 'john-doe.' . $base_domain;
     $example_agent_firstname_lastname_nodash = 'johndoe.' . $base_domain;
+    $example_agent_firstname_only = 'john.' . $base_domain;
+    $example_office_prefixed = 'o-syracuse.' . $base_domain;
+    $example_office_plain    = 'syracuse.' . $base_domain;
 
     // All published agent posts for the status table.
     $agents = get_posts([
@@ -143,7 +149,7 @@ function rch_multisite_render_admin_tab(): void
                                     <?php esc_html_e('Create a WordPress sub-site for each office', 'rechat-plugin'); ?>
                                 </label>
                                 <p class="description">
-                                    <?php esc_html_e('When checked, syncing offices from the API, manual saves, and “Provision” can create and update a network site per office. Office URLs use an o- prefix (e.g. o-main-office) so they never clash with agent slugs.', 'rechat-plugin'); ?>
+                                    <?php esc_html_e('When checked, syncing offices from the API, manual saves, and “Provision” can create and update a network site per office. Office URL format (o- prefix or plain) is set under “Office sub-site URL slug” below.', 'rechat-plugin'); ?>
                                 </p>
                             </td>
                         </tr>
@@ -315,7 +321,7 @@ function rch_multisite_render_admin_tab(): void
                                         <?php esc_html_e('First name + last name (hyphen)', 'rechat-plugin'); ?>
                                         &nbsp;<code><?php echo esc_html($example_agent_firstname_lastname); ?></code>
                                     </label>
-                                    <label style="display:block;">
+                                    <label style="display:block;margin-bottom:6px;">
                                         <input
                                             type="radio"
                                             name="rch_multisite_agent_slug_format"
@@ -325,9 +331,68 @@ function rch_multisite_render_admin_tab(): void
                                         <?php esc_html_e('First name + last name (no separator)', 'rechat-plugin'); ?>
                                         &nbsp;<code><?php echo esc_html($example_agent_firstname_lastname_nodash); ?></code>
                                     </label>
+                                    <label style="display:block;">
+                                        <input
+                                            type="radio"
+                                            name="rch_multisite_agent_slug_format"
+                                            value="firstname_only"
+                                            <?php checked($agent_slug_format, 'firstname_only'); ?>
+                                        >
+                                        <?php esc_html_e('First name only', 'rechat-plugin'); ?>
+                                        &nbsp;<code><?php echo esc_html($example_agent_firstname_only); ?></code>
+                                    </label>
                                 </fieldset>
+                                <?php if ($agent_slug_format === 'firstname_only') : ?>
+                                    <div class="notice notice-warning inline" style="margin:8px 0 0;padding:6px 12px;">
+                                        <p>
+                                            <strong><?php esc_html_e('Heads up:', 'rechat-plugin'); ?></strong>
+                                            <?php esc_html_e('First name only is prone to collisions — two or more agents with the same first name (e.g. two “John”s) cannot share one URL. Duplicates get a numeric suffix (john, john2, …) so the second agent’s URL will not be the clean first name. Use a last-name format if agents may share first names.', 'rechat-plugin'); ?>
+                                        </p>
+                                    </div>
+                                <?php endif; ?>
                                 <p class="description" style="margin-top:6px;">
                                     <?php esc_html_e('Controls how agent sub-site URLs are generated for new sites, sync, and the “Migrate agent sub-site URLs” action. Default is first initial + last name. Changing this does not rename existing sites until you run the migration action.', 'rechat-plugin'); ?>
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr valign="top">
+                            <th scope="row">
+                                <?php esc_html_e('Office sub-site URL slug', 'rechat-plugin'); ?>
+                            </th>
+                            <td>
+                                <fieldset>
+                                    <label style="display:block;margin-bottom:6px;">
+                                        <input
+                                            type="radio"
+                                            name="rch_multisite_office_slug_format"
+                                            value="prefixed"
+                                            <?php checked($office_slug_format, 'prefixed'); ?>
+                                        >
+                                        <?php esc_html_e('With o- prefix (default)', 'rechat-plugin'); ?>
+                                        &nbsp;<code><?php echo esc_html($example_office_prefixed); ?></code>
+                                    </label>
+                                    <label style="display:block;">
+                                        <input
+                                            type="radio"
+                                            name="rch_multisite_office_slug_format"
+                                            value="plain"
+                                            <?php checked($office_slug_format, 'plain'); ?>
+                                        >
+                                        <?php esc_html_e('No prefix', 'rechat-plugin'); ?>
+                                        &nbsp;<code><?php echo esc_html($example_office_plain); ?></code>
+                                    </label>
+                                </fieldset>
+                                <?php if ($office_slug_format === 'plain') : ?>
+                                    <div class="notice notice-warning inline" style="margin:8px 0 0;padding:6px 12px;">
+                                        <p>
+                                            <strong><?php esc_html_e('Heads up:', 'rechat-plugin'); ?></strong>
+                                            <?php esc_html_e('The o- prefix exists so office URLs never clash with agent sub-site URLs. Without it, an office named the same as an agent slug (e.g. office “Syracuse” and an agent whose slug is “syracuse”) would collide. Make sure office names and agent slugs stay distinct.', 'rechat-plugin'); ?>
+                                        </p>
+                                    </div>
+                                <?php endif; ?>
+                                <p class="description" style="margin-top:6px;">
+                                    <?php esc_html_e('Controls how office sub-site URLs are generated for new office sites and sync. Changing this does not rename existing office sites.', 'rechat-plugin'); ?>
                                 </p>
                             </td>
                         </tr>
