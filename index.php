@@ -2,7 +2,7 @@
 /*
 Plugin Name: Rechat Plugin
 Description: Fetches and manages agent, offices, regions, and Listing data from Rechat.
-Version: 7.0.22
+Version: 7.0.23
 Author URI: https://rechat.com/
 Text Domain: rechat-plugin
 License: GPL-2.0-or-later
@@ -18,7 +18,7 @@ if (! defined('ABSPATH')) {
 // define required constants.
 define('RCH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('RCH_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('RCH_VERSION', '7.0.22');
+define('RCH_VERSION', '7.0.23');
 define('RCH_VERSION_SWIPER', '11.2.5');
 if (! function_exists('rch_is_localhost_environment')) {
     /**
@@ -47,7 +47,7 @@ if (! function_exists('rch_is_localhost_environment')) {
         return false;
     }
 }
-
+// 2.2.0-alpha
 /** Pinned @rechat/sdk version (must match unpkg URL path when not on localhost builder). */
 if (! defined('RCH_RECHAT_SDK_VERSION')) {
     define('RCH_RECHAT_SDK_VERSION', '2.0.3');
@@ -56,17 +56,13 @@ if (! defined('RCH_RECHAT_SDK_VERSION')) {
 if (! defined('RCH_RECHAT_SDK_CSS_URL')) {
     define(
         'RCH_RECHAT_SDK_CSS_URL',
-        rch_is_localhost_environment()
-            ? 'https://sdk.rechat.com/builder/dist/rechat.min.css'
-            : 'https://unpkg.com/@rechat/sdk@' . RCH_RECHAT_SDK_VERSION . '/dist/rechat.min.css'
+        'https://unpkg.com/@rechat/sdk@' . RCH_RECHAT_SDK_VERSION . '/dist/rechat.min.css'
     );
 }
 if (! defined('RCH_RECHAT_SDK_JS_URL')) {
     define(
         'RCH_RECHAT_SDK_JS_URL',
-        rch_is_localhost_environment()
-            ? 'https://sdk.rechat.com/builder/dist/rechat.min.js'
-            : 'https://unpkg.com/@rechat/sdk@' . RCH_RECHAT_SDK_VERSION . '/dist/rechat.min.js'
+        'https://unpkg.com/@rechat/sdk@' . RCH_RECHAT_SDK_VERSION . '/dist/rechat.min.js'
     );
 }
 const RCH_PLUGIN_INCLUDES = RCH_PLUGIN_DIR . 'includes/';
@@ -222,6 +218,8 @@ include RCH_PLUGIN_INCLUDES . 'multisite/agent-sites.php';
 // Multisite: agent → sub-site theme options wizard (AJAX + tab UI)
 if (is_multisite()) {
     require_once RCH_PLUGIN_INCLUDES . 'multisite/agent-site-deploy-wizard.php';
+    // Office → sub-site theme options wizard (mirrors the agent wizard; reuses its shared helpers).
+    require_once RCH_PLUGIN_INCLUDES . 'multisite/office-site-deploy-wizard.php';
 }
 // Multisite: prompt to install & activate Broadcast (ThreeWP) from wordpress.org — admin only
 if (is_multisite() && is_admin()) {
