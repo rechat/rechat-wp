@@ -93,7 +93,11 @@ rechat-property-search-form {
 .property-search-form .rcw-filters>*{
     flex: 0 0 0;
 }
-
+.hero--content, .search-header {
+    width: min(1140px, calc(100vw - 48px));
+    max-width: none;
+    align-self: center;
+}
 @media screen and (max-width: 768px) {
     .property-search-form {
         width: 100%;
