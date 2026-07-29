@@ -98,6 +98,8 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         filter_boundary_state: { type: 'string', default: '' },
         filter_boundary_ids: { type: 'string', default: '' },
         filter_boundary_selection: { type: 'string', default: '' },
+        // SDK color mode: '' inherits the General-tab site setting; 'light'/'dark' overrides this block.
+        color_mode: { type: 'string', default: '' },
         // Legacy; no editor control — preserves old posts and satisfies REST attribute schema.
         layout_style: { type: 'string', default: '' },
     },
@@ -112,7 +114,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             own_listing, property_types, filter_open_houses, office_exclusive, filter_pool, disable_sort, hide_map, hide_filters, listing_statuses, map_latitude, map_longitude, map_zoom, map_style, map_style_url, map_id,
             sort_by, filter_address, filter_search_limit, filter_suggestions_limit, filter_pagination_offset, property_subtypes, architectural_styles, filter_baths, minimum_parking_spaces, minimum_sold_date, filter_agents, list_offices, filter_brand_id, disable_filter_loading_indicator,
             filter_boundary_country, filter_boundary_state,
-            filter_boundary_ids, filter_boundary_selection,
+            filter_boundary_ids, filter_boundary_selection, color_mode,
         } = attributes;
 
         const [regions, setRegions] = useState([]);
@@ -650,6 +652,17 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                         />
                     </PanelBody>
                     <PanelBody title="Display" initialOpen={true}>
+                        <SelectControl
+                            label="Color mode"
+                            help="Default follows the Rechat General setting. Light/Dark overrides just this block (dark also sets the map preset)."
+                            value={color_mode || ''}
+                            options={[
+                                { label: 'Default (site setting)', value: '' },
+                                { label: 'Light', value: 'light' },
+                                { label: 'Dark', value: 'dark' },
+                            ]}
+                            onChange={(v) => setAttributes({ color_mode: (v === 'light' || v === 'dark') ? v : '' })}
+                        />
                         <CheckboxControl
                             label="Hide filters"
                             help="Omits rechat-map-filter (and individual filter components) from the listing layout."
@@ -792,14 +805,14 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                             label="Map style (preset)"
                             value={map_style || ''}
                             options={[
-                                { label: 'Default (liberty)', value: '' },
+                                { label: 'Default (site setting)', value: '' },
                                 { label: 'Liberty', value: 'liberty' },
                                 { label: 'Bright', value: 'bright' },
                                 { label: 'Positron', value: 'positron' },
                                 { label: 'Dark', value: 'dark' },
                             ]}
                             onChange={(v) => setAttributes({ map_style: v || '' })}
-                            help="MapLibre preset on rechat-map. Custom URL below overrides preset."
+                            help="Default follows the Rechat General map-style setting. Pick a preset to override just this block. Custom URL below overrides both."
                         />
                         <TextControl
                             label="Map style URL (style_url)"

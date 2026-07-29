@@ -8,7 +8,7 @@ if (! defined('ABSPATH')) {
 function rch_enqueue_frontend_styles()
 {
     // Validate required constants are defined
-    if (!defined('RCH_PLUGIN_ASSETS') || !defined('RCH_VERSION') || !defined('RCH_VERSION_SWIPER')) {
+    if (!defined('RCH_PLUGIN_ASSETS') || !defined('RCH_VERSION')) {
         return;
     }
 
@@ -18,7 +18,6 @@ function rch_enqueue_frontend_styles()
 
     // Enqueue CSS styles
     wp_enqueue_style('rch-front-css-global', RCH_PLUGIN_ASSETS . 'css/rch-global.css', [], RCH_VERSION);
-    wp_register_style('rch-swiper', RCH_PLUGIN_ASSETS . 'css/swiper-bundle.min.css', [], RCH_VERSION_SWIPER);
     wp_register_style('rch-rechat-listing', RCH_PLUGIN_ASSETS . 'css/rch-rechat-listing.css', [], RCH_VERSION);
     wp_register_style('rch-rechat-search-listing-shortcode', RCH_PLUGIN_ASSETS . 'css/search-bar-listing-shortcode.css', [], RCH_VERSION);
     wp_register_style('rch-rechat-single-agents', RCH_PLUGIN_ASSETS . 'css/rch-single-agents.css', [], RCH_VERSION);
@@ -31,11 +30,12 @@ function rch_enqueue_frontend_styles()
 
     // Enqueue JavaScript files with version
     wp_enqueue_script('rch-ajax-front', RCH_PLUGIN_ASSETS . 'js/rch-ajax-front.js', ['jquery'], RCH_VERSION, true);
-    wp_enqueue_script('rch-swiper-js', RCH_PLUGIN_ASSETS . 'js/swiper-bundle.min.js', [], RCH_VERSION_SWIPER, true);
+    // Swiper itself is NOT bundled by the plugin — the active theme (or the Rechat SDK) provides the
+    // global `Swiper`. This init script just reads it.
     wp_register_script(
         'rch-latest-listings-swiper',
         RCH_PLUGIN_ASSETS . 'js/rch-latest-listings-swiper.js',
-        ['rch-swiper-js'],
+        [],
         RCH_VERSION,
         true
     );
@@ -84,12 +84,9 @@ function rch_enqueue_frontend_styles()
         'nonce'    => wp_create_nonce('rch_ajax_front_nonce'),
     ]);
 
-    // Conditionally enqueue Swiper and listing styles when 'listing_id' is in the URL
+    // Conditionally enqueue listing detail styles when a listing detail page is requested.
         if (get_query_var('listing_detail')) {
-        // Sanitize the listing_id for security (even though we're not using it here)
         wp_enqueue_style('rch-rechat-listing');
-        wp_enqueue_style('rch-swiper');
-        wp_enqueue_script('rch-swiper-js');
     }
 
     // Register Gutenberg block script (if used in the frontend)
@@ -134,14 +131,6 @@ function rch_enqueue_block_assets()
     if (!defined('RCH_PLUGIN_ASSETS') || !defined('RCH_PLUGIN_URL') || !defined('RCH_VERSION')) {
         return;
     }
-
-    // Register block style
-    wp_register_style(
-        'rch-listing-block-css',
-        RCH_PLUGIN_ASSETS . 'css/rch-listing-block.css',
-        [],
-        RCH_VERSION
-    );
 
     // Register Places Autocomplete CSS
     wp_register_style(

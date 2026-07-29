@@ -5,6 +5,11 @@ html {
 .rch-primary-content a {
   text-decoration: none;
 }
+.rch-listing-block-gutenberg rechat-root,
+.rch-agents-list rechat-root {
+  border: none !important;
+}
+/* rechat-root { background-color: transparent; } */
 /*********************
 START: Archive Agents and Regions/Offices styles
 *********************/
@@ -621,15 +626,15 @@ ul.rch-rechat-block img {
   font-size: 16px;
 }
 .rch-pagination-agent .rch-pagination-container > * {
-    border-radius: 2px;
-    border: solid 1px #b1b1b1;
-    background: #fff;
-    width: 26px;
-    height: 26px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #b1b1b1;
+  border-radius: 2px;
+  border: solid 1px #b1b1b1;
+  background: #fff;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #b1b1b1;
 }
 .map-listing-grid__list:has(.map-listing-grid__empty-state) {
   display: flex;

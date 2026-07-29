@@ -717,6 +717,12 @@ function rch_render_general_settings_tab()
                 </form>
             </div>
         </div>
+
+        <?php
+        if (function_exists('rch_render_theme_colors_card')) {
+            rch_render_theme_colors_card();
+        }
+        ?>
     </div>
     <?php
 }
