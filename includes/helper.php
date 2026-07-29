@@ -1683,6 +1683,7 @@ function rch_get_listing_block_attributes()
         'map_zoom' => array('type' => 'string', 'default' => '12'),
         'map_style' => array('type' => 'string', 'default' => ''),
         'map_style_url' => array('type' => 'string', 'default' => ''),
+        'color_mode' => array('type' => 'string', 'default' => ''),
         'sort_by' => array('type' => 'string', 'default' => '-list_date'),
         'map_id' => array('type' => 'string', 'default' => ''),
         'filter_address' => array('type' => 'string', 'default' => ''),
@@ -1855,6 +1856,32 @@ function rch_get_rechat_root_attributes($attributes, $map_default_center, $listi
         $attrs[] = 'brand_id="' . esc_attr($attributes['brand']) . '"';
     }
 
+    // Site-wide brand color (General tab): emit brand-color when set.
+    if (function_exists('rch_get_rechat_brand_color')) {
+        $brand_color = rch_get_rechat_brand_color();
+        if ($brand_color !== '') {
+            $attrs[] = 'brand-color="' . esc_attr($brand_color) . '"';
+        }
+    }
+
+    // Color mode: use an explicit shortcode/block color_mode when given, else the site-wide
+    // General-tab setting. Always emitted (light or dark) so <rechat-root> is explicit.
+    $mode = 'light';
+    if (isset($attributes['color_mode']) && in_array(strtolower((string) $attributes['color_mode']), array('light', 'dark'), true)) {
+        $mode = strtolower((string) $attributes['color_mode']);
+    } elseif (function_exists('rch_get_rechat_color_mode')) {
+        $mode = rch_get_rechat_color_mode();
+    }
+    $attrs[] = 'color-mode="' . esc_attr($mode) . '"';
+
+    // Site-wide UI theme / corner radius (General tab). Only the non-default value is emitted.
+    if (function_exists('rch_get_rechat_ui_theme') && rch_get_rechat_ui_theme() === 'compact') {
+        $attrs[] = 'data-theme="compact"';
+    }
+    if (function_exists('rch_get_rechat_ui_radii') && rch_get_rechat_ui_radii() === 'sharp') {
+        $attrs[] = 'data-radii="sharp"';
+    }
+
     return implode("\n      ", $attrs);
 }
 
@@ -1873,22 +1900,40 @@ function rch_get_rechat_map_attributes($attributes, $map_default_center = '')
 {
     $attrs = array();
 
+    $dark = isset($attributes['color_mode']) && strtolower((string) $attributes['color_mode']) === 'dark';
+
     $style_url = '';
     if (! empty($attributes['map_style_url'])) {
         $style_url = esc_url((string) $attributes['map_style_url']);
     }
 
+    // Resolve the map preset. Precedence:
+    //   1. block/shortcode custom style_url (highest — a per-block MapLibre JSON)
+    //   2. block/shortcode map_style preset (per-block override)
+    //   3. site-wide General map-style setting
+    //   4. dark color mode → dark preset (last-resort default only)
+    // So a chosen map style can differ from a dark UI (e.g. dark mode with a "bright" map).
+    $allowlist   = rch_get_rechat_map_preset_allowlist();
+    $block_preset = '';
+    if (! empty($attributes['map_style'])) {
+        $candidate = sanitize_key((string) $attributes['map_style']);
+        if (in_array($candidate, $allowlist, true)) {
+            $block_preset = $candidate;
+        }
+    }
+    $general_preset = function_exists('rch_get_rechat_map_style') ? rch_get_rechat_map_style() : '';
+    if (! in_array($general_preset, $allowlist, true)) {
+        $general_preset = '';
+    }
+
     if ($style_url !== '') {
         $attrs[] = 'style_url="' . esc_attr($style_url) . '"';
-    } else {
-        $raw_preset = '';
-        if (! empty($attributes['map_style'])) {
-            $raw_preset = sanitize_key((string) $attributes['map_style']);
-        }
-
-        if ($raw_preset !== '' && in_array($raw_preset, rch_get_rechat_map_preset_allowlist(), true)) {
-            $attrs[] = 'preset="' . esc_attr($raw_preset) . '"';
-        }
+    } elseif ($block_preset !== '') {
+        $attrs[] = 'preset="' . esc_attr($block_preset) . '"';
+    } elseif ($general_preset !== '') {
+        $attrs[] = 'preset="' . esc_attr($general_preset) . '"';
+    } elseif ($dark) {
+        $attrs[] = 'preset="dark"';
     }
 
     if (! empty($attributes['map_zoom'])) {

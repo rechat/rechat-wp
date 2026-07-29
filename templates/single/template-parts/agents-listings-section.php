@@ -41,8 +41,23 @@ function rch_render_agent_listings_section($post_id)
     // Prepare attributes for helper functions (NEW SDK)
     $brand_id = get_option('rch_rechat_brand_id');
 
-    // For rechat-root (only brand_id)
+    // For rechat-root (brand_id + optional site-wide brand color from the General tab)
     $root_attrs = !empty($brand_id) ? 'brand_id="' . esc_attr($brand_id) . '"' : '';
+    if (function_exists('rch_get_rechat_brand_color')) {
+        $brand_color = rch_get_rechat_brand_color();
+        if ($brand_color !== '') {
+            $root_attrs .= ($root_attrs !== '' ? ' ' : '') . 'brand-color="' . esc_attr($brand_color) . '"';
+        }
+    }
+    if (function_exists('rch_get_rechat_color_mode')) {
+        $root_attrs .= ($root_attrs !== '' ? ' ' : '') . 'color-mode="' . esc_attr(rch_get_rechat_color_mode()) . '"';
+    }
+    if (function_exists('rch_get_rechat_ui_theme') && rch_get_rechat_ui_theme() === 'compact') {
+        $root_attrs .= ($root_attrs !== '' ? ' ' : '') . 'data-theme="compact"';
+    }
+    if (function_exists('rch_get_rechat_ui_radii') && rch_get_rechat_ui_radii() === 'sharp') {
+        $root_attrs .= ($root_attrs !== '' ? ' ' : '') . 'data-radii="sharp"';
+    }
 
     // Generate attributes strings for combined/active/sold sections
     $combined_attrs = rch_get_agent_listings_attrs($active_agents_string, $property_types, $active_statuses);

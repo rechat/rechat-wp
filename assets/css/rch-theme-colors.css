@@ -1,0 +1,121 @@
+/* Rechat theme color controls (General Settings tab). */
+
+.rch-tc-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin: 4px 0 12px;
+}
+
+.rch-tc-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 4px;
+    max-width: 640px;
+}
+
+.rch-tc-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 12px;
+    border: 1px solid #e2e4e7;
+    border-radius: 8px;
+    background: #fff;
+}
+
+.rch-tc-row__label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.rch-tc-label {
+    font-weight: 600;
+    font-size: 13px;
+    color: #1d2327;
+}
+
+.rch-tc-var {
+    font-size: 11px;
+    color: #646970;
+    background: transparent;
+    padding: 0;
+    word-break: break-all;
+}
+
+.rch-tc-row__controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 0 0 auto;
+}
+
+/* Checkerboard so transparency is visible behind the swatch fill. */
+.rch-tc-swatch {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 1px solid #c3c4c7;
+    background-image:
+        linear-gradient(45deg, #ccc 25%, transparent 25%),
+        linear-gradient(-45deg, #ccc 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #ccc 75%),
+        linear-gradient(-45deg, transparent 75%, #ccc 75%);
+    background-size: 10px 10px;
+    background-position: 0 0, 0 5px, 5px -5px, -5px 0;
+    flex: 0 0 auto;
+}
+
+.rch-tc-swatch__fill {
+    position: absolute;
+    inset: 0;
+    display: block;
+}
+
+.rch-tc-color {
+    width: 34px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    background: none;
+    cursor: pointer;
+}
+
+.rch-tc-alpha {
+    width: 90px;
+}
+
+.rch-tc-hex {
+    width: 92px;
+    font-family: Menlo, Consolas, monospace;
+    font-size: 12px;
+    text-transform: lowercase;
+}
+
+.rch-tc-reset {
+    color: #646970;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.rch-tc-reset:hover {
+    color: #d63638;
+}
+
+@media screen and (max-width: 782px) {
+    .rch-tc-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .rch-tc-row__controls {
+        justify-content: space-between;
+    }
+    .rch-tc-alpha {
+        flex: 1;
+    }
+}

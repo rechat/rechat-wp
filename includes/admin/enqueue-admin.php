@@ -127,14 +127,6 @@ function rch_enqueue_custom_gutenberg_assets()
         RCH_VERSION
     );
 
-    // Enqueue listing block styles
-    wp_enqueue_style(
-        'rch-listing-block-css',
-        RCH_PLUGIN_ASSETS . 'css/rch-listing-block.css',
-        [],
-        RCH_VERSION
-    );
-
     if (function_exists('rch_register_rechat_sdk_assets')) {
         rch_register_rechat_sdk_assets();
     }

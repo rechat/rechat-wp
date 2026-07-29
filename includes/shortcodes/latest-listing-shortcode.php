@@ -36,8 +36,7 @@ function rch_latest_listings_enqueue_assets(array $atts)
     }
 
     if (($atts['display_type'] ?? '') === 'swiper') {
-        wp_enqueue_style('rch-swiper');
-        wp_enqueue_script('rch-swiper-js');
+        // Swiper CSS/JS is provided by the theme / Rechat SDK, not bundled here.
         wp_enqueue_script('rch-latest-listings-swiper');
     }
 }
@@ -83,6 +82,7 @@ function rch_latest_listings_get_defaults()
         'map_zoom' => '',
         'map_style' => '',
         'map_style_url' => '',
+        'color_mode' => '', // '' = inherit the General-tab color mode; 'light'/'dark' overrides this shortcode.
         'map_id' => '',
         // Pass-through to rch_get_rechat_listings_attributes (Rechat SDK on <rechat-listings>)
         'filter_search_limit' => '',

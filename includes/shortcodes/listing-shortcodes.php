@@ -12,7 +12,6 @@ function rch_listings_shortcode_enqueue_assets()
 {
   wp_enqueue_style('rechat-sdk-css');
   wp_enqueue_script('rechat-sdk-js');
-  wp_enqueue_style('rch-listing-block-css');
 }
 
 /**
@@ -77,6 +76,7 @@ function rch_get_listings_default_atts()
     'map_zoom' => '12',
     'map_style' => '',
     'map_style_url' => '',
+    'color_mode' => '', // '' = inherit the General-tab color mode; 'light'/'dark' overrides per block/shortcode.
     'map_id' => '',
     'filter_address' => '',
     'filter_search_limit' => '',
@@ -290,6 +290,18 @@ function rch_render_listing_list($atts)
     $wrapper_classes .= ' rch-listings-no-sort';
   }
   $wrapper_style_attr = rch_listings_shortcode_wrapper_style_attr($primary_color);
+
+  // Resolve effective color mode: an explicit per-block/shortcode choice ('light' or 'dark') wins;
+  // otherwise inherit the site-wide General-tab setting. Stored back on $atts so both
+  // <rechat-root> and <rechat-map> follow it.
+  $effective_color_mode = function_exists('rch_get_rechat_color_mode') ? rch_get_rechat_color_mode() : 'light';
+  if (isset($atts['color_mode'])) {
+    $cm = strtolower((string) $atts['color_mode']);
+    if ($cm === 'light' || $cm === 'dark') {
+      $effective_color_mode = $cm;
+    }
+  }
+  $atts['color_mode'] = $effective_color_mode;
 
   // Get rechat root attributes (only brand_id in new SDK)
   $rechat_attrs = rch_get_rechat_root_attributes($atts, $map_default_center, $listing_statuses_str);
