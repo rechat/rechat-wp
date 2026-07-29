@@ -98,6 +98,9 @@ rechat-property-search-form {
     max-width: none;
     align-self: center;
 }
+.rch-search-listing-form rechat-root {
+  background-color: transparent;
+}
 @media screen and (max-width: 768px) {
     .property-search-form {
         width: 100%;
