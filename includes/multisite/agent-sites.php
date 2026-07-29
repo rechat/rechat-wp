@@ -559,6 +559,14 @@ function rch_multisite_hub_inherited_option_names(): array
         [
             'rch_rechat_local_logic_api_key',
             'rch_rechat_google_map_api_key',
+            // General-tab theme controls: a subsite with an empty value inherits the main site's
+            // (rechat-root brand color, color mode, theme, corner radius, map style). Any subsite
+            // that sets its own value overrides the hub locally.
+            'rch_rechat_brand_color',
+            'rch_rechat_color_mode',
+            'rch_rechat_ui_theme',
+            'rch_rechat_ui_radii',
+            'rch_rechat_map_style',
         ]
     );
 }
