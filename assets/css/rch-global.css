@@ -6,7 +6,9 @@ html {
   text-decoration: none;
 }
 .rch-listing-block-gutenberg rechat-root,
-.rch-agents-list rechat-root {
+.rch-agents-list rechat-root,
+.search-header rechat-root,
+.main-listing-sdk rechat-root {
   border: none !important;
 }
 /* rechat-root { background-color: transparent; } */

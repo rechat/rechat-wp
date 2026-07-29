@@ -129,6 +129,7 @@ function rch_search_listing_form_shortcode($atts)
         'filter_listing_statuses'   => '',
         'show_background'           => 'false',
         'background_image'          => '',
+        'color_mode'                => '', // '' = inherit the General-tab color mode; 'light'/'dark' overrides this shortcode.
     ], $atts, 'rch_search_listing_form');
 
     rch_search_listing_form_enqueue_assets();
@@ -159,9 +160,11 @@ function rch_search_listing_form_shortcode($atts)
     $filter_listing_statuses = sanitize_text_field($atts['filter_listing_statuses']);
     $show_background = filter_var($atts['show_background'], FILTER_VALIDATE_BOOLEAN);
     $background_image = esc_url($atts['background_image']);
+    $color_mode = sanitize_text_field($atts['color_mode']);
 
     $attributes = [
         'brand'                 => $brand_id,
+        'color_mode'            => $color_mode,
         'map_zoom'              => $map_zoom,
         'map_api_key'           => $map_api_key,
         'filter_address'        => $filter_address,
