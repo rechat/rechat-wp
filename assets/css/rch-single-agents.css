@@ -395,6 +395,9 @@ START: Agent Single Page - Rechat Web Components Display Modes
 .rch-agents-list h2 {
   margin-block-end: 1rem;
 }
+.rch-agents-list rechat-root {
+  background-color: transparent;
+}
 .rch-agents-sold-section {
   margin-block-start: 3rem;
 }
