@@ -1,6 +1,6 @@
 const { registerBlockType } = wp.blocks;
 const { InspectorControls, MediaUpload, MediaUploadCheck } = wp.blockEditor || wp.editor;
-const { PanelBody, RangeControl, SelectControl, TextControl, CheckboxControl, RadioControl, Spinner } = wp.components;
+const { PanelBody, RangeControl, SelectControl, TextControl, CheckboxControl, RadioControl, Spinner, Button } = wp.components;
 import { useEffect, useState, useRef } from '@wordpress/element';
 import ServerSideRender from '@wordpress/server-side-render';
 import apiFetch from '@wordpress/api-fetch';
@@ -334,7 +334,8 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         };
 
         const handleZoomChange = (zoom) => {
-            setAttributes({ map_zoom: zoom.toString() });
+            // Reset / cleared → store empty so no zoom is sent (map uses its default).
+            setAttributes({ map_zoom: (zoom === undefined || zoom === null || zoom === '') ? '' : zoom.toString() });
         };
 
         /**
@@ -851,11 +852,22 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                                 />
                                 <RangeControl
                                     label="Zoom Level"
-                                    value={parseInt(map_zoom) || 12}
+                                    help={map_zoom === '' ? 'Using the map default zoom (no zoom sent).' : 'Custom zoom is sent to the map.'}
+                                    value={map_zoom === '' ? undefined : (parseInt(map_zoom) || 12)}
                                     onChange={handleZoomChange}
                                     min={1}
                                     max={20}
+                                    allowReset
+                                    resetFallbackValue={undefined}
                                 />
+                                {map_zoom !== '' && (
+                                    <Button
+                                        variant="secondary"
+                                        onClick={() => setAttributes({ map_zoom: '' })}
+                                    >
+                                        Use default zoom
+                                    </Button>
+                                )}
                             </>
                         ) : (
                             <p>Google Maps API key not found. Please make sure it is configured in the WordPress settings.</p>
