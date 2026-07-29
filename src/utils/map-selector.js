@@ -96,9 +96,14 @@ const MapSelector = ({ apiKey, latitude, longitude, zoom, onLocationChange, onZo
             }
         });
         
-        // Add event listener for zoom changed
+        // Only propagate zoom AFTER the map has finished its initial load, so the programmatic
+        // startup zoom never writes map_zoom (keeps it empty / "use default" until the user zooms).
+        let zoomReady = false;
+        window.google.maps.event.addListenerOnce(mapInstance, 'idle', function() {
+            zoomReady = true;
+        });
         mapInstance.addListener('zoom_changed', function() {
-            if (onZoomChange) {
+            if (zoomReady && onZoomChange) {
                 onZoomChange(mapInstance.getZoom());
             }
         });
