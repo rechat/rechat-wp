@@ -913,3 +913,12 @@ ul.rch-rechat-block img {
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   }
 }
+
+/* Full-width listing layout: break the block out of a centered theme container to the full
+   viewport width (full-bleed). Works when the block sits inside a centered wrapper. */
+.rch-listing-block-gutenberg.rch-listings-full-width {
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+}
