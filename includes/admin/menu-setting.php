@@ -117,7 +117,11 @@ function rch_rechat_menu_page()
         ? rch_multisite_oauth_is_effectively_connected()
         : ($access_token_exists || $refresh_token_exists);
     $uses_hub_oauth         = function_exists('rch_multisite_subsite_uses_hub_oauth') && rch_multisite_subsite_uses_hub_oauth();
-    $has_local_oauth        = function_exists('rch_multisite_subsite_has_local_oauth') && rch_multisite_subsite_has_local_oauth();
+    // On single-site installs the multisite helper is not loaded; fall back to the local token
+    // presence so the Disconnect button still shows whenever this site is connected.
+    $has_local_oauth        = function_exists('rch_multisite_subsite_has_local_oauth')
+        ? rch_multisite_subsite_has_local_oauth()
+        : ((string) get_option('rch_rechat_access_token', '') !== '' || (string) get_option('rch_rechat_refresh_token', '') !== '');
 
     ?>
     <div class="wrap wrap-for-rechat">
