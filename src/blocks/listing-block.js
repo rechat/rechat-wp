@@ -75,7 +75,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         hide_filters: { type: 'boolean', default: false },
         map_latitude: { type: 'string', default: '' },
         map_longitude: { type: 'string', default: '' },
-        map_zoom: { type: 'string', default: '12' },
+        map_zoom: { type: 'string', default: '' },
         map_style: { type: 'string', default: '' },
         map_style_url: { type: 'string', default: '' },
         map_id: { type: 'string', default: '' },
@@ -100,6 +100,8 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         filter_boundary_selection: { type: 'string', default: '' },
         // SDK color mode: '' inherits the General-tab site setting; 'light'/'dark' overrides this block.
         color_mode: { type: 'string', default: '' },
+        // Break the listing layout out of the theme container to full viewport width (on by default).
+        full_width: { type: 'boolean', default: true },
         // Legacy; no editor control — preserves old posts and satisfies REST attribute schema.
         layout_style: { type: 'string', default: '' },
     },
@@ -114,7 +116,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             own_listing, property_types, filter_open_houses, office_exclusive, filter_pool, disable_sort, hide_map, hide_filters, listing_statuses, map_latitude, map_longitude, map_zoom, map_style, map_style_url, map_id,
             sort_by, filter_address, filter_search_limit, filter_suggestions_limit, filter_pagination_offset, property_subtypes, architectural_styles, filter_baths, minimum_parking_spaces, minimum_sold_date, filter_agents, list_offices, filter_brand_id, disable_filter_loading_indicator,
             filter_boundary_country, filter_boundary_state,
-            filter_boundary_ids, filter_boundary_selection, color_mode,
+            filter_boundary_ids, filter_boundary_selection, color_mode, full_width,
         } = attributes;
 
         const [regions, setRegions] = useState([]);
@@ -680,6 +682,12 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                             help="Omits rechat-map from the listing layout."
                             checked={hide_map}
                             onChange={() => setAttributes({ hide_map: !hide_map })}
+                        />
+                        <CheckboxControl
+                            label="Full width"
+                            help="Breaks the listing layout out of the theme container to full viewport width."
+                            checked={full_width}
+                            onChange={() => setAttributes({ full_width: !full_width })}
                         />
                     </PanelBody>
                     <PanelBody title="Filter Visibility Settings" initialOpen={false}>

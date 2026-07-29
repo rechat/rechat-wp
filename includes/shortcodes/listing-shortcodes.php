@@ -73,10 +73,11 @@ function rch_get_listings_default_atts()
     'hide_filters' => false,
     'map_latitude' => '',
     'map_longitude' => '',
-    'map_zoom' => '12',
+    'map_zoom' => '',
     'map_style' => '',
     'map_style_url' => '',
     'color_mode' => '', // '' = inherit the General-tab color mode; 'light'/'dark' overrides per block/shortcode.
+    'full_width' => true,
     'map_id' => '',
     'filter_address' => '',
     'filter_search_limit' => '',
@@ -123,6 +124,7 @@ function rch_prepare_listing_atts_from_block(array $block_attributes)
     'disable_sort',
     'hide_map',
     'hide_filters',
+    'full_width',
   );
 
   foreach ($block_attributes as $key => $value) {
@@ -197,6 +199,7 @@ function rch_render_listing_list($atts)
   $atts['disable_sort'] = rch_attr_to_bool($atts['disable_sort']);
   $atts['hide_map'] = rch_attr_to_bool($atts['hide_map']);
   $atts['hide_filters'] = rch_attr_to_bool($atts['hide_filters']);
+  $atts['full_width'] = rch_attr_to_bool($atts['full_width']);
   $atts['disable_filter_loading_indicator'] = rch_attr_to_bool($atts['disable_filter_loading_indicator']);
 
   rch_listings_shortcode_enqueue_assets();
@@ -288,6 +291,9 @@ function rch_render_listing_list($atts)
   }
   if ($atts['disable_sort']) {
     $wrapper_classes .= ' rch-listings-no-sort';
+  }
+  if ($atts['full_width']) {
+    $wrapper_classes .= ' rch-listings-full-width';
   }
   $wrapper_style_attr = rch_listings_shortcode_wrapper_style_attr($primary_color);
 
