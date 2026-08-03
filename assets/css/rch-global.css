@@ -47,15 +47,13 @@ ul.rch-archive-agents li {
 
 ul.rch-archive-agents li picture {
   display: block;
+  /* height: 230px;
   max-height: 270px;
-  min-height: 270px;
+  min-height: 270px; */
   overflow: hidden;
   border-radius: 5px;
 }
 
-ul.rch-archive-agents li picture {
-  height: 230px;
-}
 
 ul.rch-archive-agents li .rch-archive-name a {
   display: block;
@@ -593,6 +591,9 @@ ul.rch-rechat-block img {
   font-size: 20px;
   margin-block-end: 20px;
   text-align: center;
+}
+.rch-leads-form-block__title {
+    margin-inline: auto;
 }
 .rch-main-layout-single-agent .rch-right-main-layout-single-agent form label,
 .rch-leads-form-block form label {
