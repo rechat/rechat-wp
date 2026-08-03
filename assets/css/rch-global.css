@@ -209,9 +209,12 @@ ul.rch-archive-agents li .rch-archive-end-line a:first-child {
 .rch-profile-image {
   display: block;
   width: 100%;
-  height: auto;
   opacity: 0;
   transition: opacity 0.3s ease;
+       aspect-ratio: 4 / 4.5;
+     object-fit: cover;
+     height: auto;
+     margin-block-end: 0 !important;
 }
 
 /* Hide the loader when the image is fully loaded */
