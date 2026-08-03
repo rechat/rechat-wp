@@ -22,6 +22,12 @@ function rch_register_my_setting_menu_page()
         return;
     }
 
+    // Multisite: the Rechat menu is hub-only. Subsites (agent/office) don't need it —
+    // show it on the main site only. Single-site installs always keep the menu.
+    if (is_multisite() && (int) get_current_blog_id() !== (int) get_main_site_id()) {
+        return;
+    }
+
     $rechat_cap = function_exists('rch_rechat_settings_capability') ? rch_rechat_settings_capability() : 'manage_options';
 
     add_menu_page(
