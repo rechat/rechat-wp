@@ -65,6 +65,19 @@ function rch_enqueue_frontend_styles()
         [],
         RCH_VERSION
     );
+    wp_register_style(
+        'rch-testimonials-shortcode',
+        RCH_PLUGIN_ASSETS . 'css/rch-testimonials.css',
+        [],
+        RCH_VERSION
+    );
+    wp_register_script(
+        'rch-testimonials-shortcode',
+        RCH_PLUGIN_ASSETS . 'js/rch-testimonials.js',
+        ['rechat-sdk-js'],
+        RCH_VERSION,
+        true
+    );
     wp_register_script(
         'rch-search-listing-shortcode',
         RCH_PLUGIN_ASSETS . 'js/rch-search-listing-shortcode.js',

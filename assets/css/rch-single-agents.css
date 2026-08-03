@@ -128,7 +128,7 @@ START: Single Agent page style
 }
 
 .rch-top-single-agent .rch-left-top-single-agent {
-  width: 65%;
+  width: auto;
   display: flex;
 }
 
@@ -160,9 +160,9 @@ START: Single Agent page style
   margin-block-end: 10px;
 }
 
-.rch-top-single-agent .rch-left-top-single-agent span:first-of-type {
+/* .rch-top-single-agent .rch-left-top-single-agent span:first-of-type {
   margin-block-end: 20px;
-}
+} */
 
 .rch-top-single-agent .rch-left-top-single-agent .rch-data-agent {
   margin-inline-start: 40px;
@@ -452,7 +452,19 @@ END: Single Agent page style
     transform: translate(-50%, -50%) rotate(360deg);
   }
 }
+@media (max-width: 992px) {
+.rch-main-layout-single-agent{
+    flex-direction: column;
+        row-gap: 2rem;
+   }
 
+   .rch-main-layout-single-agent .rch-left-main-layout-single-agent,
+  .rch-main-layout-single-agent .rch-right-main-layout-single-agent{
+    flex-basis: unset;
+    width: 100%;
+    margin: 0;
+  }
+}
 /* Responsive Styles for Single Agent Page */
 @media (max-width: 768px) {
   .rch-top-single-agent {

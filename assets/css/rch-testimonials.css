@@ -1,0 +1,131 @@
+/* [rch_testimonials] — client testimonials grid rendered from the Rechat SDK. */
+
+.rch-testimonials {
+  --rch-testimonials-columns: 3;
+  --rch-testimonials-gap: 24px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.rch-testimonials__title {
+  text-align: center;
+  margin: 0 0 32px;
+}
+
+.rch-testimonials__status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+}
+
+.rch-testimonials[data-rch-testimonials-state="loaded"] .rch-testimonials__status {
+  display: none;
+}
+
+.rch-testimonials__spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  opacity: 0.4;
+  animation: rch-testimonials-spin 0.8s linear infinite;
+}
+
+@keyframes rch-testimonials-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.rch-testimonials__empty {
+  text-align: center;
+  opacity: 0.7;
+  margin: 0;
+}
+
+.rch-testimonials__grid {
+  display: grid;
+  grid-template-columns: repeat(var(--rch-testimonials-columns), minmax(0, 1fr));
+  gap: var(--rch-testimonials-gap);
+}
+
+.rch-testimonials__card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 28px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+}
+
+.rch-testimonials__rating {
+  display: flex;
+  gap: 2px;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.rch-testimonials__star {
+  color: rgba(0, 0, 0, 0.18);
+}
+
+.rch-testimonials__star.is-filled {
+  color: #f5a623;
+}
+
+.rch-testimonials__content {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
+  quotes: "\201C" "\201D";
+}
+
+.rch-testimonials__content::before {
+  content: open-quote;
+}
+
+.rch-testimonials__content::after {
+  content: close-quote;
+}
+
+.rch-testimonials__author {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: auto;
+}
+
+.rch-testimonials__avatar {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 15px;
+  color: #fff;
+  background: #2b6cb0;
+}
+
+.rch-testimonials__name {
+  font-style: normal;
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .rch-testimonials__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .rch-testimonials__grid {
+    grid-template-columns: 1fr;
+  }
+}
