@@ -9,6 +9,34 @@ import { fetchData } from '../utils/api-helpers';
 /** Unique, unambiguous token label for an agent (names can repeat). */
 const agentTokenLabel = (agent) => `${agent.name} (#${agent.id})`;
 
+/**
+ * Fetch ALL agents across every REST page (WP caps per_page at 100), so brokerages
+ * with more than 100 agents still list everyone in the picker.
+ */
+const fetchAllAgents = async () => {
+    const perPage = 100;
+    const base = `/wp/v2/agents?per_page=${perPage}&orderby=title&order=asc&_fields=id,title`;
+    const mapAgents = (data) => data.map((a) => ({ id: a.id, name: a.title.rendered }));
+
+    // First page (parse:false) exposes the X-WP-TotalPages header.
+    const firstResponse = await apiFetch({ path: `${base}&page=1`, parse: false });
+    const totalPages = parseInt(firstResponse.headers.get('X-WP-TotalPages') || '1', 10) || 1;
+    let all = mapAgents(await firstResponse.json());
+
+    if (totalPages > 1) {
+        const pages = [];
+        for (let page = 2; page <= totalPages; page++) {
+            pages.push(apiFetch({ path: `${base}&page=${page}` }));
+        }
+        const rest = await Promise.all(pages);
+        rest.forEach((data) => {
+            all = all.concat(mapAgents(data));
+        });
+    }
+
+    return all;
+};
+
 registerBlockType('rch-rechat-plugin/agents-block', {
     title: 'Agents Block',
     description: 'Block for showing Agents',
@@ -38,8 +66,8 @@ registerBlockType('rch-rechat-plugin/agents-block', {
         useEffect(() => {
             fetchData('/wp/v2/regions?per_page=100', setRegions);
             fetchData('/wp/v2/offices?per_page=100', setOffices);
-            apiFetch({ path: '/wp/v2/agents?per_page=100&orderby=title&order=asc' })
-                .then((data) => setAgents(data.map((a) => ({ id: a.id, name: a.title.rendered }))))
+            fetchAllAgents()
+                .then((data) => setAgents(data))
                 .catch((error) => console.error('Error fetching agents:', error));
         }, []);
 
@@ -133,6 +161,7 @@ registerBlockType('rch-rechat-plugin/agents-block', {
                                 value={selectedTokens}
                                 suggestions={agents.map(agentTokenLabel)}
                                 onChange={onChangeTokens}
+                                maxSuggestions={agents.length || 100}
                                 __experimentalExpandOnFocus
                                 __experimentalShowHowTo={false}
                             />
