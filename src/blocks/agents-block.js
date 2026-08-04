@@ -1,9 +1,13 @@
 const { registerBlockType } = wp.blocks;
 const { InspectorControls, ColorPalette } = wp.blockEditor || wp.editor;
-const { PanelBody, RangeControl, SelectControl } = wp.components;
+const { PanelBody, RangeControl, SelectControl, FormTokenField } = wp.components;
 import { useEffect, useState } from '@wordpress/element';
+import apiFetch from '@wordpress/api-fetch';
 import ServerSideRender from '@wordpress/server-side-render';
 import { fetchData } from '../utils/api-helpers';
+
+/** Unique, unambiguous token label for an agent (names can repeat). */
+const agentTokenLabel = (agent) => `${agent.name} (#${agent.id})`;
 
 registerBlockType('rch-rechat-plugin/agents-block', {
     title: 'Agents Block',
@@ -18,16 +22,46 @@ registerBlockType('rch-rechat-plugin/agents-block', {
         filterByOffices: { type: 'string', default: '' },
         sortBy: { type: 'string', default: 'date' },
         sortOrder: { type: 'string', default: 'desc' },
+        // Manual agent selection: hide some agents / show only selected ones.
+        agentSelectionMode: { type: 'string', default: 'all' }, // 'all' | 'include' | 'exclude'
+        selectedAgents: { type: 'array', default: [] },          // agent post IDs (numbers)
     },
     edit({ attributes, setAttributes }) {
-        const { postsPerPage, regionBgColor, textColor, filterByRegions, filterByOffices, sortBy, sortOrder } = attributes;
+        const {
+            postsPerPage, regionBgColor, textColor, filterByRegions, filterByOffices,
+            sortBy, sortOrder, agentSelectionMode, selectedAgents,
+        } = attributes;
         const [regions, setRegions] = useState([]);
         const [offices, setOffices] = useState([]);
+        const [agents, setAgents] = useState([]);
 
         useEffect(() => {
             fetchData('/wp/v2/regions?per_page=100', setRegions);
             fetchData('/wp/v2/offices?per_page=100', setOffices);
+            apiFetch({ path: '/wp/v2/agents?per_page=100&orderby=title&order=asc' })
+                .then((data) => setAgents(data.map((a) => ({ id: a.id, name: a.title.rendered }))))
+                .catch((error) => console.error('Error fetching agents:', error));
         }, []);
+
+        // Maps between agent id and its token label (both directions).
+        const labelById = {};
+        const idByLabel = {};
+        agents.forEach((a) => {
+            const label = agentTokenLabel(a);
+            labelById[a.id] = label;
+            idByLabel[label] = a.id;
+        });
+
+        const selectedTokens = selectedAgents
+            .map((id) => labelById[id])
+            .filter(Boolean);
+
+        const onChangeTokens = (tokens) => {
+            const ids = tokens
+                .map((token) => idByLabel[token])
+                .filter((id) => id !== undefined);
+            setAttributes({ selectedAgents: ids });
+        };
 
         return (
             <>
@@ -81,6 +115,31 @@ registerBlockType('rch-rechat-plugin/agents-block', {
                             value={textColor}
                             onChange={(color) => setAttributes({ textColor: color })}
                         />
+                    </PanelBody>
+                    <PanelBody title="Agent Selection" initialOpen={false}>
+                        <SelectControl
+                            label="Agents to display"
+                            value={agentSelectionMode}
+                            options={[
+                                { label: 'All agents', value: 'all' },
+                                { label: 'Only selected agents', value: 'include' },
+                                { label: 'All except selected agents', value: 'exclude' },
+                            ]}
+                            onChange={(mode) => setAttributes({ agentSelectionMode: mode })}
+                        />
+                        {agentSelectionMode !== 'all' && (
+                            <FormTokenField
+                                label={agentSelectionMode === 'include' ? 'Agents to show' : 'Agents to hide'}
+                                value={selectedTokens}
+                                suggestions={agents.map(agentTokenLabel)}
+                                onChange={onChangeTokens}
+                                __experimentalExpandOnFocus
+                                __experimentalShowHowTo={false}
+                            />
+                        )}
+                        {agentSelectionMode !== 'all' && !agents.length && (
+                            <p><em>Loading agents…</em></p>
+                        )}
                     </PanelBody>
                 </InspectorControls>
                 <ServerSideRender
