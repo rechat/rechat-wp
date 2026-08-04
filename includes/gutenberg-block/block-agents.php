@@ -42,11 +42,54 @@ function rch_register_block_assets_agents()
                 'type' => 'string',
                 'default' => '',
             ),
+            'agentSelectionMode' => array(
+                'type' => 'string',
+                'default' => 'all', // 'all' | 'include' | 'exclude'
+            ),
+            'selectedAgents' => array(
+                'type' => 'array',
+                'default' => array(),
+                'items' => array('type' => 'number'),
+            ),
         ),
         'render_callback' => 'rch_render_agents_block',
     ));
 }
 add_action('init', 'rch_register_block_assets_agents');
+
+/*******************************
+ * Apply manual agent selection (show only / hide selected) to a WP_Query args array.
+ * Empty selection or 'all' mode leaves args untouched.
+ *******************************/
+function rch_agents_apply_selection(array $args, $mode, $selected_ids)
+{
+    $ids = array_values(array_filter(array_map('intval', (array) $selected_ids)));
+
+    if (empty($ids) || $mode === 'all') {
+        return $args;
+    }
+
+    if ($mode === 'include') {
+        $args['post__in'] = $ids;
+    } elseif ($mode === 'exclude') {
+        $args['post__not_in'] = $ids;
+    }
+
+    return $args;
+}
+
+/*******************************
+ * Normalize a raw selected-agents value (array or JSON string) to an int array.
+ *******************************/
+function rch_agents_sanitize_selected($raw)
+{
+    if (is_string($raw)) {
+        $decoded = json_decode(wp_unslash($raw), true);
+        $raw = is_array($decoded) ? $decoded : array();
+    }
+
+    return array_values(array_filter(array_map('intval', (array) $raw)));
+}
 
 /*******************************
  * callback function for agents block
@@ -60,6 +103,8 @@ function rch_render_agents_block($attributes)
     $filter_by_offices = isset($attributes['filterByOffices']) ? $attributes['filterByOffices'] : '';
     $sort_by = isset($attributes['sortBy']) ? $attributes['sortBy'] : 'date'; // Default to sorting by date
     $sort_order = isset($attributes['sortOrder']) ? $attributes['sortOrder'] : 'desc'; // Default to descending
+    $selection_mode = isset($attributes['agentSelectionMode']) ? $attributes['agentSelectionMode'] : 'all';
+    $selected_agents = rch_agents_sanitize_selected(isset($attributes['selectedAgents']) ? $attributes['selectedAgents'] : array());
 
     // Set up the meta query based on the provided filters
     $meta_query = array('relation' => 'AND');
@@ -87,6 +132,9 @@ function rch_render_agents_block($attributes)
         'meta_query'     => $meta_query,
     );
 
+    // Manual agent selection (show only selected / hide selected).
+    $args = rch_agents_apply_selection($args, $selection_mode, $selected_agents);
+
     if ($sort_by === 'display_order') {
         $numeric_dir = ($sort_order === 'desc') ? 'DESC' : 'ASC';
         $query = rch_wp_query_agents_display_order($args, $numeric_dir);
@@ -108,7 +156,9 @@ function rch_render_agents_block($attributes)
         data-filter-region="<?php echo esc_attr($filter_by_Regions); ?>"
         data-filter-office="<?php echo esc_attr($filter_by_offices); ?>"
         data-sort_by="<?php echo esc_attr($sort_by); ?>"
-        data-sort_order="<?php echo esc_attr($sort_order); ?>">
+        data-sort_order="<?php echo esc_attr($sort_order); ?>"
+        data-selection-mode="<?php echo esc_attr($selection_mode); ?>"
+        data-selected-agents="<?php echo esc_attr(wp_json_encode($selected_agents)); ?>">
         <ul class="rch-archive-agents">
 
             <?php if ($query->have_posts()) : ?>
@@ -162,6 +212,8 @@ function rch_load_more_agents()
     $filter_by_offices = isset($_POST['filter_by_offices']) ? sanitize_text_field(wp_unslash($_POST['filter_by_offices'])) : '';
     $sort_by = isset($_POST['sort_by']) ? sanitize_text_field(wp_unslash($_POST['sort_by'])) : '';
     $sort_order = isset($_POST['sort_order']) ? sanitize_text_field(wp_unslash($_POST['sort_order'])) : '';
+    $selection_mode = isset($_POST['selection_mode']) ? sanitize_text_field(wp_unslash($_POST['selection_mode'])) : 'all';
+    $selected_agents = isset($_POST['selected_agents']) ? rch_agents_sanitize_selected(wp_unslash($_POST['selected_agents'])) : array();
 
     // Set up the meta query based on the provided filters
     $meta_query = array('relation' => 'AND');
@@ -188,6 +240,9 @@ function rch_load_more_agents()
         'paged'          => $page,
         'meta_query'     => $meta_query, // Apply the meta query filters
     );
+
+    // Manual agent selection (show only selected / hide selected).
+    $args = rch_agents_apply_selection($args, $selection_mode, $selected_agents);
 
     if ($sort_by === 'display_order') {
         $numeric_dir = ($sort_order === 'desc') ? 'DESC' : 'ASC';

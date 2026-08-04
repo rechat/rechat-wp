@@ -10,6 +10,8 @@ jQuery(document).ready(function ($) {
     var filterOffice = $('#rch-agents-block').data('filter-office');
     var sortBy = $('#rch-agents-block').data('sort_by');
     var sortOrder = $('#rch-agents-block').data('sort_order');
+    var selectionMode = $('#rch-agents-block').data('selection-mode');
+    var selectedAgents = $('#rch-agents-block').attr('data-selected-agents');
     var nonce = $('#rch-agents-block').data('nonce');
 
     function loadAgents(page) {
@@ -29,6 +31,8 @@ jQuery(document).ready(function ($) {
                 filter_by_offices: filterOffice,
                 sort_by: sortBy,
                 sort_order: sortOrder,
+                selection_mode: selectionMode,
+                selected_agents: selectedAgents,
                 nonce: nonce
             },
             success: function (response) {
