@@ -1690,6 +1690,7 @@ function rch_get_listing_block_attributes()
         'filter_address' => array('type' => 'string', 'default' => ''),
         'filter_search_limit' => array('type' => 'string', 'default' => ''),
         'filter_suggestions_limit' => array('type' => 'string', 'default' => ''),
+        'filter_search_placeholder' => array('type' => 'string', 'default' => ''),
         'filter_pagination_offset' => array('type' => 'string', 'default' => ''),
         'property_subtypes' => array('type' => 'string', 'default' => ''),
         'architectural_styles' => array('type' => 'string', 'default' => ''),
@@ -1970,6 +1971,12 @@ function rch_get_rechat_map_filter_attributes($attributes)
     if (! empty($attributes['filter_suggestions_limit'])) {
         $attrs[] = 'suggestions_limit="' . esc_attr($attributes['filter_suggestions_limit']) . '"';
     }
+
+    // Search box placeholder. Defaults to "Search by area / zip code"; editable per listing block.
+    $placeholder = isset($attributes['filter_search_placeholder']) && (string) $attributes['filter_search_placeholder'] !== ''
+        ? (string) $attributes['filter_search_placeholder']
+        : 'Search by area / zip code';
+    $attrs[] = 'search_placeholder="' . esc_attr($placeholder) . '"';
 
     return implode(' ', $attrs);
 }

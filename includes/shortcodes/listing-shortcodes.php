@@ -82,6 +82,7 @@ function rch_get_listings_default_atts()
     'filter_address' => '',
     'filter_search_limit' => '',
     'filter_suggestions_limit' => '',
+    'filter_search_placeholder' => '',
     'filter_pagination_offset' => '',
     'property_subtypes' => '',
     'architectural_styles' => '',

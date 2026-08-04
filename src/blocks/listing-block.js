@@ -83,6 +83,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         filter_address: { type: 'string', default: '' },
         filter_search_limit: { type: 'string', default: '' },
         filter_suggestions_limit: { type: 'string', default: '' },
+        filter_search_placeholder: { type: 'string', default: '' },
         filter_pagination_offset: { type: 'string', default: '' },
         property_subtypes: { type: 'string', default: '' },
         architectural_styles: { type: 'string', default: '' },
@@ -114,7 +115,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             disable_filter_address, disable_filter_price, disable_filter_beds, 
             disable_filter_baths, disable_filter_property_types, disable_filter_advanced,
             own_listing, property_types, filter_open_houses, office_exclusive, filter_pool, disable_sort, hide_map, hide_filters, listing_statuses, map_latitude, map_longitude, map_zoom, map_style, map_style_url, map_id,
-            sort_by, filter_address, filter_search_limit, filter_suggestions_limit, filter_pagination_offset, property_subtypes, architectural_styles, filter_baths, minimum_parking_spaces, minimum_sold_date, filter_agents, list_offices, filter_brand_id, disable_filter_loading_indicator,
+            sort_by, filter_address, filter_search_limit, filter_suggestions_limit, filter_search_placeholder, filter_pagination_offset, property_subtypes, architectural_styles, filter_baths, minimum_parking_spaces, minimum_sold_date, filter_agents, list_offices, filter_brand_id, disable_filter_loading_indicator,
             filter_boundary_country, filter_boundary_state,
             filter_boundary_ids, filter_boundary_selection, color_mode, full_width,
         } = attributes;
@@ -742,6 +743,12 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                             type="number"
                             value={filter_suggestions_limit}
                             onChange={(v) => setAttributes({ filter_suggestions_limit: v || '' })}
+                        />
+                        <TextControl
+                            label="Search box placeholder (search_placeholder)"
+                            help="Text shown in the filter search box. Leave blank for the default: Search by area / zip code."
+                            value={filter_search_placeholder}
+                            onChange={(v) => setAttributes({ filter_search_placeholder: v || '' })}
                         />
                         <TextControl
                             label="Initial pagination offset (filter_pagination_offset)"
