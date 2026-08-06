@@ -77,7 +77,7 @@ function rch_agents()
         'publicly_queryable'    => true,
         'show_in_rest'          => true,
         'capability_type'       => 'page',
-        'rewrite'               => array('slug' => 'agents'),
+        'rewrite'               => array('slug' => 'agents', 'with_front' => false),
     );
     register_post_type('agents', $args);
 }
@@ -137,7 +137,7 @@ function rch_offices()
         'publicly_queryable'    => true,
         'show_in_rest'          => true,
         'capability_type'       => 'page',
-        'rewrite'               => array('slug' => 'offices'),
+        'rewrite'               => array('slug' => 'offices', 'with_front' => false),
     );
     register_post_type('offices', $args);
 }
@@ -197,7 +197,7 @@ function rch_regions()
         'publicly_queryable'    => true,
         'show_in_rest'          => true,
         'capability_type'       => 'page',
-        'rewrite'               => array('slug' => 'regions'),
+        'rewrite'               => array('slug' => 'regions', 'with_front' => false),
     );
     register_post_type('regions', $args);
 }
@@ -238,7 +238,7 @@ function rch_neighborhoods()
         'show_in_menu'       => ! $hide_ui,
         'show_in_admin_bar'  => ! $hide_ui,
         'show_in_nav_menus'  => ! $hide_ui,
-        'rewrite'            => array('slug' => 'neighborhoods'), // Slug for URLs
+        'rewrite'            => array('slug' => 'neighborhoods', 'with_front' => false), // Slug for URLs
         'taxonomies'         => array('category', 'post_tag'), // Add taxonomies if necessary
         'hierarchical'       => false, // Set to true if you want hierarchical (parent-child) structure
         'menu_position'      => 5, // Position in the menu (below 'Posts')
@@ -253,3 +253,26 @@ add_action('init', 'rch_agents', 0);
 add_action('init', 'rch_offices', 0);
 add_action('init', 'rch_regions', 0);
 add_action('init', 'rch_neighborhoods', 0);
+
+/**
+ * One-time rewrite flush after CPT rewrite changes.
+ *
+ * Deploys run `git reset --hard` (no plugin reactivation), so CPT rewrite-arg
+ * changes (e.g. with_front => false) never take effect on their own. Flush once
+ * per plugin version by comparing a stored option to RCH_VERSION.
+ */
+function rch_maybe_flush_rewrite_rules()
+{
+    if (! defined('RCH_VERSION')) {
+        return;
+    }
+
+    if (get_option('rch_rewrite_rules_version') === RCH_VERSION) {
+        return;
+    }
+
+    flush_rewrite_rules();
+    update_option('rch_rewrite_rules_version', RCH_VERSION);
+}
+// Priority 99: after all CPTs (registered at priority 0) exist.
+add_action('init', 'rch_maybe_flush_rewrite_rules', 99);
