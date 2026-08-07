@@ -1722,6 +1722,7 @@ function rch_get_agent_single_active_listing_statuses(): array
 {
     return [
         'Active',
+        'Active Under Contract',
         'Incoming',
         'Coming Soon',
     ];
