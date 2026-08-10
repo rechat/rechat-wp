@@ -118,7 +118,7 @@ function rch_get_agent_listings_attrs($agents_string, $property_types, $listing_
 {
     $attrs = array();
 
-    $attrs[] = 'filter_pagination_limit="10"';
+    $attrs[] = 'filter_pagination_limit="12"';
     $attrs[] = 'filter_agents="' . esc_attr($agents_string) . '"';
     if ('' === trim((string) $agents_string)) {
         $attrs[] = 'disabled="true"';

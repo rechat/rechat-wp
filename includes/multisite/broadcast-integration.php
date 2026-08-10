@@ -639,3 +639,167 @@ function rch_multisite_broadcast_dependency_admin_notice(): void
 
 add_action('admin_notices', 'rch_multisite_broadcast_dependency_admin_notice');
 add_action('network_admin_notices', 'rch_multisite_broadcast_dependency_admin_notice');
+
+/**
+ * ---------------------------------------------------------------------------
+ * ACF media broadcasting
+ * ---------------------------------------------------------------------------
+ * ACF image/file/gallery fields store the attachment ID in post meta. ThreeWP
+ * Broadcast only copies attachments that are attached children of the post or
+ * the featured image — it never scans custom-field values — so an ACF image
+ * broadcasts as a stale source-site attachment ID and renders broken on the
+ * sub-site. Two hooks fix it:
+ *   1. broadcasting_started            → register ACF-referenced attachments so
+ *                                        Broadcast copies them to each target blog.
+ *   2. broadcasting_before_restore_..  → remap the child post's ACF meta from the
+ *                                        old (source) IDs to the copied IDs.
+ * The meta map is computed once in source context (where ACF + the field group
+ * are loaded) and stashed on $bcd; the target sub-site theme's ACF groups are
+ * NOT loaded during broadcast, so the remap must not depend on ACF there.
+ */
+
+/**
+ * Collect ACF image/file/gallery attachment IDs from a source post.
+ *
+ * @return array<string, int|array<int,int>> meta_key => attachment id | list of ids
+ */
+function rch_broadcast_collect_acf_attachment_meta(int $post_id): array
+{
+    if ($post_id <= 0 || ! function_exists('get_field_objects')) {
+        return [];
+    }
+
+    $objects = get_field_objects($post_id, false, true);
+    if (! is_array($objects) || $objects === []) {
+        return [];
+    }
+
+    $map = [];
+    foreach ($objects as $obj) {
+        if (! is_array($obj) || empty($obj['name']) || empty($obj['type'])) {
+            continue;
+        }
+        $name = (string) $obj['name'];
+        $type = $obj['type'];
+        $val  = $obj['value'] ?? null;
+
+        if ($type === 'image' || $type === 'file') {
+            $id = (int) (is_array($val) ? ($val['ID'] ?? $val['id'] ?? 0) : $val);
+            if ($id > 0) {
+                $map[$name] = $id;
+            }
+        } elseif ($type === 'gallery') {
+            $ids = [];
+            foreach ((array) $val as $item) {
+                $iid = (int) (is_array($item) ? ($item['ID'] ?? $item['id'] ?? 0) : $item);
+                if ($iid > 0) {
+                    $ids[] = $iid;
+                }
+            }
+            if ($ids !== []) {
+                $map[$name] = $ids;
+            }
+        }
+    }
+
+    return $map;
+}
+
+/**
+ * Register ACF-referenced attachments for copying + stash the meta map on $bcd.
+ *
+ * @param object $action threewp_broadcast\actions\broadcasting_started
+ */
+function rch_broadcast_register_acf_attachments($action): void
+{
+    if (! is_object($action) || ! isset($action->broadcasting_data)) {
+        return;
+    }
+    $bcd = $action->broadcasting_data;
+    if (! isset($bcd->post->ID)) {
+        return;
+    }
+
+    $map = rch_broadcast_collect_acf_attachment_meta((int) $bcd->post->ID);
+    if ($map === []) {
+        return;
+    }
+
+    // Reused for the target-side remap (same $bcd across every target blog).
+    $bcd->rch_acf_attachment_meta = $map;
+
+    if (! class_exists('\threewp_broadcast\attachment_data')) {
+        return;
+    }
+    if (! isset($bcd->attachment_data) || ! is_array($bcd->attachment_data)) {
+        $bcd->attachment_data = [];
+    }
+
+    $ids = [];
+    foreach ($map as $value) {
+        foreach ((array) $value as $id) {
+            $ids[(int) $id] = (int) $id;
+        }
+    }
+
+    foreach ($ids as $id) {
+        if ($id > 0 && ! isset($bcd->attachment_data[$id])) {
+            try {
+                $bcd->attachment_data[$id] = \threewp_broadcast\attachment_data::from_attachment_id($id);
+            } catch (\Exception $e) {
+                // Skip an unreadable attachment; the rest still copy.
+            }
+        }
+    }
+}
+add_action('threewp_broadcast_broadcasting_started', 'rch_broadcast_register_acf_attachments', 10, 1);
+
+/**
+ * Remap the child post's ACF attachment meta to the IDs copied on this blog.
+ * Fires after the child post is inserted and attachments are copied, still on
+ * the target blog.
+ *
+ * @param object $action threewp_broadcast\actions\broadcasting_before_restore_current_blog
+ */
+function rch_broadcast_remap_acf_attachments($action): void
+{
+    if (! is_object($action) || ! isset($action->broadcasting_data)) {
+        return;
+    }
+    $bcd = $action->broadcasting_data;
+
+    if (empty($bcd->rch_acf_attachment_meta) || ! is_array($bcd->rch_acf_attachment_meta)) {
+        return;
+    }
+    if (! isset($bcd->new_post->ID) || ! is_callable([$bcd, 'copied_attachments'])) {
+        return;
+    }
+
+    $child_id  = (int) $bcd->new_post->ID;
+    $target_id = get_current_blog_id();
+    if ($child_id <= 0) {
+        return;
+    }
+
+    $copied = $bcd->copied_attachments();
+    if (! is_object($copied) || ! method_exists($copied, 'get_attachment_id_on_blog')) {
+        return;
+    }
+
+    foreach ($bcd->rch_acf_attachment_meta as $meta_key => $old_value) {
+        if (is_array($old_value)) {
+            $new_ids = [];
+            foreach ($old_value as $old_id) {
+                $new         = $copied->get_attachment_id_on_blog((int) $old_id, $target_id);
+                $new_ids[]   = $new ? (int) $new : (int) $old_id;
+            }
+            update_post_meta($child_id, $meta_key, $new_ids);
+        } else {
+            $new = $copied->get_attachment_id_on_blog((int) $old_value, $target_id);
+            if ($new) {
+                update_post_meta($child_id, $meta_key, (int) $new);
+            }
+        }
+    }
+}
+add_action('threewp_broadcast_broadcasting_before_restore_current_blog', 'rch_broadcast_remap_acf_attachments', 20, 1);

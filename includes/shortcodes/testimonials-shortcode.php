@@ -3,11 +3,11 @@
 /**
  * Testimonials Shortcode
  *
- * Renders client testimonials pulled from the Rechat SDK (Testimonials service).
- * The SDK method is "portal-only": the portal resolves the brand from the current
- * domain, so no brand_id is passed here — data is fetched client-side in the browser.
+ * Renders client testimonials via the Rechat SDK web component
+ * (<rechat-root><rechat-testimonials>). brand_id comes from the site settings
+ * (rch_rechat_brand_id) like every other Rechat web-component shortcode.
  *
- * Usage: [rch_testimonials limit="20" columns="3" title="What our clients say" show_rating="true" show_avatar="true"]
+ * Usage: [rch_testimonials limit="20" title="What our clients say"]
  *
  * SDK docs: https://sdk.rechat.com/documents/JavaScript_SDK.Testimonials.html
  *
@@ -19,16 +19,6 @@ if (! defined('ABSPATH')) {
 }
 
 /**
- * Enqueue testimonials assets — call only when the shortcode renders.
- * The Rechat SDK itself is enqueued globally on wp_enqueue_scripts (see enqueue-front.php).
- */
-function rch_testimonials_enqueue_assets()
-{
-    wp_enqueue_style('rch-testimonials-shortcode');
-    wp_enqueue_script('rch-testimonials-shortcode');
-}
-
-/**
  * Default shortcode attributes.
  *
  * @return array
@@ -36,13 +26,9 @@ function rch_testimonials_enqueue_assets()
 function rch_testimonials_get_defaults()
 {
     return [
-        'limit'       => '20',   // max testimonials to fetch (SDK `limit`)
-        'start'       => '0',    // pagination cursor (SDK `start`)
-        'columns'     => '3',    // grid columns on desktop
-        'title'       => '',     // optional heading above the grid
-        'show_rating' => 'true', // render star rating when present
-        'show_avatar' => 'true', // render author initials avatar
-        'empty_text'  => 'No testimonials yet.',
+        'limit'      => '20',  // max testimonials the web component fetches
+        'title'      => '',    // optional heading above the component
+        'color_mode' => '',    // optional light|dark override for <rechat-root>
     ];
 }
 
@@ -68,45 +54,40 @@ function rch_display_testimonials_shortcode($atts)
 {
     $atts = shortcode_atts(rch_testimonials_get_defaults(), $atts, 'rch_testimonials');
 
-    rch_testimonials_enqueue_assets();
+    // Ensure the Rechat SDK (which defines the web components) is loaded.
+    if (function_exists('rch_register_rechat_sdk_assets')) {
+        rch_register_rechat_sdk_assets();
+    }
+    wp_enqueue_style('rechat-sdk-css');
+    wp_enqueue_script('rechat-sdk-js');
 
     $unique_id = rch_testimonials_generate_id();
+    $limit     = max(1, (int) $atts['limit']);
 
-    $limit       = max(1, (int) $atts['limit']);
-    $start       = max(0, (int) $atts['start']);
-    $columns     = min(6, max(1, (int) $atts['columns']));
-    $show_rating = filter_var($atts['show_rating'], FILTER_VALIDATE_BOOLEAN);
-    $show_avatar = filter_var($atts['show_avatar'], FILTER_VALIDATE_BOOLEAN);
+    // brand_id from settings, like every other Rechat web-component shortcode.
+    $brand = get_option('rch_rechat_brand_id');
 
-    // Per-instance config consumed by rch-testimonials.js.
-    $config = [
-        'limit'      => $limit,
-        'start'      => $start,
-        'showRating' => $show_rating,
-        'showAvatar' => $show_avatar,
-        'emptyText'  => (string) $atts['empty_text'],
-    ];
+    // Reuse the shared <rechat-root> attribute builder (brand_id + color-mode + theme).
+    if (function_exists('rch_get_rechat_root_attributes')) {
+        $root_attrs = rch_get_rechat_root_attributes(
+            ['brand' => $brand, 'color_mode' => $atts['color_mode']],
+            '',
+            ''
+        );
+    } else {
+        $root_attrs = 'brand_id="' . esc_attr((string) $brand) . '"';
+    }
 
     ob_start();
     ?>
-    <div
-        id="<?php echo esc_attr($unique_id); ?>"
-        class="rch-testimonials"
-        data-rch-testimonials
-        data-rch-testimonials-config="<?php echo esc_attr(wp_json_encode($config)); ?>"
-        style="--rch-testimonials-columns: <?php echo (int) $columns; ?>;"
-        data-rch-testimonials-state="loading"
-    >
+    <div id="<?php echo esc_attr($unique_id); ?>" class="rch-testimonials">
         <?php if ($atts['title'] !== '') : ?>
             <h2 class="rch-testimonials__title"><?php echo esc_html($atts['title']); ?></h2>
         <?php endif; ?>
 
-        <div class="rch-testimonials__status" data-rch-testimonials-status>
-            <span class="rch-testimonials__spinner" aria-hidden="true"></span>
-            <span class="screen-reader-text"><?php esc_html_e('Loading testimonials…', 'rechat-plugin'); ?></span>
-        </div>
-
-        <div class="rch-testimonials__grid" data-rch-testimonials-grid hidden></div>
+        <rechat-root <?php echo $root_attrs; ?>>
+            <rechat-testimonials limit="<?php echo (int) $limit; ?>"></rechat-testimonials>
+        </rechat-root>
     </div>
     <?php
     return ob_get_clean();
