@@ -26,7 +26,7 @@ if (! defined('ABSPATH')) {
 function rch_testimonials_get_defaults()
 {
     return [
-        'limit'      => '20',  // max testimonials the web component fetches
+        'limit'      => '',    // max testimonials; empty = let the SDK show all
         'title'      => '',    // optional heading above the component
         'color_mode' => '',    // optional light|dark override for <rechat-root>
     ];
@@ -62,7 +62,8 @@ function rch_display_testimonials_shortcode($atts)
     wp_enqueue_script('rechat-sdk-js');
 
     $unique_id = rch_testimonials_generate_id();
-    $limit     = max(1, (int) $atts['limit']);
+    // Empty / non-positive limit → omit the attribute so the SDK returns all testimonials.
+    $limit = ($atts['limit'] !== '' && (int) $atts['limit'] > 0) ? (int) $atts['limit'] : 0;
 
     // brand_id from settings, like every other Rechat web-component shortcode.
     $brand = get_option('rch_rechat_brand_id');
@@ -86,7 +87,7 @@ function rch_display_testimonials_shortcode($atts)
         <?php endif; ?>
 
         <rechat-root <?php echo $root_attrs; ?>>
-            <rechat-testimonials limit="<?php echo (int) $limit; ?>"></rechat-testimonials>
+            <rechat-testimonials<?php echo $limit > 0 ? ' limit="' . (int) $limit . '"' : ''; ?>></rechat-testimonials>
         </rechat-root>
     </div>
     <?php

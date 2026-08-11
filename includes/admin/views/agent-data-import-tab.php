@@ -356,4 +356,6 @@ if ($has_export) {
     });
     </script>
     <?php endif; ?>
+
+    <?php if (function_exists('rch_testimonial_tools_render')) { rch_testimonial_tools_render(); } ?>
 </div>

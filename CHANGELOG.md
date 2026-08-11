@@ -1,5 +1,18 @@
 # Changelog
 
+## 7.0.45
+
+- **Testimonials Gutenberg block.** New "Testimonials Block" renders the
+  `[rch_testimonials]` shortcode (Rechat SDK web component) with inspector
+  controls for title, count, and color mode.
+- **Testimonials show all by default.** `[rch_testimonials]` and the block now
+  omit the `limit` attribute when unset (0/empty) so the SDK returns every
+  testimonial; set a number to cap.
+- **Testimonial CPT import/export.** New CSV import/export on the Rechat
+  Settings → Import / Export tab: export all `testimonial` posts
+  (name, text, stars, link) and import the same columns (create or update by
+  post_id).
+
 ## 7.0.44
 
 - **Testimonials shortcode → web component.** `[rch_testimonials]` now renders the
