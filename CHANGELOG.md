@@ -1,5 +1,13 @@
 # Changelog
 
+## 7.0.46
+
+- **Testimonial CSV export improvements.**
+  - On multisite, exports testimonials from **every site in the network**, not just the current site.
+  - Added three columns: `brand_id` (each site's `rch_rechat_brand_id`), `domain` (site host), and `url` (site home URL).
+  - Name column strips a leading dash (e.g. `– Caroline Wood` → `Caroline Wood`).
+  - Testimonial column is flattened to plain text (HTML stripped, entities decoded, whitespace collapsed).
+
 ## 7.0.45
 
 - **Testimonials Gutenberg block.** New "Testimonials Block" renders the
