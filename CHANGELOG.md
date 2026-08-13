@@ -1,5 +1,13 @@
 # Changelog
 
+## 7.0.47
+
+- **Testimonial export — agent Rechat ID on agent subsites.** For agent subsites,
+  the `brand_id` column now holds the owning agent's Rechat ID (`api_id` of the
+  linked hub `agents` post) instead of the site brand. Main site and office
+  subsites keep their brand id. Resolved cache-free so it stays correct across
+  the per-site export loop.
+
 ## 7.0.46
 
 - **Testimonial CSV export improvements.**

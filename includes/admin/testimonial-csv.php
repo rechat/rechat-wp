@@ -59,11 +59,55 @@ function rch_testimonial_export_blog_ids(): array
  */
 function rch_testimonial_site_context(): array
 {
+    // On an agent subsite the brand_id column carries the owning agent's Rechat ID
+    // (api_id) instead of the site brand; main site + office subsites keep brand_id.
+    $brand_id = (string) get_option('rch_rechat_brand_id', '');
+    $agent_id = rch_testimonial_agent_rechat_id_for_current_blog();
+    if ($agent_id !== '') {
+        $brand_id = $agent_id;
+    }
+
     return [
-        'brand_id' => (string) get_option('rch_rechat_brand_id', ''),
+        'brand_id' => $brand_id,
         'domain'   => (string) wp_parse_url(home_url('/'), PHP_URL_HOST),
         'url'      => (string) home_url('/'),
     ];
+}
+
+/**
+ * Owning agent's Rechat ID (api_id) for the current blog, or '' when this is not
+ * an agent subsite. Cache-free (safe inside a switch_to_blog export loop; the
+ * shared scope helpers are statically cached and would return a stale value).
+ */
+function rch_testimonial_agent_rechat_id_for_current_blog(): string
+{
+    if (! is_multisite()) {
+        return '';
+    }
+    $blog_id = (int) get_current_blog_id();
+    $main_id = (int) get_main_site_id();
+    if ($blog_id <= 0 || $blog_id === $main_id) {
+        return '';
+    }
+
+    // The hub `agents` post (on the main site) is linked to this subsite via _rch_agent_site_id.
+    switch_to_blog($main_id);
+    $ids = get_posts([
+        'post_type'              => 'agents',
+        'post_status'            => 'any',
+        'numberposts'            => 1,
+        'fields'                 => 'ids',
+        'no_found_rows'          => true,
+        'update_post_meta_cache' => false,
+        'update_post_term_cache' => false,
+        'meta_key'               => '_rch_agent_site_id',
+        'meta_value'             => (string) $blog_id,
+        'suppress_filters'       => true,
+    ]);
+    $api_id = ! empty($ids) ? (string) get_post_meta((int) $ids[0], 'api_id', true) : '';
+    restore_current_blog();
+
+    return trim($api_id);
 }
 
 /**
