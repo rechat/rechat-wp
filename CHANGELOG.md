@@ -1,5 +1,11 @@
 # Changelog
 
+## 7.0.48
+
+- **Testimonial export — agent email column.** New `email` column carries the
+  owning agent's profile email (from the linked hub `agents` post) on agent
+  subsites; blank on the main site and office subsites.
+
 ## 7.0.47
 
 - **Testimonial export — agent Rechat ID on agent subsites.** For agent subsites,

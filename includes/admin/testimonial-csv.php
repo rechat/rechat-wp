@@ -35,6 +35,7 @@ function rch_testimonial_csv_columns(): array
         'brand_id'    => __('Brand ID', 'rechat-plugin'),
         'domain'      => __('Site domain', 'rechat-plugin'),
         'url'         => __('Site URL', 'rechat-plugin'),
+        'email'       => __('Agent email', 'rechat-plugin'),
     ];
 }
 
@@ -60,34 +61,41 @@ function rch_testimonial_export_blog_ids(): array
 function rch_testimonial_site_context(): array
 {
     // On an agent subsite the brand_id column carries the owning agent's Rechat ID
-    // (api_id) instead of the site brand; main site + office subsites keep brand_id.
+    // (api_id) instead of the site brand; the email column carries the agent's
+    // profile email. Main site + office subsites keep brand_id and blank email.
+    $agent    = rch_testimonial_agent_meta_for_current_blog();
     $brand_id = (string) get_option('rch_rechat_brand_id', '');
-    $agent_id = rch_testimonial_agent_rechat_id_for_current_blog();
-    if ($agent_id !== '') {
-        $brand_id = $agent_id;
+    if ($agent['api_id'] !== '') {
+        $brand_id = $agent['api_id'];
     }
 
     return [
         'brand_id' => $brand_id,
         'domain'   => (string) wp_parse_url(home_url('/'), PHP_URL_HOST),
         'url'      => (string) home_url('/'),
+        'email'    => $agent['email'],
     ];
 }
 
 /**
- * Owning agent's Rechat ID (api_id) for the current blog, or '' when this is not
- * an agent subsite. Cache-free (safe inside a switch_to_blog export loop; the
- * shared scope helpers are statically cached and would return a stale value).
+ * Owning agent's Rechat ID (api_id) + profile email for the current blog, from the
+ * linked hub `agents` post. Empty values when this is not an agent subsite.
+ * Cache-free (safe inside a switch_to_blog export loop; the shared scope helpers
+ * are statically cached and would return a stale value).
+ *
+ * @return array{api_id:string,email:string}
  */
-function rch_testimonial_agent_rechat_id_for_current_blog(): string
+function rch_testimonial_agent_meta_for_current_blog(): array
 {
+    $empty = ['api_id' => '', 'email' => ''];
+
     if (! is_multisite()) {
-        return '';
+        return $empty;
     }
     $blog_id = (int) get_current_blog_id();
     $main_id = (int) get_main_site_id();
     if ($blog_id <= 0 || $blog_id === $main_id) {
-        return '';
+        return $empty;
     }
 
     // The hub `agents` post (on the main site) is linked to this subsite via _rch_agent_site_id.
@@ -104,10 +112,18 @@ function rch_testimonial_agent_rechat_id_for_current_blog(): string
         'meta_value'             => (string) $blog_id,
         'suppress_filters'       => true,
     ]);
-    $api_id = ! empty($ids) ? (string) get_post_meta((int) $ids[0], 'api_id', true) : '';
+
+    $api_id = '';
+    $email  = '';
+    if (! empty($ids)) {
+        $agent_id = (int) $ids[0];
+        $api_id   = trim((string) get_post_meta($agent_id, 'api_id', true));
+        $raw_mail = trim((string) get_post_meta($agent_id, 'email', true));
+        $email    = is_email($raw_mail) ? $raw_mail : '';
+    }
     restore_current_blog();
 
-    return trim($api_id);
+    return ['api_id' => $api_id, 'email' => $email];
 }
 
 /**
@@ -136,7 +152,7 @@ function rch_testimonial_plain_text($html): string
  * Build one CSV row for a testimonial post + site context.
  *
  * @param WP_Post                                          $post
- * @param array{brand_id:string,domain:string,url:string} $ctx
+ * @param array{brand_id:string,domain:string,url:string,email:string} $ctx
  * @return array<int,string|int>
  */
 function rch_testimonial_export_row(WP_Post $post, array $ctx): array
@@ -155,6 +171,7 @@ function rch_testimonial_export_row(WP_Post $post, array $ctx): array
         $ctx['brand_id'],
         $ctx['domain'],
         $ctx['url'],
+        $ctx['email'],
     ];
 }
 
