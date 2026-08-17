@@ -2,7 +2,7 @@
 /*
 Plugin Name: Rechat Plugin
 Description: Fetches and manages agent, offices, regions, and Listing data from Rechat.
-Version: 7.0.49
+Version: 7.0.50
 Author URI: https://rechat.com/
 Text Domain: rechat-plugin
 License: GPL-2.0-or-later
@@ -18,7 +18,7 @@ if (! defined('ABSPATH')) {
 // define required constants.
 define('RCH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('RCH_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('RCH_VERSION', '7.0.49');
+define('RCH_VERSION', '7.0.50');
 if (! function_exists('rch_is_localhost_environment')) {
     /**
      * True when site runs on local dev (localhost, 127.0.0.1, .local, .test, or WP_ENVIRONMENT_TYPE=local).
@@ -49,7 +49,7 @@ if (! function_exists('rch_is_localhost_environment')) {
 // 2.2.0-alpha
 /** Pinned @rechat/sdk version (must match unpkg URL path when not on localhost builder). */
 if (! defined('RCH_RECHAT_SDK_VERSION')) {
-    define('RCH_RECHAT_SDK_VERSION', '2.2.12-alpha');
+    define('RCH_RECHAT_SDK_VERSION', '2.2.14-alpha');
 }
 
 if (! defined('RCH_RECHAT_SDK_CSS_URL')) {
