@@ -28,8 +28,13 @@ function rch_enqueue_frontend_styles()
         RCH_VERSION
     );
     wp_register_style('rch-off-market', RCH_PLUGIN_ASSETS . 'css/rch-off-market.css', [], RCH_VERSION);
-    // Off Market swiper init reads the theme/SDK-provided global `Swiper`.
-    wp_register_script('rch-off-market-swiper', RCH_PLUGIN_ASSETS . 'js/rch-off-market-swiper.js', [], RCH_VERSION, true);
+    // Swiper 11 library (CDN) — self-contained so the Off Market carousel works on
+    // ANY page/theme, even where the theme doesn't load its own Swiper. If a global
+    // Swiper already exists, loading this again is harmless.
+    wp_register_style('rch-swiper', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css', [], '11');
+    wp_register_script('rch-swiper', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js', [], '11', true);
+    // Off Market swiper init — depends on Swiper so the global is guaranteed.
+    wp_register_script('rch-off-market-swiper', RCH_PLUGIN_ASSETS . 'js/rch-off-market-swiper.js', ['rch-swiper'], RCH_VERSION, true);
 
     // Enqueue JavaScript files with version
     wp_enqueue_script('rch-ajax-front', RCH_PLUGIN_ASSETS . 'js/rch-ajax-front.js', ['jquery'], RCH_VERSION, true);

@@ -417,8 +417,8 @@ Accepted parameters:
 | `autoplay` | boolean | `false` | Swiper only. |
 | `autoplay_delay` | int | `3500` | Swiper only. Autoplay delay (ms). |
 
-> Swiper mode needs the active theme to provide the global `Swiper` (all Rechat
-> themes do). If a theme doesn't, the carousel falls back to a static row.
+> Swiper mode loads Swiper 11 automatically (from CDN) when used, so the carousel
+> works on any page/theme. If a global `Swiper` already exists, it's reused.
 
 Notes:
 - Off Market listings are managed in wp-admin under **Off Market** (Add New → fill
