@@ -84,9 +84,14 @@ function rch_off_market_get_fields()
         array('key' => 'gallery_image_urls', 'label' => 'Gallery Images', 'type' => 'gallery', 'group' => 'gallery',
             'desc' => 'Upload from the Media Library. The first image is the cover. Drag to reorder. If left empty, the Featured Image is used.'),
 
-        /* ---------------- Agent ---------------- */
-        array('key' => 'agent_name',    'label' => 'Agent Name',    'type' => 'text', 'group' => 'agent'),
-        array('key' => 'agent_id',      'label' => 'Agent ID',      'type' => 'text', 'group' => 'agent'),
+        /* ---------------- Agent ----------------
+         * Pick an existing site Agent. We store the selected Agent's WP post ID
+         * in `agent_id`; the Agent's name is mirrored into `agent_name` on save.
+         * The single page renders this Agent with the same card as the listing
+         * agent / seller agent on the API listing detail page.
+         */
+        array('key' => 'agent_id',      'label' => 'Agent',         'type' => 'agent_select', 'group' => 'agent',
+            'desc' => 'Select an agent from this site. Their profile card (photo, license, phone, email) shows on the listing.'),
     );
 
     return apply_filters('rch_off_market_fields', $registry);
@@ -251,15 +256,8 @@ function rch_off_market_build_listing_detail($post_id)
         $detail['cover_image_url']    = $gallery[0];
     }
 
-    // --- Agent (reuses the listing-agents "courtesy" fallback line) ---
-    $agent_name = rch_off_market_meta($post_id, 'agent_name');
-    if ($agent_name !== '') {
-        $formatted['courtesy'] = array('text' => $agent_name);
-    }
-    $agent_id = rch_off_market_meta($post_id, 'agent_id');
-    if ($agent_id !== '') {
-        $detail['list_agent'] = array('id' => $agent_id);
-    }
+    // Agent card is rendered by the single template from the selected Agent
+    // post (see off-market-single-custom.php) — not from $listing_detail.
 
     // Gallery badge (reused part reads status) — no status field, keep it blank.
     $detail['status'] = '';
