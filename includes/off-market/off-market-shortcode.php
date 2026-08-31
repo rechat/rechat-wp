@@ -14,19 +14,24 @@ if (! defined('ABSPATH')) {
 }
 
 /**
- * Render a single Off Market card (<li>). Echoes markup.
+ * Render a single Off Market card. Echoes markup.
  * Every field is guarded so empties render nothing.
  *
  * @param int|WP_Post $post
+ * @param array       $args {
+ *     @type string $extra_class Extra class on the <li> root (e.g. 'swiper-slide').
+ * }
  * @return void
  */
-function rch_off_market_render_card($post = null)
+function rch_off_market_render_card($post = null, $args = array())
 {
     $post = get_post($post);
     if (! $post) {
         return;
     }
     $pid = $post->ID;
+    $extra_class = isset($args['extra_class']) ? trim((string) $args['extra_class']) : '';
+    $li_class = 'rch-off-market-card' . ($extra_class !== '' ? ' ' . $extra_class : '');
 
     $gallery = rch_off_market_gallery_urls($pid);
     $cover   = ! empty($gallery) ? $gallery[0] : '';
@@ -62,7 +67,7 @@ function rch_off_market_render_card($post = null)
     $permalink = get_permalink($pid);
     $title = get_the_title($pid);
     ?>
-    <li class="rch-off-market-card">
+    <li class="<?php echo esc_attr($li_class); ?>">
         <a class="rch-off-market-card__link" href="<?php echo esc_url($permalink); ?>">
             <div class="rch-off-market-card__media">
                 <?php if ($cover !== '') : ?>
@@ -101,13 +106,18 @@ function rch_off_market_render_card($post = null)
  * [rch_off_market] — grid of Off Market listings, filterable.
  *
  * Attributes:
- *   status   Comma list. Keywords (active, pending, sold, coming) or full text
- *            ("Sold Privately"). Empty = all. e.g. status="sold"
- *   limit    Max listings. -1 = all. Default 6.
- *   columns  Grid columns (desktop). Default 3.
- *   orderby  date | price | title. Default date.
- *   order    ASC | DESC. Default DESC.
- *   title    Optional heading above the grid.
+ *   display_type   normal | swiper. Default normal (responsive grid).
+ *   status         Comma list. Keywords (active, pending, sold, coming) or full
+ *                  text ("Sold Privately"). Empty = all. e.g. status="sold"
+ *   limit          Max listings. -1 = all. Default 6.
+ *   columns        Grid columns / swiper slides per view (desktop). Default 3.
+ *   orderby        date | price | title. Default date.
+ *   order          ASC | DESC. Default DESC.
+ *   title          Optional heading above the grid.
+ *   space_between  Swiper gap in px. Default 24.
+ *   loop           Swiper loop. Default true.
+ *   autoplay       Swiper autoplay. Default false.
+ *   autoplay_delay Autoplay delay ms. Default 3500.
  *
  * @param array $atts
  * @return string
@@ -115,17 +125,27 @@ function rch_off_market_render_card($post = null)
 function rch_off_market_shortcode($atts)
 {
     $atts = shortcode_atts(array(
-        'status'  => '',
-        'limit'   => 6,
-        'columns' => 3,
-        'orderby' => 'date',
-        'order'   => 'DESC',
-        'title'   => '',
+        'display_type'   => 'normal',
+        'status'         => '',
+        'limit'          => 6,
+        'columns'        => 3,
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+        'title'          => '',
+        'space_between'  => 24,
+        'loop'           => 'true',
+        'autoplay'       => 'false',
+        'autoplay_delay' => 3500,
     ), $atts, 'rch_off_market');
+
+    $is_swiper = strtolower((string) $atts['display_type']) === 'swiper';
 
     // Assets (registered in enqueue-front.php).
     if (wp_style_is('rch-off-market', 'registered')) {
         wp_enqueue_style('rch-off-market');
+    }
+    if ($is_swiper && wp_script_is('rch-off-market-swiper', 'registered')) {
+        wp_enqueue_script('rch-off-market-swiper');
     }
 
     $query_args = array(
@@ -170,19 +190,44 @@ function rch_off_market_shortcode($atts)
 
     if ($q->have_posts()) {
         $columns = max(1, (int) $atts['columns']);
-        $style = '--om-cols:' . $columns . ';';
+        $heading = $atts['title'] !== '' ? '<h2 class="rch-off-market-shortcode__title">' . esc_html($atts['title']) . '</h2>' : '';
 
-        echo '<div class="rch-off-market-shortcode">';
-        if ($atts['title'] !== '') {
-            echo '<h2 class="rch-off-market-shortcode__title">' . esc_html($atts['title']) . '</h2>';
+        if ($is_swiper) {
+            $data = sprintf(
+                ' data-spv="%d" data-space="%d" data-loop="%s" data-autoplay="%s" data-autoplay-delay="%d"',
+                $columns,
+                max(0, (int) $atts['space_between']),
+                (strtolower((string) $atts['loop']) === 'false' ? 'false' : 'true'),
+                (strtolower((string) $atts['autoplay']) === 'true' ? 'true' : 'false'),
+                max(0, (int) $atts['autoplay_delay'])
+            );
+
+            echo '<div class="rch-off-market-shortcode rch-off-market-swiper"' . $data . '>';
+            echo $heading; // already escaped
+            echo '<div class="swiper">';
+            echo '<ul class="swiper-wrapper rch-off-market-swiper__wrapper">';
+            while ($q->have_posts()) {
+                $q->the_post();
+                rch_off_market_render_card(get_the_ID(), array('extra_class' => 'swiper-slide'));
+            }
+            echo '</ul>';
+            echo '<div class="swiper-button-prev"></div>';
+            echo '<div class="swiper-button-next"></div>';
+            echo '<div class="swiper-pagination"></div>';
+            echo '</div>'; // .swiper
+            echo '</div>'; // wrapper
+        } else {
+            $style = '--om-cols:' . $columns . ';';
+            echo '<div class="rch-off-market-shortcode">';
+            echo $heading; // already escaped
+            echo '<ul class="rch-off-market-grid" style="' . esc_attr($style) . '">';
+            while ($q->have_posts()) {
+                $q->the_post();
+                rch_off_market_render_card(get_the_ID());
+            }
+            echo '</ul>';
+            echo '</div>';
         }
-        echo '<ul class="rch-off-market-grid" style="' . esc_attr($style) . '">';
-        while ($q->have_posts()) {
-            $q->the_post();
-            rch_off_market_render_card(get_the_ID());
-        }
-        echo '</ul>';
-        echo '</div>';
         wp_reset_postdata();
     } else {
         echo '<p class="rch-off-market-empty">' . esc_html__('No off market listings found.', 'rechat-plugin') . '</p>';
