@@ -88,8 +88,8 @@ function rch_off_market_get_fields()
         array('key' => 'property_subtype', 'label' => 'Property Subtype', 'type' => 'text', 'group' => 'facts'),
 
         /* ---------------- Gallery ---------------- */
-        array('key' => 'gallery_image_urls', 'label' => 'Gallery Image URLs', 'type' => 'images', 'group' => 'gallery',
-            'desc' => 'One image URL per line. The first image is used as the cover. If left blank, the Featured Image is used.'),
+        array('key' => 'gallery_image_urls', 'label' => 'Gallery Images', 'type' => 'gallery', 'group' => 'gallery',
+            'desc' => 'Upload from the Media Library. The first image is the cover. Drag to reorder. If left empty, the Featured Image is used.'),
 
         /* ---------------- Description ---------------- */
         // Description comes from the main post editor (post_content) — see adapter.
@@ -153,28 +153,45 @@ function rch_off_market_meta($post_id, $key)
 }
 
 /**
- * Parse the gallery textarea (one URL per line) into a clean URL list.
+ * Resolve the gallery into a clean URL list.
  *
- * @param int $post_id
+ * The stored meta is a comma- or newline-separated list of tokens. Each token
+ * is either a Media Library attachment ID (numeric — the normal case from the
+ * media picker) or a raw image URL (legacy / pasted). Falls back to the
+ * Featured Image when nothing is set.
+ *
+ * @param int    $post_id
+ * @param string $size    Image size for attachment IDs (default 'full').
  * @return string[]
  */
-function rch_off_market_gallery_urls($post_id)
+function rch_off_market_gallery_urls($post_id, $size = 'full')
 {
     $raw = (string) get_post_meta($post_id, 'gallery_image_urls', true);
     $urls = array();
-    foreach (preg_split('/\r\n|\r|\n/', $raw) as $line) {
-        $line = trim($line);
-        if ($line !== '' && filter_var($line, FILTER_VALIDATE_URL)) {
-            $urls[] = $line;
+
+    foreach (preg_split('/[\r\n,]+/', $raw) as $token) {
+        $token = trim($token);
+        if ($token === '') {
+            continue;
+        }
+        if (ctype_digit($token)) {
+            $src = wp_get_attachment_image_url((int) $token, $size);
+            if ($src) {
+                $urls[] = $src;
+            }
+        } elseif (filter_var($token, FILTER_VALIDATE_URL)) {
+            $urls[] = $token;
         }
     }
-    // Fall back to the Featured Image when no gallery URLs are provided.
+
+    // Fall back to the Featured Image when no gallery images are provided.
     if (empty($urls) && has_post_thumbnail($post_id)) {
         $thumb = get_the_post_thumbnail_url($post_id, 'full');
         if ($thumb) {
             $urls[] = $thumb;
         }
     }
+
     return $urls;
 }
 
@@ -278,6 +295,16 @@ function rch_off_market_build_listing_detail($post_id)
         if ($val !== '') {
             $property[$key] = $val;
         }
+    }
+
+    // --- Coordinates (feeds the LocalLogic LocalContent widget) ---
+    $lat = rch_off_market_meta($post_id, 'latitude');
+    $lng = rch_off_market_meta($post_id, 'longitude');
+    if ($lat !== '' && $lng !== '' && is_numeric($lat) && is_numeric($lng)) {
+        $property['address']['location'] = array(
+            'latitude'  => $lat,
+            'longitude' => $lng,
+        );
     }
 
     // --- Description from the post editor ---

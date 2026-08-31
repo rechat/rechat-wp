@@ -73,8 +73,30 @@ function rch_off_market_render_meta_box($post, $box)
                 echo '<textarea id="' . esc_attr($name) . '" name="' . esc_attr($name) . '" rows="3" class="widefat">' . esc_textarea($value) . '</textarea>';
                 break;
 
-            case 'images':
-                echo '<textarea id="' . esc_attr($name) . '" name="' . esc_attr($name) . '" rows="5" class="widefat" placeholder="https://…/photo-1.jpg&#10;https://…/photo-2.jpg">' . esc_textarea($value) . '</textarea>';
+            case 'gallery':
+                $tokens = array_filter(array_map('trim', preg_split('/[\r\n,]+/', (string) $value)));
+                echo '<div class="rch-om-gallery">';
+                echo '<ul class="rch-om-gallery__list">';
+                foreach ($tokens as $tok) {
+                    if (ctype_digit($tok)) {
+                        $src = wp_get_attachment_image_url((int) $tok, 'thumbnail');
+                    } elseif (filter_var($tok, FILTER_VALIDATE_URL)) {
+                        $src = $tok;
+                    } else {
+                        $src = '';
+                    }
+                    if (! $src) {
+                        continue;
+                    }
+                    echo '<li class="rch-om-gallery__item" data-id="' . esc_attr($tok) . '">';
+                    echo '<img src="' . esc_url($src) . '" alt="" />';
+                    echo '<button type="button" class="rch-om-gallery__remove" aria-label="' . esc_attr__('Remove image', 'rechat-plugin') . '">&times;</button>';
+                    echo '</li>';
+                }
+                echo '</ul>';
+                echo '<input type="hidden" class="rch-om-gallery__input" name="' . esc_attr($name) . '" value="' . esc_attr(implode(',', $tokens)) . '" />';
+                echo '<button type="button" class="button rch-om-gallery__add">' . esc_html__('Add / Upload Images', 'rechat-plugin') . '</button>';
+                echo '</div>';
                 break;
 
             case 'select':
@@ -142,16 +164,21 @@ function rch_off_market_save_meta_box($post_id)
         $type = isset($field['type']) ? $field['type'] : 'text';
 
         switch ($type) {
-            case 'images':
-                // Preserve line breaks; sanitize each URL line.
-                $lines = array();
-                foreach (preg_split('/\r\n|\r|\n/', (string) $raw) as $line) {
-                    $line = trim($line);
-                    if ($line !== '') {
-                        $lines[] = esc_url_raw($line);
+            case 'gallery':
+                // Tokens: attachment IDs (numeric) or raw URLs (legacy). Stored comma-separated.
+                $tokens = array();
+                foreach (preg_split('/[\r\n,]+/', (string) $raw) as $tok) {
+                    $tok = trim($tok);
+                    if ($tok === '') {
+                        continue;
+                    }
+                    if (ctype_digit($tok)) {
+                        $tokens[] = (string) absint($tok);
+                    } elseif (filter_var($tok, FILTER_VALIDATE_URL)) {
+                        $tokens[] = esc_url_raw($tok);
                     }
                 }
-                $clean = implode("\n", array_filter($lines));
+                $clean = implode(',', $tokens);
                 break;
 
             case 'textarea':
@@ -176,3 +203,42 @@ function rch_off_market_save_meta_box($post_id)
     }
 }
 add_action('save_post_' . RCH_OFF_MARKET_CPT, 'rch_off_market_save_meta_box');
+
+/**
+ * Media Library uploader assets for the gallery field — only on the
+ * Off Market add/edit screen.
+ *
+ * @param string $hook
+ */
+function rch_off_market_admin_assets($hook)
+{
+    if (! in_array($hook, array('post.php', 'post-new.php'), true)) {
+        return;
+    }
+    $screen = get_current_screen();
+    if (! $screen || $screen->post_type !== RCH_OFF_MARKET_CPT) {
+        return;
+    }
+    if (! defined('RCH_PLUGIN_ASSETS') || ! defined('RCH_VERSION')) {
+        return;
+    }
+
+    wp_enqueue_media();
+    wp_enqueue_script(
+        'rch-off-market-admin',
+        RCH_PLUGIN_ASSETS . 'js/rch-off-market-admin.js',
+        array('jquery', 'jquery-ui-sortable'),
+        RCH_VERSION,
+        true
+    );
+
+    $css = '.rch-om-gallery__list{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 10px;padding:0;list-style:none}'
+        . '.rch-om-gallery__item{position:relative;width:100px;height:100px;cursor:move}'
+        . '.rch-om-gallery__item img{width:100%;height:100%;object-fit:cover;border-radius:4px;display:block;border:1px solid #dcdcde}'
+        . '.rch-om-gallery__item:first-child::after{content:"Cover";position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:#fff;font-size:10px;text-align:center;padding:1px 0}'
+        . '.rch-om-gallery__remove{position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;border:none;background:#d63638;color:#fff;cursor:pointer;line-height:20px;padding:0;font-size:15px}';
+    wp_register_style('rch-off-market-admin', false, array(), RCH_VERSION);
+    wp_enqueue_style('rch-off-market-admin');
+    wp_add_inline_style('rch-off-market-admin', $css);
+}
+add_action('admin_enqueue_scripts', 'rch_off_market_admin_assets');
