@@ -205,3 +205,19 @@
     font-size: 1.6rem;
   }
 }
+
+/* Off Market single — gallery status badge tweaks.
+   The shared gallery part renders a <span class="{status}"> pill; core styles
+   colour the dot for .Active / .Sold. Add Pending/Coming Soon here and hide the
+   pill entirely when no status is set (so no empty badge shows). */
+.rch-off-market-detail .rch-left-top-slider span:empty {
+  display: none;
+}
+
+.rch-off-market-detail .rch-left-top-slider .Pending:before {
+  background-color: #facc15;
+}
+
+.rch-off-market-detail .rch-left-top-slider .Coming:before {
+  background-color: #3b82f6;
+}

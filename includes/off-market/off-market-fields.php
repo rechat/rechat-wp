@@ -56,6 +56,14 @@ function rch_off_market_get_fields()
     $registry = array(
 
         /* ---------------- Identity ---------------- */
+        array('key' => 'status',        'label' => 'Status',        'type' => 'select', 'group' => 'identity',
+            'options' => array(
+                'Active Privately'      => 'Active Privately',
+                'Coming Soon Privately' => 'Coming Soon Privately',
+                'Pending Privately'     => 'Pending Privately',
+                'Sold Privately'        => 'Sold Privately',
+            ),
+            'desc' => 'Shown as the badge on the gallery and archive card.'),
         array('key' => 'rechat_id',     'label' => 'Rechat ID (UUID, optional)', 'type' => 'text', 'group' => 'identity',
             'desc' => 'Optional. Off Market works with no API — leave blank if unknown.'),
         array('key' => 'list_date',     'label' => 'List Date',     'type' => 'date',   'group' => 'identity'),
@@ -259,8 +267,9 @@ function rch_off_market_build_listing_detail($post_id)
     // Agent card is rendered by the single template from the selected Agent
     // post (see off-market-single-custom.php) — not from $listing_detail.
 
-    // Gallery badge (reused part reads status) — no status field, keep it blank.
-    $detail['status'] = '';
+    // Status badge (reused gallery part reads this). Keep it defined (blank when
+    // unset) so the shared part never hits an undefined key.
+    $detail['status'] = rch_off_market_meta($post_id, 'status');
 
     // No open houses for manual listings.
     $detail['open_houses'] = array();

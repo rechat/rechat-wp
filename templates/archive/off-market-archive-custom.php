@@ -64,6 +64,7 @@ $archive_title = post_type_archive_title('', false);
                         rch_off_market_meta($pid, 'city'),
                         trim(rch_off_market_meta($pid, 'state') . ' ' . rch_off_market_meta($pid, 'postal_code')),
                     ))));
+                    $status = rch_off_market_meta($pid, 'status');
                 ?>
                     <li class="rch-off-market-card">
                         <a class="rch-off-market-card__link" href="<?php the_permalink(); ?>">
@@ -72,6 +73,9 @@ $archive_title = post_type_archive_title('', false);
                                     <img src="<?php echo esc_url($cover); ?>" alt="<?php echo esc_attr(get_the_title()); ?>" loading="lazy" />
                                 <?php else : ?>
                                     <span class="rch-off-market-card__noimg" aria-hidden="true"></span>
+                                <?php endif; ?>
+                                <?php if ($status !== '') : ?>
+                                    <span class="rch-off-market-card__status"><?php echo esc_html($status); ?></span>
                                 <?php endif; ?>
                             </div>
 
