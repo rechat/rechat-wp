@@ -19,7 +19,8 @@ get_header();
 $archive_title = post_type_archive_title('', false);
 ?>
 
-<div class="container rch-off-market-archive">
+<div id="primary" class="content-area rch-primary-content">
+    <main id="main" class="site-main content-container site-container rch-off-market-archive">
     <header class="rch-off-market-archive__head">
         <h1 class="rch-off-market-archive__title"><?php echo esc_html($archive_title ? $archive_title : __('Off Market', 'rechat-plugin')); ?></h1>
     </header>
@@ -121,7 +122,8 @@ $archive_title = post_type_archive_title('', false);
     <?php else : ?>
         <p class="rch-off-market-empty"><?php esc_html_e('No off market listings found.', 'rechat-plugin'); ?></p>
     <?php endif; ?>
-</div>
+    </main><!-- #main -->
+</div><!-- #primary -->
 
 <?php
 get_footer();

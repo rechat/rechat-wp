@@ -5,15 +5,10 @@
  * address, city/state/zip, MLS line. Responsive 4→3→2→1 grid.
  */
 
+/* Layout wrappers (.site-container / .content-container) are theme-provided and
+   handle max-width + header clearance across all Rechat themes. */
 .rch-off-market-archive {
-  /* Top padding clears themes with a fixed / overlapping header. */
-  padding-block: 7rem 4rem;
-}
-
-@media screen and (max-width: 782px) {
-  .rch-off-market-archive {
-    padding-block: 5rem 3rem;
-  }
+  padding-block: 1.5rem 4rem;
 }
 
 .rch-off-market-archive__head {
