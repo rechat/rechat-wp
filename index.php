@@ -2,7 +2,7 @@
 /*
 Plugin Name: Rechat Plugin
 Description: Fetches and manages agent, offices, regions, and Listing data from Rechat.
-Version: 7.0.50
+Version: 7.0.51
 Author URI: https://rechat.com/
 Text Domain: rechat-plugin
 License: GPL-2.0-or-later
@@ -18,7 +18,7 @@ if (! defined('ABSPATH')) {
 // define required constants.
 define('RCH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('RCH_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('RCH_VERSION', '7.0.50');
+define('RCH_VERSION', '7.0.51');
 if (! function_exists('rch_is_localhost_environment')) {
     /**
      * True when site runs on local dev (localhost, 127.0.0.1, .local, .test, or WP_ENVIRONMENT_TYPE=local).
@@ -192,6 +192,8 @@ include RCH_PLUGIN_INCLUDES . 'admin/menu-setting.php';
 include RCH_PLUGIN_INCLUDES . 'admin/custom-fields.php';
 include RCH_PLUGIN_INCLUDES . 'template-load.php';
 include RCH_PLUGIN_INCLUDES . 'helper.php';
+include RCH_PLUGIN_INCLUDES . 'off-market/off-market-fields.php';
+include RCH_PLUGIN_INCLUDES . 'off-market/off-market-shortcode.php';
 include RCH_PLUGIN_DIR . 'templates/archive/search-result.php';
 include RCH_PLUGIN_INCLUDES . 'load-agents-regions-offices/api-load-agents-regions-offices.php';
 include RCH_PLUGIN_INCLUDES . 'cron-job/schedule.php';

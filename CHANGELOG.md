@@ -1,5 +1,32 @@
 # Changelog
 
+## 7.0.51
+
+- **New feature: Off Market listings (`off_market` CPT).** Manually-entered
+  listings with **no Rechat API dependency** — an admin adds them under
+  **Off Market → Add New** and they appear on the archive and via shortcode.
+  - Fields (registry-driven meta boxes): status, rechat_id, list/sold date,
+    price, currency, address (line/city/state/postal), latitude/longitude,
+    bedrooms/bathrooms/square_feet, gallery, and an **Agent picked from the
+    site's Agents**. Description uses the post editor.
+  - **Gallery** uses the WordPress Media Library (multi-select, drag reorder),
+    with a Featured Image fallback.
+  - **Single page** reuses the existing listing-detail template parts (an adapter
+    reshapes post meta into the API-shaped `$listing_detail`), so it matches the
+    normal listing detail UI — including the agent card and the LocalLogic
+    LocalContent widget when latitude/longitude are set. Empty fields never
+    render (no empty labels/values/icons/containers).
+  - **Status badge** uses "Privately" wording (Active/Coming Soon/Pending/Sold
+    Privately) on the gallery and cards.
+  - **Archive** at `/off-market/` — static, server-rendered responsive-grid
+    cards. Theme-overridable via `rechat/off-market-archive-custom.php` and
+    `rechat/off-market-single-custom.php`.
+  - **New shortcode `[rch_off_market]`** — filterable grid or Swiper carousel.
+    Attributes: `display_type` (normal|swiper), `status`, `limit`, `columns`,
+    `orderby`, `order`, `title`, plus swiper options (`space_between`, `loop`,
+    `autoplay`, `autoplay_delay`). Swiper mode self-loads Swiper 11 so it works
+    on any page/theme. Full parameter docs in README.
+
 ## 7.0.48
 
 - **Testimonial export — agent email column.** New `email` column carries the
