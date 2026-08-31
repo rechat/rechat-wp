@@ -25,11 +25,18 @@ while (have_posts()) :
     // Build the API-shaped listing array from post meta (empty keys omitted).
     $listing_detail = rch_off_market_build_listing_detail($post_id);
 
-    // Agent lookup — same contract the listing parts expect.
-    $agent_api_id        = isset($listing_detail['list_agent']['id']) ? $listing_detail['list_agent']['id'] : '';
-    $seller_agent_api_id = '';
-    $agent_posts         = function_exists('rch_check_agent_exists') ? rch_check_agent_exists($agent_api_id) : array();
-    $seller_agent_posts  = array();
+    // Listing agent — the Agent selected in the meta box (its WP post ID).
+    // Feed the Agent post straight into the shared listing-agents part so it
+    // renders the same card as the listing / seller agent on the API page.
+    $agent_posts        = array();
+    $selected_agent_id  = (int) get_post_meta($post_id, 'agent_id', true);
+    if ($selected_agent_id) {
+        $agent_post = get_post($selected_agent_id);
+        if ($agent_post && $agent_post->post_type === 'agents' && $agent_post->post_status === 'publish') {
+            $agent_posts[] = $agent_post;
+        }
+    }
+    $seller_agent_posts = array();
 
     get_header();
     ?>

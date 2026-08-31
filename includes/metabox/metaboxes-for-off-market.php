@@ -108,6 +108,25 @@ function rch_off_market_render_meta_box($post, $box)
                 echo '</select>';
                 break;
 
+            case 'agent_select':
+                $agents = get_posts(array(
+                    'post_type'      => 'agents',
+                    'post_status'    => 'publish',
+                    'posts_per_page' => -1,
+                    'orderby'        => 'title',
+                    'order'          => 'ASC',
+                ));
+                echo '<select id="' . esc_attr($name) . '" name="' . esc_attr($name) . '" class="widefat">';
+                echo '<option value="">' . esc_html__('— Select an agent —', 'rechat-plugin') . '</option>';
+                foreach ($agents as $agent) {
+                    echo '<option value="' . esc_attr($agent->ID) . '" ' . selected((int) $value, $agent->ID, false) . '>' . esc_html($agent->post_title) . '</option>';
+                }
+                echo '</select>';
+                if (empty($agents)) {
+                    echo '<p class="description">' . esc_html__('No agents found. Add agents first.', 'rechat-plugin') . '</p>';
+                }
+                break;
+
             case 'number':
                 echo '<input type="number" step="any" id="' . esc_attr($name) . '" name="' . esc_attr($name) . '" value="' . esc_attr($value) . '" class="regular-text" />';
                 break;
@@ -188,6 +207,18 @@ function rch_off_market_save_meta_box($post_id)
             case 'select':
                 $allowed = array_keys((array) $field['options']);
                 $clean = in_array($raw, $allowed, true) ? $raw : '';
+                break;
+
+            case 'agent_select':
+                $agent_id = absint($raw);
+                // Validate it's a real published agent; mirror the name into agent_name.
+                if ($agent_id && get_post_type($agent_id) === 'agents' && get_post_status($agent_id) === 'publish') {
+                    $clean = (string) $agent_id;
+                    update_post_meta($post_id, 'agent_name', sanitize_text_field(get_the_title($agent_id)));
+                } else {
+                    $clean = '';
+                    delete_post_meta($post_id, 'agent_name');
+                }
                 break;
 
             default:
