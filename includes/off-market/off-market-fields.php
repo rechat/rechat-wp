@@ -52,13 +52,10 @@ function rch_off_market_get_fields()
         return $registry;
     }
 
+    // Fields are limited to the agreed Off Market data table. Nothing else.
     $registry = array(
 
-        /* ---------------- Identity / status ---------------- */
-        array('key' => 'status',        'label' => 'Status',        'type' => 'select', 'group' => 'identity',
-            'options' => array('Active' => 'Active', 'Coming Soon' => 'Coming Soon', 'Pending' => 'Pending', 'Sold' => 'Sold', 'Off Market' => 'Off Market'),
-            'desc' => 'Shown as the badge on the gallery and archive card.'),
-        array('key' => 'mls_number',    'label' => 'MLS Number',    'type' => 'text',   'group' => 'identity'),
+        /* ---------------- Identity ---------------- */
         array('key' => 'rechat_id',     'label' => 'Rechat ID (UUID, optional)', 'type' => 'text', 'group' => 'identity',
             'desc' => 'Optional. Off Market works with no API — leave blank if unknown.'),
         array('key' => 'list_date',     'label' => 'List Date',     'type' => 'date',   'group' => 'identity'),
@@ -82,41 +79,14 @@ function rch_off_market_get_fields()
         array('key' => 'bedrooms',      'label' => 'Bedrooms',      'type' => 'number', 'group' => 'facts'),
         array('key' => 'bathrooms',     'label' => 'Bathrooms',     'type' => 'text',   'group' => 'facts', 'desc' => 'Whole or decimal, e.g. 2 or 2.5.'),
         array('key' => 'square_feet',   'label' => 'Living Space (SqFt)', 'type' => 'number', 'group' => 'facts'),
-        array('key' => 'lot_size_sqft', 'label' => 'Lot Size (SqFt)', 'type' => 'number', 'group' => 'facts'),
-        array('key' => 'year_built',    'label' => 'Year Built',    'type' => 'number', 'group' => 'facts'),
-        array('key' => 'property_type', 'label' => 'Property Type', 'type' => 'text',   'group' => 'facts'),
-        array('key' => 'property_subtype', 'label' => 'Property Subtype', 'type' => 'text', 'group' => 'facts'),
 
         /* ---------------- Gallery ---------------- */
         array('key' => 'gallery_image_urls', 'label' => 'Gallery Images', 'type' => 'gallery', 'group' => 'gallery',
             'desc' => 'Upload from the Media Library. The first image is the cover. Drag to reorder. If left empty, the Featured Image is used.'),
 
-        /* ---------------- Description ---------------- */
-        // Description comes from the main post editor (post_content) — see adapter.
-
-        /* ---------------- Features (all optional, hidden when empty) ---------------- */
-        array('key' => 'heating',            'label' => 'Heating',            'type' => 'text', 'group' => 'features', 'desc' => 'Comma-separated.'),
-        array('key' => 'cooling',            'label' => 'Cooling',            'type' => 'text', 'group' => 'features', 'desc' => 'Comma-separated.'),
-        array('key' => 'flooring',           'label' => 'Flooring',           'type' => 'text', 'group' => 'features', 'desc' => 'Comma-separated.'),
-        array('key' => 'appliances',         'label' => 'Appliances',         'type' => 'text', 'group' => 'features', 'desc' => 'Comma-separated.'),
-        array('key' => 'interior_features',  'label' => 'Interior Features',  'type' => 'text', 'group' => 'features', 'desc' => 'Comma-separated.'),
-        array('key' => 'exterior_features',  'label' => 'Exterior Features',  'type' => 'text', 'group' => 'features', 'desc' => 'Comma-separated.'),
-        array('key' => 'pool_features',      'label' => 'Pool Features',      'type' => 'text', 'group' => 'features', 'desc' => 'Comma-separated.'),
-        array('key' => 'roof',               'label' => 'Roof',               'type' => 'text', 'group' => 'features', 'desc' => 'Comma-separated.'),
-        array('key' => 'construction_materials', 'label' => 'Construction Materials', 'type' => 'text', 'group' => 'features', 'desc' => 'Comma-separated.'),
-        array('key' => 'architectural_style', 'label' => 'Architectural Style', 'type' => 'text', 'group' => 'features'),
-        array('key' => 'parking_spaces',     'label' => 'Parking Spaces',     'type' => 'text', 'group' => 'features'),
-        array('key' => 'parking_features',   'label' => 'Parking Features',   'type' => 'text', 'group' => 'features', 'desc' => 'Comma-separated.'),
-        array('key' => 'subdivision_name',   'label' => 'Subdivision',        'type' => 'text', 'group' => 'features'),
-        array('key' => 'school_district',    'label' => 'School District',    'type' => 'text', 'group' => 'features'),
-        array('key' => 'elementary_school_name', 'label' => 'Elementary School', 'type' => 'text', 'group' => 'features'),
-        array('key' => 'middle_school_name', 'label' => 'Middle School',      'type' => 'text', 'group' => 'features'),
-        array('key' => 'high_school_name',   'label' => 'High School',        'type' => 'text', 'group' => 'features'),
-
-        /* ---------------- Agent / disclaimer ---------------- */
-        array('key' => 'agent_name',    'label' => 'Listing Agent Name', 'type' => 'text', 'group' => 'agent'),
-        array('key' => 'agent_id',      'label' => 'Listing Agent Rechat ID (optional)', 'type' => 'text', 'group' => 'agent'),
-        array('key' => 'disclaimer',    'label' => 'MLS Disclaimer',    'type' => 'textarea', 'group' => 'agent'),
+        /* ---------------- Agent ---------------- */
+        array('key' => 'agent_name',    'label' => 'Agent Name',    'type' => 'text', 'group' => 'agent'),
+        array('key' => 'agent_id',      'label' => 'Agent ID',      'type' => 'text', 'group' => 'agent'),
     );
 
     return apply_filters('rch_off_market_fields', $registry);
@@ -130,13 +100,12 @@ function rch_off_market_get_fields()
 function rch_off_market_get_groups()
 {
     return apply_filters('rch_off_market_groups', array(
-        'identity' => __('Status & Identity', 'rechat-plugin'),
+        'identity' => __('Identity', 'rechat-plugin'),
         'price'    => __('Price', 'rechat-plugin'),
         'address'  => __('Address', 'rechat-plugin'),
         'facts'    => __('Key Facts', 'rechat-plugin'),
         'gallery'  => __('Gallery', 'rechat-plugin'),
-        'features' => __('Features', 'rechat-plugin'),
-        'agent'    => __('Agent & Disclaimer', 'rechat-plugin'),
+        'agent'    => __('Agent', 'rechat-plugin'),
     ));
 }
 
@@ -235,19 +204,11 @@ function rch_off_market_build_listing_detail($post_id)
         $formatted['full_address'] = array('text' => implode(', ', $address_bits));
     }
 
-    // --- MLS + status + id ---
-    $mls = rch_off_market_meta($post_id, 'mls_number');
-    if ($mls !== '') {
-        $detail['mls_number'] = $mls;
-    }
-    $status = rch_off_market_meta($post_id, 'status');
-    if ($status !== '') {
-        $detail['status'] = $status;
-    }
+    // --- Listing id (rechat_id if provided, else synthetic) ---
     $rechat_id = rch_off_market_meta($post_id, 'rechat_id');
     $detail['id'] = $rechat_id !== '' ? $rechat_id : 'off-market-' . $post_id;
 
-    // --- Beds / baths / sqft / lot ---
+    // --- Beds / baths / sqft ---
     $bedrooms = rch_off_market_meta($post_id, 'bedrooms');
     if ($bedrooms !== '') {
         $formatted['bedroom_count'] = array('text' => $bedrooms . ' Beds', 'text_no_label' => $bedrooms);
@@ -265,36 +226,6 @@ function rch_off_market_build_listing_detail($post_id)
             'text_no_label' => number_format($sqft_num),
             'value'         => $sqft_num,
         );
-    }
-    $lot = rch_off_market_meta($post_id, 'lot_size_sqft');
-    if ($lot !== '' && is_numeric(str_replace(',', '', $lot))) {
-        $lot_num = floatval(str_replace(',', '', $lot));
-        $formatted['lot_size_square_feet'] = array(
-            'text_no_label' => number_format($lot_num),
-            'value'         => $lot_num,
-        );
-        if ($lot_num > 43560) {
-            $formatted['lot_size_acres'] = array('text_no_label' => number_format($lot_num / 43560, 2));
-        }
-    }
-    $parking = rch_off_market_meta($post_id, 'parking_spaces');
-    if ($parking !== '') {
-        $formatted['parking_spaces'] = array('text' => $parking, 'text_no_label' => $parking);
-    }
-
-    // --- Property scalar fields ---
-    $property_map = array(
-        'year_built', 'property_type', 'property_subtype', 'heating', 'cooling',
-        'flooring', 'appliances', 'interior_features', 'exterior_features',
-        'pool_features', 'roof', 'construction_materials', 'architectural_style',
-        'parking_features', 'subdivision_name', 'school_district',
-        'elementary_school_name', 'middle_school_name', 'high_school_name',
-    );
-    foreach ($property_map as $key) {
-        $val = rch_off_market_meta($post_id, $key);
-        if ($val !== '') {
-            $property[$key] = $val;
-        }
     }
 
     // --- Coordinates (feeds the LocalLogic LocalContent widget) ---
@@ -330,11 +261,8 @@ function rch_off_market_build_listing_detail($post_id)
         $detail['list_agent'] = array('id' => $agent_id);
     }
 
-    // --- Disclaimer ---
-    $disclaimer = rch_off_market_meta($post_id, 'disclaimer');
-    if ($disclaimer !== '') {
-        $detail['mls_info'] = array('disclaimer' => $disclaimer);
-    }
+    // Gallery badge (reused part reads status) — no status field, keep it blank.
+    $detail['status'] = '';
 
     // No open houses for manual listings.
     $detail['open_houses'] = array();

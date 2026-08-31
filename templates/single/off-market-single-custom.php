@@ -52,20 +52,12 @@ while (have_posts()) :
                      */
                     $om_price   = isset($listing_detail['formatted']['price']['text']) ? trim((string) $listing_detail['formatted']['price']['text']) : '';
                     $om_address = isset($listing_detail['formatted']['full_address']['text']) ? trim((string) $listing_detail['formatted']['full_address']['text']) : '';
-                    $om_mls     = isset($listing_detail['mls_number']) ? trim((string) $listing_detail['mls_number']) : '';
                     ?>
                     <?php if ($om_price !== '') : ?>
                         <div class="rch-single-price-house"><?php echo esc_html($om_price); ?></div>
                     <?php endif; ?>
                     <?php if ($om_address !== '') : ?>
-                        <h1 class="rch-single-address">
-                            <?php
-                            echo esc_html($om_address);
-                            if ($om_mls !== '') {
-                                echo ' <span class="rch-mls-number">(MLS#: ' . esc_html($om_mls) . ')</span>';
-                            }
-                            ?>
-                        </h1>
+                        <h1 class="rch-single-address"><?php echo esc_html($om_address); ?></h1>
                     <?php elseif (get_the_title()) : ?>
                         <h1 class="rch-single-address"><?php echo esc_html(get_the_title()); ?></h1>
                     <?php endif; ?>
