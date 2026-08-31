@@ -231,3 +231,51 @@
 .rch-off-market-detail .rch-left-top-slider .Coming:before {
   background-color: #3b82f6;
 }
+
+/* ---- [rch_off_market display_type="swiper"] ---- */
+.rch-off-market-swiper .swiper {
+  position: relative;
+  padding-block-end: 2.75rem;
+  overflow: hidden;
+}
+
+.rch-off-market-swiper .swiper-wrapper {
+  align-items: stretch;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rch-off-market-swiper .swiper-slide {
+  height: auto;
+}
+
+.rch-off-market-swiper .swiper-slide .rch-off-market-card__link {
+  height: 100%;
+}
+
+.rch-off-market-swiper .swiper-button-prev,
+.rch-off-market-swiper .swiper-button-next {
+  width: 40px;
+  height: 40px;
+  margin-top: -34px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  color: #222;
+}
+
+.rch-off-market-swiper .swiper-button-prev:after,
+.rch-off-market-swiper .swiper-button-next:after {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.rch-off-market-swiper .swiper-pagination {
+  bottom: 0;
+}
+
+.rch-off-market-swiper .swiper-pagination-bullet-active {
+  background: #111;
+}

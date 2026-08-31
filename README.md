@@ -387,6 +387,9 @@ listings with **no Rechat API dependency**). Use it anywhere: home page, a secti
 a widget, or a template via `do_shortcode()`. Each card links to its single Off
 Market page. Empty fields never render.
 
+Two display modes: **`normal`** (responsive grid) or **`swiper`** (carousel). Swiper
+mode reuses the theme/SDK-provided global Swiper (same as `[rch_latest_listings]`).
+
 Basic examples:
 
 ```text
@@ -394,18 +397,28 @@ Basic examples:
 [rch_off_market status="sold" limit="8" columns="4"]
 [rch_off_market status="active" title="Our Private Listings"]
 [rch_off_market status="active,pending" orderby="price" order="desc"]
+[rch_off_market display_type="swiper" columns="4" limit="12"]
+[rch_off_market display_type="swiper" status="active" autoplay="true" loop="true"]
 ```
 
 Accepted parameters:
 
 | Attribute | Type | Default | Notes |
 | --- | ---: | ---: | --- |
+| `display_type` | string | `normal` | `normal` (grid) or `swiper` (carousel). |
 | `status` | string | (empty = all) | Filter by status. Keywords `active`, `pending`, `sold`, `coming` **or** full text (`"Sold Privately"`). Comma list = OR. Case-insensitive. |
 | `limit` | int | `6` | Max listings. `-1` = all. |
-| `columns` | int | `3` | Desktop columns. Auto-steps down to 3/2/1 on smaller screens. |
+| `columns` | int | `3` | Desktop columns (grid) / slides per view (swiper). Auto-steps down to 3/2/1 on smaller screens. |
 | `orderby` | string | `date` | `date`, `price`, or `title`. |
 | `order` | string | `DESC` | `ASC` or `DESC`. |
 | `title` | string | (empty) | Optional heading shown above the grid. |
+| `space_between` | int | `24` | Swiper only. Gap between slides (px). |
+| `loop` | boolean | `true` | Swiper only. |
+| `autoplay` | boolean | `false` | Swiper only. |
+| `autoplay_delay` | int | `3500` | Swiper only. Autoplay delay (ms). |
+
+> Swiper mode needs the active theme to provide the global `Swiper` (all Rechat
+> themes do). If a theme doesn't, the carousel falls back to a static row.
 
 Notes:
 - Off Market listings are managed in wp-admin under **Off Market** (Add New → fill

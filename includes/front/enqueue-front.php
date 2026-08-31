@@ -28,6 +28,8 @@ function rch_enqueue_frontend_styles()
         RCH_VERSION
     );
     wp_register_style('rch-off-market', RCH_PLUGIN_ASSETS . 'css/rch-off-market.css', [], RCH_VERSION);
+    // Off Market swiper init reads the theme/SDK-provided global `Swiper`.
+    wp_register_script('rch-off-market-swiper', RCH_PLUGIN_ASSETS . 'js/rch-off-market-swiper.js', [], RCH_VERSION, true);
 
     // Enqueue JavaScript files with version
     wp_enqueue_script('rch-ajax-front', RCH_PLUGIN_ASSETS . 'js/rch-ajax-front.js', ['jquery'], RCH_VERSION, true);
