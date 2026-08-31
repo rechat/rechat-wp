@@ -19,6 +19,9 @@ function load_custom_templates($template)
     $neighborhoods_single_template_name = 'neighborhoods-single-custom.php';
     $neighborhoods_archive_template_name = 'neighborhoods-archive-custom.php';
 
+    $off_market_single_template_name = 'off-market-single-custom.php';
+    $off_market_archive_template_name = 'off-market-archive-custom.php';
+
     $house_detail_template_name = 'fetch-single-listing.php';
 
 
@@ -28,7 +31,8 @@ function load_custom_templates($template)
         'agents' => $agents_archive_template_name,
         'offices' => $offices_archive_template_name,
         'regions' => $regions_archive_template_name,
-        'neighborhoods' => $neighborhoods_archive_template_name
+        'neighborhoods' => $neighborhoods_archive_template_name,
+        'off_market' => $off_market_archive_template_name
     ];
 
     foreach ($archives as $post_type => $file_name) {
@@ -43,7 +47,8 @@ function load_custom_templates($template)
         'agents' => $agents_single_template_name,
         'offices' => $offices_single_template_name,
         'regions' => $regions_single_template_name,
-        'neighborhoods' => $neighborhoods_single_template_name
+        'neighborhoods' => $neighborhoods_single_template_name,
+        'off_market' => $off_market_single_template_name
     ];
 
     foreach ($singles as $post_type => $file_name) {
