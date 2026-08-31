@@ -247,12 +247,71 @@ function rch_neighborhoods()
     register_post_type('neighborhoods', $args);
 }
 
+/*******************************
+ * Register Custom Post Type for Off Market
+ *
+ * Manually-entered listings with NO Rechat API dependency. Slug: off-market.
+ * Field data lives in post meta (see includes/off-market/off-market-fields.php).
+ ******************************/
+function rch_off_market()
+{
+    $hide_ui = rch_rechat_should_hide_cpt_admin_ui('off_market');
+
+    $labels = array(
+        'name'                  => _x('Off Market', 'Post Type General Name', 'rechat-plugin'),
+        'singular_name'         => _x('Off Market Listing', 'Post Type Singular Name', 'rechat-plugin'),
+        'menu_name'             => __('Off Market', 'rechat-plugin'),
+        'name_admin_bar'        => __('Off Market', 'rechat-plugin'),
+        'archives'              => __('Off Market Archives', 'rechat-plugin'),
+        'all_items'             => __('All Off Market Listings', 'rechat-plugin'),
+        'add_new_item'          => __('Add New Off Market Listing', 'rechat-plugin'),
+        'add_new'               => __('Add New', 'rechat-plugin'),
+        'new_item'              => __('New Off Market Listing', 'rechat-plugin'),
+        'edit_item'             => __('Edit Off Market Listing', 'rechat-plugin'),
+        'update_item'           => __('Update Off Market Listing', 'rechat-plugin'),
+        'view_item'             => __('View Off Market Listing', 'rechat-plugin'),
+        'view_items'            => __('View Off Market Listings', 'rechat-plugin'),
+        'search_items'          => __('Search Off Market', 'rechat-plugin'),
+        'not_found'             => __('Not found', 'rechat-plugin'),
+        'not_found_in_trash'    => __('Not found in Trash', 'rechat-plugin'),
+        'featured_image'        => __('Cover Image', 'rechat-plugin'),
+        'set_featured_image'    => __('Set cover image', 'rechat-plugin'),
+        'items_list'            => __('Off Market list', 'rechat-plugin'),
+        'items_list_navigation' => __('Off Market list navigation', 'rechat-plugin'),
+        'filter_items_list'     => __('Filter Off Market list', 'rechat-plugin'),
+    );
+    $args = array(
+        'label'                 => __('Off Market Listing', 'rechat-plugin'),
+        'description'           => __('Manually-entered off market listings', 'rechat-plugin'),
+        'labels'                => $labels,
+        // 'editor' powers the description; thumbnail is the cover-image fallback.
+        'supports'              => array('title', 'editor', 'thumbnail', 'page-attributes'),
+        'hierarchical'          => false,
+        'public'                => true,
+        'show_ui'               => ! $hide_ui,
+        'show_in_menu'          => ! $hide_ui,
+        'menu_position'         => 8,
+        'menu_icon'             => 'dashicons-hidden',
+        'show_in_admin_bar'     => ! $hide_ui,
+        'show_in_nav_menus'     => ! $hide_ui,
+        'can_export'            => true,
+        'has_archive'           => true,
+        'exclude_from_search'   => false,
+        'publicly_queryable'    => true,
+        'show_in_rest'          => true,
+        'capability_type'       => 'page',
+        'rewrite'               => array('slug' => 'off-market', 'with_front' => false),
+    );
+    register_post_type('off_market', $args);
+}
+
 
 // Hook into the 'init' action to register the custom post types
 add_action('init', 'rch_agents', 0);
 add_action('init', 'rch_offices', 0);
 add_action('init', 'rch_regions', 0);
 add_action('init', 'rch_neighborhoods', 0);
+add_action('init', 'rch_off_market', 0);
 
 /**
  * One-time rewrite flush after CPT rewrite changes.

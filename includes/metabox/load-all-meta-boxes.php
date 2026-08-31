@@ -15,3 +15,4 @@ include RCH_PLUGIN_INCLUDES . 'metabox/metaboxes-for-offices.php';
 include RCH_PLUGIN_INCLUDES . 'metabox/metaboxes-for-regions.php';
 include RCH_PLUGIN_INCLUDES . 'metabox/show-regions-in-office.php';
 include RCH_PLUGIN_INCLUDES . 'metabox/show-office-in-neighborhoods.php';
+include RCH_PLUGIN_INCLUDES . 'metabox/metaboxes-for-off-market.php';

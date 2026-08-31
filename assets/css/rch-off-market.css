@@ -1,0 +1,205 @@
+/**
+ * Off Market archive — static listing cards.
+ * Matches the standard Rechat "Active Listings" grid look:
+ * bordered white rounded cards, photo on top, price, beds/baths/sqft,
+ * address, city/state/zip, MLS line. Responsive 4→3→2→1 grid.
+ */
+
+.rch-off-market-archive {
+  padding-block: 2.5rem 4rem;
+}
+
+.rch-off-market-archive__head {
+  margin-bottom: 1.75rem;
+}
+
+.rch-off-market-archive__title {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0;
+}
+
+/* Grid */
+.rch-off-market-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+/* Card */
+.rch-off-market-card {
+  margin: 0;
+}
+
+.rch-off-market-card__link {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
+}
+
+.rch-off-market-card__link:hover,
+.rch-off-market-card__link:focus-visible {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-3px);
+  border-color: #dcdcdc;
+}
+
+/* Media */
+.rch-off-market-card__media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #f2f2f2;
+  overflow: hidden;
+}
+
+.rch-off-market-card__media img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.rch-off-market-card__noimg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #eaeaea 0%, #f5f5f5 100%);
+}
+
+.rch-off-market-card__status {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  background: #fff;
+  color: #222;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  padding: 4px 8px;
+  border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+/* Body */
+.rch-off-market-card__body {
+  padding: 16px 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rch-off-market-card__price {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #111;
+  line-height: 1.1;
+  margin-bottom: 2px;
+}
+
+.rch-off-market-card__facts {
+  font-size: 0.9rem;
+  color: #4a4a4a;
+}
+
+.rch-off-market-card__address {
+  font-size: 0.95rem;
+  color: #222;
+}
+
+.rch-off-market-card__locality {
+  font-size: 0.95rem;
+  color: #222;
+}
+
+.rch-off-market-card__mls {
+  margin-top: 6px;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  color: #9a9a9a;
+  text-transform: uppercase;
+}
+
+/* Empty state */
+.rch-off-market-empty {
+  padding: 2rem 0;
+  color: #666;
+}
+
+/* Pagination (WP the_posts_pagination) */
+.rch-off-market-archive .pagination,
+.rch-off-market-archive .nav-links {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2.5rem;
+}
+
+.rch-off-market-archive .page-numbers {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fff;
+  color: #222;
+  text-decoration: none;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.rch-off-market-archive .page-numbers.current {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+
+.rch-off-market-archive .page-numbers.dots {
+  border-color: transparent;
+  background: transparent;
+}
+
+.rch-off-market-archive a.page-numbers:hover {
+  border-color: #bdbdbd;
+}
+
+/* Responsive */
+@media screen and (max-width: 1100px) {
+  .rch-off-market-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media screen and (max-width: 820px) {
+  .rch-off-market-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+  }
+}
+
+@media screen and (max-width: 520px) {
+  .rch-off-market-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rch-off-market-archive__title {
+    font-size: 1.6rem;
+  }
+}
