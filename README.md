@@ -380,6 +380,45 @@ Accepted parameters (from `shortcode_atts` defaults):
 
 ---
 
+### 5) `[rch_off_market]` — Off Market listings grid
+
+Renders a grid of **Off Market** listings (the `off_market` CPT — manually-entered
+listings with **no Rechat API dependency**). Use it anywhere: home page, a section,
+a widget, or a template via `do_shortcode()`. Each card links to its single Off
+Market page. Empty fields never render.
+
+Basic examples:
+
+```text
+[rch_off_market]
+[rch_off_market status="sold" limit="8" columns="4"]
+[rch_off_market status="active" title="Our Private Listings"]
+[rch_off_market status="active,pending" orderby="price" order="desc"]
+```
+
+Accepted parameters:
+
+| Attribute | Type | Default | Notes |
+| --- | ---: | ---: | --- |
+| `status` | string | (empty = all) | Filter by status. Keywords `active`, `pending`, `sold`, `coming` **or** full text (`"Sold Privately"`). Comma list = OR. Case-insensitive. |
+| `limit` | int | `6` | Max listings. `-1` = all. |
+| `columns` | int | `3` | Desktop columns. Auto-steps down to 3/2/1 on smaller screens. |
+| `orderby` | string | `date` | `date`, `price`, or `title`. |
+| `order` | string | `DESC` | `ASC` or `DESC`. |
+| `title` | string | (empty) | Optional heading shown above the grid. |
+
+Notes:
+- Off Market listings are managed in wp-admin under **Off Market** (Add New → fill
+  the fields → Publish). Fields: status, price, address, beds/baths/sqft,
+  coordinates, list/sold date, gallery (Media Library), and an Agent picked from
+  the site's Agents.
+- Statuses use the "Privately" wording: **Active Privately**, **Coming Soon
+  Privately**, **Pending Privately**, **Sold Privately**. The `status` filter
+  matches on the keyword, so `status="sold"` catches "Sold Privately".
+- The full listing (archive) also lives at `/off-market/`.
+
+---
+
 ## Notes + troubleshooting
 
 - **Permalinks / rewrite**

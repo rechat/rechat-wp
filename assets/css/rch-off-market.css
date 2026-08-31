@@ -22,14 +22,24 @@
   margin: 0;
 }
 
-/* Grid */
+/* Grid.
+   Desktop column count is driven by --om-cols (default 4). The shortcode sets
+   it inline (e.g. columns="3"); the responsive rules below override it with
+   !important so an inline value can't break the mobile layout. */
 .rch-off-market-grid {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(var(--om-cols, 4), minmax(0, 1fr));
   gap: 24px;
+}
+
+/* Shortcode wrapper */
+.rch-off-market-shortcode__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 1.25rem;
 }
 
 /* Card */
@@ -185,20 +195,20 @@
 /* Responsive */
 @media screen and (max-width: 1100px) {
   .rch-off-market-grid {
-    grid-template-columns: repeat(3, 1fr);
+    --om-cols: 3 !important;
   }
 }
 
 @media screen and (max-width: 820px) {
   .rch-off-market-grid {
-    grid-template-columns: repeat(2, 1fr);
+    --om-cols: 2 !important;
     gap: 18px;
   }
 }
 
 @media screen and (max-width: 520px) {
   .rch-off-market-grid {
-    grid-template-columns: 1fr;
+    --om-cols: 1 !important;
   }
 
   .rch-off-market-archive__title {
