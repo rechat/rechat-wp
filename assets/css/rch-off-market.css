@@ -6,7 +6,14 @@
  */
 
 .rch-off-market-archive {
-  padding-block: 2.5rem 4rem;
+  /* Top padding clears themes with a fixed / overlapping header. */
+  padding-block: 7rem 4rem;
+}
+
+@media screen and (max-width: 782px) {
+  .rch-off-market-archive {
+    padding-block: 5rem 3rem;
+  }
 }
 
 .rch-off-market-archive__head {
