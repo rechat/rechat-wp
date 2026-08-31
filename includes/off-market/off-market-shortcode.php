@@ -144,8 +144,13 @@ function rch_off_market_shortcode($atts)
     if (wp_style_is('rch-off-market', 'registered')) {
         wp_enqueue_style('rch-off-market');
     }
-    if ($is_swiper && wp_script_is('rch-off-market-swiper', 'registered')) {
-        wp_enqueue_script('rch-off-market-swiper');
+    if ($is_swiper) {
+        if (wp_style_is('rch-swiper', 'registered')) {
+            wp_enqueue_style('rch-swiper');
+        }
+        if (wp_script_is('rch-off-market-swiper', 'registered')) {
+            wp_enqueue_script('rch-off-market-swiper'); // pulls in rch-swiper (Swiper lib)
+        }
     }
 
     $query_args = array(
