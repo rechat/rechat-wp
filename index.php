@@ -192,6 +192,7 @@ include RCH_PLUGIN_INCLUDES . 'admin/menu-setting.php';
 include RCH_PLUGIN_INCLUDES . 'admin/custom-fields.php';
 include RCH_PLUGIN_INCLUDES . 'template-load.php';
 include RCH_PLUGIN_INCLUDES . 'helper.php';
+include RCH_PLUGIN_INCLUDES . 'off-market/off-market-fields.php';
 include RCH_PLUGIN_DIR . 'templates/archive/search-result.php';
 include RCH_PLUGIN_INCLUDES . 'load-agents-regions-offices/api-load-agents-regions-offices.php';
 include RCH_PLUGIN_INCLUDES . 'cron-job/schedule.php';

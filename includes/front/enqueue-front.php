@@ -27,6 +27,7 @@ function rch_enqueue_frontend_styles()
         [],
         RCH_VERSION
     );
+    wp_register_style('rch-off-market', RCH_PLUGIN_ASSETS . 'css/rch-off-market.css', [], RCH_VERSION);
 
     // Enqueue JavaScript files with version
     wp_enqueue_script('rch-ajax-front', RCH_PLUGIN_ASSETS . 'js/rch-ajax-front.js', ['jquery'], RCH_VERSION, true);
@@ -101,6 +102,16 @@ function rch_enqueue_frontend_styles()
     }
     if (is_singular('agents')) {
         wp_enqueue_style('rch-rechat-single-agents');
+    }
+
+    // Off Market single reuses the listing-detail styles (it renders the same
+    // template parts); the archive uses its own static-card CSS.
+    if (is_singular('off_market')) {
+        wp_enqueue_style('rch-rechat-listing');
+        wp_enqueue_style('rch-off-market');
+    }
+    if (is_post_type_archive('off_market')) {
+        wp_enqueue_style('rch-off-market');
     }
 
     /*
