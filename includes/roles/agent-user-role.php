@@ -97,6 +97,10 @@ function rch_register_agent_user_roles(): void
 
     $caps[ RCH_CAP_MANAGE_RECHAT ] = true;
     $caps['list_users']            = true;
+    // Reach the theme "Theme Setting" page (add_theme_page parent = themes.php).
+    // Agent themes gate that page on manage_options / edit_theme_options; without this the
+    // agent role gets "Sorry, you are not allowed to access this page."
+    $caps['edit_theme_options']    = true;
 
     $role_obj = get_role($role_slug);
 
