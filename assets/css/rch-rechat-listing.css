@@ -305,6 +305,30 @@ h1.rch-single-address {
   margin-inline-end: 5px;
 }
 
+/*
+ * Neutralize broad theme rules like `.single img { width:initial; height:auto;
+ * margin-block-end:2rem; display:block }` (WordPress adds `.single` to the body on
+ * singular posts, incl. off_market) that distort our small SVG icons. Scope with the
+ * `#rch-house-detail` id so it wins over `.single img` without touching real photos.
+ */
+#rch-house-detail .facilities-in-single-houses ul li img {
+  width: 24px;
+  height: 24px;
+  max-width: 24px;
+  margin-block: 0;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+#rch-house-detail .rch-left-top-slider .rch-load-images img {
+  width: 20px;
+  height: 20px;
+  max-width: 20px;
+  margin-block: 0;
+  display: inline-block;
+  vertical-align: middle;
+}
+
 .location-single-houser {
   margin-block-start: 40px;
 }
