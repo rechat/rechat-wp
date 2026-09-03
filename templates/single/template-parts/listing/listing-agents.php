@@ -230,6 +230,16 @@ if (is_array($seller_agent_posts) && count($seller_agent_posts) > 0):
 
 <?php endif; ?>
 
+<?php
+// Off-market listings without a geocoded address render an empty "Location not set"
+// LocalLogic box. Hide it ONLY on off-market singles when coords are missing; the
+// API listing-detail page is left exactly as-is.
+$rch_ll_lat = $listing_detail['property']['address']['location']['latitude'] ?? '';
+$rch_ll_lng = $listing_detail['property']['address']['location']['longitude'] ?? '';
+$rch_has_location = ($rch_ll_lat !== '' && $rch_ll_lat !== null && $rch_ll_lng !== '' && $rch_ll_lng !== null);
+$rch_show_location = ! (is_singular('off_market') && ! $rch_has_location);
+?>
+<?php if ($rch_show_location) : ?>
 <div class=rch_local_logic id="rch-location">
     <?php
     // Retrieve the selected features from the settings
@@ -264,6 +274,7 @@ if (is_array($seller_agent_posts) && count($seller_agent_posts) > 0):
     }
     ?>
 </div>
+<?php endif; ?>
 
 <?php if (empty($agent_posts)):
     $courtesy_text = '';
