@@ -361,7 +361,11 @@ function rch_ajax_submit_lead_rechat_api()
     $listing_id  = isset($_POST['listing_id']) ? sanitize_text_field(wp_unslash($_POST['listing_id'])) : '';
     $mlsid       = isset($_POST['mlsid']) ? sanitize_text_field(wp_unslash($_POST['mlsid'])) : '';
     $referer_url = isset($_POST['referer_url']) ? esc_url_raw(wp_unslash($_POST['referer_url'])) : '';
-    if ($listing_id !== '') {
+    // Off-market listings without a real Rechat id use a synthetic "off-market-<postid>"
+    // id (see rch_off_market_build_listing_detail). That id does not exist in Rechat, so
+    // forwarding it makes POST /leads fail with 503. Only send real listing ids; the lead
+    // is still captured (name/email/note/referer), just not attached to a listing.
+    if ($listing_id !== '' && strpos($listing_id, 'off-market-') !== 0) {
         $lead['listing_id'] = $listing_id;
     }
     if ($mlsid !== '') {
