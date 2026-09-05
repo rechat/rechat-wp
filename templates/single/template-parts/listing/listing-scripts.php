@@ -52,6 +52,19 @@ if (is_multisite()) {
     }
 }
 
+// Off Market single: route the lead to the Agent selected in the listing's meta
+// box (agent_id → that Agent post's `email`), mirroring agents-single-custom.
+// Wins over the multisite default so the chosen agent gets the inquiry.
+if (is_singular('off_market')) {
+    $rch_om_agent_id = (int) get_post_meta(get_the_ID(), 'agent_id', true);
+    if ($rch_om_agent_id) {
+        $rch_om_agent_email = sanitize_email((string) get_post_meta($rch_om_agent_id, 'email', true));
+        if ($rch_om_agent_email !== '') {
+            $rch_listing_assignee = $rch_om_agent_email;
+        }
+    }
+}
+
 $rch_listing_tags = is_array($rch_listing_tags) ? array_values($rch_listing_tags) : [];
 $rch_listing_tags = array_map('sanitize_text_field', $rch_listing_tags);
 $rch_listing_tags_json = wp_json_encode($rch_listing_tags);
