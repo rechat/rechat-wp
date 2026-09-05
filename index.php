@@ -2,7 +2,7 @@
 /*
 Plugin Name: Rechat Plugin
 Description: Fetches and manages agent, offices, regions, and Listing data from Rechat.
-Version: 7.0.56
+Version: 7.0.57
 Author URI: https://rechat.com/
 Text Domain: rechat-plugin
 License: GPL-2.0-or-later
@@ -18,7 +18,7 @@ if (! defined('ABSPATH')) {
 // define required constants.
 define('RCH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('RCH_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('RCH_VERSION', '7.0.56');
+define('RCH_VERSION', '7.0.57');
 if (! function_exists('rch_is_localhost_environment')) {
     /**
      * True when site runs on local dev (localhost, 127.0.0.1, .local, .test, or WP_ENVIRONMENT_TYPE=local).
@@ -213,6 +213,7 @@ include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-agents.php';
 include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-listing.php';
 include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-lead-form.php';
 include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-testimonials.php';
+include RCH_PLUGIN_INCLUDES . 'gutenberg-block/block-off-market.php';
 include RCH_PLUGIN_INCLUDES . 'metabox/load-all-meta-boxes.php';
 // Multisite: Broadcast integration (no-op on single-site installs)
 include RCH_PLUGIN_INCLUDES . 'multisite/broadcast-integration.php';

@@ -100,11 +100,22 @@
   height: 100%;
     object-fit: contain;
   border-radius: 10px;
+  /* Override theme single.css ".single img" margin leak on off-market single
+     (body.single). Listing-detail pages are not body.single so this is a no-op there. */
+  margin: 0;
+  max-width: 100%;
 }
 
 .rch-imgs-modal .swiper-slide {
   background-size: cover;
   background-position: center;
+}
+
+/* Blanket margin reset for any other modal images (thumb rail, etc.) so the
+   off-market single modal matches listing-detail (theme .single img leak). */
+.rch-imgs-modal img,
+.rch-imgs-modal video {
+  margin: 0;
 }
 
 .rch-houses-mySwiper2 {
