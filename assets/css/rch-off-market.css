@@ -279,3 +279,66 @@
 .rch-off-market-swiper .swiper-pagination-bullet-active {
   background: #111;
 }
+
+/* Grid pagination (paginate_links type=list) */
+.rch-off-market-pagination {
+  margin-top: 28px;
+  display: flex;
+  justify-content: center;
+}
+
+.rch-off-market-pagination .page-numbers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.rch-off-market-pagination .page-numbers li {
+  margin: 0;
+}
+
+.rch-off-market-pagination .page-numbers a,
+.rch-off-market-pagination .page-numbers span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fff;
+  color: #222;
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.rch-off-market-pagination .page-numbers a:hover {
+  border-color: #111;
+}
+
+.rch-off-market-pagination .page-numbers .current {
+  background: #111;
+  border-color: #111;
+  color: #fff;
+}
+
+.rch-off-market-pagination .page-numbers .dots {
+  border-color: transparent;
+  background: transparent;
+}
+
+/* Neutralize theme single.css ".single img/video" leakage on the off-market
+   single page. Spec (0,2,1) beats ".single img" (0,1,1) but stays below the
+   plugin slider rules (0,3,1) so image sizing/object-fit is preserved. */
+.rch-house-main-details.rch-off-market-detail img,
+.rch-house-main-details.rch-off-market-detail video {
+  margin-block-end: 0;
+  margin-inline: 0;
+  max-width: 100%;
+}

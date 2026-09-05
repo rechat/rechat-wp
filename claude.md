@@ -148,5 +148,15 @@ Rewrite rules (registered in `index.php` and on `init`):
 | `[rch_latest_listings]` | `includes/shortcodes/latest-listing-shortcode.php` |
 | `[rch_leads_form]` | `includes/shortcodes/lead-capture-shortcode.php` |
 | `[rch_search_listing_form]` | `includes/shortcodes/search_listing_shortcode.php` |
+| `[rch_off_market]` | `includes/off-market/off-market-shortcode.php` |
+
+### Off Market feature (`off_market` CPT, no API)
+
+Manually-entered listings, independent of the Rechat API. Everything lives under
+`includes/off-market/`:
+- `off-market-fields.php` — field registry (drives meta boxes + save) + `rch_off_market_build_listing_detail()` adapter that reshapes post meta into the API-shaped `$listing_detail` so the single page reuses the listing detail template parts.
+- `off-market-shortcode.php` — `rch_off_market_render_card()` (shared by archive + shortcode) + `[rch_off_market]` (grid or swiper via `display_type`; swiper init in `assets/js/rch-off-market-swiper.js`, uses the theme global `Swiper`).
+- Meta boxes: `includes/metabox/metaboxes-for-off-market.php` (registry-driven; Media Library gallery; Agent picker).
+- Templates: `templates/single/off-market-single-custom.php`, `templates/archive/off-market-archive-custom.php` (theme-overridable via `rechat/`). CSS: `assets/css/rch-off-market.css`. CPT registered in `admin/register-custom-post-type.php` (`rch_off_market`).
 
 SDK docs: https://sdk.rechat.com/classes/Listings.html

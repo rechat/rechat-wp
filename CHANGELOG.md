@@ -1,5 +1,23 @@
 # Changelog
 
+## 7.0.57
+
+- **New: Off Market Gutenberg block.** Wraps the `[rch_off_market]` shortcode as a
+  block (`Off Market Block`) so editors configure it from the panel instead of
+  typing shortcode attributes. Controls for display type (grid/swiper), title,
+  status filter, limit, columns, order, and swiper options (space between, loop,
+  autoplay, autoplay delay). Live preview via ServerSideRender; block CSS loads
+  in the editor iframe.
+- **New: grid pagination.** `[rch_off_market]` gains a `pagination` attribute
+  (grid only, exposed as a block toggle). When on, `limit` becomes the per-page
+  count and numbered page links render via `?om_page=N` (server-side, no JS).
+- **Fix: theme `single.css` `.single img/video` leak on the Off Market single
+  page.** The theme's generic image margins bled into the off-market single body
+  (`body.single`) and the "View all photos" modal slider. Scoped overrides in
+  `rch-off-market.css` and `rch-rechat-listing.css` neutralize the leak so the
+  page and modal match the listing-detail UI; listing-detail pages are unaffected
+  (not `body.single`).
+
 ## 7.0.51
 
 - **New feature: Off Market listings (`off_market` CPT).** Manually-entered

@@ -118,6 +118,8 @@ function rch_off_market_render_card($post = null, $args = array())
  *   loop           Swiper loop. Default true.
  *   autoplay       Swiper autoplay. Default false.
  *   autoplay_delay Autoplay delay ms. Default 3500.
+ *   pagination     Grid only. true = paginate results (limit = per page) with
+ *                  page links via ?om_page=N. Default false. Ignored for swiper.
  *
  * @param array $atts
  * @return string
@@ -136,9 +138,13 @@ function rch_off_market_shortcode($atts)
         'loop'           => 'true',
         'autoplay'       => 'false',
         'autoplay_delay' => 3500,
+        'pagination'     => 'false',
     ), $atts, 'rch_off_market');
 
     $is_swiper = strtolower((string) $atts['display_type']) === 'swiper';
+    // Grid-only paginated mode. limit becomes the per-page count.
+    $paginate  = ! $is_swiper && strtolower((string) $atts['pagination']) === 'true';
+    $paged     = $paginate && isset($_GET['om_page']) ? max(1, (int) $_GET['om_page']) : 1;
 
     // Assets (registered in enqueue-front.php).
     if (wp_style_is('rch-off-market', 'registered')) {
@@ -157,8 +163,11 @@ function rch_off_market_shortcode($atts)
         'post_type'      => 'off_market',
         'post_status'    => 'publish',
         'posts_per_page' => (int) $atts['limit'],
-        'no_found_rows'  => true,
+        'no_found_rows'  => ! $paginate,
     );
+    if ($paginate) {
+        $query_args['paged'] = $paged;
+    }
 
     // Order.
     $orderby = strtolower((string) $atts['orderby']);
@@ -231,6 +240,22 @@ function rch_off_market_shortcode($atts)
                 rch_off_market_render_card(get_the_ID());
             }
             echo '</ul>';
+
+            if ($paginate && (int) $q->max_num_pages > 1) {
+                $links = paginate_links(array(
+                    'base'      => esc_url_raw(add_query_arg('om_page', '%#%')),
+                    'format'    => '',
+                    'current'   => $paged,
+                    'total'     => (int) $q->max_num_pages,
+                    'prev_text' => '‹',
+                    'next_text' => '›',
+                    'type'      => 'list',
+                ));
+                if ($links) {
+                    echo '<nav class="rch-off-market-pagination">' . $links . '</nav>';
+                }
+            }
+
             echo '</div>';
         }
         wp_reset_postdata();
