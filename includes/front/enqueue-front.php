@@ -116,6 +116,11 @@ function rch_enqueue_frontend_styles()
     if (is_singular('off_market')) {
         wp_enqueue_style('rch-rechat-listing');
         wp_enqueue_style('rch-off-market');
+        // "View all photos" modal reuses the listing-detail Swiper gallery
+        // (rch-houses-mySwiper2 / rch-houses-mySwiper). Without swiper-bundle CSS
+        // .swiper-wrapper falls back to display:block and slides stack. The theme
+        // only loads Swiper on listing-detail pages, not on this WP-singular page.
+        wp_enqueue_style('rch-swiper');
     }
     if (is_post_type_archive('off_market')) {
         wp_enqueue_style('rch-off-market');

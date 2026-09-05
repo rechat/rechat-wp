@@ -1,5 +1,18 @@
 # Changelog
 
+## 7.0.58
+
+- **Fix: Off Market single "View all photos" gallery rendered broken.** The
+  off-market single page never enqueued `swiper-bundle.min.css`, so the modal
+  Swiper (`rch-houses-mySwiper2` / `rch-houses-mySwiper`) fell back to
+  `display:block` and slides stacked vertically. Enqueue the `rch-swiper` handle
+  on `is_singular('off_market')` so the gallery slides horizontally like the
+  listing-detail page. JS/Swiper init untouched.
+- **New: Off Market leads route to the selected agent.** On the off-market single
+  page, the lead-capture form now sets `assignee_email` to the Agent chosen in the
+  listing's meta box (`agent_id` → that Agent's `email`), mirroring
+  agents-single. Falls back to the previous default when no agent is selected.
+
 ## 7.0.57
 
 - **New: Off Market Gutenberg block.** Wraps the `[rch_off_market]` shortcode as a
