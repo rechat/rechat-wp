@@ -1,5 +1,15 @@
 # Changelog
 
+## 7.0.59
+
+- **Fix: Agent role can now edit Rank Math SEO.** The custom `agent` role never
+  received Rank Math's `rank_math_*` capabilities (Rank Math only grants those to
+  built-in roles), so agents couldn't edit the SEO meta box or open Rank Math
+  admin pages (SEO Analyzer, Titles & Meta, Sitemap, etc.). The role now gets the
+  full Rank Math capability set (filterable via `rch_agent_rank_math_caps`).
+  Existing agent users pick this up automatically on the next admin load. Harmless
+  when Rank Math is not installed.
+
 ## 7.0.58
 
 - **Fix: Off Market single "View all photos" gallery rendered broken.** The

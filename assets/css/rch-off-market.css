@@ -16,10 +16,9 @@
 }
 
 .rch-off-market-archive__title {
-  font-size: 2rem;
-  font-weight: 700;
   line-height: 1.2;
   margin: 0;
+  margin-block-end: 2rem;
 }
 
 /* Grid.
