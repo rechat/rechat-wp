@@ -97,6 +97,30 @@ function rch_register_agent_user_roles(): void
 
     $caps[ RCH_CAP_MANAGE_RECHAT ] = true;
     $caps['list_users']            = true;
+
+    // Rank Math SEO capabilities. Rank Math grants its caps only to built-in roles
+    // (administrator/editor/author/…) via its Role Manager, so a CUSTOM role like
+    // `agent` never receives them and cannot edit the SEO meta box or reach the
+    // Rank Math admin pages. Grant them explicitly here (harmless if Rank Math is
+    // not installed). Filterable so a site can trim the set.
+    $rank_math_caps = apply_filters('rch_agent_rank_math_caps', array(
+        'rank_math_edit_meta',        // edit the SEO meta box on posts/pages/CPTs
+        'rank_math_general',
+        'rank_math_titles',
+        'rank_math_sitemap',
+        'rank_math_404_monitor',
+        'rank_math_link_builder',
+        'rank_math_redirections',
+        'rank_math_role_manager',
+        'rank_math_analytics',
+        'rank_math_site_analysis',
+        'rank_math_onpage_analysis',
+        'rank_math_content_ai',
+        'rank_math_admin_bar',
+    ));
+    foreach ((array) $rank_math_caps as $rm_cap) {
+        $caps[ (string) $rm_cap ] = true;
+    }
     // Reach the theme "Theme Setting" page (add_theme_page parent = themes.php).
     // Agent themes gate that page on manage_options / edit_theme_options; without this the
     // agent role gets "Sorry, you are not allowed to access this page."
