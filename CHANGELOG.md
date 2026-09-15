@@ -1,5 +1,19 @@
 # Changelog
 
+## 7.0.60
+
+- **New: auto-register the site domain on the Rechat portal.** On OAuth connect
+  and on every 12-hour data sync, the plugin checks the connected brand's portal
+  hostnames via the Rechat API (`GET /brands/:brand/portal`) and, if this site's
+  domain (`home_url()` host) is missing, POSTs it as the default hostname
+  (`POST /brands/:brand/portal/hostnames`, `is_default=true`). Ensures every
+  connected account has the correct site domain registered. New module
+  `includes/portal/portal-hostname.php`; hostname filterable via
+  `rch_portal_hostname`.
+- **Change: default agent profile image is now `image-placeholder.jpg`.** Agent
+  sync previously fell back to `assets/images/image-placeholder.svg` for agents
+  with no `profile_image_url`; now uses `image-placeholder.jpg`.
+
 ## 7.0.59
 
 - **Fix: Agent role can now edit Rank Math SEO.** The custom `agent` role never

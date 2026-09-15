@@ -879,7 +879,7 @@ function rch_process_agents_data($access_token, $api_url_base)
     try {
     $limit = 100;
     $offset = 0;
-    $default_profile_image_url = RCH_PLUGIN_URL . 'assets/images/image-placeholder.svg';
+    $default_profile_image_url = RCH_PLUGIN_URL . 'assets/images/image-placeholder.jpg';
 
     // Get existing posts and their API IDs
     $existing_posts = get_posts(array(

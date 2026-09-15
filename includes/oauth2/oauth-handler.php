@@ -165,6 +165,11 @@ function rch_save_oauth_tokens($data)
         'initial'
     );
 
+    // Register this site's domain on the brand's Rechat portal right after connect.
+    if (function_exists('rch_ensure_portal_hostname')) {
+        rch_ensure_portal_hostname();
+    }
+
     return true;
 }
 
