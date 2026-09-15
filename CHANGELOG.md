@@ -1,5 +1,17 @@
 # Changelog
 
+## 7.0.61
+
+- **Fix: Testimonials block was invisible in the editor.** The block previewed
+  via `ServerSideRender`, which emits the Rechat SDK `<rechat-testimonials>` web
+  component — but the SDK JS isn't loaded in the editor iframe, so the block
+  rendered blank. Editors couldn't tell it was inserted and re-added it multiple
+  times, which stacked duplicate testimonial sections on the published page. The
+  editor now shows a clear static placeholder (title + settings summary) instead
+  of the empty SSR preview; front-end output (the `[rch_testimonials]` shortcode)
+  is unchanged. NOTE: pages that already have duplicate blocks must have the
+  extra blocks removed by hand.
+
 ## 7.0.60
 
 - **New: auto-register the site domain on the Rechat portal.** On OAuth connect

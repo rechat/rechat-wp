@@ -1,7 +1,6 @@
 const { registerBlockType } = wp.blocks;
-const { InspectorControls } = wp.blockEditor || wp.editor;
-const { PanelBody, TextControl, RangeControl, SelectControl } = wp.components;
-import ServerSideRender from '@wordpress/server-side-render';
+const { InspectorControls, useBlockProps } = wp.blockEditor || wp.editor;
+const { PanelBody, TextControl, RangeControl, SelectControl, Placeholder } = wp.components;
 
 registerBlockType('rch-rechat-plugin/testimonials-block', {
     title: 'Testimonials Block',
@@ -15,6 +14,18 @@ registerBlockType('rch-rechat-plugin/testimonials-block', {
     },
     edit({ attributes, setAttributes }) {
         const { limit, title, colorMode } = attributes;
+        const blockProps = typeof useBlockProps === 'function' ? useBlockProps() : {};
+
+        // The Rechat testimonials web component only renders on the front-end
+        // (the SDK JS is not loaded in the editor iframe). Show a static
+        // placeholder so the block is clearly visible in the editor — otherwise
+        // it looks empty and gets inserted multiple times by mistake, which
+        // stacks duplicate testimonial sections on the front-end.
+        const instructions = [
+            `Testimonials shown: ${limit > 0 ? limit : 'all'}`,
+            colorMode ? `Color mode: ${colorMode}` : null,
+            'Preview appears on the published page.',
+        ].filter(Boolean).join(' · ');
 
         return (
             <>
@@ -44,7 +55,13 @@ registerBlockType('rch-rechat-plugin/testimonials-block', {
                         />
                     </PanelBody>
                 </InspectorControls>
-                <ServerSideRender block="rch-rechat-plugin/testimonials-block" attributes={attributes} />
+                <div {...blockProps}>
+                    <Placeholder
+                        icon="format-quote"
+                        label={title !== '' ? title : 'Rechat Testimonials'}
+                        instructions={instructions}
+                    />
+                </div>
             </>
         );
     },
