@@ -20,6 +20,14 @@ function rch_register_block_assets_testimonials()
         );
     }
 
+    // Expose the Rechat SDK URLs + brand id to the editor so the testimonials
+    // block can render a real live preview (see src/blocks/testimonials-block.js).
+    wp_localize_script('rch-gutenberg-js', 'rchTestimonialsPreview', array(
+        'sdkCss'  => defined('RCH_RECHAT_SDK_CSS_URL') ? RCH_RECHAT_SDK_CSS_URL : '',
+        'sdkJs'   => defined('RCH_RECHAT_SDK_JS_URL') ? RCH_RECHAT_SDK_JS_URL : '',
+        'brandId' => (string) get_option('rch_rechat_brand_id', ''),
+    ));
+
     register_block_type('rch-rechat-plugin/testimonials-block', array(
         'editor_script' => 'rch-gutenberg-js',
         'attributes'    => array(
