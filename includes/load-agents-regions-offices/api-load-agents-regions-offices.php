@@ -13,6 +13,12 @@ function rch_update_agents_offices_regions_data()
     $brand_token = get_option('rch_rechat_brand_id');
     $api_url_base = rtrim(RECHAT_API_BASE_URL, '/') . '/brands/' . rawurlencode((string) $brand_token) . '/users?associations[]=brand.parents&associations[]=brand.settings';
 
+    // On every sync, ensure this site's domain is still registered on the brand's
+    // Rechat portal; re-adds it via the API if missing.
+    if (function_exists('rch_ensure_portal_hostname')) {
+        rch_ensure_portal_hostname();
+    }
+
     /*******************************
      * Fetch and process regions and offices
      ******************************/
