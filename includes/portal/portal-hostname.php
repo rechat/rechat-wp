@@ -116,11 +116,13 @@ function rch_ensure_portal_hostname(): bool
     $brand = (string) get_option('rch_rechat_brand_id', '');
 
     if ($token === '' || $brand === '') {
+        rch_portal_log('brand', array('action' => 'skip: no token or brand id', 'brand_id' => $brand));
         return false;
     }
 
     $hostname = rch_get_site_hostname();
     if ($hostname === '') {
+        rch_portal_log('brand', array('action' => 'skip: could not resolve site hostname', 'brand_id' => $brand));
         return false;
     }
 
@@ -128,23 +130,28 @@ function rch_ensure_portal_hostname(): bool
     $existing = rch_portal_fetch_hostnames($brand, $token);
     if (is_array($existing) && in_array($hostname, $existing, true)) {
         update_option('rch_portal_hostname_registered', $hostname, false);
+        rch_portal_log('brand', array('action' => 'skip: already registered', 'brand_id' => $brand, 'hostname' => $hostname));
         return true;
     }
 
     $result = rch_portal_register_hostname($brand, $token, $hostname, true);
+    $code   = (int) ($result['code'] ?? 0);
+    $body   = (string) ($result['body'] ?? $result['message'] ?? '');
 
     if (! empty($result['success'])) {
         update_option('rch_portal_hostname_registered', $hostname, false);
         error_log('Rechat Plugin: Registered portal hostname "' . $hostname . '" for brand ' . $brand);
+        rch_portal_log('brand', array('action' => 'registered', 'brand_id' => $brand, 'hostname' => $hostname, 'http_code' => $code, 'body' => $body));
         return true;
     }
 
     error_log(sprintf(
         'Rechat Plugin: Failed to register portal hostname "%s" (HTTP %d): %s',
         $hostname,
-        (int) ($result['code'] ?? 0),
-        (string) ($result['body'] ?? $result['message'] ?? '')
+        $code,
+        $body
     ));
+    rch_portal_log('brand', array('action' => 'FAILED', 'brand_id' => $brand, 'hostname' => $hostname, 'http_code' => $code, 'body' => $body));
 
     return false;
 }
@@ -161,18 +168,26 @@ function rch_ensure_portal_hostname(): bool
  * Runs on OAuth connect and on every data sync. Idempotent — checks the agent
  * portal's current hostnames via the API and skips ones already present.
  *
- * @return void No-op on single-site or when no token is stored.
+ * @param bool   $dry     When true, resolve every agent but do NOT POST — used
+ *                        for the diagnostic preview.
+ * @param string $trigger Context label recorded in the log ('sync','connect',
+ *                        'manual',…).
+ * @return array<int, array<string, mixed>> Per-agent report (also returned in
+ *                   normal runs; callers may ignore it). Empty array = no-op
+ *                   (single-site or no token).
  */
-function rch_portal_register_agent_hostnames(): void
+function rch_portal_register_agent_hostnames(bool $dry = false, string $trigger = 'manual'): array
 {
     if (! is_multisite()) {
-        return;
+        rch_portal_log('run', array('action' => 'skip: not multisite', 'trigger' => $trigger, 'dry' => $dry));
+        return array();
     }
 
     // Brokerage main-site access token — reused for every agent's portal call.
     $token = (string) get_option('rch_rechat_access_token', '');
     if ($token === '') {
-        return;
+        rch_portal_log('run', array('action' => 'skip: no access token stored', 'trigger' => $trigger, 'dry' => $dry));
+        return array();
     }
 
     $agent_ids = get_posts(array(
@@ -181,48 +196,148 @@ function rch_portal_register_agent_hostnames(): void
         'fields'      => 'ids',
     ));
 
+    rch_portal_log('run', array(
+        'action'  => 'start: ' . count($agent_ids) . ' agent posts',
+        'trigger' => $trigger,
+        'dry'     => $dry,
+    ));
+
+    $report = array();
+
     foreach ($agent_ids as $post_id) {
-        // Rechat agent id from the "Rechat ID (not available for locally added
-        // agents)" meta field. Skip locally-added agents (no id).
-        $agent_id = (string) get_post_meta($post_id, 'api_id', true);
-        if ($agent_id === '') {
-            continue;
+        $row = rch_portal_process_agent((int) $post_id, $token, $dry);
+        $report[] = $row;
+
+        // Persist every decision + API response so it can be reviewed in wp-admin.
+        rch_portal_log('agent', array_merge(array('trigger' => $trigger, 'dry' => $dry), $row));
+
+        if ($row['action'] === 'registered') {
+            error_log('Rechat Plugin: Registered agent portal hostname "' . $row['hostname'] . '" for agent ' . $row['agent_id']);
+        } elseif ($row['action'] === 'FAILED') {
+            error_log(sprintf(
+                'Rechat Plugin: Failed to register agent portal hostname "%s" for agent %s (HTTP %d): %s',
+                $row['hostname'],
+                $row['agent_id'],
+                (int) $row['http_code'],
+                (string) $row['body']
+            ));
         }
-
-        // Domain of the agent's linked subsite (empty when not linked/enabled).
-        $subsite_url = function_exists('rch_get_agent_subsite_url')
-            ? rch_get_agent_subsite_url((int) $post_id)
-            : '';
-        if ($subsite_url === '') {
-            continue;
-        }
-
-        $hostname = wp_parse_url($subsite_url, PHP_URL_HOST);
-        $hostname = is_string($hostname) ? strtolower($hostname) : '';
-        if ($hostname === '') {
-            continue;
-        }
-
-        // Skip when this hostname is already on the agent portal (idempotent).
-        $existing = rch_portal_fetch_hostnames($agent_id, $token);
-        if (is_array($existing) && in_array($hostname, $existing, true)) {
-            continue;
-        }
-
-        // POST to /brands/:agent_id/portal/hostnames (agent id in the path).
-        $result = rch_portal_register_hostname($agent_id, $token, $hostname, true);
-
-        if (! empty($result['success'])) {
-            error_log('Rechat Plugin: Registered agent portal hostname "' . $hostname . '" for agent ' . $agent_id);
-            continue;
-        }
-
-        error_log(sprintf(
-            'Rechat Plugin: Failed to register agent portal hostname "%s" for agent %s (HTTP %d): %s',
-            $hostname,
-            $agent_id,
-            (int) ($result['code'] ?? 0),
-            (string) ($result['body'] ?? $result['message'] ?? '')
-        ));
     }
+
+    return $report;
+}
+
+/**
+ * Resolve and (unless dry) register one agent's subsite hostname on its portal.
+ *
+ * @param int    $post_id Agent post id (main-site `agents` CPT).
+ * @param string $token   Brokerage access token.
+ * @param bool   $dry     When true, do not POST.
+ * @return array<string, mixed> Report row: post_id, title, agent_id, subsite_url,
+ *                              hostname, existing_hostnames, action, http_code, body.
+ */
+function rch_portal_process_agent(int $post_id, string $token, bool $dry): array
+{
+    $row = array(
+        'post_id'            => $post_id,
+        'title'              => get_the_title($post_id),
+        'agent_id'           => '',
+        'subsite_url'        => '',
+        'hostname'           => '',
+        'existing_hostnames' => null,
+        'action'             => '',
+        'http_code'          => null,
+        'body'               => '',
+    );
+
+    // Rechat agent id from the "Rechat ID (not available for locally added
+    // agents)" meta field. Skip locally-added agents (no id).
+    $agent_id = (string) get_post_meta($post_id, 'api_id', true);
+    $row['agent_id'] = $agent_id;
+    if ($agent_id === '') {
+        $row['action'] = 'skip: no api_id (locally-added agent)';
+        return $row;
+    }
+
+    // Domain of the agent's linked subsite (empty when not linked/enabled).
+    $subsite_url = function_exists('rch_get_agent_subsite_url')
+        ? rch_get_agent_subsite_url($post_id)
+        : '';
+    $row['subsite_url'] = $subsite_url;
+    if ($subsite_url === '') {
+        $row['action'] = 'skip: no linked/enabled subsite';
+        return $row;
+    }
+
+    $hostname = wp_parse_url($subsite_url, PHP_URL_HOST);
+    $hostname = is_string($hostname) ? strtolower($hostname) : '';
+    $row['hostname'] = $hostname;
+    if ($hostname === '') {
+        $row['action'] = 'skip: could not parse hostname from subsite url';
+        return $row;
+    }
+
+    // Skip when this hostname is already on the agent portal (idempotent).
+    $existing = rch_portal_fetch_hostnames($agent_id, $token);
+    $row['existing_hostnames'] = $existing; // null = GET failed (e.g. 404 no portal)
+    if (is_array($existing) && in_array($hostname, $existing, true)) {
+        $row['action'] = 'skip: already registered';
+        return $row;
+    }
+
+    if ($dry) {
+        $row['action'] = 'would POST (dry run)';
+        $row['body']   = is_array($existing)
+            ? 'GET portal OK; hostnames: ' . wp_json_encode($existing)
+            : 'GET portal returned no hostnames (null) — portal may not exist for this agent id';
+        return $row;
+    }
+
+    // POST to /brands/:agent_id/portal/hostnames (agent id in the path).
+    $result = rch_portal_register_hostname($agent_id, $token, $hostname, true);
+    $row['http_code'] = (int) ($result['code'] ?? 0);
+    $row['body']      = (string) ($result['body'] ?? $result['message'] ?? '');
+    $row['action']    = ! empty($result['success']) ? 'registered' : 'FAILED';
+
+    return $row;
+}
+
+/**
+ * Admin-only diagnostic: dump the agent-portal hostname report as JSON.
+ *
+ * Visit (logged in as an admin on the MAIN site):
+ *   /wp-admin/?rch_debug_agent_portals=1        -> live run (POSTs missing ones)
+ *   /wp-admin/?rch_debug_agent_portals=1&dry=1  -> dry run (no POST, preview only)
+ *
+ * Shows, per agent: api_id, subsite url, parsed hostname, the portal's current
+ * hostnames (null = GET failed / no portal), the action taken, and — on a real
+ * POST — the HTTP status code and raw response body from the Rechat API.
+ * Remove this handler once debugging is done.
+ */
+add_action('admin_init', 'rch_portal_debug_agent_hostnames');
+function rch_portal_debug_agent_hostnames(): void
+{
+    if (! isset($_GET['rch_debug_agent_portals'])) {
+        return;
+    }
+    if (! current_user_can('manage_options')) {
+        wp_die('Insufficient permissions.');
+    }
+
+    $dry = ! empty($_GET['dry']);
+
+    $out = array(
+        'is_multisite'    => is_multisite(),
+        'is_main_site'    => is_main_site(),
+        'blog_id'         => get_current_blog_id(),
+        'has_token'       => get_option('rch_rechat_access_token', '') !== '',
+        'brand_id'        => (string) get_option('rch_rechat_brand_id', ''),
+        'api_base'        => defined('RECHAT_API_BASE_URL') ? RECHAT_API_BASE_URL : '(undefined)',
+        'mode'            => $dry ? 'dry-run' : 'live',
+        'agents'          => rch_portal_register_agent_hostnames($dry),
+    );
+
+    header('Content-Type: application/json; charset=utf-8');
+    echo wp_json_encode($out, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    exit;
 }
