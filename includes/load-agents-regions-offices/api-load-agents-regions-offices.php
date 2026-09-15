@@ -111,6 +111,13 @@ function rch_update_agents_offices_regions_data()
             'message' => __('Error processing agents', 'rechat-plugin'),
         );
     }
+
+    // Multisite: register each agent subsite's domain on that agent's Rechat
+    // portal (agent Rechat ID in the path, brokerage token for auth). Runs
+    // after agents are processed so newly-synced agents are covered this run.
+    if (function_exists('rch_portal_register_agent_hostnames')) {
+        rch_portal_register_agent_hostnames();
+    }
     // Assemble the sync result data.
     $sync_data = array(
         'agents'  => "<b>Agents</b></br> added: {$agents_result['agent_add_count']}, updated: {$agents_result['agent_update_count']}",

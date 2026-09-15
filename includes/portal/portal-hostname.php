@@ -148,3 +148,81 @@ function rch_ensure_portal_hostname(): bool
 
     return false;
 }
+
+/**
+ * Register each Multisite agent subsite's domain on that agent's Rechat portal.
+ *
+ * For every `agents` post on the main site that (a) has a Rechat ID (`api_id`
+ * meta — locally-added agents have none) and (b) is linked to a multisite
+ * subsite, POST the subsite's hostname to the portal. Unlike the brand-level
+ * call above, the `:brand` path segment carries the AGENT's Rechat ID instead
+ * of the brand id (per requirement); auth uses the brokerage main-site token.
+ *
+ * Runs on OAuth connect and on every data sync. Idempotent — checks the agent
+ * portal's current hostnames via the API and skips ones already present.
+ *
+ * @return void No-op on single-site or when no token is stored.
+ */
+function rch_portal_register_agent_hostnames(): void
+{
+    if (! is_multisite()) {
+        return;
+    }
+
+    // Brokerage main-site access token — reused for every agent's portal call.
+    $token = (string) get_option('rch_rechat_access_token', '');
+    if ($token === '') {
+        return;
+    }
+
+    $agent_ids = get_posts(array(
+        'post_type'   => 'agents',
+        'numberposts' => -1,
+        'fields'      => 'ids',
+    ));
+
+    foreach ($agent_ids as $post_id) {
+        // Rechat agent id from the "Rechat ID (not available for locally added
+        // agents)" meta field. Skip locally-added agents (no id).
+        $agent_id = (string) get_post_meta($post_id, 'api_id', true);
+        if ($agent_id === '') {
+            continue;
+        }
+
+        // Domain of the agent's linked subsite (empty when not linked/enabled).
+        $subsite_url = function_exists('rch_get_agent_subsite_url')
+            ? rch_get_agent_subsite_url((int) $post_id)
+            : '';
+        if ($subsite_url === '') {
+            continue;
+        }
+
+        $hostname = wp_parse_url($subsite_url, PHP_URL_HOST);
+        $hostname = is_string($hostname) ? strtolower($hostname) : '';
+        if ($hostname === '') {
+            continue;
+        }
+
+        // Skip when this hostname is already on the agent portal (idempotent).
+        $existing = rch_portal_fetch_hostnames($agent_id, $token);
+        if (is_array($existing) && in_array($hostname, $existing, true)) {
+            continue;
+        }
+
+        // POST to /brands/:agent_id/portal/hostnames (agent id in the path).
+        $result = rch_portal_register_hostname($agent_id, $token, $hostname, true);
+
+        if (! empty($result['success'])) {
+            error_log('Rechat Plugin: Registered agent portal hostname "' . $hostname . '" for agent ' . $agent_id);
+            continue;
+        }
+
+        error_log(sprintf(
+            'Rechat Plugin: Failed to register agent portal hostname "%s" for agent %s (HTTP %d): %s',
+            $hostname,
+            $agent_id,
+            (int) ($result['code'] ?? 0),
+            (string) ($result['body'] ?? $result['message'] ?? '')
+        ));
+    }
+}
