@@ -1,5 +1,16 @@
 # Changelog
 
+## 7.0.64
+
+- **Fix: Testimonials editor preview failed with a bad request.** The srcDoc
+  iframe from 7.0.63 had no hostname (`about:srcdoc` origin), and the Rechat SDK
+  resolves the portal by `window.location.hostname` — so it sent an empty
+  hostname and the API rejected it ("Too small: expected string to have >=1
+  characters"), leaving the preview blank. The preview now loads from an
+  admin-ajax endpoint (`rch_testimonials_preview`) on the site host, so the SDK
+  gets a real hostname and behaves exactly like the front-end. The endpoint is
+  nonce- and capability-guarded and mirrors the `[rch_testimonials]` output.
+
 ## 7.0.63
 
 - **Fix: Testimonials editor preview showed nothing.** The previous approach

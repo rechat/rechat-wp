@@ -4,42 +4,25 @@ const { PanelBody, TextControl, RangeControl, SelectControl, Placeholder } = wp.
 import { useRef } from '@wordpress/element';
 
 /**
- * Minimal HTML attribute-value escape (double-quoted context).
+ * URL for the preview iframe. Loads from admin-ajax (SAME HOST) so the Rechat
+ * SDK's hostname-based portal lookup gets a real, non-empty hostname — a srcDoc
+ * / data: iframe has no hostname and the SDK request fails ("Too small:
+ * expected string to have >=1 characters").
  *
- * @param {string} v
- * @returns {string}
- */
-function attr(v) {
-    return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-}
-
-/**
- * Build a self-contained preview document for the Rechat testimonials web
- * component.
- *
- * The Rechat SDK mounts <rechat-root> by scanning the DOM when its script runs.
- * In the block editor the block is inserted AFTER the SDK has already
- * initialised, so a <rechat-root> rendered inline is never mounted. Rendering it
- * in an isolated iframe (with the SDK script + markup present at load) reproduces
- * the front-end load order exactly, so the component always mounts.
- *
- * @param {{sdkCss?: string, sdkJs?: string, brandId?: string}} cfg
+ * @param {{ajaxUrl?: string, nonce?: string}} cfg
  * @param {number} limit
  * @param {string} colorMode
  * @returns {string}
  */
-function buildPreviewDoc(cfg, limit, colorMode) {
-    const mode = colorMode === 'dark' ? 'dark' : 'light';
-    const limitAttr = limit > 0 ? ` limit="${attr(limit)}"` : '';
-    return `<!doctype html><html><head><meta charset="utf-8">`
-        + (cfg.sdkCss ? `<link rel="stylesheet" href="${attr(cfg.sdkCss)}">` : '')
-        + `<style>html,body{margin:0;padding:8px;background:transparent;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}</style>`
-        + `</head><body>`
-        + `<rechat-root brand_id="${attr(cfg.brandId)}" color-mode="${mode}">`
-        + `<rechat-testimonials${limitAttr}></rechat-testimonials>`
-        + `</rechat-root>`
-        + (cfg.sdkJs ? `<script src="${attr(cfg.sdkJs)}"></script>` : '')
-        + `</body></html>`;
+function buildPreviewSrc(cfg, limit, colorMode) {
+    const params = [
+        'action=rch_testimonials_preview',
+        `nonce=${encodeURIComponent(cfg.nonce || '')}`,
+        `limit=${encodeURIComponent(limit || 0)}`,
+        `color_mode=${encodeURIComponent(colorMode || '')}`,
+    ];
+    const sep = (cfg.ajaxUrl || '').indexOf('?') === -1 ? '?' : '&';
+    return `${cfg.ajaxUrl}${sep}${params.join('&')}`;
 }
 
 registerBlockType('rch-rechat-plugin/testimonials-block', {
@@ -56,7 +39,7 @@ registerBlockType('rch-rechat-plugin/testimonials-block', {
         const { limit, title, colorMode } = attributes;
         const blockProps = typeof useBlockProps === 'function' ? useBlockProps() : {};
         const cfg = (typeof window !== 'undefined' && window.rchTestimonialsPreview) || {};
-        const hasPreview = Boolean(cfg.sdkJs && cfg.brandId);
+        const hasPreview = Boolean(cfg.ajaxUrl && cfg.nonce && cfg.brandId);
         const iframeRef = useRef(null);
 
         // Auto-size the iframe to its content (same-origin srcDoc → readable).
@@ -130,7 +113,7 @@ registerBlockType('rch-rechat-plugin/testimonials-block', {
                             key={`${cfg.brandId}-${limit}-${colorMode}`}
                             title="Testimonials preview"
                             onLoad={handleIframeLoad}
-                            srcDoc={buildPreviewDoc(cfg, limit, colorMode)}
+                            src={buildPreviewSrc(cfg, limit, colorMode)}
                             style={{ width: '100%', minHeight: '300px', border: '0' }}
                             scrolling="no"
                         />
@@ -139,7 +122,7 @@ registerBlockType('rch-rechat-plugin/testimonials-block', {
                             icon="format-quote"
                             label={title !== '' ? title : 'Rechat Testimonials'}
                             instructions={
-                                cfg.sdkJs
+                                cfg.ajaxUrl
                                     ? 'Connect a Rechat account (no brand_id found) to preview testimonials. Front-end output is unaffected.'
                                     : 'Testimonials preview unavailable in the editor. It renders on the published page.'
                             }
