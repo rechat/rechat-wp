@@ -69,36 +69,39 @@ function rch_portal_fetch_hostnames(string $brand, string $token): ?array
  * @param string $token      Access token.
  * @param string $hostname   Hostname to add.
  * @param bool   $is_default Whether this hostname is the portal default.
- * @return array{success:bool, code?:int, body?:string, message?:string}
+ * @return array{success:bool, code?:int, body?:string, message?:string, url:string, method:string, request_body:string}
  */
 function rch_portal_register_hostname(string $brand, string $token, string $hostname, bool $is_default = true): array
 {
-    $url = rtrim(RECHAT_API_BASE_URL, '/') . '/brands/' . rawurlencode($brand) . '/portal/hostnames';
+    $url  = rtrim(RECHAT_API_BASE_URL, '/') . '/brands/' . rawurlencode($brand) . '/portal/hostnames';
+    $json = wp_json_encode(array(
+        'hostname'   => $hostname,
+        'is_default' => $is_default,
+    ));
+
+    $meta = array('url' => $url, 'method' => 'POST', 'request_body' => (string) $json);
 
     $response = wp_remote_post($url, array(
         'headers' => array(
             'Authorization' => 'Bearer ' . $token,
             'Content-Type'  => 'application/json',
         ),
-        'body'    => wp_json_encode(array(
-            'hostname'   => $hostname,
-            'is_default' => $is_default,
-        )),
+        'body'    => $json,
         'timeout' => (int) apply_filters('rch_api_request_timeout', 20, $url),
     ));
 
     if (is_wp_error($response)) {
-        return array('success' => false, 'message' => $response->get_error_message());
+        return array_merge($meta, array('success' => false, 'message' => $response->get_error_message()));
     }
 
     $code = (int) wp_remote_retrieve_response_code($response);
     $body = (string) wp_remote_retrieve_body($response);
 
-    return array(
+    return array_merge($meta, array(
         'success' => $code >= 200 && $code < 300,
         'code'    => $code,
         'body'    => $body,
-    );
+    ));
 }
 
 /**
@@ -137,11 +140,16 @@ function rch_ensure_portal_hostname(): bool
     $result = rch_portal_register_hostname($brand, $token, $hostname, true);
     $code   = (int) ($result['code'] ?? 0);
     $body   = (string) ($result['body'] ?? $result['message'] ?? '');
+    $req    = array(
+        'req_method' => (string) ($result['method'] ?? 'POST'),
+        'req_url'    => (string) ($result['url'] ?? ''),
+        'req_body'   => (string) ($result['request_body'] ?? ''),
+    );
 
     if (! empty($result['success'])) {
         update_option('rch_portal_hostname_registered', $hostname, false);
         error_log('Rechat Plugin: Registered portal hostname "' . $hostname . '" for brand ' . $brand);
-        rch_portal_log('brand', array('action' => 'registered', 'brand_id' => $brand, 'hostname' => $hostname, 'http_code' => $code, 'body' => $body));
+        rch_portal_log('brand', array_merge(array('action' => 'registered', 'brand_id' => $brand, 'hostname' => $hostname, 'http_code' => $code, 'body' => $body), $req));
         return true;
     }
 
@@ -151,7 +159,7 @@ function rch_ensure_portal_hostname(): bool
         $code,
         $body
     ));
-    rch_portal_log('brand', array('action' => 'FAILED', 'brand_id' => $brand, 'hostname' => $hostname, 'http_code' => $code, 'body' => $body));
+    rch_portal_log('brand', array_merge(array('action' => 'FAILED', 'brand_id' => $brand, 'hostname' => $hostname, 'http_code' => $code, 'body' => $body), $req));
 
     return false;
 }
@@ -248,6 +256,9 @@ function rch_portal_process_agent(int $post_id, string $token, bool $dry): array
         'action'             => '',
         'http_code'          => null,
         'body'               => '',
+        'req_method'         => '',
+        'req_url'            => '',
+        'req_body'           => '',
     );
 
     // Rechat agent id from the "Rechat ID (not available for locally added
@@ -286,8 +297,12 @@ function rch_portal_process_agent(int $post_id, string $token, bool $dry): array
     }
 
     if ($dry) {
-        $row['action'] = 'would POST (dry run)';
-        $row['body']   = is_array($existing)
+        // The request the live run WOULD send (shown as copy-as-cURL in the log).
+        $row['req_method'] = 'POST';
+        $row['req_url']    = rtrim(RECHAT_API_BASE_URL, '/') . '/brands/' . rawurlencode($agent_id) . '/portal/hostnames';
+        $row['req_body']   = (string) wp_json_encode(array('hostname' => $hostname, 'is_default' => true));
+        $row['action']     = 'would POST (dry run)';
+        $row['body']       = is_array($existing)
             ? 'GET portal OK; hostnames: ' . wp_json_encode($existing)
             : 'GET portal returned no hostnames (null) — portal may not exist for this agent id';
         return $row;
@@ -295,9 +310,12 @@ function rch_portal_process_agent(int $post_id, string $token, bool $dry): array
 
     // POST to /brands/:agent_id/portal/hostnames (agent id in the path).
     $result = rch_portal_register_hostname($agent_id, $token, $hostname, true);
-    $row['http_code'] = (int) ($result['code'] ?? 0);
-    $row['body']      = (string) ($result['body'] ?? $result['message'] ?? '');
-    $row['action']    = ! empty($result['success']) ? 'registered' : 'FAILED';
+    $row['http_code']  = (int) ($result['code'] ?? 0);
+    $row['body']       = (string) ($result['body'] ?? $result['message'] ?? '');
+    $row['action']     = ! empty($result['success']) ? 'registered' : 'FAILED';
+    $row['req_method'] = (string) ($result['method'] ?? 'POST');
+    $row['req_url']    = (string) ($result['url'] ?? '');
+    $row['req_body']   = (string) ($result['request_body'] ?? '');
 
     return $row;
 }

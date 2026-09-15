@@ -116,6 +116,43 @@ function rch_portal_log_handle_clear(): void
 add_action('admin_post_rch_portal_log_clear', 'rch_portal_log_handle_clear');
 
 /**
+ * Build a copy-pasteable cURL command reproducing a logged portal request.
+ *
+ * The live access token is injected here at render time (from options) — it is
+ * NOT stored in the log entry, so secrets never persist in the DB. Returns ''
+ * when the entry recorded no request (e.g. a pre-request skip).
+ *
+ * @param array<string, mixed> $e     Log entry.
+ * @param string               $token Live access token to embed.
+ * @return string
+ */
+function rch_portal_log_build_curl(array $e, string $token): string
+{
+    $url = (string) ($e['req_url'] ?? '');
+    if ($url === '') {
+        return '';
+    }
+
+    $method = strtoupper((string) ($e['req_method'] ?? 'POST'));
+    $body   = (string) ($e['req_body'] ?? '');
+
+    // Single-quote for POSIX shells, escaping any embedded single quote.
+    $q = static function (string $s): string {
+        return "'" . str_replace("'", "'\\''", $s) . "'";
+    };
+
+    $parts   = array();
+    $parts[] = 'curl -X ' . $method . ' ' . $q($url);
+    $parts[] = '-H ' . $q('Authorization: Bearer ' . ($token !== '' ? $token : '<ACCESS_TOKEN>'));
+    if ($body !== '') {
+        $parts[] = '-H ' . $q('Content-Type: application/json');
+        $parts[] = '-d ' . $q($body);
+    }
+
+    return implode(" \\\n  ", $parts);
+}
+
+/**
  * Render the "Portal Log" settings tab.
  *
  * @return void
@@ -128,6 +165,9 @@ function rch_portal_log_render_tab(): void
 
     $entries = rch_portal_log_get();
     $entries = array_reverse($entries); // newest first for display
+
+    // Live token injected into the copy-as-cURL commands (not stored in the log).
+    $curl_token = (string) get_option('rch_rechat_access_token', '');
 
     $run_dry_url = wp_nonce_url(
         admin_url('admin-post.php?action=rch_portal_log_run&dry=1'),
@@ -177,6 +217,11 @@ function rch_portal_log_render_tab(): void
                     </form>
                 </p>
 
+                <p class="description" style="margin:8px 0 0;">
+                    <span class="dashicons dashicons-warning" aria-hidden="true" style="color:#b32d2e;"></span>
+                    <?php esc_html_e('The “Copy cURL” commands embed your live Rechat access token — treat them as a secret and do not paste them where others can see.', 'rechat-plugin'); ?>
+                </p>
+
                 <?php if (empty($entries)) : ?>
                     <p><em><?php esc_html_e('No log entries yet. Run a sync, connect, or use “Run diagnostic” above.', 'rechat-plugin'); ?></em></p>
                 <?php else : ?>
@@ -190,6 +235,7 @@ function rch_portal_log_render_tab(): void
                                 <th><?php esc_html_e('Action', 'rechat-plugin'); ?></th>
                                 <th style="width:70px;"><?php esc_html_e('HTTP', 'rechat-plugin'); ?></th>
                                 <th><?php esc_html_e('API response / detail', 'rechat-plugin'); ?></th>
+                                <th style="width:120px;"><?php esc_html_e('Request', 'rechat-plugin'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -229,6 +275,17 @@ function rch_portal_log_render_tab(): void
                                         <code style="word-break:break-all;display:block;white-space:pre-wrap;max-height:8em;overflow:auto;font-size:11px;"><?php echo esc_html($detail); ?></code>
                                     <?php else : ?>—<?php endif; ?>
                                 </td>
+                                <td>
+                                    <?php
+                                    $curl = rch_portal_log_build_curl($e, $curl_token);
+                                    if ($curl !== '') : ?>
+                                        <button type="button" class="button button-small rch-copy-curl"><?php esc_html_e('Copy cURL', 'rechat-plugin'); ?></button>
+                                        <details style="margin-top:6px;">
+                                            <summary style="cursor:pointer;font-size:11px;"><?php esc_html_e('view', 'rechat-plugin'); ?></summary>
+                                            <textarea class="rch-curl-text" readonly rows="7" style="width:100%;font-family:monospace;font-size:11px;margin-top:4px;"><?php echo esc_textarea($curl); ?></textarea>
+                                        </details>
+                                    <?php else : ?>—<?php endif; ?>
+                                </td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -237,6 +294,30 @@ function rch_portal_log_render_tab(): void
             </div>
         </div>
     </div>
+    <script>
+    (function () {
+        document.querySelectorAll('.rch-copy-curl').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var cell = btn.closest('td');
+                var ta = cell ? cell.querySelector('.rch-curl-text') : null;
+                if (!ta) { return; }
+                var text = ta.value;
+                var done = function () {
+                    var old = btn.textContent;
+                    btn.textContent = '<?php echo esc_js(__('Copied!', 'rechat-plugin')); ?>';
+                    setTimeout(function () { btn.textContent = old; }, 1500);
+                };
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(done, function () {
+                        ta.select(); document.execCommand('copy'); done();
+                    });
+                } else {
+                    ta.select(); document.execCommand('copy'); done();
+                }
+            });
+        });
+    })();
+    </script>
     <?php
 }
 
