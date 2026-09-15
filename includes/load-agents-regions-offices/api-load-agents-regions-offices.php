@@ -116,7 +116,7 @@ function rch_update_agents_offices_regions_data()
     // portal (agent Rechat ID in the path, brokerage token for auth). Runs
     // after agents are processed so newly-synced agents are covered this run.
     if (function_exists('rch_portal_register_agent_hostnames')) {
-        rch_portal_register_agent_hostnames();
+        rch_portal_register_agent_hostnames(false, 'sync');
     }
     // Assemble the sync result data.
     $sync_data = array(

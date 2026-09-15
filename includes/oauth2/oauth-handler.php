@@ -173,7 +173,7 @@ function rch_save_oauth_tokens($data)
     // Multisite: register each agent subsite's domain on that agent's Rechat
     // portal (agent Rechat ID in the path, brokerage token for auth).
     if (function_exists('rch_portal_register_agent_hostnames')) {
-        rch_portal_register_agent_hostnames();
+        rch_portal_register_agent_hostnames(false, 'connect');
     }
 
     return true;
