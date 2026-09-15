@@ -1,5 +1,16 @@
 # Changelog
 
+## 7.0.62
+
+- **New: live Testimonials preview in the editor.** The Testimonials block now
+  renders the real Rechat SDK `<rechat-testimonials>` web component inside the
+  block editor instead of a static placeholder. The SDK CSS/JS + brand id are
+  passed to the editor (`rchTestimonialsPreview`) and the SDK is injected into
+  the block's own document, so the custom element upgrades whether the canvas is
+  iframed (WP 6.x) or not (Meta Boxes present). Changing the title, count, or
+  color mode remounts the component to re-fetch. Falls back to the placeholder
+  when no Rechat account is connected (no brand id). Front-end output unchanged.
+
 ## 7.0.61
 
 - **Fix: Testimonials block was invisible in the editor.** The block previewed
