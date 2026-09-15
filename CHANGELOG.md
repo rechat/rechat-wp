@@ -1,5 +1,16 @@
 # Changelog
 
+## 7.0.63
+
+- **Fix: Testimonials editor preview showed nothing.** The previous approach
+  rendered the SDK `<rechat-root>` inline in the editor, but the Rechat SDK mounts
+  the component by scanning the DOM when its script first runs — and in the editor
+  the block is inserted after the SDK already initialised, so the inline element
+  was never mounted (blank). The preview now renders inside a self-contained
+  iframe (`srcDoc`) that loads the SDK with the markup already present,
+  reproducing the front-end load order so the component always mounts. The iframe
+  auto-sizes to its content and reloads when the title/count/color mode change.
+
 ## 7.0.62
 
 - **New: live Testimonials preview in the editor.** The Testimonials block now

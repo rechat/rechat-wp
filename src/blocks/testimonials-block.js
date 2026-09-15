@@ -1,36 +1,45 @@
 const { registerBlockType } = wp.blocks;
 const { InspectorControls, useBlockProps } = wp.blockEditor || wp.editor;
 const { PanelBody, TextControl, RangeControl, SelectControl, Placeholder } = wp.components;
-import { useRef, useEffect } from '@wordpress/element';
+import { useRef } from '@wordpress/element';
 
 /**
- * Ensure the Rechat SDK (CSS + JS that defines the <rechat-*> web components)
- * is present in the given document. In the WP 6.x editor the block canvas is an
- * iframe, so the SDK must be injected into the block's ownerDocument — not the
- * outer window — for the custom elements to upgrade. When Meta Boxes are present
- * the canvas is NOT iframed and ownerDocument is the main document; the same code
- * handles both.
+ * Minimal HTML attribute-value escape (double-quoted context).
  *
- * @param {Document} doc Target document (block element's ownerDocument).
- * @param {{sdkCss?: string, sdkJs?: string}} cfg SDK asset URLs.
+ * @param {string} v
+ * @returns {string}
  */
-function ensureSdkLoaded(doc, cfg) {
-    if (!doc || !doc.head) {
-        return;
-    }
-    if (cfg.sdkCss && !doc.getElementById('rch-sdk-css-preview')) {
-        const link = doc.createElement('link');
-        link.id = 'rch-sdk-css-preview';
-        link.rel = 'stylesheet';
-        link.href = cfg.sdkCss;
-        doc.head.appendChild(link);
-    }
-    if (cfg.sdkJs && !doc.getElementById('rch-sdk-js-preview')) {
-        const script = doc.createElement('script');
-        script.id = 'rch-sdk-js-preview';
-        script.src = cfg.sdkJs;
-        doc.head.appendChild(script);
-    }
+function attr(v) {
+    return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
+/**
+ * Build a self-contained preview document for the Rechat testimonials web
+ * component.
+ *
+ * The Rechat SDK mounts <rechat-root> by scanning the DOM when its script runs.
+ * In the block editor the block is inserted AFTER the SDK has already
+ * initialised, so a <rechat-root> rendered inline is never mounted. Rendering it
+ * in an isolated iframe (with the SDK script + markup present at load) reproduces
+ * the front-end load order exactly, so the component always mounts.
+ *
+ * @param {{sdkCss?: string, sdkJs?: string, brandId?: string}} cfg
+ * @param {number} limit
+ * @param {string} colorMode
+ * @returns {string}
+ */
+function buildPreviewDoc(cfg, limit, colorMode) {
+    const mode = colorMode === 'dark' ? 'dark' : 'light';
+    const limitAttr = limit > 0 ? ` limit="${attr(limit)}"` : '';
+    return `<!doctype html><html><head><meta charset="utf-8">`
+        + (cfg.sdkCss ? `<link rel="stylesheet" href="${attr(cfg.sdkCss)}">` : '')
+        + `<style>html,body{margin:0;padding:8px;background:transparent;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}</style>`
+        + `</head><body>`
+        + `<rechat-root brand_id="${attr(cfg.brandId)}" color-mode="${mode}">`
+        + `<rechat-testimonials${limitAttr}></rechat-testimonials>`
+        + `</rechat-root>`
+        + (cfg.sdkJs ? `<script src="${attr(cfg.sdkJs)}"></script>` : '')
+        + `</body></html>`;
 }
 
 registerBlockType('rch-rechat-plugin/testimonials-block', {
@@ -48,16 +57,40 @@ registerBlockType('rch-rechat-plugin/testimonials-block', {
         const blockProps = typeof useBlockProps === 'function' ? useBlockProps() : {};
         const cfg = (typeof window !== 'undefined' && window.rchTestimonialsPreview) || {};
         const hasPreview = Boolean(cfg.sdkJs && cfg.brandId);
+        const iframeRef = useRef(null);
 
-        const previewRef = useRef(null);
-
-        // Inject the SDK into the block's own document (iframe-aware) once mounted.
-        useEffect(() => {
-            if (!hasPreview || !previewRef.current) {
+        // Auto-size the iframe to its content (same-origin srcDoc → readable).
+        const handleIframeLoad = () => {
+            const frame = iframeRef.current;
+            if (!frame) {
                 return;
             }
-            ensureSdkLoaded(previewRef.current.ownerDocument, cfg);
-        }, [hasPreview]);
+            try {
+                const doc = frame.contentDocument;
+                const win = frame.contentWindow;
+                if (!doc || !doc.body || !win) {
+                    return;
+                }
+                const resize = () => {
+                    const h = Math.max(300, doc.body.scrollHeight);
+                    frame.style.height = h + 'px';
+                };
+                resize();
+                if (win.ResizeObserver) {
+                    new win.ResizeObserver(resize).observe(doc.body);
+                } else {
+                    let ticks = 0;
+                    const id = win.setInterval(() => {
+                        resize();
+                        if (++ticks > 20) {
+                            win.clearInterval(id);
+                        }
+                    }, 500);
+                }
+            } catch (e) {
+                // cross-origin or teardown — leave the default height.
+            }
+        };
 
         return (
             <>
@@ -90,21 +123,17 @@ registerBlockType('rch-rechat-plugin/testimonials-block', {
                 <div {...blockProps}>
                     {title !== '' ? <h2 className="rch-testimonials__title">{title}</h2> : null}
                     {hasPreview ? (
-                        // key forces the web component to remount when settings change
-                        // so the SDK re-fetches with the new attributes.
-                        <div ref={previewRef} className="rch-testimonials-editor-preview">
-                            <rechat-root
-                                key={`${cfg.brandId}-${limit}-${colorMode}`}
-                                brand_id={cfg.brandId}
-                                {...(colorMode ? { 'color-mode': colorMode } : {})}
-                            >
-                                {limit > 0 ? (
-                                    <rechat-testimonials limit={limit}></rechat-testimonials>
-                                ) : (
-                                    <rechat-testimonials></rechat-testimonials>
-                                )}
-                            </rechat-root>
-                        </div>
+                        <iframe
+                            ref={iframeRef}
+                            // key forces a reload when settings change so the SDK
+                            // re-fetches with the new attributes.
+                            key={`${cfg.brandId}-${limit}-${colorMode}`}
+                            title="Testimonials preview"
+                            onLoad={handleIframeLoad}
+                            srcDoc={buildPreviewDoc(cfg, limit, colorMode)}
+                            style={{ width: '100%', minHeight: '300px', border: '0' }}
+                            scrolling="no"
+                        />
                     ) : (
                         <Placeholder
                             icon="format-quote"
