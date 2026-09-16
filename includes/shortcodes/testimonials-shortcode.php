@@ -5,7 +5,8 @@
  *
  * Renders client testimonials via the Rechat SDK web component
  * (<rechat-root><rechat-testimonials>). brand_id comes from the site settings
- * (rch_rechat_brand_id) like every other Rechat web-component shortcode.
+ * (rch_rechat_brand_id) like every other Rechat web-component shortcode — except
+ * on an agent subsite, where it uses that agent's mapped child brand_id meta.
  *
  * Usage: [rch_testimonials limit="20" title="What our clients say"]
  *
@@ -67,6 +68,26 @@ function rch_display_testimonials_shortcode($atts)
 
     // brand_id from settings, like every other Rechat web-component shortcode.
     $brand = get_option('rch_rechat_brand_id');
+
+    // On an agent subsite, use THIS agent's mapped child brand_id (set via the
+    // "Map agent brands" admin button) instead of the general/site brand id, so
+    // testimonials resolve for the agent's own brand. Main site keeps the site brand.
+    if (
+        is_multisite()
+        && ! is_main_site()
+        && function_exists('rch_multisite_resolve_agent_post_id_for_current_blog')
+    ) {
+        $agent_post_id = rch_multisite_resolve_agent_post_id_for_current_blog();
+        if ($agent_post_id > 0) {
+            $main_id = (int) get_main_site_id();
+            switch_to_blog($main_id);
+            $agent_brand_id = (string) get_post_meta($agent_post_id, 'brand_id', true);
+            restore_current_blog();
+            if ($agent_brand_id !== '') {
+                $brand = $agent_brand_id;
+            }
+        }
+    }
 
     // Reuse the shared <rechat-root> attribute builder (brand_id + color-mode + theme).
     if (function_exists('rch_get_rechat_root_attributes')) {
