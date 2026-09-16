@@ -63,6 +63,42 @@ function rch_portal_fetch_hostnames(string $brand, string $token): ?array
 }
 
 /**
+ * Create (or return the existing) portal for a brand.
+ *
+ * Idempotent per the Rechat API: `PUT /brands/:brand/portal` returns the existing
+ * portal or creates a new one. Must run before adding hostnames, since a brand
+ * without a portal cannot accept a hostname POST.
+ *
+ * @param string $brand Rechat brand id.
+ * @param string $token Access token.
+ * @return array{success:bool, code:int, body:string, url:string, method:string}
+ */
+function rch_portal_create(string $brand, string $token): array
+{
+    $url  = rtrim(RECHAT_API_BASE_URL, '/') . '/brands/' . rawurlencode($brand) . '/portal';
+    $meta = array('url' => $url, 'method' => 'PUT');
+
+    $response = wp_remote_request($url, array(
+        'method'  => 'PUT',
+        'headers' => array('Authorization' => 'Bearer ' . $token),
+        'timeout' => (int) apply_filters('rch_api_request_timeout', 20, $url),
+    ));
+
+    if (is_wp_error($response)) {
+        return array_merge($meta, array('success' => false, 'code' => 0, 'body' => $response->get_error_message()));
+    }
+
+    $code = (int) wp_remote_retrieve_response_code($response);
+    $body = (string) wp_remote_retrieve_body($response);
+
+    return array_merge($meta, array(
+        'success' => $code >= 200 && $code < 300,
+        'code'    => $code,
+        'body'    => $body,
+    ));
+}
+
+/**
  * POST a hostname to the brand's portal.
  *
  * @param string $brand      Rechat brand id.
@@ -135,6 +171,23 @@ function rch_ensure_portal_hostname(): bool
         update_option('rch_portal_hostname_registered', $hostname, false);
         rch_portal_log('brand', array('action' => 'skip: already registered', 'brand_id' => $brand, 'hostname' => $hostname));
         return true;
+    }
+
+    // Create (or fetch) the portal first — a brand with no portal cannot accept a
+    // hostname POST. Only continue when the PUT succeeds.
+    $create = rch_portal_create($brand, $token);
+    if (empty($create['success'])) {
+        error_log(sprintf('Rechat Plugin: Portal create (PUT) failed for brand %s (HTTP %d): %s', $brand, (int) $create['code'], (string) $create['body']));
+        rch_portal_log('brand', array(
+            'action'     => 'FAILED',
+            'brand_id'   => $brand,
+            'hostname'   => $hostname,
+            'http_code'  => (int) $create['code'],
+            'body'       => 'Portal create (PUT) failed: ' . (string) $create['body'],
+            'req_method' => 'PUT',
+            'req_url'    => (string) $create['url'],
+        ));
+        return false;
     }
 
     $result = rch_portal_register_hostname($brand, $token, $hostname, true);
@@ -314,15 +367,28 @@ function rch_portal_process_agent(int $post_id, string $token, bool $dry): array
     $req_url = rtrim(RECHAT_API_BASE_URL, '/') . '/brands/' . rawurlencode($brand_id) . '/portal/hostnames';
 
     if ($dry) {
-        // The request the live run WOULD send (shown as copy-as-cURL in the log).
-        $row['req_method'] = 'POST';
-        $row['req_url']    = $req_url;
+        // The requests the live run WOULD send (shown as copy-as-cURL in the log):
+        // first PUT to create the portal, then POST the hostname.
+        $row['req_method'] = 'PUT then POST';
+        $row['req_url']    = rtrim(RECHAT_API_BASE_URL, '/') . '/brands/' . rawurlencode($brand_id) . '/portal  →  ' . $req_url;
         $row['req_body']   = (string) wp_json_encode(array('hostname' => $hostname, 'is_default' => true));
-        $row['action']     = 'would POST (dry run)';
+        $row['action']     = 'would PUT portal + POST hostname (dry run)';
         return $row;
     }
 
-    // POST to /brands/:brand_id/portal/hostnames (mapped child brand id in the path).
+    // Step 1: create (or fetch) the portal for this brand. A brand with no portal
+    // cannot accept a hostname POST — only continue if this succeeds.
+    $create = rch_portal_create($brand_id, $token);
+    if (empty($create['success'])) {
+        $row['http_code']  = (int) $create['code'];
+        $row['body']       = 'Portal create (PUT) failed: ' . (string) $create['body'];
+        $row['action']     = 'FAILED';
+        $row['req_method'] = 'PUT';
+        $row['req_url']    = (string) $create['url'];
+        return $row;
+    }
+
+    // Step 2: POST the hostname to /brands/:brand_id/portal/hostnames.
     $result = rch_portal_register_hostname($brand_id, $token, $hostname, true);
     $row['http_code']  = (int) ($result['code'] ?? 0);
     $row['body']       = (string) ($result['body'] ?? $result['message'] ?? '');
