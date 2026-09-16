@@ -84,6 +84,74 @@ function agents_meta_box_html($post)
     <label for="api_id_field">Rechat ID (not available for locally added agents): </label>
     <input type="text" id="api_id_field" name="api_id_field" value="<?php echo esc_attr($api_id); ?>" class="widefat" readonly />
     <br>
+
+    <?php
+    // Rechat "agent" record ids stored on this user (meta key `agents`, an array).
+    // Read-only — populated from the API on sync; not editable in WordPress.
+    $agents_ids_meta = get_post_meta($post->ID, 'agents', true);
+    $agents_ids      = is_array($agents_ids_meta) ? array_values(array_filter($agents_ids_meta)) : array();
+    ?>
+    <label for="agents_ids_field">Agent IDs <em>(<?php esc_html_e('from Rechat', 'rechat-plugin'); ?>)</em>: </label>
+    <input type="text" id="agents_ids_field" value="<?php echo esc_attr(implode(', ', $agents_ids)); ?>" class="widefat" readonly title="<?php esc_attr_e('Synced from Rechat — not editable.', 'rechat-plugin'); ?>" style="background:#f0f0f1;color:#50575e;cursor:not-allowed;" />
+    <p class="description">
+        <?php
+        printf(
+            /* translators: %d: number of agent ids */
+            esc_html__('%d agent record id(s) on this user. Meta key: %s', 'rechat-plugin'),
+            count($agents_ids),
+            '<code>agents</code>'
+        );
+        ?>
+    </p>
+    <br>
+
+    <?php
+    // Child brand id mapped by "Map agent brands" (Sync Data tab). Read-only.
+    $brand_id_meta = (string) get_post_meta($post->ID, 'brand_id', true);
+    ?>
+    <label for="agent_brand_id_field">Brand ID <em>(<?php esc_html_e('mapped from Rechat', 'rechat-plugin'); ?>)</em>: </label>
+    <input type="text" id="agent_brand_id_field" value="<?php echo esc_attr($brand_id_meta); ?>" class="widefat" readonly title="<?php esc_attr_e('Set by “Map agent brands”. Not editable.', 'rechat-plugin'); ?>" style="background:#f0f0f1;color:#50575e;cursor:not-allowed;" />
+    <p class="description">
+        <?php
+        echo $brand_id_meta !== ''
+            ? esc_html__('This agent’s child brand id. Meta key: brand_id', 'rechat-plugin')
+            : esc_html__('Not mapped yet — run “Map agent brands” on the Sync Data tab. Meta key: brand_id', 'rechat-plugin');
+        ?>
+    </p>
+    <br>
+
+    <?php
+    // Portal hostname registration status (skip flag). Read-only.
+    $portal_flag = function_exists('rch_portal_agent_registered_meta_key')
+        ? (string) get_post_meta($post->ID, rch_portal_agent_registered_meta_key(), true)
+        : (string) get_post_meta($post->ID, '_rch_portal_hostname_registered', true);
+    $portal_registered = ($portal_flag !== '');
+    ?>
+    <label><?php esc_html_e('Portal hostname status', 'rechat-plugin'); ?>: </label>
+    <p style="margin:4px 0 0;">
+        <?php if ($portal_registered) : ?>
+            <span style="display:inline-block;padding:3px 10px;border-radius:3px;background:#edfaef;color:#276a30;border:1px solid #b7e0be;">
+                <span class="dashicons dashicons-yes-alt" style="vertical-align:middle;"></span>
+                <?php
+                printf(
+                    /* translators: %s: registered hostname */
+                    esc_html__('Registered: %s', 'rechat-plugin'),
+                    '<code>' . esc_html($portal_flag) . '</code>'
+                );
+                ?>
+            </span>
+        <?php else : ?>
+            <span style="display:inline-block;padding:3px 10px;border-radius:3px;background:#f6f7f7;color:#646970;border:1px solid #dcdcde;">
+                <span class="dashicons dashicons-minus" style="vertical-align:middle;"></span>
+                <?php esc_html_e('Not registered', 'rechat-plugin'); ?>
+            </span>
+        <?php endif; ?>
+    </p>
+    <p class="description">
+        <?php esc_html_e('Set when the agent’s subsite hostname is registered on its brand portal via “Map agent brands”. Flagged agents are skipped on later runs. Meta key: _rch_portal_hostname_registered', 'rechat-plugin'); ?>
+    </p>
+    <br>
+
     <label for="agents_display_order">Display order</label>
     <input type="number" id="agents_display_order" name="agents_display_order" value="<?php echo esc_attr($display_order_show); ?>" class="small-text" min="0" step="1" />
     <p class="description">Set 0, 1, 2… to pin order at the top of lists. Leave empty for no number — those agents appear after all numbered ones. Meta key: <code><?php echo esc_html(RCH_AGENT_DISPLAY_ORDER_META_KEY); ?></code></p>

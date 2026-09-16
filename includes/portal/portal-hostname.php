@@ -167,14 +167,14 @@ function rch_ensure_portal_hostname(): bool
 /**
  * Register each Multisite agent subsite's domain on that agent's Rechat portal.
  *
- * For every `agents` post on the main site that (a) has a Rechat ID (`api_id`
- * meta — locally-added agents have none) and (b) is linked to a multisite
- * subsite, POST the subsite's hostname to the portal. Unlike the brand-level
- * call above, the `:brand` path segment carries the AGENT's Rechat ID instead
- * of the brand id (per requirement); auth uses the brokerage main-site token.
+ * For every `agents` post on the main site that (a) has a mapped child brand id
+ * (`brand_id` meta, set by "Map agent brands") and (b) is linked to a multisite
+ * subsite, POST the subsite's hostname to that brand's portal. The `:brand` path
+ * segment carries the mapped child `brand_id`; auth uses the brokerage main-site
+ * token.
  *
- * Runs on OAuth connect and on every data sync. Idempotent — checks the agent
- * portal's current hostnames via the API and skips ones already present.
+ * Triggered by the "Map agent brands" admin button. Idempotent — agents flagged
+ * (`_rch_portal_hostname_registered` == current hostname) are skipped.
  *
  * @param bool   $dry     When true, resolve every agent but do NOT POST — used
  *                        for the diagnostic preview.
@@ -236,37 +236,53 @@ function rch_portal_register_agent_hostnames(bool $dry = false, string $trigger 
 }
 
 /**
+ * Meta key: hostname already registered on this agent's portal (skip flag).
+ *
+ * @return string
+ */
+function rch_portal_agent_registered_meta_key(): string
+{
+    return '_rch_portal_hostname_registered';
+}
+
+/**
  * Resolve and (unless dry) register one agent's subsite hostname on its portal.
+ *
+ * The portal is keyed by the agent's mapped **child brand id** (`brand_id` meta,
+ * set by the "Map agent brands" step) — NOT the agent's Rechat id. Agents that
+ * already have their current hostname registered (per the `_rch_portal_hostname_
+ * registered` flag) are skipped.
  *
  * @param int    $post_id Agent post id (main-site `agents` CPT).
  * @param string $token   Brokerage access token.
  * @param bool   $dry     When true, do not POST.
- * @return array<string, mixed> Report row: post_id, title, agent_id, subsite_url,
- *                              hostname, existing_hostnames, action, http_code, body.
+ * @return array<string, mixed> Report row.
  */
 function rch_portal_process_agent(int $post_id, string $token, bool $dry): array
 {
     $row = array(
-        'post_id'            => $post_id,
-        'title'              => get_the_title($post_id),
-        'agent_id'           => '',
-        'subsite_url'        => '',
-        'hostname'           => '',
-        'existing_hostnames' => null,
-        'action'             => '',
-        'http_code'          => null,
-        'body'               => '',
-        'req_method'         => '',
-        'req_url'            => '',
-        'req_body'           => '',
+        'post_id'     => $post_id,
+        'title'       => get_the_title($post_id),
+        'agent_id'    => '',
+        'brand_id'    => '',
+        'subsite_url' => '',
+        'hostname'    => '',
+        'action'      => '',
+        'http_code'   => null,
+        'body'        => '',
+        'req_method'  => '',
+        'req_url'     => '',
+        'req_body'    => '',
     );
 
-    // Rechat agent id from the "Rechat ID (not available for locally added
-    // agents)" meta field. Skip locally-added agents (no id).
-    $agent_id = (string) get_post_meta($post_id, 'api_id', true);
-    $row['agent_id'] = $agent_id;
-    if ($agent_id === '') {
-        $row['action'] = 'skip: no api_id (locally-added agent)';
+    // Rechat agent id (reference only; kept in the log for readability).
+    $row['agent_id'] = (string) get_post_meta($post_id, 'api_id', true);
+
+    // Child brand id mapped by "Map agent brands" — used as the portal path segment.
+    $brand_id = (string) get_post_meta($post_id, 'brand_id', true);
+    $row['brand_id'] = $brand_id;
+    if ($brand_id === '') {
+        $row['action'] = 'skip: no brand_id (run “Map agent brands” first)';
         return $row;
     }
 
@@ -288,34 +304,37 @@ function rch_portal_process_agent(int $post_id, string $token, bool $dry): array
         return $row;
     }
 
-    // Skip when this hostname is already on the agent portal (idempotent).
-    $existing = rch_portal_fetch_hostnames($agent_id, $token);
-    $row['existing_hostnames'] = $existing; // null = GET failed (e.g. 404 no portal)
-    if (is_array($existing) && in_array($hostname, $existing, true)) {
-        $row['action'] = 'skip: already registered';
+    // Skip agents already flagged as registered for this exact hostname.
+    $flag = (string) get_post_meta($post_id, rch_portal_agent_registered_meta_key(), true);
+    if ($flag !== '' && strtolower($flag) === $hostname) {
+        $row['action'] = 'skip: already registered (flag)';
         return $row;
     }
+
+    $req_url = rtrim(RECHAT_API_BASE_URL, '/') . '/brands/' . rawurlencode($brand_id) . '/portal/hostnames';
 
     if ($dry) {
         // The request the live run WOULD send (shown as copy-as-cURL in the log).
         $row['req_method'] = 'POST';
-        $row['req_url']    = rtrim(RECHAT_API_BASE_URL, '/') . '/brands/' . rawurlencode($agent_id) . '/portal/hostnames';
+        $row['req_url']    = $req_url;
         $row['req_body']   = (string) wp_json_encode(array('hostname' => $hostname, 'is_default' => true));
         $row['action']     = 'would POST (dry run)';
-        $row['body']       = is_array($existing)
-            ? 'GET portal OK; hostnames: ' . wp_json_encode($existing)
-            : 'GET portal returned no hostnames (null) — portal may not exist for this agent id';
         return $row;
     }
 
-    // POST to /brands/:agent_id/portal/hostnames (agent id in the path).
-    $result = rch_portal_register_hostname($agent_id, $token, $hostname, true);
+    // POST to /brands/:brand_id/portal/hostnames (mapped child brand id in the path).
+    $result = rch_portal_register_hostname($brand_id, $token, $hostname, true);
     $row['http_code']  = (int) ($result['code'] ?? 0);
     $row['body']       = (string) ($result['body'] ?? $result['message'] ?? '');
     $row['action']     = ! empty($result['success']) ? 'registered' : 'FAILED';
     $row['req_method'] = (string) ($result['method'] ?? 'POST');
     $row['req_url']    = (string) ($result['url'] ?? '');
     $row['req_body']   = (string) ($result['request_body'] ?? '');
+
+    // On success, flag the agent so future runs skip it.
+    if ($row['action'] === 'registered') {
+        update_post_meta($post_id, rch_portal_agent_registered_meta_key(), $hostname);
+    }
 
     return $row;
 }
