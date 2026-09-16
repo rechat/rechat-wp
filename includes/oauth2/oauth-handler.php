@@ -165,16 +165,8 @@ function rch_save_oauth_tokens($data)
         'initial'
     );
 
-    // Register this site's domain on the brand's Rechat portal right after connect.
-    if (function_exists('rch_ensure_portal_hostname')) {
-        rch_ensure_portal_hostname();
-    }
-
-    // Multisite: register each agent subsite's domain on that agent's Rechat
-    // portal (agent Rechat ID in the path, brokerage token for auth).
-    if (function_exists('rch_portal_register_agent_hostnames')) {
-        rch_portal_register_agent_hostnames(false, 'connect');
-    }
+    // NOTE: Portal hostname setup moved to the "Map agent brands" admin button;
+    // connect no longer registers portal hostnames.
 
     return true;
 }

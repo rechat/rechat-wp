@@ -13,11 +13,8 @@ function rch_update_agents_offices_regions_data()
     $brand_token = get_option('rch_rechat_brand_id');
     $api_url_base = rtrim(RECHAT_API_BASE_URL, '/') . '/brands/' . rawurlencode((string) $brand_token) . '/users?associations[]=brand.parents&associations[]=brand.settings';
 
-    // On every sync, ensure this site's domain is still registered on the brand's
-    // Rechat portal; re-adds it via the API if missing.
-    if (function_exists('rch_ensure_portal_hostname')) {
-        rch_ensure_portal_hostname();
-    }
+    // NOTE: Portal hostname setup (brand + agent subsites) was moved out of Sync
+    // to the "Map agent brands" admin button. Sync no longer touches the portal.
 
     /*******************************
      * Fetch and process regions and offices
@@ -112,12 +109,6 @@ function rch_update_agents_offices_regions_data()
         );
     }
 
-    // Multisite: register each agent subsite's domain on that agent's Rechat
-    // portal (agent Rechat ID in the path, brokerage token for auth). Runs
-    // after agents are processed so newly-synced agents are covered this run.
-    if (function_exists('rch_portal_register_agent_hostnames')) {
-        rch_portal_register_agent_hostnames(false, 'sync');
-    }
     // Assemble the sync result data.
     $sync_data = array(
         'agents'  => "<b>Agents</b></br> added: {$agents_result['agent_add_count']}, updated: {$agents_result['agent_update_count']}",

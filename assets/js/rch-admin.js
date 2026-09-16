@@ -174,6 +174,49 @@ jQuery(document).ready(function ($) {
     });
 
     /*******************************
+     * Map agent brands (child-brand ID -> agent brand_id meta)
+     ******************************/
+    $('#rch_map_agent_brands').on('click', function () {
+        var button = $(this);
+        var statusDiv = $('#rch_map_brands_status');
+
+        statusDiv.html('<div class="notice notice-info"><p>' +
+            'Mapping agent brands…' +
+            '</p></div>');
+        button.prop('disabled', true);
+
+        $.ajax({
+            url: rch_ajax_object.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'rch_map_agent_brands',
+                nonce: rch_ajax_object.nonce
+            },
+            success: function (response) {
+                if (response && response.success) {
+                    var msg = (response.data && response.data.message) ? response.data.message : 'Done.';
+                    statusDiv.html('<div class="notice notice-success is-dismissible"><p><strong>' + msg + '</strong></p></div>');
+                } else {
+                    var err = (response && response.data) ? response.data : 'Unknown error.';
+                    statusDiv.html('<div class="notice notice-error is-dismissible"><p><strong>Error:</strong> ' + err + '</p></div>');
+                }
+            },
+            error: function (jqXHR, textStatus) {
+                var errorMessage = 'An error occurred while mapping agent brands.';
+                if (jqXHR.responseJSON && jqXHR.responseJSON.data) {
+                    errorMessage = jqXHR.responseJSON.data;
+                } else if (textStatus) {
+                    errorMessage += ' (' + textStatus + ')';
+                }
+                statusDiv.html('<div class="notice notice-error is-dismissible"><p><strong>Error:</strong> ' + errorMessage + '</p></div>');
+            },
+            complete: function () {
+                button.prop('disabled', false);
+            }
+        });
+    });
+
+    /*******************************
      * Disconnect modal functionality
      ******************************/
     var $modal = $('#disconnect-modal');

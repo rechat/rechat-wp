@@ -741,6 +741,166 @@ function rch_update_all_data()
 }
 add_action('wp_ajax_rch_update_all_data', 'rch_update_all_data');
 
+/*******************************
+ * AJAX handler: map child-brand IDs onto agents
+ *
+ * Fetches the connected brand with its child brands and their users, then for
+ * every child brand that has EXACTLY ONE user, stores that child brand's ID on
+ * the matching agent CPT (the agent whose `api_id` meta equals the single user's
+ * id) under the meta key `brand_id`. Does not touch the Sync flow.
+ ******************************/
+function rch_map_agent_brands()
+{
+    if (! check_ajax_referer('rch_ajax_nonce', 'nonce', false)) {
+        wp_send_json_error(__('Security check failed.', 'rechat-plugin'));
+        return;
+    }
+
+    if (! function_exists('rch_current_user_can_manage_rechat') || ! rch_current_user_can_manage_rechat()) {
+        wp_send_json_error(__('Insufficient permissions.', 'rechat-plugin'));
+        return;
+    }
+
+    $token = (string) get_option('rch_rechat_access_token', '');
+    $brand = (string) get_option('rch_rechat_brand_id', '');
+
+    if ($token === '' || $brand === '') {
+        wp_send_json_error(__('Not connected to Rechat (missing access token or brand ID).', 'rechat-plugin'));
+        return;
+    }
+
+    // GET /brands/{brand}?associations[]=brand.children&associations[]=brand.users
+    $url = rtrim(RECHAT_API_BASE_URL, '/') . '/brands/' . rawurlencode($brand)
+        . '?associations[]=brand.children&associations[]=brand.users';
+
+    $res = rch_api_request($url, $token);
+
+    if (empty($res['success'])) {
+        wp_send_json_error(__('Could not reach the Rechat API.', 'rechat-plugin'));
+        return;
+    }
+
+    $code = (int) ($res['response_code'] ?? 0);
+    if ($code < 200 || $code >= 300) {
+        $msg = ($code === 401)
+            ? __('Rechat API returned 401 (expired/invalid token). Refresh the token on the Connect tab and try again.', 'rechat-plugin')
+            : sprintf(__('Rechat API returned HTTP %d.', 'rechat-plugin'), $code);
+        wp_send_json_error($msg);
+        return;
+    }
+
+    // Response is wrapped in a { code, data: {...} } envelope.
+    $payload  = is_array($res['data']) ? $res['data'] : array();
+    $data     = isset($payload['data']) && is_array($payload['data']) ? $payload['data'] : $payload;
+    $children = isset($data['children']) && is_array($data['children']) ? $data['children'] : null;
+
+    if ($children === null) {
+        wp_send_json_error(__('The API response did not include data.children.', 'rechat-plugin'));
+        return;
+    }
+
+    // Build agent-id (api_id meta) => post_id map once, to avoid a query per child.
+    $agent_posts = get_posts(array(
+        'post_type'   => 'agents',
+        'numberposts' => -1,
+        'fields'      => 'ids',
+    ));
+    $api_id_to_post = array();
+    foreach ($agent_posts as $pid) {
+        $aid = (string) get_post_meta($pid, 'api_id', true);
+        if ($aid !== '') {
+            $api_id_to_post[$aid] = (int) $pid;
+        }
+    }
+
+    $updated       = 0; // agent meta written
+    $unmatched     = 0; // single-user child brand with no matching agent CPT
+    $skipped_users = 0; // child brand with 0 or >1 users
+    $mappings      = array();
+
+    foreach ($children as $child) {
+        if (! is_array($child)) {
+            continue;
+        }
+
+        $child_brand_id = isset($child['id']) ? (string) $child['id'] : '';
+        $users          = isset($child['users']) && is_array($child['users']) ? $child['users'] : array();
+
+        // Only child brands with EXACTLY one user.
+        if ($child_brand_id === '' || count($users) !== 1) {
+            $skipped_users++;
+            continue;
+        }
+
+        $user    = $users[0];
+        $agent_id = (is_array($user) && isset($user['id'])) ? (string) $user['id'] : '';
+        if ($agent_id === '') {
+            $skipped_users++;
+            continue;
+        }
+
+        $mappings[$child_brand_id] = $agent_id;
+
+        if (isset($api_id_to_post[$agent_id])) {
+            // update_post_meta creates the meta if absent, or updates it if present.
+            update_post_meta($api_id_to_post[$agent_id], 'brand_id', $child_brand_id);
+            $updated++;
+        } else {
+            $unmatched++;
+        }
+    }
+
+    $summary = sprintf(
+        /* translators: 1: agents updated, 2: single-user brands without a matching agent, 3: child brands skipped (0 or >1 users), 4: total child brands */
+        __('Mapped brands: updated %1$d agent(s) with a brand_id. %2$d single-user brand(s) had no matching agent. %3$d child brand(s) skipped (0 or >1 users). %4$d child brand(s) total.', 'rechat-plugin'),
+        $updated,
+        $unmatched,
+        $skipped_users,
+        count($children)
+    );
+
+    // After mapping brand_ids, run the portal hostname setup (moved here from
+    // Sync). Brand-level registers the main-site domain; the per-agent step uses
+    // each agent's freshly-mapped brand_id and skips already-flagged agents.
+    $portal_summary = '';
+    if (function_exists('rch_ensure_portal_hostname')) {
+        rch_ensure_portal_hostname();
+    }
+    if (function_exists('rch_portal_register_agent_hostnames')) {
+        $report      = rch_portal_register_agent_hostnames(false, 'map-button');
+        $p_registered = 0;
+        $p_failed     = 0;
+        $p_skipped    = 0;
+        foreach ($report as $r) {
+            $action = isset($r['action']) ? (string) $r['action'] : '';
+            if ($action === 'registered') {
+                $p_registered++;
+            } elseif ($action === 'FAILED') {
+                $p_failed++;
+            } else {
+                $p_skipped++;
+            }
+        }
+        $portal_summary = sprintf(
+            /* translators: 1: hostnames registered, 2: failed, 3: skipped */
+            __('Portal hostnames: %1$d registered, %2$d failed, %3$d skipped. See the Portal Log tab for details.', 'rechat-plugin'),
+            $p_registered,
+            $p_failed,
+            $p_skipped
+        );
+    }
+
+    wp_send_json_success(array(
+        'message'        => trim($summary . ' ' . $portal_summary),
+        'updated'        => $updated,
+        'unmatched'      => $unmatched,
+        'skipped'        => $skipped_users,
+        'total'          => count($children),
+        'portal_summary' => $portal_summary,
+    ));
+}
+add_action('wp_ajax_rch_map_agent_brands', 'rch_map_agent_brands');
+
 /**
  * AJAX: return state/province options for a country (Rechat boundaries/search with omit[]=boundary.geometry).
  */

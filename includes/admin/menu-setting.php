@@ -256,11 +256,26 @@ function rch_render_sync_data_tab($access_token_exists)
                     <?php esc_html_e('Sync now', 'rechat-plugin'); ?>
                 </button>
 
+                <button
+                    id="rch_map_agent_brands"
+                    type="button"
+                    class="button rch-button-map-brands"
+                    style="margin-left:8px;"
+                    <?php disabled(!$access_token_exists); ?>
+                >
+                    <span class="dashicons dashicons-networking" aria-hidden="true"></span>
+                    <?php esc_html_e('Map agent brands', 'rechat-plugin'); ?>
+                </button>
+                <p class="description" style="margin-top:6px;">
+                    <?php esc_html_e('Fetches this brand’s child brands and, for each child brand with exactly one user, saves that child brand’s ID onto the matching agent (meta key: brand_id). Then registers each agent subsite’s hostname on its brand portal (skips agents already registered).', 'rechat-plugin'); ?>
+                </p>
+
                 <div id="progress-container" class="rch-progress-container" style="display: none;">
                     <div id="progress-bar"></div>
                 </div>
 
                 <div id="agents_update_status" style="margin-top: 16px;"></div>
+                <div id="rch_map_brands_status" style="margin-top: 16px;"></div>
             </div>
         </div>
     </div>
