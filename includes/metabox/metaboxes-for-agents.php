@@ -106,29 +106,26 @@ function agents_meta_box_html($post)
     <br>
 
     <?php
-    // Child brand id mapped by "Map agent brands" (Sync Data tab). Read-only.
+    // Child brand id. Editable by admins; NOT overwritten by Rechat sync.
     $brand_id_meta = (string) get_post_meta($post->ID, 'brand_id', true);
     ?>
-    <label for="agent_brand_id_field">Brand ID <em>(<?php esc_html_e('mapped from Rechat', 'rechat-plugin'); ?>)</em>: </label>
-    <input type="text" id="agent_brand_id_field" value="<?php echo esc_attr($brand_id_meta); ?>" class="widefat" readonly title="<?php esc_attr_e('Set by “Map agent brands”. Not editable.', 'rechat-plugin'); ?>" style="background:#f0f0f1;color:#50575e;cursor:not-allowed;" />
+    <label for="agent_brand_id_field">Brand ID <em>(<?php esc_html_e('editable', 'rechat-plugin'); ?>)</em>: </label>
+    <input type="text" id="agent_brand_id_field" name="agent_brand_id_field" value="<?php echo esc_attr($brand_id_meta); ?>" class="widefat" placeholder="<?php esc_attr_e('e.g. cdbbb67d-8899-4c12-a2a1-66b3a40693a0', 'rechat-plugin'); ?>" />
     <p class="description">
-        <?php
-        echo $brand_id_meta !== ''
-            ? esc_html__('This agent’s child brand id. Meta key: brand_id', 'rechat-plugin')
-            : esc_html__('Not mapped yet — run “Map agent brands” on the Sync Data tab. Meta key: brand_id', 'rechat-plugin');
-        ?>
+        <?php esc_html_e('This agent’s child brand id. Editable — set it manually, then Update the agent. Not changed by Rechat sync. Meta key: brand_id', 'rechat-plugin'); ?>
     </p>
     <br>
 
     <?php
-    // Portal hostname registration status (skip flag). Read-only.
+    // Portal hostname registration status (skip flag).
     $portal_flag = function_exists('rch_portal_agent_registered_meta_key')
         ? (string) get_post_meta($post->ID, rch_portal_agent_registered_meta_key(), true)
         : (string) get_post_meta($post->ID, '_rch_portal_hostname_registered', true);
     $portal_registered = ($portal_flag !== '');
     ?>
     <label><?php esc_html_e('Portal hostname status', 'rechat-plugin'); ?>: </label>
-    <p style="margin:4px 0 0;">
+    <p style="margin:4px 0 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span id="rch-agent-portal-status">
         <?php if ($portal_registered) : ?>
             <span style="display:inline-block;padding:3px 10px;border-radius:3px;background:#edfaef;color:#276a30;border:1px solid #b7e0be;">
                 <span class="dashicons dashicons-yes-alt" style="vertical-align:middle;"></span>
@@ -146,10 +143,59 @@ function agents_meta_box_html($post)
                 <?php esc_html_e('Not registered', 'rechat-plugin'); ?>
             </span>
         <?php endif; ?>
+        </span>
+        <button
+            type="button"
+            id="rch-agent-create-portal"
+            class="button"
+            data-post-id="<?php echo esc_attr((string) $post->ID); ?>"
+            data-nonce="<?php echo esc_attr(wp_create_nonce('rch_agent_create_portal')); ?>"
+        >
+            <span class="dashicons dashicons-networking" style="vertical-align:middle;"></span>
+            <?php esc_html_e('Create & set portal', 'rechat-plugin'); ?>
+        </button>
     </p>
     <p class="description">
-        <?php esc_html_e('Set when the agent’s subsite hostname is registered on its brand portal via “Map agent brands”. Flagged agents are skipped on later runs. Meta key: _rch_portal_hostname_registered', 'rechat-plugin'); ?>
+        <?php esc_html_e('Creates the portal for the Brand ID above (PUT), then registers this agent’s subsite hostname (POST). Save the agent first if you changed the Brand ID. Meta key: _rch_portal_hostname_registered', 'rechat-plugin'); ?>
     </p>
+    <span id="rch-agent-create-portal-msg" style="display:block;margin-top:6px;"></span>
+
+    <script>
+    (function () {
+        var btn = document.getElementById('rch-agent-create-portal');
+        if (!btn) { return; }
+        btn.addEventListener('click', function () {
+            var msg = document.getElementById('rch-agent-create-portal-msg');
+            btn.disabled = true;
+            msg.textContent = '<?php echo esc_js(__('Creating portal & registering hostname…', 'rechat-plugin')); ?>';
+            msg.style.color = '#646970';
+            var data = new URLSearchParams();
+            data.append('action', 'rch_agent_create_portal');
+            data.append('post_id', btn.getAttribute('data-post-id'));
+            data.append('nonce', btn.getAttribute('data-nonce'));
+            fetch(ajaxurl, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: data.toString() })
+                .then(function (r) { return r.json(); })
+                .then(function (res) {
+                    if (res && res.success) {
+                        msg.style.color = '#276a30';
+                        msg.textContent = (res.data && res.data.message) ? res.data.message : '<?php echo esc_js(__('Done.', 'rechat-plugin')); ?>';
+                        var st = document.getElementById('rch-agent-portal-status');
+                        if (st && res.data && res.data.hostname) {
+                            st.innerHTML = '<span style="display:inline-block;padding:3px 10px;border-radius:3px;background:#edfaef;color:#276a30;border:1px solid #b7e0be;"><span class="dashicons dashicons-yes-alt" style="vertical-align:middle;"></span> <?php echo esc_js(__('Registered:', 'rechat-plugin')); ?> <code>' + res.data.hostname + '</code></span>';
+                        }
+                    } else {
+                        msg.style.color = '#b32d2e';
+                        msg.textContent = (res && res.data) ? res.data : '<?php echo esc_js(__('Error.', 'rechat-plugin')); ?>';
+                    }
+                })
+                .catch(function () {
+                    msg.style.color = '#b32d2e';
+                    msg.textContent = '<?php echo esc_js(__('Request failed.', 'rechat-plugin')); ?>';
+                })
+                .then(function () { btn.disabled = false; });
+        });
+    })();
+    </script>
     <br>
 
     <label for="agents_display_order">Display order</label>
@@ -372,6 +418,16 @@ function save_agents_meta_box($post_id)
         if (isset($_POST[$input_name])) {
             $value = sanitize_text_field($_POST[$input_name]);
             update_post_meta($post_id, $meta_key, $value);
+        }
+    }
+
+    // Brand ID — admin-editable; empty clears it. Not touched by Rechat sync.
+    if (isset($_POST['agent_brand_id_field'])) {
+        $brand_id_val = sanitize_text_field(wp_unslash($_POST['agent_brand_id_field']));
+        if ($brand_id_val === '') {
+            delete_post_meta($post_id, 'brand_id');
+        } else {
+            update_post_meta($post_id, 'brand_id', $brand_id_val);
         }
     }
 

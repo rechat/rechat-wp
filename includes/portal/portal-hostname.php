@@ -406,6 +406,104 @@ function rch_portal_process_agent(int $post_id, string $token, bool $dry): array
 }
 
 /**
+ * AJAX: create + set the portal for a single agent (manual per-agent button).
+ *
+ * Uses the agent's current `brand_id` meta (admin-editable) as the portal path,
+ * PUTs to create the portal, then POSTs the agent's subsite hostname. Forces the
+ * request regardless of the skip flag; sets the flag on success.
+ *
+ * @return void
+ */
+function rch_agent_create_portal_ajax(): void
+{
+    if (! check_ajax_referer('rch_agent_create_portal', 'nonce', false)) {
+        wp_send_json_error(__('Security check failed.', 'rechat-plugin'));
+    }
+
+    $post_id = isset($_POST['post_id']) ? (int) $_POST['post_id'] : 0;
+    if ($post_id <= 0 || get_post_type($post_id) !== 'agents') {
+        wp_send_json_error(__('Invalid agent.', 'rechat-plugin'));
+    }
+    if (! current_user_can('edit_post', $post_id)) {
+        wp_send_json_error(__('Insufficient permissions.', 'rechat-plugin'));
+    }
+
+    $token = (string) get_option('rch_rechat_access_token', '');
+    if ($token === '') {
+        wp_send_json_error(__('Not connected to Rechat (no access token).', 'rechat-plugin'));
+    }
+
+    $brand_id = (string) get_post_meta($post_id, 'brand_id', true);
+    if ($brand_id === '') {
+        wp_send_json_error(__('This agent has no Brand ID. Set it above and Update the agent first.', 'rechat-plugin'));
+    }
+
+    $subsite_url = function_exists('rch_get_agent_subsite_url') ? rch_get_agent_subsite_url($post_id) : '';
+    if ($subsite_url === '') {
+        wp_send_json_error(__('No linked/enabled subsite for this agent — cannot resolve a hostname.', 'rechat-plugin'));
+    }
+    $hostname = wp_parse_url($subsite_url, PHP_URL_HOST);
+    $hostname = is_string($hostname) ? strtolower($hostname) : '';
+    if ($hostname === '') {
+        wp_send_json_error(__('Could not parse a hostname from the agent’s subsite URL.', 'rechat-plugin'));
+    }
+
+    // Step 1: create (or fetch) the portal for this brand.
+    $create = rch_portal_create($brand_id, $token);
+    if (empty($create['success'])) {
+        rch_portal_log('agent', array(
+            'trigger' => 'manual-agent', 'agent_id' => (string) get_post_meta($post_id, 'api_id', true),
+            'brand_id' => $brand_id, 'hostname' => $hostname, 'action' => 'FAILED',
+            'http_code' => (int) $create['code'], 'body' => 'Portal create (PUT) failed: ' . (string) $create['body'],
+            'req_method' => 'PUT', 'req_url' => (string) $create['url'],
+        ));
+        wp_send_json_error(sprintf(
+            /* translators: 1: HTTP code, 2: body */
+            __('Portal create (PUT) failed (HTTP %1$d): %2$s', 'rechat-plugin'),
+            (int) $create['code'],
+            (string) $create['body']
+        ));
+    }
+
+    // Step 2: POST the hostname.
+    $result = rch_portal_register_hostname($brand_id, $token, $hostname, true);
+    $code   = (int) ($result['code'] ?? 0);
+    $body   = (string) ($result['body'] ?? $result['message'] ?? '');
+
+    rch_portal_log('agent', array(
+        'trigger' => 'manual-agent', 'agent_id' => (string) get_post_meta($post_id, 'api_id', true),
+        'brand_id' => $brand_id, 'hostname' => $hostname,
+        'action' => ! empty($result['success']) ? 'registered' : 'FAILED',
+        'http_code' => $code, 'body' => $body,
+        'req_method' => (string) ($result['method'] ?? 'POST'),
+        'req_url' => (string) ($result['url'] ?? ''),
+        'req_body' => (string) ($result['request_body'] ?? ''),
+    ));
+
+    if (empty($result['success'])) {
+        wp_send_json_error(sprintf(
+            /* translators: 1: HTTP code, 2: body */
+            __('Hostname POST failed (HTTP %1$d): %2$s', 'rechat-plugin'),
+            $code,
+            $body
+        ));
+    }
+
+    update_post_meta($post_id, rch_portal_agent_registered_meta_key(), $hostname);
+
+    wp_send_json_success(array(
+        'message'  => sprintf(
+            /* translators: 1: hostname, 2: brand id */
+            __('Portal ready and hostname %1$s registered on brand %2$s.', 'rechat-plugin'),
+            $hostname,
+            $brand_id
+        ),
+        'hostname' => $hostname,
+    ));
+}
+add_action('wp_ajax_rch_agent_create_portal', 'rch_agent_create_portal_ajax');
+
+/**
  * Admin-only diagnostic: dump the agent-portal hostname report as JSON.
  *
  * Visit (logged in as an admin on the MAIN site):
