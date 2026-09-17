@@ -829,3 +829,12 @@ ul.rch-rechat-block img {
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
 }
+
+/* Testimonials: transparent SDK root + responsive card grid. */
+.rch-testimonials rechat-root {
+  background-color: transparent !important;
+}
+
+.testimonials__list {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
