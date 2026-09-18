@@ -260,6 +260,26 @@ if ($has_export) {
             </div>
         </div>
 
+        <section class="rch-agent-export" style="margin-bottom:20px;">
+            <div class="rch-card" style="padding:16px;border:1px solid #dcdcde;border-radius:6px;background:#fff;">
+                <h3 style="margin-top:0;"><?php esc_html_e('Quick export: Email, Rechat ID, Brand ID', 'rechat-plugin'); ?></h3>
+                <p class="description" style="margin-bottom:12px;">
+                    <?php esc_html_e('Exports every agent as a 3-column CSV: email, api_id (Rechat ID), brand_id.', 'rechat-plugin'); ?>
+                </p>
+                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                    <input type="hidden" name="action" value="rch_agent_export_csv" />
+                    <?php wp_nonce_field(RCH_AGENT_EXPORT_NONCE_ACTION, 'rch_agent_export_nonce'); ?>
+                    <input type="hidden" name="fields[]" value="email" />
+                    <input type="hidden" name="fields[]" value="api_id" />
+                    <input type="hidden" name="fields[]" value="brand_id" />
+                    <button type="submit" class="button button-primary">
+                        <span class="dashicons dashicons-download" style="vertical-align:middle;"></span>
+                        <?php esc_html_e('Export Email / Rechat ID / Brand ID', 'rechat-plugin'); ?>
+                    </button>
+                </form>
+            </div>
+        </section>
+
         <section class="rch-agent-export">
             <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" id="rch-agent-export-form">
                 <input type="hidden" name="action" value="rch_agent_export_csv" />
