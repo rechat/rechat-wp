@@ -256,12 +256,6 @@ function rch_render_sync_data_tab($access_token_exists)
                     <?php esc_html_e('Sync now', 'rechat-plugin'); ?>
                 </button>
 
-                <?php /*
-                 * "Map agent brands" bulk button hidden for now — admins set each
-                 * agent's Brand ID manually and use the per-agent "Create & set
-                 * portal" button on the agent edit screen. The AJAX handler
-                 * (rch_map_agent_brands) is kept intact for later re-enable.
-                 *
                 <button
                     id="rch_map_agent_brands"
                     type="button"
@@ -270,12 +264,11 @@ function rch_render_sync_data_tab($access_token_exists)
                     <?php disabled(!$access_token_exists); ?>
                 >
                     <span class="dashicons dashicons-networking" aria-hidden="true"></span>
-                    <?php esc_html_e('Map agent brands', 'rechat-plugin'); ?>
+                    <?php esc_html_e('Set brand IDs for all agents', 'rechat-plugin'); ?>
                 </button>
                 <p class="description" style="margin-top:6px;">
-                    <?php esc_html_e('Fetches this brand’s child brands and, for each child brand with exactly one user, saves that child brand’s ID onto the matching agent (meta key: brand_id). Then registers each agent subsite’s hostname on its brand portal (skips agents already registered).', 'rechat-plugin'); ?>
+                    <?php esc_html_e('Fetches this brand’s child brands and, for each child brand with exactly one user, saves that child brand’s ID onto the matching agent (meta key: brand_id). Portals are created separately via the per-agent “Create & set portal” button.', 'rechat-plugin'); ?>
                 </p>
-                */ ?>
 
                 <div id="progress-container" class="rch-progress-container" style="display: none;">
                     <div id="progress-bar"></div>

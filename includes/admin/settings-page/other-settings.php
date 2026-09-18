@@ -859,44 +859,15 @@ function rch_map_agent_brands()
         count($children)
     );
 
-    // After mapping brand_ids, run the portal hostname setup (moved here from
-    // Sync). Brand-level registers the main-site domain; the per-agent step uses
-    // each agent's freshly-mapped brand_id and skips already-flagged agents.
-    $portal_summary = '';
-    if (function_exists('rch_ensure_portal_hostname')) {
-        rch_ensure_portal_hostname();
-    }
-    if (function_exists('rch_portal_register_agent_hostnames')) {
-        $report      = rch_portal_register_agent_hostnames(false, 'map-button');
-        $p_registered = 0;
-        $p_failed     = 0;
-        $p_skipped    = 0;
-        foreach ($report as $r) {
-            $action = isset($r['action']) ? (string) $r['action'] : '';
-            if ($action === 'registered') {
-                $p_registered++;
-            } elseif ($action === 'FAILED') {
-                $p_failed++;
-            } else {
-                $p_skipped++;
-            }
-        }
-        $portal_summary = sprintf(
-            /* translators: 1: hostnames registered, 2: failed, 3: skipped */
-            __('Portal hostnames: %1$d registered, %2$d failed, %3$d skipped. See the Portal Log tab for details.', 'rechat-plugin'),
-            $p_registered,
-            $p_failed,
-            $p_skipped
-        );
-    }
+    // This button ONLY maps brand_ids. Portal creation/registration is done
+    // per-agent via the "Create & set portal" button on the agent edit screen.
 
     wp_send_json_success(array(
-        'message'        => trim($summary . ' ' . $portal_summary),
-        'updated'        => $updated,
-        'unmatched'      => $unmatched,
-        'skipped'        => $skipped_users,
-        'total'          => count($children),
-        'portal_summary' => $portal_summary,
+        'message'   => $summary,
+        'updated'   => $updated,
+        'unmatched' => $unmatched,
+        'skipped'   => $skipped_users,
+        'total'     => count($children),
     ));
 }
 add_action('wp_ajax_rch_map_agent_brands', 'rch_map_agent_brands');
