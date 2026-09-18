@@ -13,8 +13,12 @@ function rch_update_agents_offices_regions_data()
     $brand_token = get_option('rch_rechat_brand_id');
     $api_url_base = rtrim(RECHAT_API_BASE_URL, '/') . '/brands/' . rawurlencode((string) $brand_token) . '/users?associations[]=brand.parents&associations[]=brand.settings';
 
-    // NOTE: Portal hostname setup (brand + agent subsites) was moved out of Sync
-    // to the "Map agent brands" admin button. Sync no longer touches the portal.
+    // Portal setup on Sync — SINGLE-SITE ONLY. Creates the brand portal (PUT) and
+    // registers this site's domain (POST). On Multisite this is handled per-agent
+    // via the agent edit "Create & set portal" button, so skip it here.
+    if (! is_multisite() && function_exists('rch_ensure_portal_hostname')) {
+        rch_ensure_portal_hostname();
+    }
 
     /*******************************
      * Fetch and process regions and offices
