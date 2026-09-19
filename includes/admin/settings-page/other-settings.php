@@ -775,16 +775,15 @@ function rch_map_fetch_brand_data($brand, $token, array &$stats)
 }
 
 /**
- * Recursively collect single-user ("personal") brands across a brand subtree.
+ * Recursively collect single-user ("personal") brands from the INLINE brand tree.
  *
- * For each child of $data: a child with EXACTLY ONE user is a personal brand
- * (leaf) → record user_id => brand_id and do NOT descend. Any other child
- * (grouping: 0 or >1 users, e.g. an office/team) is fetched and recursed into,
- * because the agents' personal brands sit one or more levels deeper.
+ * The `associations[]=brand.children&associations[]=brand.users` response nests
+ * the full subtree inline (each brand carries its own children[] + users[]), so
+ * one API call returns everything — no per-brand re-fetching. Every brand at any
+ * depth with EXACTLY ONE user is recorded as user_id => brand_id; the walk
+ * descends into every child that itself has an inline children[] array.
  *
- * @param string   $brand_id     Brand whose $data we are scanning.
- * @param string   $token        Access token.
- * @param array    $data         Brand data (with children[] + each child's users[]).
+ * @param array    $data         Brand data (with children[]; each child has users[]).
  * @param array    $mappings     By ref: user_id => personal brand_id.
  * @param array    $visited      By ref: brand ids already scanned (loop guard).
  * @param array    $stats        By ref: counters.
@@ -792,16 +791,9 @@ function rch_map_fetch_brand_data($brand, $token, array &$stats)
  * @param int      $depth        Current recursion depth.
  * @return void
  */
-function rch_map_collect_personal_brands($brand_id, $token, array $data, array &$mappings, array &$visited, array &$stats, $normalize_id, $depth = 0)
+function rch_map_collect_personal_brands(array $data, array &$mappings, array &$visited, array &$stats, $normalize_id, $depth = 0)
 {
-    $brand_id = (string) $brand_id;
-    if ($brand_id === '' || isset($visited[$brand_id])) {
-        return;
-    }
-    $visited[$brand_id] = true;
-
-    // Safety rails against deep/cyclic trees or runaway fetch counts.
-    if ($depth > 8 || $stats['fetched'] > 800) {
+    if ($depth > 20) {
         return;
     }
 
@@ -812,30 +804,26 @@ function rch_map_collect_personal_brands($brand_id, $token, array $data, array &
             continue;
         }
         $child_id = isset($child['id']) ? (string) $child['id'] : '';
-        if ($child_id === '') {
+        if ($child_id === '' || isset($visited[$child_id])) {
             continue;
         }
+        $visited[$child_id] = true;
         $stats['children_seen']++;
 
         $users = (isset($child['users']) && is_array($child['users'])) ? $child['users'] : array();
 
-        // Personal brand (exactly one user) → map and stop (leaf).
+        // Any brand (at any depth) with exactly one user is a personal brand.
         if (count($users) === 1) {
             $user = reset($users);
             $uid  = (is_array($user) && isset($user['id'])) ? $normalize_id($user['id']) : '';
             if ($uid !== '') {
                 $mappings[$uid] = $child_id;
-                continue;
             }
         }
 
-        // Grouping brand → fetch its own children and recurse deeper.
-        if (isset($visited[$child_id]) || $stats['fetched'] > 800) {
-            continue;
-        }
-        $sub = rch_map_fetch_brand_data($child_id, $token, $stats);
-        if ($sub['ok']) {
-            rch_map_collect_personal_brands($child_id, $token, $sub['data'], $mappings, $visited, $stats, $normalize_id, $depth + 1);
+        // Descend into the inline subtree (offices/teams hold the personal brands).
+        if (isset($child['children']) && is_array($child['children'])) {
+            rch_map_collect_personal_brands($child, $mappings, $visited, $stats, $normalize_id, $depth + 1);
         }
     }
 }
@@ -890,7 +878,7 @@ function rch_map_agent_brands()
         return;
     }
 
-    rch_map_collect_personal_brands($brand, $token, $root['data'], $mappings, $visited, $stats, $normalize_id, 0);
+    rch_map_collect_personal_brands($root['data'], $mappings, $visited, $stats, $normalize_id, 0);
 
     // Build agent api_id => post_id map (all non-trashed statuses, not publish-only).
     $agent_posts = get_posts(array(
