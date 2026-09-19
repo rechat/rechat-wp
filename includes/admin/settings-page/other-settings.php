@@ -741,13 +741,112 @@ function rch_update_all_data()
 }
 add_action('wp_ajax_rch_update_all_data', 'rch_update_all_data');
 
+/**
+ * GET a brand with its children + users; return the unwrapped data envelope.
+ *
+ * @param string $brand  Brand id.
+ * @param string $token  Access token.
+ * @param array  $stats  Counters (by ref): fetched / fetch_failed.
+ * @return array{ok:bool, code:int, data:array}
+ */
+function rch_map_fetch_brand_data($brand, $token, array &$stats)
+{
+    $url = rtrim(RECHAT_API_BASE_URL, '/') . '/brands/' . rawurlencode((string) $brand)
+        . '?associations[]=brand.children&associations[]=brand.users';
+
+    $res  = rch_api_request($url, $token);
+    $stats['fetched']++;
+
+    if (empty($res['success'])) {
+        $stats['fetch_failed']++;
+        return array('ok' => false, 'code' => 0, 'data' => array());
+    }
+
+    $code    = (int) ($res['response_code'] ?? 0);
+    $payload = is_array($res['data']) ? $res['data'] : array();
+    $data    = (isset($payload['data']) && is_array($payload['data'])) ? $payload['data'] : $payload;
+    $ok      = ($code >= 200 && $code < 300);
+
+    if (! $ok) {
+        $stats['fetch_failed']++;
+    }
+
+    return array('ok' => $ok, 'code' => $code, 'data' => is_array($data) ? $data : array());
+}
+
+/**
+ * Recursively collect single-user ("personal") brands across a brand subtree.
+ *
+ * For each child of $data: a child with EXACTLY ONE user is a personal brand
+ * (leaf) → record user_id => brand_id and do NOT descend. Any other child
+ * (grouping: 0 or >1 users, e.g. an office/team) is fetched and recursed into,
+ * because the agents' personal brands sit one or more levels deeper.
+ *
+ * @param string   $brand_id     Brand whose $data we are scanning.
+ * @param string   $token        Access token.
+ * @param array    $data         Brand data (with children[] + each child's users[]).
+ * @param array    $mappings     By ref: user_id => personal brand_id.
+ * @param array    $visited      By ref: brand ids already scanned (loop guard).
+ * @param array    $stats        By ref: counters.
+ * @param callable $normalize_id id normalizer.
+ * @param int      $depth        Current recursion depth.
+ * @return void
+ */
+function rch_map_collect_personal_brands($brand_id, $token, array $data, array &$mappings, array &$visited, array &$stats, $normalize_id, $depth = 0)
+{
+    $brand_id = (string) $brand_id;
+    if ($brand_id === '' || isset($visited[$brand_id])) {
+        return;
+    }
+    $visited[$brand_id] = true;
+
+    // Safety rails against deep/cyclic trees or runaway fetch counts.
+    if ($depth > 8 || $stats['fetched'] > 800) {
+        return;
+    }
+
+    $children = (isset($data['children']) && is_array($data['children'])) ? $data['children'] : array();
+
+    foreach ($children as $child) {
+        if (! is_array($child)) {
+            continue;
+        }
+        $child_id = isset($child['id']) ? (string) $child['id'] : '';
+        if ($child_id === '') {
+            continue;
+        }
+        $stats['children_seen']++;
+
+        $users = (isset($child['users']) && is_array($child['users'])) ? $child['users'] : array();
+
+        // Personal brand (exactly one user) → map and stop (leaf).
+        if (count($users) === 1) {
+            $user = reset($users);
+            $uid  = (is_array($user) && isset($user['id'])) ? $normalize_id($user['id']) : '';
+            if ($uid !== '') {
+                $mappings[$uid] = $child_id;
+                continue;
+            }
+        }
+
+        // Grouping brand → fetch its own children and recurse deeper.
+        if (isset($visited[$child_id]) || $stats['fetched'] > 800) {
+            continue;
+        }
+        $sub = rch_map_fetch_brand_data($child_id, $token, $stats);
+        if ($sub['ok']) {
+            rch_map_collect_personal_brands($child_id, $token, $sub['data'], $mappings, $visited, $stats, $normalize_id, $depth + 1);
+        }
+    }
+}
+
 /*******************************
  * AJAX handler: map child-brand IDs onto agents
  *
- * Fetches the connected brand with its child brands and their users, then for
- * every child brand that has EXACTLY ONE user, stores that child brand's ID on
- * the matching agent CPT (the agent whose `api_id` meta equals the single user's
- * id) under the meta key `brand_id`. Does not touch the Sync flow.
+ * Recursively walks the connected brand's subtree; every brand with EXACTLY ONE
+ * user (a personal brand) is mapped user_id => brand_id, then that brand id is
+ * stored on the matching agent CPT (api_id == user id) under meta `brand_id`.
+ * Grouping brands (offices/teams) are descended into. Does not touch Sync.
  ******************************/
 function rch_map_agent_brands()
 {
@@ -769,53 +868,37 @@ function rch_map_agent_brands()
         return;
     }
 
-    // GET /brands/{brand}?associations[]=brand.children&associations[]=brand.users
-    $url = rtrim(RECHAT_API_BASE_URL, '/') . '/brands/' . rawurlencode($brand)
-        . '?associations[]=brand.children&associations[]=brand.users';
+    // Normalize an id for comparison: strip surrounding whitespace AND wrapping
+    // quotes so hidden formatting differences don't break the string match.
+    $normalize_id = static function ($raw): string {
+        return trim((string) $raw, " \t\n\r\0\x0B\"'");
+    };
 
-    $res = rch_api_request($url, $token);
+    $mappings = array(); // user_id => personal brand_id (whole subtree)
+    $visited  = array(); // brand ids already scanned
+    $stats    = array('fetched' => 0, 'fetch_failed' => 0, 'children_seen' => 0);
 
-    if (empty($res['success'])) {
-        wp_send_json_error(__('Could not reach the Rechat API.', 'rechat-plugin'));
-        return;
-    }
-
-    $code = (int) ($res['response_code'] ?? 0);
-    if ($code < 200 || $code >= 300) {
-        $msg = ($code === 401)
+    // Fetch the connected brand, then recurse into groupings to reach personal brands.
+    $root = rch_map_fetch_brand_data($brand, $token, $stats);
+    if (! $root['ok']) {
+        $msg = ($root['code'] === 401)
             ? __('Rechat API returned 401 (expired/invalid token). Refresh the token on the Connect tab and try again.', 'rechat-plugin')
-            : sprintf(__('Rechat API returned HTTP %d.', 'rechat-plugin'), $code);
+            : ($root['code'] === 0
+                ? __('Could not reach the Rechat API.', 'rechat-plugin')
+                : sprintf(__('Rechat API returned HTTP %d.', 'rechat-plugin'), $root['code']));
         wp_send_json_error($msg);
         return;
     }
 
-    // Response is wrapped in a { code, data: {...} } envelope.
-    $payload  = is_array($res['data']) ? $res['data'] : array();
-    $data     = isset($payload['data']) && is_array($payload['data']) ? $payload['data'] : $payload;
-    $children = isset($data['children']) && is_array($data['children']) ? $data['children'] : null;
+    rch_map_collect_personal_brands($brand, $token, $root['data'], $mappings, $visited, $stats, $normalize_id, 0);
 
-    if ($children === null) {
-        wp_send_json_error(__('The API response did not include data.children.', 'rechat-plugin'));
-        return;
-    }
-
-    // Build agent-id (api_id meta) => post_id map once, to avoid a query per child.
-    // Include all non-trashed statuses — get_posts() defaults to 'publish' only,
-    // which would silently skip draft/pending/private agents (so only published
-    // agents would ever be matched).
+    // Build agent api_id => post_id map (all non-trashed statuses, not publish-only).
     $agent_posts = get_posts(array(
         'post_type'   => 'agents',
         'numberposts' => -1,
         'fields'      => 'ids',
         'post_status' => array('publish', 'draft', 'pending', 'private', 'future'),
     ));
-    // Normalize an id for comparison: strip surrounding whitespace AND any wrapping
-    // quotes so hidden formatting differences (e.g. from CSV import) don't break the
-    // string match. Does NOT change the value stored on the agent.
-    $normalize_id = static function ($raw): string {
-        return trim((string) $raw, " \t\n\r\0\x0B\"'");
-    };
-
     $api_id_to_post = array();
     foreach ($agent_posts as $pid) {
         $aid = $normalize_id(get_post_meta($pid, 'api_id', true));
@@ -824,71 +907,42 @@ function rch_map_agent_brands()
         }
     }
 
-    $updated       = 0; // agent meta written
-    $unmatched     = 0; // single-user child brand with no matching agent CPT
-    $skipped_users = 0; // child brand with 0 or >1 users
-    $mappings      = array();
-    $unmatched_ids = array(); // single-user child user ids with no matching agent
-
-    foreach ($children as $child) {
-        if (! is_array($child)) {
-            continue;
-        }
-
-        $child_brand_id = isset($child['id']) ? (string) $child['id'] : '';
-        $users          = isset($child['users']) && is_array($child['users']) ? $child['users'] : array();
-
-        // Only child brands with EXACTLY one user.
-        if ($child_brand_id === '' || count($users) !== 1) {
-            $skipped_users++;
-            continue;
-        }
-
-        // The single user may be the first element regardless of array keys.
-        $user     = reset($users);
-        $agent_id = (is_array($user) && isset($user['id'])) ? $normalize_id($user['id']) : '';
-        if ($agent_id === '') {
-            $skipped_users++;
-            continue;
-        }
-
-        $mappings[$agent_id] = $child_brand_id; // key = user id, value = brand id
-
-        if (isset($api_id_to_post[$agent_id])) {
-            // update_post_meta creates the meta if absent, or updates it if present.
-            update_post_meta($api_id_to_post[$agent_id], 'brand_id', $child_brand_id);
+    // Assign every matching agent's brand_id (iterates the full mapping).
+    $updated       = 0;
+    $unmatched     = 0;
+    $unmatched_ids = array();
+    foreach ($mappings as $user_id => $brand_id_val) {
+        if (isset($api_id_to_post[$user_id])) {
+            update_post_meta($api_id_to_post[$user_id], 'brand_id', $brand_id_val);
             $updated++;
         } else {
             $unmatched++;
-            $unmatched_ids[] = $agent_id;
+            $unmatched_ids[] = $user_id;
         }
     }
 
     $summary = sprintf(
-        /* translators: 1: agents updated, 2: single-user brands without a matching agent, 3: child brands skipped (0 or >1 users), 4: total child brands */
-        __('Mapped brands: updated %1$d agent(s) with a brand_id. %2$d single-user brand(s) had no matching agent. %3$d child brand(s) skipped (0 or >1 users). %4$d child brand(s) total.', 'rechat-plugin'),
+        /* translators: 1: agents updated, 2: personal brands with no matching agent, 3: personal brands found, 4: brands scanned */
+        __('Mapped brands: updated %1$d agent(s). %2$d personal brand(s) had no matching agent. Found %3$d personal brand(s) across %4$d brand(s) scanned.', 'rechat-plugin'),
         $updated,
         $unmatched,
-        $skipped_users,
-        count($children)
+        count($mappings),
+        $stats['fetched']
     );
-
-    // This button ONLY maps brand_ids. Portal creation/registration is done
-    // per-agent via the "Create & set portal" button on the agent edit screen.
 
     wp_send_json_success(array(
         'message'   => $summary,
         'updated'   => $updated,
         'unmatched' => $unmatched,
-        'skipped'   => $skipped_users,
-        'total'     => count($children),
-        // Debug aids: compare formats directly. mapping_keys = single-user child
-        // user ids; agent_api_ids = every agent's api_id read from meta;
-        // unmatched_ids = user ids that found no agent.
+        'found'     => count($mappings),
+        'scanned'   => $stats['fetched'],
+        // Debug: mapping_keys = personal-brand user ids found; agent_api_ids = every
+        // agent's api_id; unmatched_ids = user ids with no agent; stats = fetch counts.
         'debug'     => array(
             'mapping_keys'  => array_keys($mappings),
             'agent_api_ids' => array_keys($api_id_to_post),
             'unmatched_ids' => $unmatched_ids,
+            'stats'         => $stats,
         ),
     ));
 }
