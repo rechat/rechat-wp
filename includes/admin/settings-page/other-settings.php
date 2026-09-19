@@ -800,14 +800,25 @@ function rch_map_agent_brands()
     }
 
     // Build agent-id (api_id meta) => post_id map once, to avoid a query per child.
+    // Include all non-trashed statuses — get_posts() defaults to 'publish' only,
+    // which would silently skip draft/pending/private agents (so only published
+    // agents would ever be matched).
     $agent_posts = get_posts(array(
         'post_type'   => 'agents',
         'numberposts' => -1,
         'fields'      => 'ids',
+        'post_status' => array('publish', 'draft', 'pending', 'private', 'future'),
     ));
+    // Normalize an id for comparison: strip surrounding whitespace AND any wrapping
+    // quotes so hidden formatting differences (e.g. from CSV import) don't break the
+    // string match. Does NOT change the value stored on the agent.
+    $normalize_id = static function ($raw): string {
+        return trim((string) $raw, " \t\n\r\0\x0B\"'");
+    };
+
     $api_id_to_post = array();
     foreach ($agent_posts as $pid) {
-        $aid = (string) get_post_meta($pid, 'api_id', true);
+        $aid = $normalize_id(get_post_meta($pid, 'api_id', true));
         if ($aid !== '') {
             $api_id_to_post[$aid] = (int) $pid;
         }
@@ -817,6 +828,7 @@ function rch_map_agent_brands()
     $unmatched     = 0; // single-user child brand with no matching agent CPT
     $skipped_users = 0; // child brand with 0 or >1 users
     $mappings      = array();
+    $unmatched_ids = array(); // single-user child user ids with no matching agent
 
     foreach ($children as $child) {
         if (! is_array($child)) {
@@ -832,14 +844,15 @@ function rch_map_agent_brands()
             continue;
         }
 
-        $user    = $users[0];
-        $agent_id = (is_array($user) && isset($user['id'])) ? (string) $user['id'] : '';
+        // The single user may be the first element regardless of array keys.
+        $user     = reset($users);
+        $agent_id = (is_array($user) && isset($user['id'])) ? $normalize_id($user['id']) : '';
         if ($agent_id === '') {
             $skipped_users++;
             continue;
         }
 
-        $mappings[$child_brand_id] = $agent_id;
+        $mappings[$agent_id] = $child_brand_id; // key = user id, value = brand id
 
         if (isset($api_id_to_post[$agent_id])) {
             // update_post_meta creates the meta if absent, or updates it if present.
@@ -847,6 +860,7 @@ function rch_map_agent_brands()
             $updated++;
         } else {
             $unmatched++;
+            $unmatched_ids[] = $agent_id;
         }
     }
 
@@ -868,6 +882,14 @@ function rch_map_agent_brands()
         'unmatched' => $unmatched,
         'skipped'   => $skipped_users,
         'total'     => count($children),
+        // Debug aids: compare formats directly. mapping_keys = single-user child
+        // user ids; agent_api_ids = every agent's api_id read from meta;
+        // unmatched_ids = user ids that found no agent.
+        'debug'     => array(
+            'mapping_keys'  => array_keys($mappings),
+            'agent_api_ids' => array_keys($api_id_to_post),
+            'unmatched_ids' => $unmatched_ids,
+        ),
     ));
 }
 add_action('wp_ajax_rch_map_agent_brands', 'rch_map_agent_brands');
