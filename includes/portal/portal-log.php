@@ -169,16 +169,12 @@ function rch_portal_log_render_tab(): void
     // Live token injected into the copy-as-cURL commands (not stored in the log).
     $curl_token = (string) get_option('rch_rechat_access_token', '');
 
-    $run_dry_url = wp_nonce_url(
-        admin_url('admin-post.php?action=rch_portal_log_run&dry=1'),
-        'rch_portal_log_run',
-        'rch_portal_log_run_nonce'
-    );
-    $run_live_url = wp_nonce_url(
-        admin_url('admin-post.php?action=rch_portal_log_run&dry=0'),
-        'rch_portal_log_run',
-        'rch_portal_log_run_nonce'
-    );
+    // Total agents (all non-trashed statuses) for the batch-run progress bar.
+    $agent_counts = (array) wp_count_posts('agents');
+    $total_agents = 0;
+    foreach (array('publish', 'draft', 'pending', 'private', 'future') as $st) {
+        $total_agents += isset($agent_counts[$st]) ? (int) $agent_counts[$st] : 0;
+    }
     ?>
     <div class="tab-content">
         <div class="rch-tab-intro">
@@ -199,14 +195,14 @@ function rch_portal_log_render_tab(): void
         <div class="rch-card">
             <div class="rch-card__body">
                 <p style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-                    <a href="<?php echo esc_url($run_dry_url); ?>" class="button button-secondary">
+                    <button type="button" class="button button-secondary" id="rch-portal-run-dry" data-dry="1">
                         <span class="dashicons dashicons-search" aria-hidden="true" style="margin-top:4px;"></span>
                         <?php esc_html_e('Run diagnostic (dry — no API write)', 'rechat-plugin'); ?>
-                    </a>
-                    <a href="<?php echo esc_url($run_live_url); ?>" class="button button-primary">
+                    </button>
+                    <button type="button" class="button button-primary" id="rch-portal-run-live" data-dry="0">
                         <span class="dashicons dashicons-update" aria-hidden="true" style="margin-top:4px;"></span>
                         <?php esc_html_e('Run now (live — registers hostnames)', 'rechat-plugin'); ?>
-                    </a>
+                    </button>
                     <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline;">
                         <input type="hidden" name="action" value="rch_portal_log_clear">
                         <?php wp_nonce_field('rch_portal_log_clear', 'rch_portal_log_clear_nonce'); ?>
@@ -216,6 +212,85 @@ function rch_portal_log_render_tab(): void
                         </button>
                     </form>
                 </p>
+
+                <p class="description" style="margin:0 0 8px;">
+                    <?php
+                    printf(
+                        /* translators: %d: agent count */
+                        esc_html__('Runs in small batches (20 agents at a time) so large sites don’t time out. %d agent(s) total.', 'rechat-plugin'),
+                        (int) $total_agents
+                    );
+                    ?>
+                </p>
+
+                <div id="rch-portal-run-progress" data-total="<?php echo esc_attr((string) $total_agents); ?>" style="display:none;margin:0 0 12px;max-width:520px;">
+                    <div style="background:#e2e4e7;border-radius:4px;overflow:hidden;height:18px;">
+                        <div id="rch-portal-run-bar" style="height:100%;width:0;background:#2271b1;transition:width .2s;"></div>
+                    </div>
+                    <p id="rch-portal-run-msg" style="margin:6px 0 0;font-weight:600;"></p>
+                </div>
+
+                <script>
+                (function () {
+                    var box = document.getElementById('rch-portal-run-progress');
+                    if (!box || typeof rch_ajax_object === 'undefined') { return; }
+                    var bar = document.getElementById('rch-portal-run-bar');
+                    var msg = document.getElementById('rch-portal-run-msg');
+                    var dryBtn = document.getElementById('rch-portal-run-dry');
+                    var liveBtn = document.getElementById('rch-portal-run-live');
+                    var total = parseInt(box.getAttribute('data-total'), 10) || 0;
+                    var BATCH = 20;
+
+                    function setEnabled(on) { if (dryBtn) dryBtn.disabled = !on; if (liveBtn) liveBtn.disabled = !on; }
+
+                    function run(dry) {
+                        box.style.display = 'block';
+                        bar.style.width = '0';
+                        setEnabled(false);
+                        var offset = 0, reg = 0, fail = 0, skip = 0;
+
+                        function step() {
+                            var d = new URLSearchParams();
+                            d.append('action', 'rch_portal_run_batch');
+                            d.append('nonce', rch_ajax_object.nonce);
+                            d.append('offset', offset);
+                            d.append('batch', BATCH);
+                            d.append('dry', dry);
+                            fetch(rch_ajax_object.ajax_url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: d.toString() })
+                                .then(function (r) { return r.json(); })
+                                .then(function (res) {
+                                    if (!res || !res.success) {
+                                        msg.style.color = '#b32d2e';
+                                        msg.textContent = 'Error: ' + ((res && res.data) || 'unknown');
+                                        setEnabled(true);
+                                        return;
+                                    }
+                                    var x = res.data;
+                                    offset = x.next_offset; reg += x.registered; fail += x.failed; skip += x.skipped;
+                                    var pct = total > 0 ? Math.min(100, Math.round(offset / total * 100)) : 100;
+                                    bar.style.width = pct + '%';
+                                    msg.style.color = '#1d2327';
+                                    msg.textContent = 'Processed ' + offset + (total ? (' / ' + total) : '') + ' — registered ' + reg + ', failed ' + fail + ', skipped ' + skip;
+                                    if (x.done) {
+                                        bar.style.width = '100%';
+                                        msg.textContent += ' — DONE. Reloading…';
+                                        setEnabled(true);
+                                        setTimeout(function () { window.location.href = '<?php echo esc_js(admin_url('admin.php?page=rechat-setting&tab=portal-log&ran=1')); ?>'; }, 1500);
+                                    } else {
+                                        step();
+                                    }
+                                })
+                                .catch(function () { msg.style.color = '#b32d2e'; msg.textContent = 'Request failed (network).'; setEnabled(true); });
+                        }
+                        step();
+                    }
+
+                    if (dryBtn) dryBtn.addEventListener('click', function () { run(1); });
+                    if (liveBtn) liveBtn.addEventListener('click', function () {
+                        if (window.confirm('<?php echo esc_js(__('Create portals and register hostnames for all agents now?', 'rechat-plugin')); ?>')) { run(0); }
+                    });
+                })();
+                </script>
 
                 <p class="description" style="margin:8px 0 0;">
                     <span class="dashicons dashicons-warning" aria-hidden="true" style="color:#b32d2e;"></span>
@@ -349,3 +424,79 @@ function rch_portal_log_handle_run(): void
     exit;
 }
 add_action('admin_post_rch_portal_log_run', 'rch_portal_log_handle_run');
+
+/**
+ * AJAX: process ONE batch of agents for portal setup (avoids 504 on large sites).
+ *
+ * The admin JS calls this repeatedly with an advancing offset until `done`, so no
+ * single request runs long. On the first live batch (offset 0) the brand-level
+ * hostname is registered once. Each agent still does PUT-create + POST-hostname
+ * (or is skipped if already flagged), and every result is written to the log.
+ *
+ * POST: nonce (rch_ajax_nonce), offset (int), batch (int), dry (0|1).
+ * @return void
+ */
+function rch_portal_run_batch(): void
+{
+    if (! check_ajax_referer('rch_ajax_nonce', 'nonce', false)) {
+        wp_send_json_error(__('Security check failed.', 'rechat-plugin'));
+    }
+    if (! current_user_can('manage_options')) {
+        wp_send_json_error(__('Insufficient permissions.', 'rechat-plugin'));
+    }
+
+    $dry    = ! empty($_POST['dry']);
+    $offset = isset($_POST['offset']) ? max(0, (int) $_POST['offset']) : 0;
+    $batch  = isset($_POST['batch']) ? (int) $_POST['batch'] : 20;
+    $batch  = max(1, min(100, $batch));
+
+    $token = (string) get_option('rch_rechat_access_token', '');
+    if ($token === '') {
+        wp_send_json_error(__('Not connected to Rechat (no access token).', 'rechat-plugin'));
+    }
+
+    // Brand-level hostname once, at the start of a live run.
+    if ($offset === 0 && ! $dry && function_exists('rch_ensure_portal_hostname')) {
+        rch_ensure_portal_hostname();
+    }
+
+    $ids = get_posts(array(
+        'post_type'      => 'agents',
+        'post_status'    => array('publish', 'draft', 'pending', 'private', 'future'),
+        'orderby'        => 'ID',
+        'order'          => 'ASC',
+        'posts_per_page' => $batch,
+        'offset'         => $offset,
+        'fields'         => 'ids',
+        'no_found_rows'  => true,
+    ));
+
+    $registered = 0;
+    $failed     = 0;
+    $skipped    = 0;
+
+    foreach ($ids as $pid) {
+        $row = rch_portal_process_agent((int) $pid, $token, $dry);
+        rch_portal_log('agent', array_merge(array('trigger' => 'manual-batch', 'dry' => $dry), $row));
+
+        if ($row['action'] === 'registered') {
+            $registered++;
+        } elseif ($row['action'] === 'FAILED') {
+            $failed++;
+        } else {
+            $skipped++;
+        }
+    }
+
+    $count = count($ids);
+
+    wp_send_json_success(array(
+        'processed'   => $count,
+        'next_offset' => $offset + $count,
+        'done'        => ($count < $batch), // short (or empty) batch => no more agents
+        'registered'  => $registered,
+        'failed'      => $failed,
+        'skipped'     => $skipped,
+    ));
+}
+add_action('wp_ajax_rch_portal_run_batch', 'rch_portal_run_batch');
