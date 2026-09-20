@@ -223,7 +223,11 @@ function rch_portal_log_render_tab(): void
                     ?>
                 </p>
 
-                <div id="rch-portal-run-progress" data-total="<?php echo esc_attr((string) $total_agents); ?>" style="display:none;margin:0 0 12px;max-width:520px;">
+                <div id="rch-portal-run-progress"
+                     data-total="<?php echo esc_attr((string) $total_agents); ?>"
+                     data-ajax-url="<?php echo esc_url(admin_url('admin-ajax.php')); ?>"
+                     data-nonce="<?php echo esc_attr(wp_create_nonce('rch_ajax_nonce')); ?>"
+                     style="display:none;margin:0 0 12px;max-width:520px;">
                     <div style="background:#e2e4e7;border-radius:4px;overflow:hidden;height:18px;">
                         <div id="rch-portal-run-bar" style="height:100%;width:0;background:#2271b1;transition:width .2s;"></div>
                     </div>
@@ -231,14 +235,16 @@ function rch_portal_log_render_tab(): void
                 </div>
 
                 <script>
-                (function () {
+                document.addEventListener('DOMContentLoaded', function () {
                     var box = document.getElementById('rch-portal-run-progress');
-                    if (!box || typeof rch_ajax_object === 'undefined') { return; }
+                    if (!box) { return; }
                     var bar = document.getElementById('rch-portal-run-bar');
                     var msg = document.getElementById('rch-portal-run-msg');
                     var dryBtn = document.getElementById('rch-portal-run-dry');
                     var liveBtn = document.getElementById('rch-portal-run-live');
                     var total = parseInt(box.getAttribute('data-total'), 10) || 0;
+                    var AJAX_URL = box.getAttribute('data-ajax-url');
+                    var NONCE = box.getAttribute('data-nonce');
                     var BATCH = 20;
 
                     function setEnabled(on) { if (dryBtn) dryBtn.disabled = !on; if (liveBtn) liveBtn.disabled = !on; }
@@ -252,11 +258,11 @@ function rch_portal_log_render_tab(): void
                         function step() {
                             var d = new URLSearchParams();
                             d.append('action', 'rch_portal_run_batch');
-                            d.append('nonce', rch_ajax_object.nonce);
+                            d.append('nonce', NONCE);
                             d.append('offset', offset);
                             d.append('batch', BATCH);
                             d.append('dry', dry);
-                            fetch(rch_ajax_object.ajax_url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: d.toString() })
+                            fetch(AJAX_URL, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: d.toString() })
                                 .then(function (r) { return r.json(); })
                                 .then(function (res) {
                                     if (!res || !res.success) {
@@ -289,7 +295,7 @@ function rch_portal_log_render_tab(): void
                     if (liveBtn) liveBtn.addEventListener('click', function () {
                         if (window.confirm('<?php echo esc_js(__('Create portals and register hostnames for all agents now?', 'rechat-plugin')); ?>')) { run(0); }
                     });
-                })();
+                });
                 </script>
 
                 <p class="description" style="margin:8px 0 0;">
