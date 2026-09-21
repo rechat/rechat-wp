@@ -837,5 +837,5 @@ ul.rch-rechat-block img {
 }
 
 .testimonials__list {
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
+      grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)) !important;
 }
