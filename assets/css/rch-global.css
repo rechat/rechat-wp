@@ -833,8 +833,9 @@ ul.rch-rechat-block img {
 /* Testimonials: transparent SDK root + responsive card grid. */
 .rch-testimonials rechat-root {
   background-color: transparent !important;
+    border: none;
 }
 
 .testimonials__list {
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
 }
