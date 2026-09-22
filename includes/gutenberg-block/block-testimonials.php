@@ -38,6 +38,7 @@ function rch_register_block_assets_testimonials()
             'limit'     => array('type' => 'number', 'default' => 0),
             'title'     => array('type' => 'string', 'default' => ''),
             'colorMode' => array('type' => 'string', 'default' => ''),
+            'loadMore'  => array('type' => 'boolean', 'default' => true),
         ),
         'render_callback' => 'rch_render_testimonials_block',
     ));
@@ -55,6 +56,8 @@ function rch_render_testimonials_block($attributes)
     $limit      = isset($attributes['limit']) ? (int) $attributes['limit'] : 0;
     $title      = isset($attributes['title']) ? sanitize_text_field((string) $attributes['title']) : '';
     $color_mode = isset($attributes['colorMode']) ? strtolower((string) $attributes['colorMode']) : '';
+    // Default true → send nothing (SDK default). Only false disables the button.
+    $load_more  = isset($attributes['loadMore']) ? (bool) $attributes['loadMore'] : true;
 
     $shortcode = '[rch_testimonials';
 
@@ -67,6 +70,9 @@ function rch_render_testimonials_block($attributes)
     }
     if ($color_mode === 'light' || $color_mode === 'dark') {
         $shortcode .= ' color_mode="' . esc_attr($color_mode) . '"';
+    }
+    if (! $load_more) {
+        $shortcode .= ' load_more="false"';
     }
 
     $shortcode .= ']';
@@ -96,6 +102,9 @@ function rch_render_testimonials_preview_iframe()
 
     $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 0;
     $color = isset($_GET['color_mode']) ? strtolower(sanitize_text_field(wp_unslash($_GET['color_mode']))) : '';
+    // load_more param: "false" disables the button, anything else = SDK default.
+    $disable_load_more = isset($_GET['load_more'])
+        && in_array(strtolower(sanitize_text_field(wp_unslash($_GET['load_more']))), ['false', '0', 'no'], true);
 
     if (function_exists('rch_register_rechat_sdk_assets')) {
         rch_register_rechat_sdk_assets();
@@ -113,7 +122,8 @@ function rch_render_testimonials_preview_iframe()
     } else {
         $root_attrs = 'brand_id="' . esc_attr((string) $brand) . '"';
     }
-    $limit_attr = $limit > 0 ? ' limit="' . (int) $limit . '"' : '';
+    $limit_attr     = $limit > 0 ? ' limit="' . (int) $limit . '"' : '';
+    $load_more_attr = $disable_load_more ? ' load_more="false"' : '';
 
     nocache_headers();
     header('Content-Type: text/html; charset=utf-8');
@@ -125,7 +135,7 @@ function rch_render_testimonials_preview_iframe()
     echo '<style>html,body{margin:0;padding:8px;background:transparent;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}</style>';
     echo '</head><body>';
     echo '<rechat-root ' . $root_attrs . '>';
-    echo '<rechat-testimonials' . $limit_attr . '></rechat-testimonials>';
+    echo '<rechat-testimonials' . $limit_attr . $load_more_attr . '></rechat-testimonials>';
     echo '</rechat-root>';
     if ($js !== '') {
         echo '<script src="' . esc_url($js) . '"></script>';

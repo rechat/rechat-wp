@@ -1,6 +1,6 @@
 const { registerBlockType } = wp.blocks;
 const { InspectorControls, useBlockProps } = wp.blockEditor || wp.editor;
-const { PanelBody, TextControl, RangeControl, SelectControl, Placeholder } = wp.components;
+const { PanelBody, TextControl, RangeControl, SelectControl, ToggleControl, Placeholder } = wp.components;
 import { useRef } from '@wordpress/element';
 
 /**
@@ -12,14 +12,17 @@ import { useRef } from '@wordpress/element';
  * @param {{ajaxUrl?: string, nonce?: string}} cfg
  * @param {number} limit
  * @param {string} colorMode
+ * @param {boolean} loadMore
  * @returns {string}
  */
-function buildPreviewSrc(cfg, limit, colorMode) {
+function buildPreviewSrc(cfg, limit, colorMode, loadMore) {
     const params = [
         'action=rch_testimonials_preview',
         `nonce=${encodeURIComponent(cfg.nonce || '')}`,
         `limit=${encodeURIComponent(limit || 0)}`,
         `color_mode=${encodeURIComponent(colorMode || '')}`,
+        // Only meaningful when disabled; harmless when true (SDK default).
+        `load_more=${loadMore === false ? 'false' : 'true'}`,
     ];
     const sep = (cfg.ajaxUrl || '').indexOf('?') === -1 ? '?' : '&';
     return `${cfg.ajaxUrl}${sep}${params.join('&')}`;
@@ -34,9 +37,10 @@ registerBlockType('rch-rechat-plugin/testimonials-block', {
         limit: { type: 'number', default: 0 },
         title: { type: 'string', default: '' },
         colorMode: { type: 'string', default: '' },
+        loadMore: { type: 'boolean', default: true },
     },
     edit({ attributes, setAttributes }) {
-        const { limit, title, colorMode } = attributes;
+        const { limit, title, colorMode, loadMore } = attributes;
         const blockProps = typeof useBlockProps === 'function' ? useBlockProps() : {};
         const cfg = (typeof window !== 'undefined' && window.rchTestimonialsPreview) || {};
         const hasPreview = Boolean(cfg.ajaxUrl && cfg.nonce && cfg.brandId);
@@ -101,6 +105,12 @@ registerBlockType('rch-rechat-plugin/testimonials-block', {
                             ]}
                             onChange={(value) => setAttributes({ colorMode: value })}
                         />
+                        <ToggleControl
+                            label="Show “load more” button"
+                            help={loadMore ? 'SDK default (button shown).' : 'Sends load_more="false" — button hidden.'}
+                            checked={loadMore}
+                            onChange={(value) => setAttributes({ loadMore: value })}
+                        />
                     </PanelBody>
                 </InspectorControls>
                 <div {...blockProps}>
@@ -110,10 +120,10 @@ registerBlockType('rch-rechat-plugin/testimonials-block', {
                             ref={iframeRef}
                             // key forces a reload when settings change so the SDK
                             // re-fetches with the new attributes.
-                            key={`${cfg.brandId}-${limit}-${colorMode}`}
+                            key={`${cfg.brandId}-${limit}-${colorMode}-${loadMore}`}
                             title="Testimonials preview"
                             onLoad={handleIframeLoad}
-                            src={buildPreviewSrc(cfg, limit, colorMode)}
+                            src={buildPreviewSrc(cfg, limit, colorMode, loadMore)}
                             style={{ width: '100%', minHeight: '300px', border: '0' }}
                             scrolling="no"
                         />
