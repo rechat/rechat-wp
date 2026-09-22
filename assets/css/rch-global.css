@@ -839,3 +839,8 @@ ul.rch-rechat-block img {
 .testimonials__list {
       grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)) !important;
 }
+
+.testimonial-card .testimonial-card__rating {
+    color: #FFD700 !important;
+
+}
