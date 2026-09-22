@@ -124,7 +124,10 @@ registerBlockType('rch-rechat-plugin/testimonials-block', {
                             title="Testimonials preview"
                             onLoad={handleIframeLoad}
                             src={buildPreviewSrc(cfg, limit, colorMode, loadMore)}
-                            style={{ width: '100%', minHeight: '300px', border: '0' }}
+                            // pointer-events:none so clicks pass THROUGH the iframe to the
+                            // block wrapper — otherwise the iframe swallows every click and
+                            // the block never gets selected, so its settings panel never opens.
+                            style={{ width: '100%', minHeight: '300px', border: '0', pointerEvents: 'none' }}
                             scrolling="no"
                         />
                     ) : (
