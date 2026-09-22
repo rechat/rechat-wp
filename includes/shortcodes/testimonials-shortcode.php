@@ -8,7 +8,7 @@
  * (rch_rechat_brand_id) like every other Rechat web-component shortcode — except
  * on an agent subsite, where it uses that agent's mapped child brand_id meta.
  *
- * Usage: [rch_testimonials limit="20" title="What our clients say"]
+ * Usage: [rch_testimonials limit="20" title="What our clients say" load_more="false"]
  *
  * SDK docs: https://sdk.rechat.com/documents/JavaScript_SDK.Testimonials.html
  *
@@ -30,6 +30,7 @@ function rch_testimonials_get_defaults()
         'limit'      => '',    // max testimonials; empty = let the SDK show all
         'title'      => '',    // optional heading above the component
         'color_mode' => '',    // optional light|dark override for <rechat-root>
+        'load_more'  => '',    // empty = SDK default; "false" = hide the load-more button
     ];
 }
 
@@ -65,6 +66,10 @@ function rch_display_testimonials_shortcode($atts)
     $unique_id = rch_testimonials_generate_id();
     // Empty / non-positive limit → omit the attribute so the SDK returns all testimonials.
     $limit = ($atts['limit'] !== '' && (int) $atts['limit'] > 0) ? (int) $atts['limit'] : 0;
+
+    // Only send load_more to the SDK when the user explicitly disables it
+    // (load_more="false"). By default we send nothing → SDK default behavior.
+    $disable_load_more = in_array(strtolower(trim((string) $atts['load_more'])), ['false', '0', 'no'], true);
 
     // brand_id from settings, like every other Rechat web-component shortcode.
     $brand = get_option('rch_rechat_brand_id');
@@ -108,7 +113,7 @@ function rch_display_testimonials_shortcode($atts)
         <?php endif; ?>
 
         <rechat-root <?php echo $root_attrs; ?>>
-            <rechat-testimonials<?php echo $limit > 0 ? ' limit="' . (int) $limit . '"' : ''; ?>></rechat-testimonials>
+            <rechat-testimonials<?php echo $limit > 0 ? ' limit="' . (int) $limit . '"' : ''; ?><?php echo $disable_load_more ? ' load_more="false"' : ''; ?>></rechat-testimonials>
         </rechat-root>
     </div>
     <?php
