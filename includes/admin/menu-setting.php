@@ -408,9 +408,202 @@ function rch_render_connect_tab(
             </div>
         <?php endif; ?>
 
+        <?php rch_render_data_sync_status_card(); ?>
+
         <?php rch_render_oauth_alert_emails_card(); ?>
 
         <?php rch_render_disconnect_modal(); ?>
+    </div>
+    <?php
+}
+
+/*******************************
+ * Render the "Data sync status" card
+ *
+ * Shows when data (agents/offices/regions/branding) last synced, whether it succeeded,
+ * which trigger ran it (cron vs manual), the next scheduled cron run, and — when the
+ * automatic sync is at risk — WHY (event not scheduled, WP-Cron disabled, overdue, or
+ * the last run failed). Reads the log written by rch_record_last_data_sync().
+ ******************************/
+function rch_render_data_sync_status_card()
+{
+    $last = get_option('rch_last_data_sync', array());
+    if (!is_array($last)) {
+        $last = array();
+    }
+
+    $has_run = !empty($last);
+    $ok      = array_key_exists('ok', $last) ? (bool) $last['ok'] : null;
+    $msg     = isset($last['message']) ? (string) $last['message'] : '';
+    $time    = isset($last['time']) ? (string) $last['time'] : '';
+    $src     = isset($last['source']) ? (string) $last['source'] : '';
+    $summary = isset($last['summary']) && is_array($last['summary']) ? $last['summary'] : array();
+
+    $source_labels = array(
+        'wp_cron' => __('Background WordPress cron', 'rechat-plugin'),
+        'manual'  => __('Manual “Sync now” / settings page', 'rechat-plugin'),
+    );
+    $src_label = ($src !== '' && isset($source_labels[$src])) ? $source_labels[$src] : ($src !== '' ? $src : '—');
+
+    // Cron scheduling state.
+    $next_ts    = function_exists('wp_next_scheduled') ? wp_next_scheduled(RCH_CRON_HOOK) : false;
+    $scheduled  = (bool) $next_ts;
+    $cron_off   = defined('DISABLE_WP_CRON') && DISABLE_WP_CRON;
+    $now        = time();
+
+    // Overdue: last successful sync older than 2x the interval (grace for traffic-driven cron).
+    $last_ts    = $time !== '' ? strtotime(get_gmt_from_date($time)) : false;
+    $overdue    = $last_ts !== false && ($now - $last_ts) > (2 * RCH_CRON_INTERVAL_SECONDS);
+
+    // Build warnings explaining why the automatic sync may not be running.
+    $warnings = array();
+    if (!$scheduled) {
+        $warnings[] = __('The sync event is not scheduled. Deactivate and reactivate the plugin, or load any front-end page, to re-register it.', 'rechat-plugin');
+    }
+    if ($cron_off) {
+        $warnings[] = __('WP-Cron is disabled on this site (DISABLE_WP_CRON is on). A server-side system cron must call wp-cron.php for background sync to run — on managed hosts (e.g. Kinsta) this is normal, but verify the host cron is active.', 'rechat-plugin');
+    }
+    if ($has_run && $ok === false) {
+        $warnings[] = sprintf(
+            /* translators: %s: failure message from the last sync */
+            __('The last sync failed: %s. If it mentions the token, reconnect or refresh the access token above.', 'rechat-plugin'),
+            $msg !== '' ? $msg : __('unknown error', 'rechat-plugin')
+        );
+    }
+    if ($overdue && $ok !== false) {
+        $warnings[] = __('The last successful sync is older than expected (over 24 hours). WP-Cron only fires on site traffic; low-traffic sites can lag. Run “Sync now” or check the host cron.', 'rechat-plugin');
+    }
+    if (!$has_run) {
+        $warnings[] = __('No data sync has been recorded yet. Run “Sync now” on the Sync Data tab, or wait for the scheduled cron.', 'rechat-plugin');
+    }
+
+    ?>
+    <div class="rch-card">
+        <div class="rch-card__head">
+            <span class="dashicons dashicons-update" aria-hidden="true"></span>
+            <h3><?php esc_html_e('Data sync status', 'rechat-plugin'); ?></h3>
+            <span style="margin-left:auto;">
+                <?php if ($has_run && $ok) : ?>
+                    <span class="rch-badge rch-badge--ok"><span class="dashicons dashicons-yes-alt" aria-hidden="true"></span><?php esc_html_e('Last sync OK', 'rechat-plugin'); ?></span>
+                <?php elseif ($has_run && $ok === false) : ?>
+                    <span class="rch-badge rch-badge--err"><span class="dashicons dashicons-dismiss" aria-hidden="true"></span><?php esc_html_e('Last sync failed', 'rechat-plugin'); ?></span>
+                <?php else : ?>
+                    <span class="rch-badge rch-badge--warn"><span class="dashicons dashicons-warning" aria-hidden="true"></span><?php esc_html_e('Never run', 'rechat-plugin'); ?></span>
+                <?php endif; ?>
+            </span>
+        </div>
+        <div class="rch-card__body">
+            <p>
+                <?php esc_html_e('Agents, offices, regions, and branding sync automatically every 12 hours via WordPress cron, and whenever you press “Sync now”. This log shows the most recent run so you can confirm the automatic sync is working.', 'rechat-plugin'); ?>
+            </p>
+
+            <?php foreach ($warnings as $w) : ?>
+                <div class="notice notice-warning inline" style="margin:8px 0;">
+                    <p style="display:flex;align-items:center;gap:6px;">
+                        <span class="dashicons dashicons-warning" aria-hidden="true"></span>
+                        <?php echo esc_html($w); ?>
+                    </p>
+                </div>
+            <?php endforeach; ?>
+
+            <table class="form-table">
+                <tr valign="top">
+                    <th scope="row"><?php esc_html_e('Last sync', 'rechat-plugin'); ?></th>
+                    <td>
+                        <?php
+                        if ($has_run && $time !== '') {
+                            $disp = get_date_from_gmt(
+                                get_gmt_from_date($time),
+                                get_option('date_format') . ' ' . get_option('time_format')
+                            );
+                            echo esc_html($disp);
+                            if ($last_ts !== false) {
+                                printf(
+                                    ' <span class="description">(%s)</span>',
+                                    esc_html(sprintf(
+                                        /* translators: %s: human time diff, e.g. "3 hours" */
+                                        __('%s ago', 'rechat-plugin'),
+                                        human_time_diff($last_ts, $now)
+                                    ))
+                                );
+                            }
+                        } else {
+                            echo '—';
+                        }
+                        ?>
+                    </td>
+                </tr>
+                <tr valign="top">
+                    <th scope="row"><?php esc_html_e('Result', 'rechat-plugin'); ?></th>
+                    <td>
+                        <?php
+                        if (!$has_run) {
+                            echo '—';
+                        } elseif ($ok) {
+                            echo esc_html($msg !== '' ? $msg : __('Success', 'rechat-plugin'));
+                        } else {
+                            echo '<strong style="color:#b32d2d;">' . esc_html($msg !== '' ? $msg : __('Failed', 'rechat-plugin')) . '</strong>';
+                        }
+                        ?>
+                    </td>
+                </tr>
+                <tr valign="top">
+                    <th scope="row"><?php esc_html_e('Triggered by', 'rechat-plugin'); ?></th>
+                    <td><?php echo esc_html($src_label); ?></td>
+                </tr>
+                <?php if ($has_run && $ok && !empty($summary)) : ?>
+                    <tr valign="top">
+                        <th scope="row"><?php esc_html_e('Summary', 'rechat-plugin'); ?></th>
+                        <td>
+                            <?php
+                            // Summary values contain safe, plugin-generated <b>/<br> markup.
+                            echo wp_kses_post(implode('<br>', array_map('strval', $summary)));
+                            ?>
+                        </td>
+                    </tr>
+                <?php endif; ?>
+                <tr valign="top">
+                    <th scope="row"><?php esc_html_e('Next scheduled sync', 'rechat-plugin'); ?></th>
+                    <td>
+                        <?php
+                        if ($scheduled) {
+                            $ndisp = get_date_from_gmt(
+                                gmdate('Y-m-d H:i:s', $next_ts),
+                                get_option('date_format') . ' ' . get_option('time_format')
+                            );
+                            echo esc_html($ndisp);
+                            printf(
+                                ' <span class="description">(%s)</span>',
+                                esc_html(
+                                    $next_ts > $now
+                                        ? sprintf(__('in %s', 'rechat-plugin'), human_time_diff($now, $next_ts))
+                                        : sprintf(__('overdue by %s', 'rechat-plugin'), human_time_diff($next_ts, $now))
+                                )
+                            );
+                        } else {
+                            echo '<strong style="color:#b32d2d;">' . esc_html__('Not scheduled', 'rechat-plugin') . '</strong>';
+                        }
+                        ?>
+                    </td>
+                </tr>
+                <tr valign="top">
+                    <th scope="row"><?php esc_html_e('WP-Cron', 'rechat-plugin'); ?></th>
+                    <td>
+                        <?php
+                        echo $cron_off
+                            ? esc_html__('Disabled (DISABLE_WP_CRON on) — relies on a host system cron calling wp-cron.php', 'rechat-plugin')
+                            : esc_html__('Enabled (fires on site traffic)', 'rechat-plugin');
+                        ?>
+                    </td>
+                </tr>
+            </table>
+
+            <p>
+                <a class="button button-secondary" href="<?php echo esc_url(admin_url('admin.php?page=rechat-setting&tab=sync-data')); ?>">
+                    <?php esc_html_e('Go to Sync Data', 'rechat-plugin'); ?>
+                </a>
+            </p>
+        </div>
     </div>
     <?php
 }

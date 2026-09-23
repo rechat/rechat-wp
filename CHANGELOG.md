@@ -1,5 +1,21 @@
 # Changelog
 
+## 7.0.87
+
+- **Data sync status on the Connect tab.** Added a "Data sync status" card to
+  `?page=rechat-setting&tab=connect-to-rechat` showing when agents/offices/regions/
+  branding last synced, whether it succeeded, which trigger ran it (background cron
+  vs manual "Sync now"), the per-type add/update summary, and the next scheduled
+  cron run. Every sync now writes an `rch_last_data_sync` option (recorded at all
+  return points of `rch_update_agents_offices_regions_data()`, so cron, manual, and
+  settings-page syncs are all captured), mirroring the existing OAuth refresh log.
+- **Explains WHY the automatic sync isn't running.** The card surfaces warnings when
+  the cron event isn't scheduled, when `DISABLE_WP_CRON` is on (host system cron must
+  hit wp-cron.php — normal on Kinsta, but worth verifying), when the last successful
+  sync is overdue (>24h — WP-Cron is traffic-driven and low-traffic sites lag), and
+  when the last run failed (shows the failure reason, e.g. an expired token). Before
+  this, sync outcomes only went to `error_log` with no admin-visible surface.
+
 ## 7.0.64
 
 - **Fix: Testimonials editor preview failed with a bad request.** The srcDoc
