@@ -9,8 +9,11 @@ $paged = (get_query_var('paged')) ? absint(get_query_var('paged')) : 1;
 $args = array(
     'post_type'      => 'regions', // Ensure this is your custom post type
     'posts_per_page' => $posts_per_page,
-    'orderby'        => 'menu_order', // Order by the custom order
-    'order'          => 'ASC', // Or 'DESC' depending on your needs
+    // Order by menu_order, then a UNIQUE tiebreaker (title, then ID). Synced
+    // records share menu_order = 0, so menu_order alone is non-deterministic
+    // across LIMIT/OFFSET pages (rows repeat on some pages, others never
+    // appear). The tiebreaker makes pagination return every record once.
+    'orderby'        => array('menu_order' => 'ASC', 'title' => 'ASC', 'ID' => 'ASC'),
     'paged'          => $paged
 );
 

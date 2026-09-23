@@ -9,8 +9,10 @@ $paged = (get_query_var('paged')) ? absint(get_query_var('paged')) : 1;
 $args = array(
     'post_type'      => 'agents',
     'posts_per_page' => $posts_per_page,
-    'orderby'        => 'title',   // Sort by name (post title)
-    'order'          => 'ASC',     // ASC = A → Z
+    // Sort by name (post title), then ID as a UNIQUE tiebreaker so agents that
+    // share a name keep a stable order across LIMIT/OFFSET pages (otherwise a
+    // duplicate title is non-deterministic — a row can repeat or vanish).
+    'orderby'        => array('title' => 'ASC', 'ID' => 'ASC'),
     'paged'          => $paged,
     'meta_query'     => array(
         'relation' => 'OR',
