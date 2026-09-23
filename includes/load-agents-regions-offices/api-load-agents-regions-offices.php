@@ -28,6 +28,10 @@ function rch_update_agents_offices_regions_data()
     if (!$brands_result['success']) {
         $fail_message = isset($brands_result['message']) ? (string) $brands_result['message'] : __('Could not fetch brands data.', 'rechat-plugin');
 
+        if (function_exists('rch_record_last_data_sync')) {
+            rch_record_last_data_sync(false, $fail_message);
+        }
+
         return array(
             'success' => false,
             'message' => $fail_message,
@@ -107,9 +111,15 @@ function rch_update_agents_offices_regions_data()
         'fields' => 'ids',
     ));
     if (!$agents_result) {
+        $agents_fail = __('Error processing agents', 'rechat-plugin');
+
+        if (function_exists('rch_record_last_data_sync')) {
+            rch_record_last_data_sync(false, $agents_fail);
+        }
+
         return array(
             'success' => false,
-            'message' => __('Error processing agents', 'rechat-plugin'),
+            'message' => $agents_fail,
         );
     }
 
@@ -128,6 +138,10 @@ function rch_update_agents_offices_regions_data()
      * @param array $sync_data  Associative array of result strings shown in the UI.
      */
     $sync_data = apply_filters('rch_sync_response_data', $sync_data);
+
+    if (function_exists('rch_record_last_data_sync')) {
+        rch_record_last_data_sync(true, __('Sync completed successfully.', 'rechat-plugin'), $sync_data);
+    }
 
     // Return sync summary for callers (AJAX handler sends JSON; cron logs result).
     return array(

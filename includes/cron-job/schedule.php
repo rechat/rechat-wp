@@ -132,6 +132,33 @@ if (defined('RCH_PLUGIN_DIR')) {
 }
 
 /*******************************
+ * Record the outcome of a data-sync run for the settings screen.
+ *
+ * Called from rch_update_agents_offices_regions_data() at every return point, so it
+ * captures cron, manual "Sync now", and settings-page syncs alike. Mirrors the OAuth
+ * refresh log (rch_oauth_last_refresh) so the admin can see WHEN sync last ran, whether
+ * it succeeded, and — when it failed — why (e.g. expired token).
+ *
+ * @param bool   $ok       Whether the sync succeeded.
+ * @param string $message  Human-readable result / failure reason.
+ * @param array  $summary  Optional per-type counts (agents/regions/offices/branding strings).
+ ******************************/
+function rch_record_last_data_sync($ok, $message = '', $summary = array())
+{
+    $entry = array(
+        'ok'       => (bool) $ok,
+        'message'  => (string) $message,
+        // wp_doing_cron() distinguishes background cron from an admin-initiated sync.
+        'source'   => wp_doing_cron() ? 'wp_cron' : 'manual',
+        'time'     => current_time('mysql'),
+        'time_gmt' => gmdate('Y-m-d H:i:s'),
+        'summary'  => is_array($summary) ? $summary : array(),
+    );
+
+    update_option('rch_last_data_sync', $entry, false);
+}
+
+/*******************************
  * Check cron job status (for debugging)
  * Returns status of data sync cron job
  ******************************/
