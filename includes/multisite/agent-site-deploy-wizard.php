@@ -1115,6 +1115,11 @@ function rch_agent_wizard_deploy_to_agent_blog(int $agent_id, array $theme_rows,
         return new WP_Error('rch_wizard_bad_agent', __('Invalid agent post.', 'rechat-plugin'));
     }
 
+    // Resolve on the hub BEFORE switching: the agent → blog link (`_rch_agent_site_id`) is hub
+    // post meta, so inside the sub-site it reads as 0 and the destination theme's keys would be
+    // dropped (every key the network-default theme doesn't share was silently never written).
+    $allowed_deploy = rch_agent_wizard_resolve_deploy_allowed_keys($agent_id);
+
     switch_to_blog($blog_id);
 
     $dest_stylesheet = (string) get_option('stylesheet');
@@ -1128,7 +1133,6 @@ function rch_agent_wizard_deploy_to_agent_blog(int $agent_id, array $theme_rows,
         );
     }
 
-    $allowed_deploy = rch_agent_wizard_resolve_deploy_allowed_keys($agent_id);
     $merged_raw     = rch_agent_wizard_build_row_from_theme_rows($agent_id, $theme_rows, $allowed_deploy);
 
     $sanitized = rch_agent_wizard_sanitize_theme_options_row($merged_raw, $profile, $allowed_deploy);
@@ -1167,6 +1171,11 @@ function rch_agent_wizard_deploy_to_agent_blog(int $agent_id, array $theme_rows,
     rch_agent_wizard_record_last_deployment_in_blog($agent_id, $theme_rows, $deployed_options);
 
     restore_current_blog();
+
+    // Theme options changed, but full-page cache (Kinsta) still serves the old HTML.
+    if (function_exists('rch_agent_wizard_queue_page_cache_purge')) {
+        rch_agent_wizard_queue_page_cache_purge($blog_id);
+    }
 
     return [
         'blog_id'            => $blog_id,
@@ -1323,7 +1332,8 @@ function rch_agent_wizard_read_destination_last_deployment(int $blog_id): ?array
     }
 
     switch_to_blog($blog_id);
-    $raw = get_option('rch_agent_wizard_last_deployment', '');
+    $raw             = get_option('rch_agent_wizard_last_deployment', '');
+    $dest_stylesheet = (string) get_option('stylesheet');
     restore_current_blog();
 
     if (! is_string($raw) || $raw === '') {
@@ -1335,7 +1345,17 @@ function rch_agent_wizard_read_destination_last_deployment(int $blog_id): ?array
         return null;
     }
 
-    $allowed_themes = array_flip(rch_agent_wizard_allowed_theme_option_keys());
+    // Same key union as deploy (wizard UI theme + this sub-site's theme). Filtering by the UI
+    // theme alone dropped every row of a sub-site running a different theme, so the sync
+    // refresh saw an empty recipe and never updated it.
+    $allowed_list = rch_agent_wizard_allowed_theme_option_keys();
+    if ($dest_stylesheet !== '') {
+        $dest_keys = rch_agent_wizard_get_theme_profile($dest_stylesheet)['keys'] ?? [];
+        if (is_array($dest_keys)) {
+            $allowed_list = array_merge($allowed_list, $dest_keys);
+        }
+    }
+    $allowed_themes = array_flip($allowed_list);
     $allowed_meta   = array_flip(array_keys(rch_agent_wizard_importable_field_defs_resolved()));
     $clean          = [];
 
