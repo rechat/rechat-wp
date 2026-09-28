@@ -1,5 +1,24 @@
 # Changelog
 
+## 7.0.88
+
+- **Fix: agent sub-sites kept showing old agent data after a Rechat sync.** Wizard
+  tags like `{$email}` / `{$phone_number}` and agent-bound fields are meant to
+  repaint on every sync, but two bugs stopped it on sub-sites whose theme differs
+  from the network "Default theme for agent sub-sites":
+  - Deploy looked up the agent's sub-site link after switching into the sub-site,
+    where that hub meta doesn't exist, so the destination theme's own option keys
+    were dropped and never written.
+  - The sync refresh read the saved deploy recipe filtered to the network default
+    theme's keys only, so the recipe looked empty and the refresh silently skipped.
+  Both now use the wizard theme + the sub-site's own theme keys.
+- **Page cache is purged after a sub-site deploy/refresh.** Kinsta full-page cache
+  kept serving stale HTML after theme options changed. Deploys and sync refreshes
+  now purge once per request (Kinsta MU plugin when present) and fire
+  `rch_agent_wizard_purge_page_cache` with the affected blog IDs for other caches.
+- **After updating:** run the Agent site wizard once with "All agent sub-sites" so
+  sites deployed under the bug get their missing fields; later syncs keep them current.
+
 ## 7.0.87
 
 - **Data sync status on the Connect tab.** Added a "Data sync status" card to

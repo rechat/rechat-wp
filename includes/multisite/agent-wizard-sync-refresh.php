@@ -185,3 +185,66 @@ function rch_agent_wizard_refresh_subsite_on_save(int $post_id, WP_Post $post, b
     rch_agent_wizard_refresh_subsite_after_agent_change((int) $post_id);
 }
 add_action('save_post_agents', 'rch_agent_wizard_refresh_subsite_on_save', 40, 3);
+
+/**
+ * Queue a full-page cache purge after a sub-site's theme options were (re)deployed.
+ *
+ * Writing the option is not enough on hosts with full-page caching (Kinsta): the sub-site keeps
+ * serving cached HTML with the old values until the cache expires. Purges are batched into one
+ * call at shutdown, so a sync that refreshes many agents (or an "All agent sub-sites" deploy)
+ * purges once, not once per agent.
+ *
+ * @param int $blog_id Sub-site whose theme options changed.
+ * @return void
+ */
+function rch_agent_wizard_queue_page_cache_purge(int $blog_id): void
+{
+    static $hooked = false;
+
+    if ($blog_id <= 0) {
+        return;
+    }
+
+    $GLOBALS['rch_agent_wizard_purge_blog_ids'][ $blog_id ] = $blog_id;
+
+    if (! $hooked) {
+        $hooked = true;
+        add_action('shutdown', 'rch_agent_wizard_run_page_cache_purge', 5);
+    }
+}
+
+/**
+ * Run the batched page-cache purge (shutdown).
+ *
+ * @return void
+ */
+function rch_agent_wizard_run_page_cache_purge(): void
+{
+    $blog_ids = isset($GLOBALS['rch_agent_wizard_purge_blog_ids']) && is_array($GLOBALS['rch_agent_wizard_purge_blog_ids'])
+        ? array_values($GLOBALS['rch_agent_wizard_purge_blog_ids'])
+        : [];
+    $GLOBALS['rch_agent_wizard_purge_blog_ids'] = [];
+
+    if ($blog_ids === []) {
+        return;
+    }
+
+    // Kinsta MU plugin: one server-level cache covers every sub-site of the install.
+    global $kinsta_cache;
+    if (
+        is_object($kinsta_cache)
+        && isset($kinsta_cache->kinsta_cache_purge)
+        && is_object($kinsta_cache->kinsta_cache_purge)
+        && method_exists($kinsta_cache->kinsta_cache_purge, 'purge_complete_caches')
+    ) {
+        $kinsta_cache->kinsta_cache_purge->purge_complete_caches();
+    }
+
+    /**
+     * Fired after agent sub-site theme options were deployed/refreshed, so other page caches
+     * (hosting or plugin) can purge those sub-sites.
+     *
+     * @param list<int> $blog_ids Sub-sites whose theme options changed in this request.
+     */
+    do_action('rch_agent_wizard_purge_page_cache', $blog_ids);
+}
