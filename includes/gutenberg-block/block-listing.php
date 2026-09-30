@@ -217,7 +217,24 @@ function rch_rest_boundary_search(WP_REST_Request $request)
             continue;
         }
         $seen[$id] = true;
-        $out[]     = array('label' => $label, 'value' => $id);
+
+        // subtitle = where the place is (e.g. "Texas, US") so same-named results are
+        // distinguishable; fall back to state/country when the API omits it.
+        $subtitle = isset($row['subtitle']) ? trim((string) $row['subtitle']) : '';
+        if ($subtitle === '') {
+            $subtitle = implode(', ', array_filter(array(
+                isset($row['state']) ? trim((string) $row['state']) : '',
+                isset($row['country']) ? trim((string) $row['country']) : '',
+            )));
+        }
+        $type = isset($row['boundary_type']) ? trim((string) $row['boundary_type']) : '';
+
+        $out[] = array(
+            'label'    => $label,
+            'value'    => $id,
+            'subtitle' => $subtitle,
+            'type'     => $type,
+        );
         if (count($out) >= $limit) {
             break;
         }

@@ -370,7 +370,13 @@ function rch_render_boundary_finder_field()
                 var li = document.createElement('li');
                 li.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid #e0e0e0;border-radius:6px;margin-bottom:6px;background:#fff;';
                 li.innerHTML =
-                    '<span style="flex:1;"><strong>' + esc(opt.label) + '</strong><br>' +
+                    '<span style="flex:1;"><strong>' + esc(opt.label) + '</strong>' +
+                    (opt.type || opt.subtitle
+                        ? ' <span style="color:#787c82;font-size:12px;">' +
+                          esc([opt.type ? String(opt.type).replace(/_/g, ' ') : '', opt.subtitle].filter(Boolean).join(' · ')) +
+                          '</span>'
+                        : '') +
+                    '<br>' +
                     '<code style="font-size:11px;color:#50575e;">' + esc(opt.value) + '</code></span>' +
                     '<button type="button" class="button button-small">' + '<?php echo esc_js(__('Copy ID', 'rechat-plugin')); ?>' + '</button>';
                 var btn = li.querySelector('button');
