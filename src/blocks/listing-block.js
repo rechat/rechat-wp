@@ -37,6 +37,28 @@ function parseBoundaryRestOptions(res) {
     return out;
 }
 
+/**
+ * `/rch/v1/boundary-search` rows: like {@see parseBoundaryRestOptions} plus `subtitle`
+ * (e.g. "Texas, US") and `type` (e.g. "county") so same-named places can be told apart.
+ *
+ * @param {unknown} res REST JSON body
+ * @returns {{ label: string, value: string, subtitle: string, type: string }[]}
+ */
+function parseBoundarySearchOptions(res) {
+    const options = res && typeof res === 'object' ? res.options : null;
+    if (!Array.isArray(options)) {
+        return [];
+    }
+    return parseBoundaryRestOptions(res).map((opt) => {
+        const row = options.find((o) => o && String(o.value).trim() === opt.value) || {};
+        return {
+            ...opt,
+            subtitle: row.subtitle != null ? String(row.subtitle).trim() : '',
+            type: row.type != null ? String(row.type).trim().replace(/_/g, ' ') : '',
+        };
+    });
+}
+
 registerBlockType('rch-rechat-plugin/listing-block', {
     title: 'Listing Block',
     description: 'Block for showing property listings',
@@ -252,7 +274,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             nbhTimerRef.current = setTimeout(() => {
                 apiFetch({ path: `/rch/v1/boundary-search?q=${encodeURIComponent(value.trim())}&limit=5` })
                     .then((res) => {
-                        setNbhResults(parseBoundaryRestOptions(res));
+                        setNbhResults(parseBoundarySearchOptions(res));
                     })
                     .catch((error) => {
                         console.error('Error searching boundaries:', error);
@@ -271,7 +293,11 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             if (Array.isArray(parsed)) {
                 selectedPlaces = parsed
                     .filter((p) => p && p.id)
-                    .map((p) => ({ id: String(p.id), label: String(p.label || p.id) }));
+                    .map((p) => ({
+                        id: String(p.id),
+                        label: String(p.label || p.id),
+                        subtitle: p.subtitle ? String(p.subtitle) : '',
+                    }));
             }
         } catch (e) {
             selectedPlaces = [];
@@ -294,8 +320,9 @@ registerBlockType('rch-rechat-plugin/listing-block', {
         const handleNeighborhoodSelect = (option) => {
             const id = ((option && option.value) || '').trim();
             const label = ((option && option.label) || id).trim();
+            const subtitle = ((option && option.subtitle) || '').trim();
             if (id && !selectedPlaces.some((p) => p.id === id)) {
-                commitSelection([...selectedPlaces, { id, label }]);
+                commitSelection([...selectedPlaces, subtitle ? { id, label, subtitle } : { id, label }]);
             }
             setNbhQuery('');
             setNbhResults([]);
@@ -403,11 +430,16 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                                                 fontSize: 12,
                                             }}
                                         >
-                                            {place.label}
+                                            <span title={place.subtitle ? `${place.label}, ${place.subtitle}` : place.label}>
+                                                {place.label}
+                                                {place.subtitle ? (
+                                                    <span style={{ opacity: 0.7 }}>{` · ${place.subtitle}`}</span>
+                                                ) : null}
+                                            </span>
                                             <button
                                                 type="button"
                                                 onClick={() => handleRemovePlace(place.id)}
-                                                aria-label={`Remove ${place.label}`}
+                                                aria-label={`Remove ${place.label}${place.subtitle ? `, ${place.subtitle}` : ''}`}
                                                 style={{
                                                     border: 'none',
                                                     background: 'transparent',
@@ -482,7 +514,24 @@ registerBlockType('rch-rechat-plugin/listing-block', {
                                                     cursor: 'pointer',
                                                 }}
                                             >
-                                                {option.label}
+                                                <span style={{ display: 'block' }}>{option.label}</span>
+                                                {(option.type || option.subtitle) ? (
+                                                    <span
+                                                        style={{
+                                                            display: 'block',
+                                                            marginTop: 2,
+                                                            color: '#757575',
+                                                            fontSize: 11,
+                                                            textTransform: 'none',
+                                                        }}
+                                                    >
+                                                        {option.type ? (
+                                                            <span style={{ textTransform: 'capitalize' }}>{option.type}</span>
+                                                        ) : null}
+                                                        {option.type && option.subtitle ? ' · ' : ''}
+                                                        {option.subtitle}
+                                                    </span>
+                                                ) : null}
                                             </button>
                                         ))
                                     ) : (
