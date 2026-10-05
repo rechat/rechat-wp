@@ -1,0 +1,1088 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rechat Plugin User Guide</title>
+<style>
+body { margin: 0; background: #f6f7f7; }
+.rch-guide { max-width: 960px; margin: 0 auto; padding: 32px 16px 64px; }
+/* Rechat plugin user guide: WP Admin → Rechat → User Guide and docs/user-guide.html */
+.rch-guide {
+	--rch-guide-text: #1d2327;
+	--rch-guide-muted: #50575e;
+	--rch-guide-border: #dcdcde;
+	--rch-guide-surface: #ffffff;
+	--rch-guide-soft: #f6f7f7;
+	--rch-guide-accent: #2271b1;
+	color: var(--rch-guide-text);
+	font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+.rch-guide__title {
+	font-size: 28px;
+	line-height: 1.25;
+	margin: 0 0 4px;
+}
+
+.rch-guide__meta {
+	color: var(--rch-guide-muted);
+	margin: 0 0 24px;
+}
+
+.rch-guide__toc {
+	background: var(--rch-guide-surface);
+	border: 1px solid var(--rch-guide-border);
+	border-radius: 8px;
+	padding: 16px 20px;
+	margin: 0 0 24px;
+}
+
+.rch-guide__toc h2 {
+	font-size: 15px;
+	margin: 0 0 8px;
+}
+
+.rch-guide__toc ol {
+	margin: 0;
+	padding-left: 20px;
+	columns: 2 220px;
+}
+
+.rch-guide__toc a {
+	color: var(--rch-guide-accent);
+	text-decoration: none;
+}
+
+.rch-guide__toc a:hover {
+	text-decoration: underline;
+}
+
+.rch-guide__content {
+	background: var(--rch-guide-surface);
+	border: 1px solid var(--rch-guide-border);
+	border-radius: 8px;
+	padding: 8px 28px 28px;
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+.rch-guide__content h2 {
+	font-size: 21px;
+	line-height: 1.3;
+	margin: 32px 0 12px;
+	padding-top: 16px;
+	border-top: 1px solid var(--rch-guide-border);
+	scroll-margin-top: 48px;
+}
+
+.rch-guide__content h2:first-child {
+	border-top: 0;
+	padding-top: 0;
+}
+
+.rch-guide__content h3 {
+	font-size: 16px;
+	margin: 24px 0 8px;
+	scroll-margin-top: 48px;
+}
+
+.rch-guide__content p,
+.rch-guide__content ul,
+.rch-guide__content ol {
+	font-size: 14px;
+	margin: 0 0 12px;
+}
+
+.rch-guide__content ul,
+.rch-guide__content ol {
+	padding-left: 22px;
+}
+
+.rch-guide__content ul {
+	list-style: disc;
+}
+
+.rch-guide__content ol {
+	list-style: decimal;
+}
+
+.rch-guide__content li {
+	margin: 0 0 4px;
+}
+
+.rch-guide__content code {
+	background: var(--rch-guide-soft);
+	border: 1px solid var(--rch-guide-border);
+	border-radius: 4px;
+	padding: 1px 5px;
+	font-size: 12.5px;
+}
+
+.rch-guide__content pre {
+	background: var(--rch-guide-soft);
+	border: 1px solid var(--rch-guide-border);
+	border-radius: 6px;
+	padding: 12px 14px;
+	overflow-x: auto;
+	margin: 0 0 16px;
+}
+
+.rch-guide__content pre code {
+	background: none;
+	border: 0;
+	padding: 0;
+	white-space: pre;
+}
+
+.rch-guide__table {
+	overflow-x: auto;
+	margin: 0 0 16px;
+}
+
+.rch-guide__table table {
+	border-collapse: collapse;
+	width: 100%;
+	font-size: 13px;
+}
+
+.rch-guide__table th,
+.rch-guide__table td {
+	border: 1px solid var(--rch-guide-border);
+	padding: 8px 10px;
+	text-align: left;
+	vertical-align: top;
+}
+
+.rch-guide__table th {
+	background: var(--rch-guide-soft);
+	font-weight: 600;
+}
+
+.rch-guide__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 0 0 20px;
+}
+
+.rch-guide__actions .button .dashicons {
+	margin: 4px 4px 0 -2px;
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+}
+
+@media print {
+	body {
+		background: #fff !important;
+	}
+
+	.rch-guide {
+		padding: 0 !important;
+		max-width: none !important;
+	}
+
+	.rch-guide__toc,
+	.rch-guide__content {
+		border: 0;
+		padding: 0;
+	}
+
+	.rch-guide__content h2,
+	.rch-guide__content h3 {
+		break-after: avoid;
+	}
+
+	.rch-guide__table tr,
+	.rch-guide__content pre {
+		break-inside: avoid;
+	}
+}
+
+</style>
+</head>
+<body>
+<main class="rch-guide">
+<h1 class="rch-guide__title">Rechat Plugin User Guide</h1>
+<p class="rch-guide__meta">Rechat plugin version 7.0.90</p>
+<nav class="rch-guide__toc" aria-label="Contents"><h2>Contents</h2><ol><li><a href="#rch-guide-overview">Overview</a></li><li><a href="#rch-guide-getting-started">Getting started</a></li><li><a href="#rch-guide-syncing">Syncing</a></li><li><a href="#rch-guide-listings-blocks-and-shortcodes">Listings, blocks and shortcodes</a></li><li><a href="#rch-guide-multisite-agent-websites">Multisite agent websites</a></li><li><a href="#rch-guide-multisite-buttons-reference">Multisite buttons reference</a></li><li><a href="#rch-guide-settings-reference">Settings reference</a></li><li><a href="#rch-guide-troubleshooting">Troubleshooting</a></li></ol></nav>
+<div class="rch-guide__content">
+<h2 id="rch-guide-overview">Overview</h2>
+<p>The Rechat plugin connects a WordPress site to your Rechat account. It pulls your agents, offices and regions into WordPress, shows live MLS listings, sends website leads to Rechat, and on a Multisite network builds a separate website for every agent and office.</p>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Area</th>
+<th>What you get</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Connection</td>
+<td>Log in to Rechat once; the plugin keeps the login fresh and saves your brand, logo and primary color</td>
+</tr>
+<tr>
+<td>Data sync</td>
+<td>Agents, Offices, Regions and branding copied from Rechat every 12 hours, plus a manual sync</td>
+</tr>
+<tr>
+<td>Content types</td>
+<td>Agents, Offices, Regions, Neighborhoods, Off Market listings, Testimonials</td>
+</tr>
+<tr>
+<td>Listings</td>
+<td>Full search page, latest-listings sliders, search bar, listing detail pages</td>
+</tr>
+<tr>
+<td>Leads</td>
+<td>Lead forms that create contacts in Rechat</td>
+</tr>
+<tr>
+<td>Page building</td>
+<td>Gutenberg blocks and shortcodes for listings, agents, offices/regions, lead forms, testimonials</td>
+</tr>
+<tr>
+<td>Multisite</td>
+<td>One sub-site per agent or office, built from a theme you choose, kept in sync with the main site</td>
+</tr>
+</tbody>
+</table></div>
+<p>The main site is called the <strong>hub</strong> in this guide. Agent and office websites are <strong>sub-sites</strong> of the hub.</p>
+<h2 id="rch-guide-getting-started">Getting started</h2>
+<p>Connect the site to Rechat once, then run a first sync. Everything else in the plugin depends on this connection.</p>
+<p><strong>Where it lives:</strong> WP Admin → <strong>Rechat</strong> (top-level menu). Tabs: Sync Data · Connect · General · Local Logic &amp; Maps · Import / Export · Portal Log · User Guide, and on a Multisite hub also Multisite · Agent wizard · Office wizard. On a Multisite network the Rechat menu shows only on the hub.</p>
+<p><strong>Who can open it:</strong> Administrators, super admins and users with the <strong>Agent</strong> role.</p>
+<h3 id="rch-guide-connect-your-rechat-account">Connect your Rechat account</h3>
+<ol>
+<li>Install and activate the plugin (WP Admin → Plugins).</li>
+<li>Go to <strong>Rechat → Connect</strong> and click <strong>Connect to Rechat</strong>.</li>
+<li>Log in at Rechat and approve access. You come back to the Connect tab with the message &quot;Successfully connected to Rechat!&quot;</li>
+<li>The plugin saves your brand, logos and primary color automatically. There is no brand picker: the brand is the one attached to the Rechat account that approved access, so log in with the correct brand's account.</li>
+<li>Go to <strong>Settings → Permalinks</strong> and click <strong>Save</strong> once, so listing and agent URLs work.</li>
+<li>Go to <strong>Rechat → Sync Data</strong> and click <strong>Sync now</strong> (see Syncing).</li>
+</ol>
+<h3 id="rch-guide-what-the-connect-tab-shows">What the Connect tab shows</h3>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Card</th>
+<th>Button / field</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Connection</td>
+<td>Status badge</td>
+<td>Connected · Token missing · Not connected</td>
+</tr>
+<tr>
+<td>Connection</td>
+<td><strong>Connect to Rechat</strong></td>
+<td>Starts the Rechat login (shown when not connected)</td>
+</tr>
+<tr>
+<td>Connection</td>
+<td><strong>Disconnect from Rechat</strong></td>
+<td>Asks &quot;Are you sure…?&quot; → <strong>Yes, Disconnect</strong> removes the login and brand from this site. Sync and listings stop until you connect again</td>
+</tr>
+<tr>
+<td>Data sync status</td>
+<td><strong>Go to Sync Data</strong></td>
+<td>Opens the Sync Data tab. The card shows last sync time, result, what was added/updated, and the next scheduled sync</td>
+</tr>
+<tr>
+<td>Token failure alerts</td>
+<td><strong>Save alert emails</strong></td>
+<td>Emails (comma or new line) that get an alert when the Rechat login stops refreshing. Max one email per 6 hours. Left empty, alerts go to Rechat's default contacts</td>
+</tr>
+<tr>
+<td>Token &amp; refresh status</td>
+<td><strong>Refresh access token now</strong></td>
+<td>Forces a fresh login token. Use it when the status says expired or failed</td>
+</tr>
+</tbody>
+</table></div>
+<p>The login token refreshes itself (hourly retry when expired). If it fails, a red notice &quot;Rechat OAuth token refresh failed&quot; appears on Rechat pages with a link back to the Connect tab.</p>
+<h2 id="rch-guide-syncing">Syncing</h2>
+<p>Sync copies your Agents, Offices, Regions and branding from Rechat into WordPress. It runs by itself every 12 hours, and you can run it any time with <strong>Sync now</strong>. Listings and testimonials are not copied: they load live from Rechat on every page view.</p>
+<h3 id="rch-guide-run-a-sync-by-hand">Run a sync by hand</h3>
+<ol>
+<li>Go to <strong>Rechat → Sync Data</strong>.</li>
+<li>Click <strong>Sync now</strong> in the &quot;Update from Rechat API&quot; card. A progress bar runs.</li>
+<li>Read the result: &quot;Sync completed successfully!&quot; plus how many agents, offices and regions were added or updated. On a Multisite hub you also see lines for <strong>Agent Sites (Multisite)</strong> and <strong>Office Sites (Multisite)</strong>: created, updated, skipped, errors.</li>
+</ol>
+<p>If you see &quot;You are not yet connected to Rechat&quot;, connect first (Getting started).</p>
+<h3 id="rch-guide-sync-data-buttons">Sync Data buttons</h3>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Button</th>
+<th>What it does</th>
+<th>When to use it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Sync now</strong></td>
+<td>Full sync of agents, offices, regions and branding</td>
+<td>After changes in Rechat you want live now</td>
+</tr>
+<tr>
+<td><strong>Set brand IDs for all agents</strong></td>
+<td>Finds each agent's personal brand in Rechat and saves it on the agent as Brand ID. Shows how many agents were updated</td>
+<td>Once after setup, so agent testimonials and agent sites use the right brand</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="rch-guide-what-sync-changes">What sync changes</h3>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Rechat data</th>
+<th>Becomes in WordPress</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Region brands</td>
+<td>Regions posts</td>
+<td>Title = region name</td>
+</tr>
+<tr>
+<td>Office brands</td>
+<td>Offices posts</td>
+<td>Office ID, address, phone, linked regions</td>
+</tr>
+<tr>
+<td>Users</td>
+<td>Agents posts</td>
+<td>Name, bio, photo, phone, email, social links, license, designation, offices, regions</td>
+</tr>
+<tr>
+<td>Brand settings</td>
+<td>Primary color + logos</td>
+<td>Also saved when you connect</td>
+</tr>
+<tr>
+<td>Site domain (single site only)</td>
+<td>Added to your Rechat brand portal</td>
+<td>Lets Rechat widgets work on this domain</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>Changed in Rechat:</strong> the WordPress post is updated in place. Synced agent fields are read-only in WordPress; edit them in Rechat.</li>
+<li><strong>Kept by sync:</strong> Display order, Agent title, Brand ID, Visibility and agent testimonials. Edit these in WordPress.</li>
+<li><strong>Removed from Rechat:</strong> the WordPress post is permanently deleted. Posts you created by hand (no Rechat ID) are never deleted.</li>
+<li><strong>Not synced:</strong> Neighborhoods and Off Market listings. You add them by hand.</li>
+</ul>
+<p><strong>Tip:</strong> To hide a synced agent, set <strong>Agent Visibility → Hide</strong> on the agent. Do not move a synced agent to Draft: sync looks only at published posts and will create a second copy.</p>
+<h3 id="rch-guide-check-the-schedule">Check the schedule</h3>
+<p><strong>Rechat → Connect → Data sync status</strong> shows last sync, next scheduled sync and whether WP-Cron is on. WordPress cron fires on site traffic, so a site with no visitors may sync late. The card warns you when the sync is not scheduled, has failed, or is more than 24 hours old. On Multisite the schedule runs on the hub only.</p>
+<h2 id="rch-guide-listings-blocks-and-shortcodes">Listings, blocks and shortcodes</h2>
+<p>Add Rechat content to any page with a Gutenberg block (Widgets category) or a shortcode. Each listing block has a matching shortcode, so classic editors and page builders work too.</p>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Block</th>
+<th>Shortcode</th>
+<th>Shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Listing Block</td>
+<td><code>[listings]</code></td>
+<td>Full search page: filters, sort, map, grid, pagination</td>
+</tr>
+<tr>
+<td>(none)</td>
+<td><code>[rch_latest_listings]</code></td>
+<td>Latest listings as slider, list or grid</td>
+</tr>
+<tr>
+<td>(none)</td>
+<td><code>[rch_search_listing_form]</code></td>
+<td>Search bar that sends visitors to your listings page</td>
+</tr>
+<tr>
+<td>Leads Form Block</td>
+<td><code>[rch_leads_form]</code></td>
+<td>Contact form that creates a lead in Rechat</td>
+</tr>
+<tr>
+<td>Testimonials Block</td>
+<td><code>[rch_testimonials]</code></td>
+<td>Testimonials from Rechat</td>
+</tr>
+<tr>
+<td>Off Market Block</td>
+<td><code>[rch_off_market]</code></td>
+<td>Your manual Off Market listings</td>
+</tr>
+<tr>
+<td>Agents Block</td>
+<td>(none)</td>
+<td>Agent cards with paging</td>
+</tr>
+<tr>
+<td>Offices Block / Regions Block</td>
+<td>(none)</td>
+<td>Office or region lists with paging</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="rch-guide-build-a-listings-search-page">Build a listings search page</h3>
+<ol>
+<li>Create a page, e.g. <strong>Listings</strong> at <code>/listings/</code>.</li>
+<li>Add the <strong>Listing Block</strong>, or a Shortcode block with <code>[listings]</code>.</li>
+<li>In the block sidebar set filters: <strong>Listing Settings</strong> (statuses, property type, price, beds, &quot;Only our own listings&quot;, Open Houses Only), <strong>Display</strong> (hide filters/sort/map, color mode), <strong>Map Settings</strong> (style, center, zoom; needs a Google key).</li>
+<li>Publish. Each listing opens at <code>/listing-detail/{city}/{street}/{id}/</code> automatically.</li>
+</ol>
+<h3 id="rch-guide-add-a-search-bar-to-the-home-page">Add a search bar to the home page</h3>
+<p>Use <code>[rch_search_listing_form target_page=&quot;/listings/&quot;]</code>. Visitors type an area or ZIP and land on your listings page with the search applied. The target page must contain the Listing Block or <code>[listings]</code>.</p>
+<h3 id="rch-guide-common-shortcode-examples">Common shortcode examples</h3>
+<pre><code class="language-text">[listings listing_statuses=&quot;Active&quot; property_types=&quot;Residential&quot; own_listing=&quot;true&quot; sort_by=&quot;-price&quot;]
+[rch_latest_listings display_type=&quot;swiper&quot; listing_statuses=&quot;Active&quot; limit=&quot;8&quot; navigation=&quot;true&quot;]
+[rch_latest_listings display_type=&quot;grid&quot; property_types=&quot;Sale&quot; limit=&quot;6&quot;]
+[rch_search_listing_form target_page=&quot;/properties/&quot; show_background=&quot;true&quot; background_image=&quot;https://example.com/hero.jpg&quot;]
+[rch_leads_form form_title=&quot;Contact Us&quot; tags=&quot;Website,Buyer&quot; show_note=&quot;false&quot;]
+[rch_testimonials title=&quot;What our clients say&quot; limit=&quot;6&quot; load_more=&quot;false&quot;]
+[rch_off_market status=&quot;sold&quot; display_type=&quot;swiper&quot; columns=&quot;3&quot; autoplay=&quot;true&quot;]
+</code></pre>
+<p>The full attribute list for every shortcode is in the plugin's README.md.</p>
+<h3 id="rch-guide-useful-listing-options">Useful listing options</h3>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Values</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>listing_statuses</code></td>
+<td>Active, Pending, Closed, Archived (comma list)</td>
+<td>Which statuses show</td>
+</tr>
+<tr>
+<td><code>property_types</code></td>
+<td>Residential, Sale, Lease, Lots &amp; Acreage, Commercial, All Listings</td>
+<td>Which property types show</td>
+</tr>
+<tr>
+<td><code>own_listing</code></td>
+<td>true / false</td>
+<td>Only your brand's listings</td>
+</tr>
+<tr>
+<td><code>filter_open_houses</code></td>
+<td>true / false</td>
+<td>Only listings with open houses</td>
+</tr>
+<tr>
+<td><code>filter_boundary_ids</code></td>
+<td>IDs from the boundary finder</td>
+<td>Limit to a neighborhood, city or ZIP</td>
+</tr>
+<tr>
+<td><code>hide_map</code>, <code>hide_filters</code>, <code>disable_sort</code></td>
+<td>true / false</td>
+<td>Simplify the page</td>
+</tr>
+<tr>
+<td><code>sort_by</code></td>
+<td><code>-list_date</code> (newest) or <code>-price</code></td>
+<td>Order</td>
+</tr>
+<tr>
+<td><code>display_type</code> (latest listings)</td>
+<td>swiper, normal, grid</td>
+<td>Layout</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="rch-guide-agents-offices-regions-neighborhoods-off-market">Agents, offices, regions, neighborhoods, off market</h3>
+<p>Each content type has its own archive and single page: <code>/agents/</code>, <code>/offices/</code>, <code>/regions/</code>, <code>/neighborhoods/</code>, <code>/off-market/</code>.</p>
+<ul>
+<li><strong>Agents:</strong> synced; edit only Display order (0, 1, 2… pins to top), Agent title, Brand ID, Visibility and the Testimonials list (Name, Description, Stars, Link; up to 50).</li>
+<li><strong>Neighborhoods:</strong> add by hand. Drop a pin in <strong>Select Location on Map</strong> (needs Google key) so Local Logic sections work. Assign offices in <strong>Assigned Offices</strong>; on Multisite this decides which agent sites get the neighborhood.</li>
+<li><strong>Off Market:</strong> WP Admin → Off Market → Add New. Fill status (Active / Coming Soon / Pending / Sold Privately), price, address, beds/baths/sqft, gallery (first image = cover) and pick an Agent. Inquiries go to that agent.</li>
+</ul>
+<h3 id="rch-guide-customize-page-designs">Customize page designs</h3>
+<p>Copy a template from the plugin's <code>templates/</code> folder into your theme at <code>wp-content/themes/&lt;theme&gt;/rechat/</code> and edit it there, e.g. <code>agents-single-custom.php</code>, <code>listing-single-custom.php</code>, <code>rch-agents-block-template.php</code>.</p>
+<h3 id="rch-guide-other-automatic-features">Other automatic features</h3>
+<ul>
+<li><strong>MLS short links:</strong> <code>/mls/21191513</code> or <code>/NTREIS/21191513</code> redirects to the listing page.</li>
+<li><strong>SEO:</strong> meta description, canonical, Open Graph and Twitter tags, unless an SEO plugin (Yoast, Rank Math, etc.) is active.</li>
+<li><strong>Schema:</strong> structured data for agents, listings, breadcrumbs and the home page.</li>
+</ul>
+<h2 id="rch-guide-multisite-agent-websites">Multisite agent websites</h2>
+<p>On a WordPress Multisite network the plugin builds one sub-site per agent (and per office) from the hub's Agents and Offices, gives it the theme you pick, and fills that theme's settings from each agent's profile. Agent sites show only that agent's listings; office sites show only that office's listings.</p>
+<h3 id="rch-guide-before-you-start">Before you start</h3>
+<ul>
+<li>WordPress Multisite is set up. Subdomain installs (<code>jdoe.yoursite.com</code>) need wildcard DNS and SSL.</li>
+<li><strong>Broadcast (ThreeWP Broadcast)</strong> is installed and <strong>network-activated</strong>. Without it every site creation fails.</li>
+<li>You are a <strong>network super admin</strong>. Other admins can see the Multisite tab but their saves and buttons do nothing.</li>
+<li>The hub is connected to Rechat and synced. Each agent has an <strong>email</strong> (needed for their login) and Rechat agent IDs (needed for their listings).</li>
+<li>All screens are on the <strong>hub</strong>: WP Admin → Rechat → Multisite / Agent wizard / Office wizard. Sub-sites have no Rechat menu; they use the hub's connection, brand and API keys.</li>
+</ul>
+<h3 id="rch-guide-step-1-get-the-agent-theme-ready">Step 1 — Get the agent theme ready</h3>
+<ol>
+<li>Upload the theme folder to <code>wp-content/themes/</code> on the server.</li>
+<li>The theme does not need to be network-enabled; the plugin enables it per site when it applies it.</li>
+<li>For the Agent wizard to find the theme's settings, the theme must save them in one WordPress option array, set in <code>includes/themeoption.php</code> with plain <code>'key' =&gt; value</code> entries (keys starting <code>rch-</code> or containing a hyphen). Settings labels come from <code>includes/views/option-panel.php</code>. Rechat agent themes already follow this.</li>
+<li>Optional: a <code>rechat-agent-wizard.json</code> file in the theme root can name the option (<code>storage.primary</code>), hide fields (<code>exclude_fields</code>) or relabel them (<code>fields</code>).</li>
+</ol>
+<h3 id="rch-guide-step-2-network-settings">Step 2 — Network settings</h3>
+<p>Go to <strong>Rechat → Multisite → Network settings</strong>:</p>
+<ol>
+<li>Tick <strong>Create a WordPress sub-site for each agent</strong> (and for each office if you want office sites).</li>
+<li>Pick <strong>Default theme for agent sub-sites</strong> (and for office sub-sites). This also decides which theme's fields the wizard shows.</li>
+<li>Pick <strong>Agent sub-site URL slug</strong>: <code>jdoe</code> (default), <code>john-doe</code>, <code>johndoe</code> or <code>john</code>.</li>
+<li>Leave <strong>Agent login emails</strong> off for now.</li>
+<li>Click <strong>Save Multisite Settings</strong>.</li>
+</ol>
+<h3 id="rch-guide-step-3-create-the-sites">Step 3 — Create the sites</h3>
+<p>Use any one of these:</p>
+<ul>
+<li><strong>Provision all agent &amp; office sites</strong> (Create &amp; maintain sites). Creates every missing site and refreshes names on existing ones. The page reloads when done.</li>
+<li><strong>Sync now</strong> on the Sync Data tab. Sync creates sites for new agents automatically.</li>
+<li>One agent: <strong>Enable Site</strong> in the Agent site status table, or tick <strong>Enable site for this agent</strong> on the agent's edit screen and Update.</li>
+</ul>
+<p>A new site gets the theme, the hub's permalinks, timezone and API keys, and has &quot;Hello world!&quot; and &quot;Sample Page&quot; removed. Posts already broadcast on the hub are copied to it, plus neighborhoods that match the agent's offices.</p>
+<h3 id="rch-guide-step-4-assign-themes">Step 4 — Assign themes</h3>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>You want</th>
+<th>Do this</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Same theme on every agent site</td>
+<td>Pick it in <strong>Default theme for agent sub-sites</strong>, then <strong>Apply to all agent sub-sites</strong></td>
+</tr>
+<tr>
+<td>A different theme for one agent</td>
+<td>Choose it in that agent's <strong>Theme for this sub-site</strong> dropdown (status table or agent edit screen). It switches at once</td>
+</tr>
+<tr>
+<td>Re-apply defaults + per-agent choices everywhere</td>
+<td><strong>Sync themes (defaults + overrides)</strong></td>
+</tr>
+<tr>
+<td>Sites showing a blank or broken theme</td>
+<td><strong>Fix theme on existing sites</strong></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="rch-guide-step-5-fill-the-theme-with-agent-data-agent-wizard">Step 5 — Fill the theme with agent data (Agent wizard)</h3>
+<p>Go to <strong>Rechat → Agent wizard</strong>. The wizard writes theme settings on sites that already exist; it never creates sites.</p>
+<ol>
+<li><strong>Scope &amp; agent:</strong> choose <strong>Single agent</strong> and pick an agent (loads automatically), or <strong>All agent sub-sites</strong>. Optionally <strong>Import testimonials to sub-site(s)</strong>. Click <strong>Continue</strong>.</li>
+<li><strong>Theme options:</strong> for each theme setting choose a <strong>Source</strong>: <em>Do not change</em>, <em>Set manually</em> (type a value, pick from a list, or <strong>Media library</strong>), or <em>Agent profile (metabox)</em> (pick a profile field such as Phone number or Profile image URL). In text fields, <strong>Placeholders</strong> insert <code>{$post_title}</code> etc., filled per agent.</li>
+<li><strong>Broadcast content</strong> (only with Broadcast): search hub posts/pages, tick them, <strong>Broadcast selected</strong> (15 per click). Pages already on a site are skipped, not updated.</li>
+<li><strong>Menus &amp; widgets:</strong> build a menu (<strong>New menu name</strong>, add pages or custom links, tick theme locations, <strong>Create menu on all targets</strong>), or tick existing template menus and a widgets mode, then <strong>Apply to target sites</strong>.</li>
+<li><strong>Preview &amp; deploy:</strong> check <strong>What will change</strong>, then <strong>Deploy now</strong>.</li>
+</ol>
+<p>After a deploy:</p>
+<ul>
+<li>That setup becomes the network default and is applied automatically to every <strong>new</strong> agent site (within its first hour).</li>
+<li>When agent data changes on the hub (sync or edit), every wizard-deployed agent site is refreshed with the new data and its cache purged.</li>
+</ul>
+<p><strong>Before deploying to All agent sub-sites:</strong> loading one agent turns rows that had a value into <em>Set manually</em> with that agent's values. Set those rows back to <em>Do not change</em> or to a profile field, or every agent gets the first agent's phone, photo, etc.</p>
+<h3 id="rch-guide-step-6-give-the-agent-access">Step 6 — Give the agent access</h3>
+<ol>
+<li>Turn on <strong>Agent login emails</strong> and <strong>Save Multisite Settings</strong>.</li>
+<li>Click <strong>Update editor</strong> in the agent's row (or <strong>Update editor user &amp; email</strong> on the agent screen). The agent gets the <strong>Agent</strong> role on their site and an email with login details. This resets their password.</li>
+<li>Turn <strong>Agent login emails</strong> off again.</li>
+</ol>
+<p>Agents can then edit their site content and the theme's Theme Setting page.</p>
+<h3 id="rch-guide-office-sites">Office sites</h3>
+<p>Same flow with <strong>Rechat → Office wizard</strong>: pick an office, map fields from the office profile (name, content, Office brand ID, address, phone), deploy. Differences: no testimonials, no editor user, no auto-setup for new office sites, and no refresh after sync.</p>
+<h2 id="rch-guide-multisite-buttons-reference">Multisite buttons reference</h2>
+<p>Every control on the hub's Multisite tab, Agent wizard, Office wizard and the Agent Site / Office Site boxes. All Multisite-tab tools are safe to run more than once, except the Danger zone.</p>
+<h3 id="rch-guide-multisite-tab-network-settings">Multisite tab — Network settings</h3>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Create a WordPress sub-site for each agent</td>
+<td>On by default. Allows sync, Provision and Enable to create agent sites</td>
+</tr>
+<tr>
+<td>Create a WordPress sub-site for each office</td>
+<td>On by default. Same for office sites</td>
+</tr>
+<tr>
+<td>Agent login emails</td>
+<td>Off by default. When on, new or updated agent accounts get a login email and <strong>Update editor</strong> resets their password</td>
+</tr>
+<tr>
+<td>Default theme for agent sub-sites</td>
+<td>Theme for new agent sites and for &quot;Apply to all&quot;; also the theme the Agent wizard reads</td>
+</tr>
+<tr>
+<td>Default theme for office sub-sites</td>
+<td>Same for office sites and the Office wizard</td>
+</tr>
+<tr>
+<td>Site URL format</td>
+<td>Display only. The real format comes from the network's wp-config (subdomain or subdirectory)</td>
+</tr>
+<tr>
+<td>Agent sub-site URL slug</td>
+<td><code>jdoe</code> (default), <code>john-doe</code>, <code>johndoe</code>, <code>john</code>. Duplicates get 2, 3… Applies to new sites; use Migrate to rename existing ones</td>
+</tr>
+<tr>
+<td>Office sub-site URL slug</td>
+<td>With <code>o-</code> prefix (default) or no prefix</td>
+</tr>
+<tr>
+<td>Owner User ID for new sites</td>
+<td>User set as owner of each new site. Blank = network admin</td>
+</tr>
+<tr>
+<td>When agent or office post is deleted</td>
+<td>Ticked = permanently delete the linked site. Unticked = archive it. Applies also when sync removes an agent</td>
+</tr>
+<tr>
+<td><strong>Save Multisite Settings</strong></td>
+<td>Saves all of the above. Super admin only</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="rch-guide-multisite-tab-tools">Multisite tab — Tools</h3>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Button</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Provision all agent &amp; office sites</strong></td>
+<td>Creates a site for every published agent/office that is enabled and has none; updates name and tagline on existing sites</td>
+</tr>
+<tr>
+<td><strong>Migrate agent sub-site URLs</strong></td>
+<td>Renames every agent site to the current slug format. Subdomain installs only. Old URLs do not redirect</td>
+</tr>
+<tr>
+<td><strong>Sync themes (defaults + overrides)</strong></td>
+<td>Puts each site on its own chosen theme, or the default. Skips sites already correct</td>
+</tr>
+<tr>
+<td><strong>Fix theme on existing sites</strong></td>
+<td>For sites with no theme: applies the theme and re-runs new-site setup</td>
+</tr>
+<tr>
+<td><strong>Apply to all agent sub-sites</strong></td>
+<td>Forces the selected default theme on every agent site, ignoring per-agent choices</td>
+</tr>
+<tr>
+<td><strong>Apply to all office sub-sites</strong></td>
+<td>Same for office sites</td>
+</tr>
+<tr>
+<td><strong>Reassign role for all agents</strong></td>
+<td>Gives each agent's WordPress user the Agent role on their site; copies missing API keys, brand color and map settings from the hub; turns on Local Content. Sends no email</td>
+</tr>
+<tr>
+<td><strong>Preview duplicate cleanup</strong></td>
+<td>Lists duplicate sites that cleanup would delete. Back up first: it can unlink duplicate hub agent posts even in preview</td>
+</tr>
+<tr>
+<td><strong>Run cleanup (permanent)</strong></td>
+<td>Permanently deletes duplicate sites (e.g. <code>jsmith2</code> when <code>jsmith</code> exists) and trashes duplicate hub agents. Cannot be undone. Two different agents with the same base slug look like duplicates, so check the preview</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="rch-guide-multisite-tab-status-tables-one-row-per-agent-office">Multisite tab — status tables (one row per agent / office)</h3>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Control</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Theme for this sub-site</td>
+<td>Per-site theme. Saves and switches at once (&quot;Saved.&quot;)</td>
+</tr>
+<tr>
+<td><strong>Disable Site</strong></td>
+<td>Archives the site. Visitors see &quot;This site has been archived or suspended.&quot; Admin still works</td>
+</tr>
+<tr>
+<td><strong>Enable Site</strong></td>
+<td>Unarchives the site, or creates it if missing</td>
+</tr>
+<tr>
+<td><strong>Update editor</strong> (agents only)</td>
+<td>Creates or links the agent's user with the Agent role. With login emails on, emails login details and resets the password</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="rch-guide-agent-edit-screen-agent-site-box">Agent edit screen — Agent Site box</h3>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Control</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Enable site for this agent</td>
+<td>Untick + Update = archive the site; tick + Update = restore or create it</td>
+</tr>
+<tr>
+<td>Theme for this sub-site</td>
+<td>Per-agent theme, applied when you Update</td>
+</tr>
+<tr>
+<td><strong>View Site</strong> / <strong>Site Admin</strong></td>
+<td>Opens the agent's site or its wp-admin</td>
+</tr>
+<tr>
+<td><strong>Update editor user &amp; email</strong></td>
+<td>Same as Update editor</td>
+</tr>
+<tr>
+<td>Create &amp; set portal (Agent Details box)</td>
+<td>Registers the agent site's domain in the agent's Rechat portal</td>
+</tr>
+</tbody>
+</table></div>
+<p>The <strong>Office Site</strong> box on offices has the same controls without the editor button.</p>
+<h3 id="rch-guide-agent-wizard-office-wizard-is-the-same-unless-noted">Agent wizard (Office wizard is the same unless noted)</h3>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Button</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 Scope</td>
+<td>Single agent / All agent sub-sites</td>
+<td>Deploy to one site or to every linked agent site</td>
+</tr>
+<tr>
+<td>1 Scope</td>
+<td><strong>Load profile</strong> (Office: <strong>Load office</strong>)</td>
+<td>Loads the agent's data and the site's current theme values</td>
+</tr>
+<tr>
+<td>1 Scope</td>
+<td><strong>Import testimonials to sub-site(s)</strong></td>
+<td>Copies the agent's hub testimonials into testimonial posts on the site; removes ones deleted on the hub. Agents only</td>
+</tr>
+<tr>
+<td>1 Scope</td>
+<td><strong>Delete all testimonials (main site + sub-site)</strong></td>
+<td>Deletes every testimonial on the site, including hand-made ones, and empties the agent's hub list. Cannot be undone</td>
+</tr>
+<tr>
+<td>1 Scope</td>
+<td><strong>Restore my draft</strong></td>
+<td>Loads your own last saved draft</td>
+</tr>
+<tr>
+<td>2 Theme options</td>
+<td>Source: Do not change / Set manually / Agent profile</td>
+<td>Per setting: leave alone, fixed value, or value from each agent's profile</td>
+</tr>
+<tr>
+<td>2 Theme options</td>
+<td><strong>Media library</strong>, <strong>Placeholders</strong></td>
+<td>Pick an image/video; insert <code>{$field}</code> tokens filled per agent</td>
+</tr>
+<tr>
+<td>3 Broadcast</td>
+<td><strong>Load list</strong>, Previous / Next, Select all on page, Clear page</td>
+<td>Find hub posts and pages</td>
+</tr>
+<tr>
+<td>3 Broadcast</td>
+<td><strong>Broadcast selected</strong></td>
+<td>Copies up to 15 selected items to the target sites. Existing copies are skipped. Keep the tab open on big runs</td>
+</tr>
+<tr>
+<td>4 Menus</td>
+<td><strong>Load menus &amp; sidebars</strong></td>
+<td>Lists the template site's menus, widgets and locations</td>
+</tr>
+<tr>
+<td>4 Menus</td>
+<td><strong>Load broadcasted list</strong>, <strong>Add</strong>, <strong>Add selected to menu</strong>, <strong>Search</strong>, <strong>Add custom link</strong>, Move up / Move down / Remove</td>
+<td>Build a new menu</td>
+</tr>
+<tr>
+<td>4 Menus</td>
+<td><strong>Create menu on all targets</strong></td>
+<td>Creates the built menu on every target, replacing any menu with the same name</td>
+</tr>
+<tr>
+<td>4 Menus</td>
+<td><strong>Apply to target sites</strong></td>
+<td>Copies ticked template menus and, if chosen, all widgets. Replaces same-name menus and all widget settings</td>
+</tr>
+<tr>
+<td>5 Deploy</td>
+<td><strong>Refresh preview</strong>, Show technical JSON</td>
+<td>Re-draws what will change</td>
+</tr>
+<tr>
+<td>5 Deploy</td>
+<td><strong>Save draft</strong></td>
+<td>Saves your draft. In Single agent mode it also writes to that agent's live site</td>
+</tr>
+<tr>
+<td>5 Deploy</td>
+<td><strong>Deploy now</strong></td>
+<td>Writes the settings to the target sites' theme options (other settings kept), purges cache, and makes this the default for new agent sites</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="rch-guide-other-multisite-boxes">Other multisite boxes</h3>
+<ul>
+<li><strong>Assigned Offices</strong> (hub Neighborhoods): agent sites whose agent belongs to one of these offices get the neighborhood.</li>
+<li><strong>Rating &amp; link</strong> (sub-site testimonial): Stars and Link. Overwritten by the next testimonial sync.</li>
+</ul>
+<h2 id="rch-guide-settings-reference">Settings reference</h2>
+<p>Site-wide options live on the <strong>General</strong>, <strong>Local Logic &amp; Maps</strong>, <strong>Import / Export</strong> and <strong>Portal Log</strong> tabs. On Multisite, sub-sites inherit these from the hub unless they have their own.</p>
+<h3 id="rch-guide-general-tab">General tab</h3>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Card</th>
+<th>Setting</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Listings &amp; location</td>
+<td>Listing Display Mode</td>
+<td>How agent pages show listings: Combined (default), Separate Sections (active and sold apart), Active Only, Sold Only</td>
+</tr>
+<tr>
+<td>Listings &amp; location</td>
+<td>Country, State / Province</td>
+<td>Default search area for every listing block, shortcode and search bar. &quot;Any&quot; = no limit</td>
+</tr>
+<tr>
+<td>Listings &amp; location</td>
+<td>CAPTCHA</td>
+<td>None (built-in anti-spam only), Cloudflare Turnstile, or Google reCAPTCHA v3. Needs both Site key and Secret key</td>
+</tr>
+<tr>
+<td>Listings &amp; location</td>
+<td>Find boundary ID</td>
+<td>Type a neighborhood, city or ZIP, click <strong>Copy ID</strong>, paste into <code>filter_boundary_ids</code></td>
+</tr>
+<tr>
+<td>Lead capture</td>
+<td>Listing Page Lead Capture: Lead Source, Tags</td>
+<td>Lead channel and tags for listing-page inquiries and <code>[rch_leads_form]</code></td>
+</tr>
+<tr>
+<td>Lead capture</td>
+<td>Agent Page Lead Capture: Lead Source, Tags</td>
+<td>Same for the agent profile contact form. Leads are assigned to that agent</td>
+</tr>
+<tr>
+<td>Rechat brand color</td>
+<td>Color mode, Theme, Corner radius, Map style, Brand color</td>
+<td>Look of all Rechat listing widgets: Light/Dark, Rechat/Compact, Default/Sharp corners, map preset, accent color. <strong>Save brand color</strong> (administrators only)</td>
+</tr>
+</tbody>
+</table></div>
+<p>A lead form needs a Lead Source. Without one, submissions fail with &quot;Lead channel is required.&quot;</p>
+<p>Built-in spam protection is always on: hidden honeypot field, minimum fill time, same-site check, disposable-email block, and 30 submissions per visitor per hour.</p>
+<h3 id="rch-guide-local-logic-maps-tab">Local Logic &amp; Maps tab</h3>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Local Logic API Key (Listing Page)</td>
+<td>Turns on Local Logic for listing and Off Market pages</td>
+</tr>
+<tr>
+<td>Google Map API Key</td>
+<td>Map picker in Listing Block and Neighborhoods, search bar map, Local Logic maps</td>
+</tr>
+<tr>
+<td>Features: Local Content</td>
+<td>Shows the Local Logic neighborhood widget on listing and Off Market pages</td>
+</tr>
+<tr>
+<td>Local Logic API Key (Neighborhood Page)</td>
+<td>Turns on Local Logic sections on Neighborhood pages</td>
+</tr>
+<tr>
+<td>Neighborhood Features</td>
+<td>Pick sections: Hero, Map, Highlights, Characteristics, Schools, Demographics, Property Value Drivers, Market Trends, Match. Each neighborhood needs a map pin</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="rch-guide-import-export-tab">Import / Export tab</h3>
+<p><strong>Import agent bios and testimonials from CSV</strong></p>
+<ol>
+<li>Click <strong>Sample CSV (multi-row)</strong> or <strong>Simple CSV (one row)</strong> to get a template.</li>
+<li>Fill columns: <code>agent_match</code> (required: post ID, Rechat ID or exact agent name), <code>bio</code>, <code>title</code>, <code>testimonial_name</code>, <code>testimonial_description</code>, <code>testimonial_rank</code> (stars), <code>testimonial_link</code>. Leave <code>agent_match</code> blank to add more testimonials to the agent above.</li>
+<li>Choose <strong>Default match by</strong> (Auto-detect, Post ID, Rechat ID, Agent post title).</li>
+<li>Tick what to import (bio, agent title, testimonials) and <strong>Replace</strong> or <strong>Merge</strong> existing testimonials.</li>
+<li>Upload the file, click <strong>Preview import</strong>, check the table, then <strong>Run import</strong>.</li>
+</ol>
+<p>A blank bio never erases an existing one. On Multisite, imported testimonials also sync to agent sites.</p>
+<p><strong>Export agents</strong></p>
+<ul>
+<li><strong>Export Email / Rechat ID / Brand ID</strong>: quick 3-column file.</li>
+<li>Full export: tick fields, drag to order (Select all, Select none, Reset order), <strong>Export CSV</strong>. File name <code>agents-export-YYYY-MM-DD.csv</code>.</li>
+<li>When the theme has a Testimonial post type: <strong>Export testimonials CSV</strong> and <strong>Import testimonials CSV</strong> (rows with a matching post_id update, others are created).</li>
+</ul>
+<h3 id="rch-guide-portal-log-tab-administrators">Portal Log tab (administrators)</h3>
+<p>Rechat widgets only work on domains registered in your Rechat brand portal. Single sites register themselves on each sync; this tab handles agent sites.</p>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Button</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Run diagnostic (dry — no API write)</strong></td>
+<td>Checks which hostnames are missing, changes nothing</td>
+</tr>
+<tr>
+<td><strong>Run now (live — registers hostnames)</strong></td>
+<td>Registers missing hostnames, 20 agents per batch</td>
+</tr>
+<tr>
+<td><strong>Clear log</strong></td>
+<td>Empties the request log (keeps last 300 otherwise)</td>
+</tr>
+<tr>
+<td>Copy cURL</td>
+<td>Copies a request for debugging. It contains the live access token: do not share it</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="rch-guide-user-guide-tab">User Guide tab</h3>
+<p>Shows this guide inside WordPress. <strong>Download guide (HTML)</strong> saves a copy you can open in any browser, <strong>Download Markdown</strong> saves the plain-text source, and <strong>Print / Save as PDF</strong> opens the print dialog.</p>
+<h3 id="rch-guide-roles">Roles</h3>
+<p>The <strong>Agent</strong> role is an Editor that can also open Rechat settings, list users and edit theme options. Agents get it on their own site through <strong>Update editor</strong>.</p>
+<h2 id="rch-guide-troubleshooting">Troubleshooting</h2>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Problem</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Listing or agent pages show 404</td>
+<td>Settings → Permalinks → Save</td>
+</tr>
+<tr>
+<td>No agents / empty pages</td>
+<td>Check Connect tab says Connected, then <strong>Sync now</strong></td>
+</tr>
+<tr>
+<td>Sync not running on schedule</td>
+<td>Connect → Data sync status. If WP-Cron is disabled, add a server cron; if not scheduled, load any front-end page or reactivate the plugin</td>
+</tr>
+<tr>
+<td>&quot;Rechat OAuth token refresh failed&quot;</td>
+<td>Connect tab → <strong>Refresh access token now</strong>; if it still fails, Disconnect and Connect again</td>
+</tr>
+<tr>
+<td>Lead form says &quot;Lead channel is required.&quot;</td>
+<td>General → Lead capture → pick a Lead Source, or set <code>lead_channel</code> on the form</td>
+</tr>
+<tr>
+<td>Map picker says Google Maps key not found</td>
+<td>Local Logic &amp; Maps → Google Map API Key</td>
+</tr>
+<tr>
+<td>Duplicate agent after sync</td>
+<td>A synced agent was set to Draft. Publish it again (or delete the copy) and use Visibility → Hide instead</td>
+</tr>
+<tr>
+<td>Rechat widgets blank on an agent site</td>
+<td>Portal Log → <strong>Run now</strong> to register the site's hostname</td>
+</tr>
+<tr>
+<td>&quot;Sub-site creation is blocked&quot; banner</td>
+<td>Network Admin → Plugins → network-activate Broadcast</td>
+</tr>
+<tr>
+<td>Multisite buttons say &quot;Insufficient permissions&quot; or Save does nothing</td>
+<td>Log in as a network super admin</td>
+</tr>
+<tr>
+<td>Agent site listings are empty or disabled</td>
+<td>The hub agent has no Rechat agent IDs. Check the agent in Rechat and sync</td>
+</tr>
+<tr>
+<td>Office site shows all listings</td>
+<td>Office was added by hand and has no Office ID. Use the synced office</td>
+</tr>
+<tr>
+<td>Wizard shows &quot;No theme options discovered&quot;</td>
+<td>Default theme for agent sub-sites is wrong, or the theme doesn't store settings in one option array. Save the theme's settings once on the hub, or add <code>rechat-agent-wizard.json</code></td>
+</tr>
+<tr>
+<td>Deploy error &quot;This agent has no linked sub-site&quot;</td>
+<td>Create the site first: Provision or Enable Site</td>
+</tr>
+<tr>
+<td>Agent site still shows old content after deploy</td>
+<td>Purge the page cache for that site (office sites always need this)</td>
+</tr>
+<tr>
+<td>Agent never got a login</td>
+<td>Turn on Agent login emails, then <strong>Update editor</strong>; or have them use &quot;Lost password&quot;</td>
+</tr>
+<tr>
+<td>Testimonials won't sync to agent site</td>
+<td>The agent site's theme must have a Testimonial post type</td>
+</tr>
+<tr>
+<td>Agent site says &quot;archived or suspended&quot;</td>
+<td>Click <strong>Enable Site</strong> in the status table</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+</main>
+<script>
+if (window.location.hash === '#print') { window.addEventListener('load', function () { window.print(); }); }
+</script>
+</body>
+</html>

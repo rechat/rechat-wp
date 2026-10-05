@@ -2,7 +2,7 @@
 /*
 Plugin Name: Rechat Plugin
 Description: Fetches and manages agent, offices, regions, and Listing data from Rechat.
-Version: 7.0.89
+Version: 7.0.90
 Author URI: https://rechat.com/
 Text Domain: rechat-plugin
 License: GPL-2.0-or-later
@@ -18,7 +18,7 @@ if (! defined('ABSPATH')) {
 // define required constants.
 define('RCH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('RCH_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('RCH_VERSION', '7.0.89');
+define('RCH_VERSION', '7.0.90');
 if (! function_exists('rch_is_localhost_environment')) {
     /**
      * True when site runs on local dev (localhost, 127.0.0.1, .local, .test, or WP_ENVIRONMENT_TYPE=local).
@@ -119,7 +119,8 @@ require_once RCH_PLUGIN_INCLUDES . 'roles/agent-user-role.php';
 function rch_plugin_action_links($links)
 {
     $settings_link = '<a href="admin.php?page=rechat-setting">' . __('Settings', 'rechat-plugin') . '</a>';
-    array_push($links, $settings_link);
+    $guide_link    = '<a href="admin.php?page=rechat-setting&tab=user-guide">' . __('User Guide', 'rechat-plugin') . '</a>';
+    array_push($links, $settings_link, $guide_link);
     return $links;
 }
 add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'rch_plugin_action_links');
@@ -189,6 +190,7 @@ include RCH_PLUGIN_INCLUDES . 'admin/settings-page/other-settings.php';
 include RCH_PLUGIN_INCLUDES . 'admin/settings-page/local-logic-setting.php';
 include RCH_PLUGIN_INCLUDES . 'admin/settings-page/theme-colors-setting.php';
 include RCH_PLUGIN_INCLUDES . 'admin/menu-setting.php';
+include RCH_PLUGIN_INCLUDES . 'admin/user-guide.php';
 include RCH_PLUGIN_INCLUDES . 'admin/custom-fields.php';
 include RCH_PLUGIN_INCLUDES . 'template-load.php';
 include RCH_PLUGIN_INCLUDES . 'helper.php';

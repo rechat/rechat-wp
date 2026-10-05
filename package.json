@@ -5,7 +5,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build:scripts": "wp-scripts build",
-    "start-build": "wp-scripts start"
+    "start-build": "wp-scripts start",
+    "build:guide": "node docs/build-user-guide.js"
   },
   "author": "",
   "license": "ISC",

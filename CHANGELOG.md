@@ -1,5 +1,18 @@
 # Changelog
 
+## 7.0.90
+
+- **New: User Guide inside the plugin.** A new **Rechat → User Guide** tab shows
+  a full guide for site admins: connecting to Rechat, syncing, listings / blocks /
+  shortcodes, Multisite agent websites step by step (network settings, creating
+  sites, assigning themes, Agent wizard, agent logins), a reference of every
+  Multisite and wizard button, settings, and troubleshooting.
+- **Download or print it.** The tab has **Download guide (HTML)**, **Download
+  Markdown** and **Print / Save as PDF** buttons. The Plugins screen has a new
+  **User Guide** link next to Settings, and README.md links to the guide on GitHub.
+- **Source:** `docs/user-guide.md`. After editing it, run `npm run build:guide` to
+  regenerate `docs/user-guide-body.html` (tab) and `docs/user-guide.html` (download).
+
 ## 7.0.88
 
 - **Fix: agent sub-sites kept showing old agent data after a Rechat sync.** Wizard

@@ -1,0 +1,192 @@
+/* Rechat plugin user guide: WP Admin → Rechat → User Guide and docs/user-guide.html */
+.rch-guide {
+	--rch-guide-text: #1d2327;
+	--rch-guide-muted: #50575e;
+	--rch-guide-border: #dcdcde;
+	--rch-guide-surface: #ffffff;
+	--rch-guide-soft: #f6f7f7;
+	--rch-guide-accent: #2271b1;
+	color: var(--rch-guide-text);
+	font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+.rch-guide__title {
+	font-size: 28px;
+	line-height: 1.25;
+	margin: 0 0 4px;
+}
+
+.rch-guide__meta {
+	color: var(--rch-guide-muted);
+	margin: 0 0 24px;
+}
+
+.rch-guide__toc {
+	background: var(--rch-guide-surface);
+	border: 1px solid var(--rch-guide-border);
+	border-radius: 8px;
+	padding: 16px 20px;
+	margin: 0 0 24px;
+}
+
+.rch-guide__toc h2 {
+	font-size: 15px;
+	margin: 0 0 8px;
+}
+
+.rch-guide__toc ol {
+	margin: 0;
+	padding-left: 20px;
+	columns: 2 220px;
+}
+
+.rch-guide__toc a {
+	color: var(--rch-guide-accent);
+	text-decoration: none;
+}
+
+.rch-guide__toc a:hover {
+	text-decoration: underline;
+}
+
+.rch-guide__content {
+	background: var(--rch-guide-surface);
+	border: 1px solid var(--rch-guide-border);
+	border-radius: 8px;
+	padding: 8px 28px 28px;
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+.rch-guide__content h2 {
+	font-size: 21px;
+	line-height: 1.3;
+	margin: 32px 0 12px;
+	padding-top: 16px;
+	border-top: 1px solid var(--rch-guide-border);
+	scroll-margin-top: 48px;
+}
+
+.rch-guide__content h2:first-child {
+	border-top: 0;
+	padding-top: 0;
+}
+
+.rch-guide__content h3 {
+	font-size: 16px;
+	margin: 24px 0 8px;
+	scroll-margin-top: 48px;
+}
+
+.rch-guide__content p,
+.rch-guide__content ul,
+.rch-guide__content ol {
+	font-size: 14px;
+	margin: 0 0 12px;
+}
+
+.rch-guide__content ul,
+.rch-guide__content ol {
+	padding-left: 22px;
+}
+
+.rch-guide__content ul {
+	list-style: disc;
+}
+
+.rch-guide__content ol {
+	list-style: decimal;
+}
+
+.rch-guide__content li {
+	margin: 0 0 4px;
+}
+
+.rch-guide__content code {
+	background: var(--rch-guide-soft);
+	border: 1px solid var(--rch-guide-border);
+	border-radius: 4px;
+	padding: 1px 5px;
+	font-size: 12.5px;
+}
+
+.rch-guide__content pre {
+	background: var(--rch-guide-soft);
+	border: 1px solid var(--rch-guide-border);
+	border-radius: 6px;
+	padding: 12px 14px;
+	overflow-x: auto;
+	margin: 0 0 16px;
+}
+
+.rch-guide__content pre code {
+	background: none;
+	border: 0;
+	padding: 0;
+	white-space: pre;
+}
+
+.rch-guide__table {
+	overflow-x: auto;
+	margin: 0 0 16px;
+}
+
+.rch-guide__table table {
+	border-collapse: collapse;
+	width: 100%;
+	font-size: 13px;
+}
+
+.rch-guide__table th,
+.rch-guide__table td {
+	border: 1px solid var(--rch-guide-border);
+	padding: 8px 10px;
+	text-align: left;
+	vertical-align: top;
+}
+
+.rch-guide__table th {
+	background: var(--rch-guide-soft);
+	font-weight: 600;
+}
+
+.rch-guide__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 0 0 20px;
+}
+
+.rch-guide__actions .button .dashicons {
+	margin: 4px 4px 0 -2px;
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+}
+
+@media print {
+	body {
+		background: #fff !important;
+	}
+
+	.rch-guide {
+		padding: 0 !important;
+		max-width: none !important;
+	}
+
+	.rch-guide__toc,
+	.rch-guide__content {
+		border: 0;
+		padding: 0;
+	}
+
+	.rch-guide__content h2,
+	.rch-guide__content h3 {
+		break-after: avoid;
+	}
+
+	.rch-guide__table tr,
+	.rch-guide__content pre {
+		break-inside: avoid;
+	}
+}
