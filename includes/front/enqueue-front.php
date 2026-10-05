@@ -167,8 +167,13 @@ function rch_enqueue_block_assets()
         rch_register_rechat_sdk_assets();
     }
 
-    // Automatically enqueue script/style only when block is present
-    if (has_block('rch-rechat-plugin/listing-block')) {
+    /*
+     * Front end: only when the block is present. Editor (is_admin): ALWAYS — the editor canvas
+     * is an iframe that only receives enqueue_block_assets, and has_block() checks the SAVED
+     * content, so a freshly inserted (unsaved) listing block got no SDK and its preview stayed
+     * blank until save + reload.
+     */
+    if (is_admin() || has_block('rch-rechat-plugin/listing-block')) {
         wp_enqueue_style('rechat-sdk-css');
         wp_enqueue_script('rechat-sdk-js');
     }

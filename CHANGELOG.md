@@ -1,5 +1,16 @@
 # Changelog
 
+## 7.0.92
+
+- **Fix: Listing block preview stayed blank right after adding it in the editor.**
+  When you added a Listing block in the Gutenberg editor, nothing showed until you
+  saved the page and reloaded. The editor shows blocks inside an iframe, and the
+  Rechat SDK was only loaded into it when the *saved* page already had a Listing
+  block, so a newly added block had no SDK to render it.
+- The SDK now always loads in the editor, so the listings preview appears as soon as
+  the block is added. The live site is unchanged: the SDK still loads only on pages
+  that use the block.
+
 ## 7.0.91
 
 - **Fix: agent sync created duplicate agents.** The scheduled (cron) sync decides
