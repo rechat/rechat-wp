@@ -870,6 +870,41 @@ function rch_fetch_and_process_brands($api_url_base, $access_token)
 
     return array('success' => true, 'regions' => $regions, 'offices' => $offices);
 }
+/**
+ * Map every existing agent post that has a Rechat `api_id` => its post ID.
+ *
+ * Reads the DB directly instead of get_posts(): pre_get_posts can't be suppressed,
+ * so a theme filter that hides agent_visibility=hide agents (or one that runs under
+ * WP-Cron) made the sync miss existing agents and insert duplicates on every run.
+ * Covers every real status (draft/private/pending too, not just publish), so
+ * unpublished agents aren't re-created either. When an api_id already has
+ * duplicates, the oldest post (lowest ID) wins so updates land on the original.
+ *
+ * @return array<string,int>
+ */
+function rch_get_existing_agent_api_id_map(): array
+{
+    global $wpdb;
+
+    $rows = $wpdb->get_results(
+        "SELECT pm.meta_value AS api_id, MIN(p.ID) AS post_id
+         FROM {$wpdb->postmeta} pm
+         INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+         WHERE pm.meta_key = 'api_id'
+           AND pm.meta_value <> ''
+           AND p.post_type = 'agents'
+           AND p.post_status NOT IN ('trash', 'auto-draft', 'inherit')
+         GROUP BY pm.meta_value"
+    );
+
+    $map = array();
+    foreach ((array) $rows as $row) {
+        $map[(string) $row->api_id] = (int) $row->post_id;
+    }
+
+    return $map;
+}
+
 /*******************************
  * Fetch and process agents data with pagination
  ******************************/
@@ -881,21 +916,8 @@ function rch_process_agents_data($access_token, $api_url_base)
     $offset = 0;
     $default_profile_image_url = RCH_PLUGIN_URL . 'assets/images/image-placeholder.jpg';
 
-    // Get existing posts and their API IDs
-    $existing_posts = get_posts(array(
-        'post_type'   => 'agents',
-        'numberposts' => -1,
-        'meta_key'    => 'api_id',
-        'fields'      => 'ids',
-    ));
-
-    $existing_api_ids = array();
-    foreach ($existing_posts as $post_id) {
-        $api_id = get_post_meta($post_id, 'api_id', true);
-        if ($api_id !== '' && $api_id !== null) {
-            $existing_api_ids[(string) $api_id] = (int) $post_id;
-        }
-    }
+    // Map of existing Rechat API ID => agent post ID (all statuses, filter-proof).
+    $existing_api_ids = rch_get_existing_agent_api_id_map();
 
     $max_menu_order = (int) get_posts(array(
         'post_type'      => 'agents',
