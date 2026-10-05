@@ -4,6 +4,8 @@ Rechat plugin pulls data from Rechat (agents/offices/regions + listing search) a
 
 This README is user-facing: install, setup, features, templates, multisite, and **all shortcodes + accepted parameters**.
 
+> **📖 [Rechat Plugin User Guide](docs/user-guide.md)** — step-by-step guide for site admins: connecting to Rechat, syncing, building listing pages, Multisite agent websites (how to add a theme for agents), and what every button does. Also available inside WordPress at **Rechat → User Guide**, with download and print-to-PDF buttons.
+
 ---
 
 ## Features (what plugin does)

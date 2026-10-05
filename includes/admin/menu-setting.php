@@ -46,7 +46,7 @@ add_action('admin_menu', 'rch_register_my_setting_menu_page');
  ******************************/
 function rch_get_active_tab()
 {
-    $allowed_tabs = ['sync-data', 'connect-to-rechat', 'general-settings', 'local-logic', 'agent-import', 'portal-log'];
+    $allowed_tabs = ['sync-data', 'connect-to-rechat', 'general-settings', 'local-logic', 'agent-import', 'portal-log', 'user-guide'];
 
     if (rch_rechat_settings_is_multisite_hub_admin_context()) {
         $allowed_tabs[] = 'multisite';
@@ -83,6 +83,8 @@ function rch_render_tab_navigation($active_tab)
         $tabs['agent-site-wizard'] = __('Agent wizard', 'rechat-plugin');
         $tabs['office-site-wizard'] = __('Office wizard', 'rechat-plugin');
     }
+
+    $tabs['user-guide'] = __('User Guide', 'rechat-plugin');
 
     echo '<h2 class="nav-tab-wrapper">';
     
@@ -197,6 +199,12 @@ function rch_rechat_menu_page()
                 case 'office-site-wizard':
                     if (is_multisite() && function_exists('rch_office_wizard_render_tab')) {
                         rch_office_wizard_render_tab();
+                    }
+                    break;
+
+                case 'user-guide':
+                    if (function_exists('rch_user_guide_render_tab')) {
+                        rch_user_guide_render_tab();
                     }
                     break;
             }
