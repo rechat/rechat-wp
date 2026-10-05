@@ -1,5 +1,19 @@
 # Changelog
 
+## 7.0.91
+
+- **Fix: agent sync created duplicate agents.** The scheduled (cron) sync decides
+  "update or add" by looking up agents that already have a Rechat ID. That lookup
+  went through normal WordPress queries, so a theme filter that hides agents set to
+  **Visibility: Hide** also hid them from the sync. Each sync then added a new,
+  visible copy of every hidden agent. Draft, pending and private agents were
+  skipped the same way and re-added too.
+- The sync now reads existing agents straight from the database, across every
+  status except trash, so theme or plugin query filters can't affect it. If an agent
+  already has duplicates, the sync updates the oldest post (the original).
+- Existing duplicates are **not** removed automatically. Delete the extra copies by
+  hand (keep the oldest one).
+
 ## 7.0.90
 
 - **New: User Guide inside the plugin.** A new **Rechat → User Guide** tab shows
