@@ -220,9 +220,14 @@ function rch_agent_wizard_fetch_lead_channel_select_options(): array
             continue;
         }
         $id    = (string) $channel['id'];
-        $label = isset($channel['title']) && is_string($channel['title']) && $channel['title'] !== ''
-            ? (string) $channel['title']
-            : $id;
+        // Rechat returns the channel label in `name` (e.g. "Zillow"); `title` kept as fallback.
+        $label = $id;
+        foreach (['name', 'title'] as $label_key) {
+            if (isset($channel[ $label_key ]) && is_string($channel[ $label_key ]) && trim($channel[ $label_key ]) !== '') {
+                $label = trim((string) $channel[ $label_key ]);
+                break;
+            }
+        }
         $out[] = ['value' => $id, 'label' => $label];
     }
 
