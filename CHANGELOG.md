@@ -1,5 +1,14 @@
 # Changelog
 
+## 7.0.93
+
+- **Fix: Agent/Office wizard showed lead channel IDs instead of names.** The Lead
+  Channel dropdown in the wizard (e.g. "Theme Agent Talk Lead Channel") listed raw
+  IDs like `96b5a021-…` because it read a `title` field Rechat doesn't return. It now
+  shows the channel name from Rechat (e.g. **Zillow**, **Default Route**), the same
+  names as the theme option panel. Saved values are still channel IDs, so existing
+  selections are unchanged.
+
 ## 7.0.92
 
 - **Fix: Listing block preview stayed blank right after adding it in the editor.**
