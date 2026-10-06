@@ -1,4 +1,4 @@
-<nav class="rch-guide__toc" aria-label="Contents"><h2>Contents</h2><ol><li><a href="#rch-guide-overview">Overview</a></li><li><a href="#rch-guide-getting-started">Getting started</a></li><li><a href="#rch-guide-syncing">Syncing</a></li><li><a href="#rch-guide-listings-blocks-and-shortcodes">Listings, blocks and shortcodes</a></li><li><a href="#rch-guide-multisite-agent-websites">Multisite agent websites</a></li><li><a href="#rch-guide-multisite-buttons-reference">Multisite buttons reference</a></li><li><a href="#rch-guide-settings-reference">Settings reference</a></li><li><a href="#rch-guide-troubleshooting">Troubleshooting</a></li></ol></nav>
+<nav class="rch-guide__toc" aria-label="Contents"><h2>Contents</h2><ol><li><a href="#rch-guide-overview">Overview</a></li><li><a href="#rch-guide-getting-started">Getting started</a></li><li><a href="#rch-guide-syncing">Syncing</a></li><li><a href="#rch-guide-listings-blocks-and-shortcodes">Listings, blocks and shortcodes</a></li><li><a href="#rch-guide-shortcode-attributes-reference">Shortcode attributes reference</a></li><li><a href="#rch-guide-multisite-agent-websites">Multisite agent websites</a></li><li><a href="#rch-guide-multisite-buttons-reference">Multisite buttons reference</a></li><li><a href="#rch-guide-settings-reference">Settings reference</a></li><li><a href="#rch-guide-troubleshooting">Troubleshooting</a></li></ol></nav>
 <div class="rch-guide__content">
 <h2 id="rch-guide-overview">Overview</h2>
 <p>The Rechat plugin connects a WordPress site to your Rechat account. It pulls your agents, offices and regions into WordPress, shows live MLS listings, sends website leads to Rechat, and on a Multisite network builds a separate website for every agent and office.</p>
@@ -245,59 +245,7 @@
 [rch_testimonials title=&quot;What our clients say&quot; limit=&quot;6&quot; load_more=&quot;false&quot;]
 [rch_off_market status=&quot;sold&quot; display_type=&quot;swiper&quot; columns=&quot;3&quot; autoplay=&quot;true&quot;]
 </code></pre>
-<p>The full attribute list for every shortcode is in the plugin's README.md.</p>
-<h3 id="rch-guide-useful-listing-options">Useful listing options</h3>
-<div class="rch-guide__table"><table>
-<thead>
-<tr>
-<th>Option</th>
-<th>Values</th>
-<th>Effect</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>listing_statuses</code></td>
-<td>Active, Pending, Closed, Archived (comma list)</td>
-<td>Which statuses show</td>
-</tr>
-<tr>
-<td><code>property_types</code></td>
-<td>Residential, Sale, Lease, Lots &amp; Acreage, Commercial, All Listings</td>
-<td>Which property types show</td>
-</tr>
-<tr>
-<td><code>own_listing</code></td>
-<td>true / false</td>
-<td>Only your brand's listings</td>
-</tr>
-<tr>
-<td><code>filter_open_houses</code></td>
-<td>true / false</td>
-<td>Only listings with open houses</td>
-</tr>
-<tr>
-<td><code>filter_boundary_ids</code></td>
-<td>IDs from the boundary finder</td>
-<td>Limit to a neighborhood, city or ZIP</td>
-</tr>
-<tr>
-<td><code>hide_map</code>, <code>hide_filters</code>, <code>disable_sort</code></td>
-<td>true / false</td>
-<td>Simplify the page</td>
-</tr>
-<tr>
-<td><code>sort_by</code></td>
-<td><code>-list_date</code> (newest) or <code>-price</code></td>
-<td>Order</td>
-</tr>
-<tr>
-<td><code>display_type</code> (latest listings)</td>
-<td>swiper, normal, grid</td>
-<td>Layout</td>
-</tr>
-</tbody>
-</table></div>
+<p>Every attribute each shortcode accepts, with the values you can pick from, is listed in <strong>Shortcode attributes reference</strong> below.</p>
 <h3 id="rch-guide-agents-offices-regions-neighborhoods-off-market">Agents, offices, regions, neighborhoods, off market</h3>
 <p>Each content type has its own archive and single page: <code>/agents/</code>, <code>/offices/</code>, <code>/regions/</code>, <code>/neighborhoods/</code>, <code>/off-market/</code>.</p>
 <ul>
@@ -313,6 +261,1056 @@
 <li><strong>SEO:</strong> meta description, canonical, Open Graph and Twitter tags, unless an SEO plugin (Yoast, Rank Math, etc.) is active.</li>
 <li><strong>Schema:</strong> structured data for agents, listings, breadcrumbs and the home page.</li>
 </ul>
+<h2 id="rch-guide-shortcode-attributes-reference">Shortcode attributes reference</h2>
+<p>Every attribute each shortcode accepts, what it does, and the values you can choose. Write attributes as <code>name=&quot;value&quot;</code> inside the brackets, in any order. Leave out any attribute you don't need: its default applies.</p>
+<p><strong>How to read the values</strong></p>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Value type</th>
+<th>What to type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Yes / no</td>
+<td><code>true</code> or <code>false</code> (<code>1</code>/<code>0</code>, <code>yes</code>/<code>no</code> and <code>on</code>/<code>off</code> also work)</td>
+</tr>
+<tr>
+<td>Number</td>
+<td>Digits only, no <code>$</code>, commas or units: <code>500000</code>, not <code>$500,000</code></td>
+</tr>
+<tr>
+<td>Comma list</td>
+<td>Several values separated by commas: <code>Active,Pending</code>. A listing matches if it matches any one of them</td>
+</tr>
+<tr>
+<td>Pick one</td>
+<td>Only the values listed work. Spelling and capitals must match</td>
+</tr>
+<tr>
+<td>Empty (default)</td>
+<td>No limit: the filter is not applied</td>
+</tr>
+</tbody>
+</table></div>
+<p>Misspelled attribute names are ignored without a warning. If a filter seems to do nothing, check the spelling against these tables.</p>
+<p><strong>Listing status values</strong> (used by <code>listing_statuses</code> on <code>[listings]</code> and <code>[rch_latest_listings]</code>)</p>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Shows these Rechat statuses</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Active</code></td>
+<td>Active, Active Under Contract, Incoming, Coming Soon</td>
+</tr>
+<tr>
+<td><code>Pending</code></td>
+<td>Pending</td>
+</tr>
+<tr>
+<td><code>Closed</code></td>
+<td>Sold, Leased</td>
+</tr>
+<tr>
+<td><code>Archived</code></td>
+<td>Withdrawn, Expired</td>
+</tr>
+<tr>
+<td>Any exact status name</td>
+<td>Only that status, e.g. <code>Coming Soon</code> or <code>Sold</code></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Property type values</strong> (used by <code>property_types</code>)</p>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Residential</code></td>
+<td>Homes for sale</td>
+</tr>
+<tr>
+<td><code>Residential Lease</code></td>
+<td>Homes for rent</td>
+</tr>
+<tr>
+<td><code>Lots &amp; Acreage</code></td>
+<td>Land</td>
+</tr>
+<tr>
+<td><code>Commercial</code></td>
+<td>Commercial property</td>
+</tr>
+<tr>
+<td><code>Multi-Family</code></td>
+<td>Multi-family property</td>
+</tr>
+<tr>
+<td><code>Sale</code></td>
+<td><code>[rch_latest_listings]</code> only: Residential, Lots &amp; Acreage, Commercial and Multi-Family</td>
+</tr>
+<tr>
+<td><code>Lease</code></td>
+<td><code>[rch_latest_listings]</code> only: same as Residential Lease</td>
+</tr>
+<tr>
+<td><code>All Listings</code></td>
+<td><code>[rch_latest_listings]</code> only: every type above</td>
+</tr>
+</tbody>
+</table></div>
+<p>On <code>[listings]</code> use the first five names (comma list allowed). On <code>[rch_latest_listings]</code> the shortcuts <code>Sale</code>, <code>Lease</code> and <code>All Listings</code> work only as the whole value, not inside a comma list.</p>
+<h3 id="rch-guide-listings-attributes">[listings] attributes</h3>
+<p>Full search page. Values in the page address (from the search bar, a bookmark or a shared link) override the matching attributes: address, property type, price, beds, baths, statuses, sort, boundary and map position.</p>
+<p><strong>Which listings show</strong></p>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Values</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>listing_statuses</code></td>
+<td>Status values (see above), comma list</td>
+<td>all</td>
+<td>Listing statuses to show</td>
+</tr>
+<tr>
+<td><code>property_types</code></td>
+<td><code>Residential</code>, <code>Residential Lease</code>, <code>Lots &amp; Acreage</code>, <code>Commercial</code>, <code>Multi-Family</code>, comma list</td>
+<td>all</td>
+<td>Property types to show</td>
+</tr>
+<tr>
+<td><code>property_subtypes</code></td>
+<td>MLS subtype names, comma list</td>
+<td>all</td>
+<td>Narrow to subtypes such as single family or condo. Use the names your MLS uses</td>
+</tr>
+<tr>
+<td><code>architectural_styles</code></td>
+<td>MLS style names, comma list</td>
+<td>all</td>
+<td>Narrow to building styles, as named by your MLS</td>
+</tr>
+<tr>
+<td><code>own_listing</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Only your brokerage's listings (the brand you connected with)</td>
+</tr>
+<tr>
+<td><code>filter_brand_id</code></td>
+<td>A Rechat brand ID</td>
+<td>empty</td>
+<td>Only listings of that brand, e.g. one office. Wins over <code>own_listing</code></td>
+</tr>
+<tr>
+<td><code>filter_agents</code></td>
+<td>Rechat agent IDs, comma list</td>
+<td>empty</td>
+<td>Only these agents' listings</td>
+</tr>
+<tr>
+<td><code>list_offices</code></td>
+<td>Listing office IDs, comma list</td>
+<td>empty</td>
+<td>Only listings from these offices</td>
+</tr>
+<tr>
+<td><code>office_exclusive</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Only office-exclusive listings</td>
+</tr>
+<tr>
+<td><code>filter_open_houses</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Only listings with an open house</td>
+</tr>
+<tr>
+<td><code>filter_pool</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Only listings with a pool</td>
+</tr>
+<tr>
+<td><code>filter_boundary_ids</code></td>
+<td>Boundary IDs, comma list</td>
+<td>empty</td>
+<td>Only listings inside these neighborhoods, cities or ZIP codes. Get IDs from General → <strong>Find boundary ID</strong></td>
+</tr>
+<tr>
+<td><code>filter_search_limit</code></td>
+<td>Number</td>
+<td>SDK default</td>
+<td>Most listings the search returns in total</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Price, size and features</strong> (each takes a number)</p>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>minimum_price</code>, <code>maximum_price</code></td>
+<td>Price range in dollars</td>
+</tr>
+<tr>
+<td><code>minimum_bedrooms</code>, <code>maximum_bedrooms</code></td>
+<td>Bedroom range</td>
+</tr>
+<tr>
+<td><code>minimum_bathrooms</code>, <code>maximum_bathrooms</code></td>
+<td>Bathroom range</td>
+</tr>
+<tr>
+<td><code>filter_baths</code></td>
+<td>Exact number of bathrooms</td>
+</tr>
+<tr>
+<td><code>minimum_square_feet</code>, <code>maximum_square_feet</code></td>
+<td>Living area range in square feet</td>
+</tr>
+<tr>
+<td><code>minimum_lot_square_feet</code>, <code>maximum_lot_square_feet</code></td>
+<td>Lot size range in square feet</td>
+</tr>
+<tr>
+<td><code>minimum_year_built</code>, <code>maximum_year_built</code></td>
+<td>Year built range, e.g. <code>1990</code></td>
+</tr>
+<tr>
+<td><code>minimum_parking_spaces</code></td>
+<td>Fewest parking spaces</td>
+</tr>
+<tr>
+<td><code>minimum_sold_date</code></td>
+<td>Earliest sold date, as a Unix time in milliseconds (e.g. <code>1704067200000</code> = 1 Jan 2024). Use with Closed statuses</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Sort and paging</strong></p>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Values</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sort_by</code></td>
+<td><code>-list_date</code> (newest first), <code>-price</code> (highest price first)</td>
+<td><code>-list_date</code></td>
+<td>Starting sort order</td>
+</tr>
+<tr>
+<td><code>listing_per_page</code></td>
+<td>Number</td>
+<td>SDK default</td>
+<td>Listings per page</td>
+</tr>
+<tr>
+<td><code>filter_pagination_offset</code></td>
+<td>Number</td>
+<td><code>0</code></td>
+<td>Skip this many listings at the start</td>
+</tr>
+<tr>
+<td><code>disable_sort</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Hide the sort menu</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Search box and filter bar</strong></p>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Values</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hide_filters</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Hide the whole filter bar</td>
+</tr>
+<tr>
+<td><code>disable_filter_address</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Hide the address / ZIP search box</td>
+</tr>
+<tr>
+<td><code>disable_filter_price</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Hide the price filter</td>
+</tr>
+<tr>
+<td><code>disable_filter_beds</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Hide the beds filter</td>
+</tr>
+<tr>
+<td><code>disable_filter_baths</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Hide the baths filter</td>
+</tr>
+<tr>
+<td><code>disable_filter_property_types</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Hide the property type filter</td>
+</tr>
+<tr>
+<td><code>disable_filter_advanced</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Hide the &quot;more filters&quot; button</td>
+</tr>
+<tr>
+<td><code>disable_filter_loading_indicator</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Hide the loading spinner</td>
+</tr>
+<tr>
+<td><code>filter_address</code></td>
+<td>Text</td>
+<td>empty</td>
+<td>Address, city or ZIP the search starts with</td>
+</tr>
+<tr>
+<td><code>filter_search_placeholder</code></td>
+<td>Text</td>
+<td><code>Search by area / zip code</code></td>
+<td>Hint text inside the search box</td>
+</tr>
+<tr>
+<td><code>filter_suggestions_limit</code></td>
+<td>Number</td>
+<td>SDK default</td>
+<td>How many suggestions the search box lists</td>
+</tr>
+<tr>
+<td><code>filter_boundary_country</code></td>
+<td>2-letter country code, e.g. <code>US</code></td>
+<td>General tab setting</td>
+<td>Search suggestions only from this country</td>
+</tr>
+<tr>
+<td><code>filter_boundary_state</code></td>
+<td>State name, e.g. <code>Texas</code></td>
+<td>General tab setting</td>
+<td>Search suggestions only from this state</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Map and look</strong></p>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Values</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hide_map</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Hide the map and show only the grid</td>
+</tr>
+<tr>
+<td><code>map_latitude</code>, <code>map_longitude</code></td>
+<td>Numbers, e.g. <code>32.7767</code> and <code>-96.7970</code></td>
+<td>empty</td>
+<td>Starting map center. Both are needed</td>
+</tr>
+<tr>
+<td><code>map_zoom</code></td>
+<td>Number, <code>1</code> (world) to <code>20</code> (street)</td>
+<td>SDK default</td>
+<td>Starting map zoom</td>
+</tr>
+<tr>
+<td><code>map_style</code></td>
+<td><code>liberty</code>, <code>bright</code>, <code>positron</code>, <code>dark</code></td>
+<td>General tab setting</td>
+<td>Map look</td>
+</tr>
+<tr>
+<td><code>map_style_url</code></td>
+<td>Link to a MapLibre style JSON</td>
+<td>empty</td>
+<td>Your own map style. Wins over <code>map_style</code></td>
+</tr>
+<tr>
+<td><code>color_mode</code></td>
+<td><code>light</code>, <code>dark</code></td>
+<td>General tab setting</td>
+<td>Light or dark widgets for this page only</td>
+</tr>
+<tr>
+<td><code>full_width</code></td>
+<td>yes / no</td>
+<td><code>true</code></td>
+<td>Stretch to the full page width</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="rch-guide-rchlatestlistings-attributes">[rch_latest_listings] attributes</h3>
+<p>Short list of listings for home pages and sections. It has no map and no filter bar.</p>
+<p><strong>Layout</strong></p>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Values</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>display_type</code></td>
+<td><code>swiper</code> (slider), <code>normal</code> (list with pages), <code>grid</code></td>
+<td><code>swiper</code></td>
+<td>Layout. Any other value falls back to <code>swiper</code></td>
+</tr>
+<tr>
+<td><code>limit</code></td>
+<td>Number</td>
+<td><code>10</code></td>
+<td>How many listings show (per page in <code>normal</code>)</td>
+</tr>
+<tr>
+<td><code>listing_per_page</code></td>
+<td>Number</td>
+<td><code>10</code></td>
+<td>Same as <code>limit</code>. <code>limit</code> wins when both are set</td>
+</tr>
+<tr>
+<td><code>color_mode</code></td>
+<td><code>light</code>, <code>dark</code></td>
+<td>General tab setting</td>
+<td>Light or dark cards for this shortcode only</td>
+</tr>
+<tr>
+<td><code>template</code></td>
+<td>Text</td>
+<td><code>default</code></td>
+<td><code>grid</code> only: adds the CSS class <code>&lt;template&gt;-grid</code> so your theme can style it</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Which listings show</strong></p>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Values</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>listing_statuses</code></td>
+<td>Status values (see above), comma list</td>
+<td>all</td>
+<td>Statuses to show</td>
+</tr>
+<tr>
+<td><code>expand_status_aliases</code></td>
+<td>yes / no</td>
+<td><code>true</code></td>
+<td><code>false</code> = treat <code>Active</code>, <code>Pending</code>, <code>Closed</code>, <code>Archived</code> as exact status names, not groups</td>
+</tr>
+<tr>
+<td><code>property_types</code></td>
+<td>Property type values (see above), including <code>Sale</code>, <code>Lease</code>, <code>All Listings</code></td>
+<td>all</td>
+<td>Types to show</td>
+</tr>
+<tr>
+<td><code>property_subtypes</code>, <code>architectural_styles</code></td>
+<td>MLS names, comma list</td>
+<td>all</td>
+<td>Same as on <code>[listings]</code></td>
+</tr>
+<tr>
+<td><code>own_listing</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Only your brokerage's listings</td>
+</tr>
+<tr>
+<td><code>filter_brand_id</code></td>
+<td>A Rechat brand ID</td>
+<td>empty</td>
+<td>Only that brand's listings</td>
+</tr>
+<tr>
+<td><code>filter_agents</code></td>
+<td>Rechat agent IDs, comma list</td>
+<td>empty</td>
+<td>Only these agents' listings</td>
+</tr>
+<tr>
+<td><code>list_offices</code></td>
+<td>Listing office IDs, comma list</td>
+<td>empty</td>
+<td>Only these offices' listings</td>
+</tr>
+<tr>
+<td><code>office_exclusive</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Only office-exclusive listings</td>
+</tr>
+<tr>
+<td><code>filter_open_houses</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Only listings with an open house</td>
+</tr>
+<tr>
+<td><code>open_houses_only</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Older name for <code>filter_open_houses</code></td>
+</tr>
+<tr>
+<td><code>filter_pool</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Only listings with a pool</td>
+</tr>
+<tr>
+<td><code>filter_boundary_ids</code></td>
+<td>Boundary IDs, comma list</td>
+<td>empty</td>
+<td>Only listings inside these areas</td>
+</tr>
+<tr>
+<td><code>minimum_price</code>, <code>maximum_price</code>, <code>minimum_bedrooms</code>, <code>maximum_bedrooms</code>, <code>minimum_bathrooms</code>, <code>maximum_bathrooms</code>, <code>filter_baths</code>, <code>minimum_year_built</code>, <code>maximum_year_built</code>, <code>minimum_parking_spaces</code>, <code>minimum_sold_date</code></td>
+<td>Number</td>
+<td>empty</td>
+<td>Same as on <code>[listings]</code></td>
+</tr>
+<tr>
+<td><code>filter_search_limit</code></td>
+<td>Number</td>
+<td>SDK default</td>
+<td>Most listings returned in total</td>
+</tr>
+<tr>
+<td><code>filter_pagination_offset</code></td>
+<td>Number</td>
+<td><code>0</code></td>
+<td>Skip this many listings at the start</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Order and links</strong></p>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Values</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sort_by</code></td>
+<td><code>-list_date</code> (newest first), <code>-price</code> (highest price first)</td>
+<td><code>-list_date</code></td>
+<td>Order</td>
+</tr>
+<tr>
+<td><code>order_by</code></td>
+<td><code>Date</code> or <code>Price</code> (any capitals), or a <code>sort_by</code> value</td>
+<td>empty</td>
+<td>Friendlier name for <code>sort_by</code>. Wins when both are set</td>
+</tr>
+<tr>
+<td><code>listing_hyperlink_href</code></td>
+<td>Link pattern; <code>{city}</code>, <code>{street_address}</code> and <code>{id}</code> are filled per listing</td>
+<td><code>/listing-detail/{city}/{street_address}/{id}/</code></td>
+<td>Where a listing card links to</td>
+</tr>
+<tr>
+<td><code>listing_hyperlink_target</code></td>
+<td><code>_self</code>, <code>_blank</code></td>
+<td>same tab</td>
+<td><code>_blank</code> opens listings in a new tab</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Slider settings</strong> (only with <code>display_type=&quot;swiper&quot;</code>)</p>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Values</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>slides_per_view</code></td>
+<td><code>auto</code> or a number, e.g. <code>3</code> or <code>2.5</code></td>
+<td><code>auto</code></td>
+<td>Cards visible at once</td>
+</tr>
+<tr>
+<td><code>space_between</code></td>
+<td>Number (pixels)</td>
+<td><code>32</code></td>
+<td>Gap between cards</td>
+</tr>
+<tr>
+<td><code>navigation</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Show previous / next arrows</td>
+</tr>
+<tr>
+<td><code>pagination</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Show dots under the slider</td>
+</tr>
+<tr>
+<td><code>pagination_clickable</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Let visitors click the dots</td>
+</tr>
+<tr>
+<td><code>pagination_type</code></td>
+<td><code>bullets</code>, <code>fraction</code> (1 / 8), <code>progressbar</code></td>
+<td><code>bullets</code></td>
+<td>Dot style</td>
+</tr>
+<tr>
+<td><code>loop</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Start over after the last card</td>
+</tr>
+<tr>
+<td><code>centered_slides</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Center the active card</td>
+</tr>
+<tr>
+<td><code>speed</code></td>
+<td>Number (milliseconds)</td>
+<td><code>300</code></td>
+<td>Slide animation speed</td>
+</tr>
+<tr>
+<td><code>effect</code></td>
+<td><code>slide</code>, <code>fade</code>, <code>coverflow</code></td>
+<td><code>slide</code></td>
+<td>Slide animation</td>
+</tr>
+<tr>
+<td><code>grab_cursor</code></td>
+<td>yes / no</td>
+<td><code>true</code></td>
+<td>Show a hand cursor on desktop</td>
+</tr>
+<tr>
+<td><code>simulate_touch</code></td>
+<td>yes / no</td>
+<td><code>true</code></td>
+<td>Allow dragging with the mouse</td>
+</tr>
+<tr>
+<td><code>autoplay</code></td>
+<td>JSON, e.g. <code>{&quot;delay&quot;:4000}</code></td>
+<td>off</td>
+<td>Slide by itself. Add <code>&quot;disableOnInteraction&quot;:false</code> to keep going after a click</td>
+</tr>
+<tr>
+<td><code>breakpoints</code></td>
+<td>JSON, e.g. <code>{&quot;0&quot;:{&quot;slidesPerView&quot;:1},&quot;768&quot;:{&quot;slidesPerView&quot;:2},&quot;1200&quot;:{&quot;slidesPerView&quot;:3}}</code></td>
+<td>empty</td>
+<td>Different settings per screen width (pixels)</td>
+</tr>
+<tr>
+<td><code>auto_center_few_slides</code></td>
+<td>yes / no</td>
+<td><code>true</code></td>
+<td>Center the cards instead of sliding when there are only a few</td>
+</tr>
+<tr>
+<td><code>auto_center_few_slides_threshold</code></td>
+<td>Number</td>
+<td><code>4</code></td>
+<td>&quot;A few&quot; means fewer than this many cards</td>
+</tr>
+</tbody>
+</table></div>
+<p>On an agent or office sub-site, <code>filter_agents</code> and <code>filter_brand_id</code> are set for you so each site shows only its own listings.</p>
+<h3 id="rch-guide-rchsearchlistingform-attributes">[rch_search_listing_form] attributes</h3>
+<p>Search bar that sends visitors to your listings page with their search applied.</p>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Values</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>target_page</code></td>
+<td>Page path, e.g. <code>/properties/</code></td>
+<td><code>/listings/</code></td>
+<td>Page visitors land on. It must contain the Listing Block or <code>[listings]</code></td>
+</tr>
+<tr>
+<td><code>show_background</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Show a background image behind the bar</td>
+</tr>
+<tr>
+<td><code>background_image</code></td>
+<td>Image link</td>
+<td>empty</td>
+<td>The background image. Needs <code>show_background=&quot;true&quot;</code></td>
+</tr>
+<tr>
+<td><code>color_mode</code></td>
+<td><code>light</code>, <code>dark</code></td>
+<td>General tab setting</td>
+<td>Light or dark bar for this shortcode only</td>
+</tr>
+<tr>
+<td><code>brand_id</code></td>
+<td>A Rechat brand ID</td>
+<td>site brand</td>
+<td>Use a different brand's settings</td>
+</tr>
+<tr>
+<td><code>filter_address</code></td>
+<td>Text</td>
+<td>empty</td>
+<td>Address, city or ZIP already typed in the box</td>
+</tr>
+<tr>
+<td><code>filter_minimum_price</code></td>
+<td>Number</td>
+<td>empty</td>
+<td>Starting minimum price</td>
+</tr>
+<tr>
+<td><code>filter_minimum_bedrooms</code>, <code>filter_maximum_bedrooms</code></td>
+<td>Number</td>
+<td>empty</td>
+<td>Starting bedroom range</td>
+</tr>
+<tr>
+<td><code>filter_minimum_bathrooms</code></td>
+<td>Number</td>
+<td>empty</td>
+<td>Starting minimum bathrooms</td>
+</tr>
+<tr>
+<td><code>filter_maximum_year_built</code></td>
+<td>Number</td>
+<td>empty</td>
+<td>Newest year built</td>
+</tr>
+<tr>
+<td><code>filter_listing_statuses</code></td>
+<td>Exact status names, comma list, e.g. <code>Active,Coming Soon</code></td>
+<td>all</td>
+<td>Statuses searched. Groups like <code>Closed</code> do not expand here</td>
+</tr>
+<tr>
+<td><code>disable_filter_address</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Hide the address box</td>
+</tr>
+<tr>
+<td><code>disable_filter_price</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Hide the price filter</td>
+</tr>
+<tr>
+<td><code>disable_filter_beds</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Hide the beds filter</td>
+</tr>
+<tr>
+<td><code>disable_filter_baths</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Hide the baths filter</td>
+</tr>
+<tr>
+<td><code>disable_filter_property_types</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Hide the property type filter</td>
+</tr>
+<tr>
+<td><code>disable_filter_advanced</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Hide the &quot;more filters&quot; button</td>
+</tr>
+<tr>
+<td><code>disable_filter_loading_indicator</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Hide the loading spinner</td>
+</tr>
+</tbody>
+</table></div>
+<p>Search suggestions follow the Country and State set on the General tab.</p>
+<h3 id="rch-guide-rchleadsform-attributes">[rch_leads_form] attributes</h3>
+<p>Contact form. Each submission creates a lead (contact) in Rechat.</p>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Values</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>form_title</code></td>
+<td>Text</td>
+<td><code>Contact Us</code></td>
+<td>Heading above the form</td>
+</tr>
+<tr>
+<td><code>show_first_name</code></td>
+<td>yes / no</td>
+<td><code>true</code></td>
+<td>Show the First name field</td>
+</tr>
+<tr>
+<td><code>show_last_name</code></td>
+<td>yes / no</td>
+<td><code>true</code></td>
+<td>Show the Last name field</td>
+</tr>
+<tr>
+<td><code>show_phone_number</code></td>
+<td>yes / no</td>
+<td><code>true</code></td>
+<td>Show the Phone field</td>
+</tr>
+<tr>
+<td><code>show_email</code></td>
+<td>yes / no</td>
+<td><code>true</code></td>
+<td>Show the Email field</td>
+</tr>
+<tr>
+<td><code>show_note</code></td>
+<td>yes / no</td>
+<td><code>true</code></td>
+<td>Show the Message field</td>
+</tr>
+<tr>
+<td><code>lead_channel</code></td>
+<td>A Rechat lead channel ID</td>
+<td>General → Listing Page Lead Capture</td>
+<td>Which lead source the lead is filed under. Required: the form fails without one</td>
+</tr>
+<tr>
+<td><code>tags</code></td>
+<td>Tag names, comma list, e.g. <code>Website,Buyer</code></td>
+<td>General tab tags</td>
+<td>Tags added to the new contact</td>
+</tr>
+<tr>
+<td><code>assignee_email</code></td>
+<td>An agent's email</td>
+<td>empty</td>
+<td>Agent the lead is assigned to. On an agent sub-site it is that agent</td>
+</tr>
+</tbody>
+</table></div>
+<p>On agent sub-sites, an agent theme's own contact settings fill <code>lead_channel</code> and <code>tags</code> when you leave them out.</p>
+<h3 id="rch-guide-rchtestimonials-attributes">[rch_testimonials] attributes</h3>
+<p>Client testimonials from Rechat. On an agent sub-site it shows that agent's testimonials (needs the agent's Brand ID; see Sync Data → <strong>Set brand IDs for all agents</strong>).</p>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Values</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>title</code></td>
+<td>Text</td>
+<td>empty</td>
+<td>Heading above the testimonials</td>
+</tr>
+<tr>
+<td><code>limit</code></td>
+<td>Number</td>
+<td>all</td>
+<td>Most testimonials shown</td>
+</tr>
+<tr>
+<td><code>load_more</code></td>
+<td><code>false</code></td>
+<td>shown</td>
+<td><code>false</code> hides the &quot;Load more&quot; button</td>
+</tr>
+<tr>
+<td><code>color_mode</code></td>
+<td><code>light</code>, <code>dark</code></td>
+<td>General tab setting</td>
+<td>Light or dark cards for this shortcode only</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="rch-guide-rchoffmarket-attributes">[rch_off_market] attributes</h3>
+<p>Your hand-entered Off Market listings (WP Admin → Off Market).</p>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Values</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>display_type</code></td>
+<td><code>normal</code> (grid), <code>swiper</code> (slider)</td>
+<td><code>normal</code></td>
+<td>Layout</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td><code>active</code>, <code>coming</code>, <code>pending</code>, <code>sold</code>, or full text like <code>Sold Privately</code>; comma list</td>
+<td>all</td>
+<td>Statuses to show. Capitals don't matter</td>
+</tr>
+<tr>
+<td><code>limit</code></td>
+<td>Number, or <code>-1</code> for all</td>
+<td><code>6</code></td>
+<td>How many listings show (per page when <code>pagination</code> is on)</td>
+</tr>
+<tr>
+<td><code>columns</code></td>
+<td>Number</td>
+<td><code>3</code></td>
+<td>Cards per row (grid) or cards visible (slider) on desktop. Fewer on small screens</td>
+</tr>
+<tr>
+<td><code>orderby</code></td>
+<td><code>date</code>, <code>price</code>, <code>title</code></td>
+<td><code>date</code></td>
+<td>Sort by date added, price or title</td>
+</tr>
+<tr>
+<td><code>order</code></td>
+<td><code>DESC</code>, <code>ASC</code></td>
+<td><code>DESC</code></td>
+<td><code>DESC</code> = newest / highest / Z first; <code>ASC</code> = oldest / lowest / A first</td>
+</tr>
+<tr>
+<td><code>title</code></td>
+<td>Text</td>
+<td>empty</td>
+<td>Heading above the listings</td>
+</tr>
+<tr>
+<td><code>pagination</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Grid only: split into pages with page links</td>
+</tr>
+<tr>
+<td><code>space_between</code></td>
+<td>Number (pixels)</td>
+<td><code>24</code></td>
+<td>Slider only: gap between cards</td>
+</tr>
+<tr>
+<td><code>loop</code></td>
+<td>yes / no</td>
+<td><code>true</code></td>
+<td>Slider only: start over after the last card</td>
+</tr>
+<tr>
+<td><code>autoplay</code></td>
+<td>yes / no</td>
+<td><code>false</code></td>
+<td>Slider only: slide by itself</td>
+</tr>
+<tr>
+<td><code>autoplay_delay</code></td>
+<td>Number (milliseconds)</td>
+<td><code>3500</code></td>
+<td>Slider only: time between slides</td>
+</tr>
+</tbody>
+</table></div>
+<p>On <code>[rch_off_market]</code> only the exact word <code>true</code> turns <code>pagination</code> and <code>autoplay</code> on, and only <code>false</code> turns <code>loop</code> off.</p>
 <h2 id="rch-guide-multisite-agent-websites">Multisite agent websites</h2>
 <p>On a WordPress Multisite network the plugin builds one sub-site per agent (and per office) from the hub's Agents and Offices, gives it the theme you pick, and fills that theme's settings from each agent's profile. Agent sites show only that agent's listings; office sites show only that office's listings.</p>
 <h3 id="rch-guide-before-you-start">Before you start</h3>

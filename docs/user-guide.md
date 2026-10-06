@@ -124,20 +124,7 @@ Use `[rch_search_listing_form target_page="/listings/"]`. Visitors type an area 
 [rch_off_market status="sold" display_type="swiper" columns="3" autoplay="true"]
 ```
 
-The full attribute list for every shortcode is in the plugin's README.md.
-
-### Useful listing options
-
-| Option | Values | Effect |
-| --- | --- | --- |
-| `listing_statuses` | Active, Pending, Closed, Archived (comma list) | Which statuses show |
-| `property_types` | Residential, Sale, Lease, Lots & Acreage, Commercial, All Listings | Which property types show |
-| `own_listing` | true / false | Only your brand's listings |
-| `filter_open_houses` | true / false | Only listings with open houses |
-| `filter_boundary_ids` | IDs from the boundary finder | Limit to a neighborhood, city or ZIP |
-| `hide_map`, `hide_filters`, `disable_sort` | true / false | Simplify the page |
-| `sort_by` | `-list_date` (newest) or `-price` | Order |
-| `display_type` (latest listings) | swiper, normal, grid | Layout |
+Every attribute each shortcode accepts, with the values you can pick from, is listed in **Shortcode attributes reference** below.
 
 ### Agents, offices, regions, neighborhoods, off market
 
@@ -156,6 +143,266 @@ Copy a template from the plugin's `templates/` folder into your theme at `wp-con
 - **MLS short links:** `/mls/21191513` or `/NTREIS/21191513` redirects to the listing page.
 - **SEO:** meta description, canonical, Open Graph and Twitter tags, unless an SEO plugin (Yoast, Rank Math, etc.) is active.
 - **Schema:** structured data for agents, listings, breadcrumbs and the home page.
+
+## Shortcode attributes reference
+
+Every attribute each shortcode accepts, what it does, and the values you can choose. Write attributes as `name="value"` inside the brackets, in any order. Leave out any attribute you don't need: its default applies.
+
+**How to read the values**
+
+| Value type | What to type |
+| --- | --- |
+| Yes / no | `true` or `false` (`1`/`0`, `yes`/`no` and `on`/`off` also work) |
+| Number | Digits only, no `$`, commas or units: `500000`, not `$500,000` |
+| Comma list | Several values separated by commas: `Active,Pending`. A listing matches if it matches any one of them |
+| Pick one | Only the values listed work. Spelling and capitals must match |
+| Empty (default) | No limit: the filter is not applied |
+
+Misspelled attribute names are ignored without a warning. If a filter seems to do nothing, check the spelling against these tables.
+
+**Listing status values** (used by `listing_statuses` on `[listings]` and `[rch_latest_listings]`)
+
+| Value | Shows these Rechat statuses |
+| --- | --- |
+| `Active` | Active, Active Under Contract, Incoming, Coming Soon |
+| `Pending` | Pending |
+| `Closed` | Sold, Leased |
+| `Archived` | Withdrawn, Expired |
+| Any exact status name | Only that status, e.g. `Coming Soon` or `Sold` |
+
+**Property type values** (used by `property_types`)
+
+| Value | Shows |
+| --- | --- |
+| `Residential` | Homes for sale |
+| `Residential Lease` | Homes for rent |
+| `Lots & Acreage` | Land |
+| `Commercial` | Commercial property |
+| `Multi-Family` | Multi-family property |
+| `Sale` | `[rch_latest_listings]` only: Residential, Lots & Acreage, Commercial and Multi-Family |
+| `Lease` | `[rch_latest_listings]` only: same as Residential Lease |
+| `All Listings` | `[rch_latest_listings]` only: every type above |
+
+On `[listings]` use the first five names (comma list allowed). On `[rch_latest_listings]` the shortcuts `Sale`, `Lease` and `All Listings` work only as the whole value, not inside a comma list.
+
+### [listings] attributes
+
+Full search page. Values in the page address (from the search bar, a bookmark or a shared link) override the matching attributes: address, property type, price, beds, baths, statuses, sort, boundary and map position.
+
+**Which listings show**
+
+| Attribute | Values | Default | What it does |
+| --- | --- | --- | --- |
+| `listing_statuses` | Status values (see above), comma list | all | Listing statuses to show |
+| `property_types` | `Residential`, `Residential Lease`, `Lots & Acreage`, `Commercial`, `Multi-Family`, comma list | all | Property types to show |
+| `property_subtypes` | MLS subtype names, comma list | all | Narrow to subtypes such as single family or condo. Use the names your MLS uses |
+| `architectural_styles` | MLS style names, comma list | all | Narrow to building styles, as named by your MLS |
+| `own_listing` | yes / no | `false` | Only your brokerage's listings (the brand you connected with) |
+| `filter_brand_id` | A Rechat brand ID | empty | Only listings of that brand, e.g. one office. Wins over `own_listing` |
+| `filter_agents` | Rechat agent IDs, comma list | empty | Only these agents' listings |
+| `list_offices` | Listing office IDs, comma list | empty | Only listings from these offices |
+| `office_exclusive` | yes / no | `false` | Only office-exclusive listings |
+| `filter_open_houses` | yes / no | `false` | Only listings with an open house |
+| `filter_pool` | yes / no | `false` | Only listings with a pool |
+| `filter_boundary_ids` | Boundary IDs, comma list | empty | Only listings inside these neighborhoods, cities or ZIP codes. Get IDs from General → **Find boundary ID** |
+| `filter_search_limit` | Number | SDK default | Most listings the search returns in total |
+
+**Price, size and features** (each takes a number)
+
+| Attribute | What it does |
+| --- | --- |
+| `minimum_price`, `maximum_price` | Price range in dollars |
+| `minimum_bedrooms`, `maximum_bedrooms` | Bedroom range |
+| `minimum_bathrooms`, `maximum_bathrooms` | Bathroom range |
+| `filter_baths` | Exact number of bathrooms |
+| `minimum_square_feet`, `maximum_square_feet` | Living area range in square feet |
+| `minimum_lot_square_feet`, `maximum_lot_square_feet` | Lot size range in square feet |
+| `minimum_year_built`, `maximum_year_built` | Year built range, e.g. `1990` |
+| `minimum_parking_spaces` | Fewest parking spaces |
+| `minimum_sold_date` | Earliest sold date, as a Unix time in milliseconds (e.g. `1704067200000` = 1 Jan 2024). Use with Closed statuses |
+
+**Sort and paging**
+
+| Attribute | Values | Default | What it does |
+| --- | --- | --- | --- |
+| `sort_by` | `-list_date` (newest first), `-price` (highest price first) | `-list_date` | Starting sort order |
+| `listing_per_page` | Number | SDK default | Listings per page |
+| `filter_pagination_offset` | Number | `0` | Skip this many listings at the start |
+| `disable_sort` | yes / no | `false` | Hide the sort menu |
+
+**Search box and filter bar**
+
+| Attribute | Values | Default | What it does |
+| --- | --- | --- | --- |
+| `hide_filters` | yes / no | `false` | Hide the whole filter bar |
+| `disable_filter_address` | yes / no | `false` | Hide the address / ZIP search box |
+| `disable_filter_price` | yes / no | `false` | Hide the price filter |
+| `disable_filter_beds` | yes / no | `false` | Hide the beds filter |
+| `disable_filter_baths` | yes / no | `false` | Hide the baths filter |
+| `disable_filter_property_types` | yes / no | `false` | Hide the property type filter |
+| `disable_filter_advanced` | yes / no | `false` | Hide the "more filters" button |
+| `disable_filter_loading_indicator` | yes / no | `false` | Hide the loading spinner |
+| `filter_address` | Text | empty | Address, city or ZIP the search starts with |
+| `filter_search_placeholder` | Text | `Search by area / zip code` | Hint text inside the search box |
+| `filter_suggestions_limit` | Number | SDK default | How many suggestions the search box lists |
+| `filter_boundary_country` | 2-letter country code, e.g. `US` | General tab setting | Search suggestions only from this country |
+| `filter_boundary_state` | State name, e.g. `Texas` | General tab setting | Search suggestions only from this state |
+
+**Map and look**
+
+| Attribute | Values | Default | What it does |
+| --- | --- | --- | --- |
+| `hide_map` | yes / no | `false` | Hide the map and show only the grid |
+| `map_latitude`, `map_longitude` | Numbers, e.g. `32.7767` and `-96.7970` | empty | Starting map center. Both are needed |
+| `map_zoom` | Number, `1` (world) to `20` (street) | SDK default | Starting map zoom |
+| `map_style` | `liberty`, `bright`, `positron`, `dark` | General tab setting | Map look |
+| `map_style_url` | Link to a MapLibre style JSON | empty | Your own map style. Wins over `map_style` |
+| `color_mode` | `light`, `dark` | General tab setting | Light or dark widgets for this page only |
+| `full_width` | yes / no | `true` | Stretch to the full page width |
+
+### [rch_latest_listings] attributes
+
+Short list of listings for home pages and sections. It has no map and no filter bar.
+
+**Layout**
+
+| Attribute | Values | Default | What it does |
+| --- | --- | --- | --- |
+| `display_type` | `swiper` (slider), `normal` (list with pages), `grid` | `swiper` | Layout. Any other value falls back to `swiper` |
+| `limit` | Number | `10` | How many listings show (per page in `normal`) |
+| `listing_per_page` | Number | `10` | Same as `limit`. `limit` wins when both are set |
+| `color_mode` | `light`, `dark` | General tab setting | Light or dark cards for this shortcode only |
+| `template` | Text | `default` | `grid` only: adds the CSS class `<template>-grid` so your theme can style it |
+
+**Which listings show**
+
+| Attribute | Values | Default | What it does |
+| --- | --- | --- | --- |
+| `listing_statuses` | Status values (see above), comma list | all | Statuses to show |
+| `expand_status_aliases` | yes / no | `true` | `false` = treat `Active`, `Pending`, `Closed`, `Archived` as exact status names, not groups |
+| `property_types` | Property type values (see above), including `Sale`, `Lease`, `All Listings` | all | Types to show |
+| `property_subtypes`, `architectural_styles` | MLS names, comma list | all | Same as on `[listings]` |
+| `own_listing` | yes / no | `false` | Only your brokerage's listings |
+| `filter_brand_id` | A Rechat brand ID | empty | Only that brand's listings |
+| `filter_agents` | Rechat agent IDs, comma list | empty | Only these agents' listings |
+| `list_offices` | Listing office IDs, comma list | empty | Only these offices' listings |
+| `office_exclusive` | yes / no | `false` | Only office-exclusive listings |
+| `filter_open_houses` | yes / no | `false` | Only listings with an open house |
+| `open_houses_only` | yes / no | `false` | Older name for `filter_open_houses` |
+| `filter_pool` | yes / no | `false` | Only listings with a pool |
+| `filter_boundary_ids` | Boundary IDs, comma list | empty | Only listings inside these areas |
+| `minimum_price`, `maximum_price`, `minimum_bedrooms`, `maximum_bedrooms`, `minimum_bathrooms`, `maximum_bathrooms`, `filter_baths`, `minimum_year_built`, `maximum_year_built`, `minimum_parking_spaces`, `minimum_sold_date` | Number | empty | Same as on `[listings]` |
+| `filter_search_limit` | Number | SDK default | Most listings returned in total |
+| `filter_pagination_offset` | Number | `0` | Skip this many listings at the start |
+
+**Order and links**
+
+| Attribute | Values | Default | What it does |
+| --- | --- | --- | --- |
+| `sort_by` | `-list_date` (newest first), `-price` (highest price first) | `-list_date` | Order |
+| `order_by` | `Date` or `Price` (any capitals), or a `sort_by` value | empty | Friendlier name for `sort_by`. Wins when both are set |
+| `listing_hyperlink_href` | Link pattern; `{city}`, `{street_address}` and `{id}` are filled per listing | `/listing-detail/{city}/{street_address}/{id}/` | Where a listing card links to |
+| `listing_hyperlink_target` | `_self`, `_blank` | same tab | `_blank` opens listings in a new tab |
+
+**Slider settings** (only with `display_type="swiper"`)
+
+| Attribute | Values | Default | What it does |
+| --- | --- | --- | --- |
+| `slides_per_view` | `auto` or a number, e.g. `3` or `2.5` | `auto` | Cards visible at once |
+| `space_between` | Number (pixels) | `32` | Gap between cards |
+| `navigation` | yes / no | `false` | Show previous / next arrows |
+| `pagination` | yes / no | `false` | Show dots under the slider |
+| `pagination_clickable` | yes / no | `false` | Let visitors click the dots |
+| `pagination_type` | `bullets`, `fraction` (1 / 8), `progressbar` | `bullets` | Dot style |
+| `loop` | yes / no | `false` | Start over after the last card |
+| `centered_slides` | yes / no | `false` | Center the active card |
+| `speed` | Number (milliseconds) | `300` | Slide animation speed |
+| `effect` | `slide`, `fade`, `coverflow` | `slide` | Slide animation |
+| `grab_cursor` | yes / no | `true` | Show a hand cursor on desktop |
+| `simulate_touch` | yes / no | `true` | Allow dragging with the mouse |
+| `autoplay` | JSON, e.g. `{"delay":4000}` | off | Slide by itself. Add `"disableOnInteraction":false` to keep going after a click |
+| `breakpoints` | JSON, e.g. `{"0":{"slidesPerView":1},"768":{"slidesPerView":2},"1200":{"slidesPerView":3}}` | empty | Different settings per screen width (pixels) |
+| `auto_center_few_slides` | yes / no | `true` | Center the cards instead of sliding when there are only a few |
+| `auto_center_few_slides_threshold` | Number | `4` | "A few" means fewer than this many cards |
+
+On an agent or office sub-site, `filter_agents` and `filter_brand_id` are set for you so each site shows only its own listings.
+
+### [rch_search_listing_form] attributes
+
+Search bar that sends visitors to your listings page with their search applied.
+
+| Attribute | Values | Default | What it does |
+| --- | --- | --- | --- |
+| `target_page` | Page path, e.g. `/properties/` | `/listings/` | Page visitors land on. It must contain the Listing Block or `[listings]` |
+| `show_background` | yes / no | `false` | Show a background image behind the bar |
+| `background_image` | Image link | empty | The background image. Needs `show_background="true"` |
+| `color_mode` | `light`, `dark` | General tab setting | Light or dark bar for this shortcode only |
+| `brand_id` | A Rechat brand ID | site brand | Use a different brand's settings |
+| `filter_address` | Text | empty | Address, city or ZIP already typed in the box |
+| `filter_minimum_price` | Number | empty | Starting minimum price |
+| `filter_minimum_bedrooms`, `filter_maximum_bedrooms` | Number | empty | Starting bedroom range |
+| `filter_minimum_bathrooms` | Number | empty | Starting minimum bathrooms |
+| `filter_maximum_year_built` | Number | empty | Newest year built |
+| `filter_listing_statuses` | Exact status names, comma list, e.g. `Active,Coming Soon` | all | Statuses searched. Groups like `Closed` do not expand here |
+| `disable_filter_address` | yes / no | `false` | Hide the address box |
+| `disable_filter_price` | yes / no | `false` | Hide the price filter |
+| `disable_filter_beds` | yes / no | `false` | Hide the beds filter |
+| `disable_filter_baths` | yes / no | `false` | Hide the baths filter |
+| `disable_filter_property_types` | yes / no | `false` | Hide the property type filter |
+| `disable_filter_advanced` | yes / no | `false` | Hide the "more filters" button |
+| `disable_filter_loading_indicator` | yes / no | `false` | Hide the loading spinner |
+
+Search suggestions follow the Country and State set on the General tab.
+
+### [rch_leads_form] attributes
+
+Contact form. Each submission creates a lead (contact) in Rechat.
+
+| Attribute | Values | Default | What it does |
+| --- | --- | --- | --- |
+| `form_title` | Text | `Contact Us` | Heading above the form |
+| `show_first_name` | yes / no | `true` | Show the First name field |
+| `show_last_name` | yes / no | `true` | Show the Last name field |
+| `show_phone_number` | yes / no | `true` | Show the Phone field |
+| `show_email` | yes / no | `true` | Show the Email field |
+| `show_note` | yes / no | `true` | Show the Message field |
+| `lead_channel` | A Rechat lead channel ID | General → Listing Page Lead Capture | Which lead source the lead is filed under. Required: the form fails without one |
+| `tags` | Tag names, comma list, e.g. `Website,Buyer` | General tab tags | Tags added to the new contact |
+| `assignee_email` | An agent's email | empty | Agent the lead is assigned to. On an agent sub-site it is that agent |
+
+On agent sub-sites, an agent theme's own contact settings fill `lead_channel` and `tags` when you leave them out.
+
+### [rch_testimonials] attributes
+
+Client testimonials from Rechat. On an agent sub-site it shows that agent's testimonials (needs the agent's Brand ID; see Sync Data → **Set brand IDs for all agents**).
+
+| Attribute | Values | Default | What it does |
+| --- | --- | --- | --- |
+| `title` | Text | empty | Heading above the testimonials |
+| `limit` | Number | all | Most testimonials shown |
+| `load_more` | `false` | shown | `false` hides the "Load more" button |
+| `color_mode` | `light`, `dark` | General tab setting | Light or dark cards for this shortcode only |
+
+### [rch_off_market] attributes
+
+Your hand-entered Off Market listings (WP Admin → Off Market).
+
+| Attribute | Values | Default | What it does |
+| --- | --- | --- | --- |
+| `display_type` | `normal` (grid), `swiper` (slider) | `normal` | Layout |
+| `status` | `active`, `coming`, `pending`, `sold`, or full text like `Sold Privately`; comma list | all | Statuses to show. Capitals don't matter |
+| `limit` | Number, or `-1` for all | `6` | How many listings show (per page when `pagination` is on) |
+| `columns` | Number | `3` | Cards per row (grid) or cards visible (slider) on desktop. Fewer on small screens |
+| `orderby` | `date`, `price`, `title` | `date` | Sort by date added, price or title |
+| `order` | `DESC`, `ASC` | `DESC` | `DESC` = newest / highest / Z first; `ASC` = oldest / lowest / A first |
+| `title` | Text | empty | Heading above the listings |
+| `pagination` | yes / no | `false` | Grid only: split into pages with page links |
+| `space_between` | Number (pixels) | `24` | Slider only: gap between cards |
+| `loop` | yes / no | `true` | Slider only: start over after the last card |
+| `autoplay` | yes / no | `false` | Slider only: slide by itself |
+| `autoplay_delay` | Number (milliseconds) | `3500` | Slider only: time between slides |
+
+On `[rch_off_market]` only the exact word `true` turns `pagination` and `autoplay` on, and only `false` turns `loop` off.
 
 ## Multisite agent websites
 
