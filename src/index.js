@@ -13,3 +13,4 @@ import './blocks/listing-block';
 import './blocks/leads-form-block';
 import './blocks/testimonials-block';
 import './blocks/off-market-block';
+import './blocks/realscout-block';
