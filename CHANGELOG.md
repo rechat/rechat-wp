@@ -1,5 +1,21 @@
 # Changelog
 
+## 7.0.95
+
+- **New: RealScout settings page** (hidden, administrators only) at
+  `wp-admin/admin.php?page=realscout` on the main site. Lists every agent with a
+  field for their RealScout agent number, plus a **Main Website ID**. Accepts the
+  number (e.g. `322973`) or the encoded ID pasted from RealScout
+  (`QWdlbnQtMzIyOTcz`). Values are stored as hidden agent meta and never appear on
+  the agent edit screen.
+- **New: RealScout Home Value block.** Embeds RealScout's home value widget and
+  loads its script automatically. The agent ID is never entered in the block: on an
+  agent subsite it uses that agent's RealScout number from the main site; on the main
+  site, office sites, and agents without a number it uses the Main Website ID.
+  Pages broadcast to agent subsites pick up the right ID with no edits, and changes
+  on the RealScout page apply to every site on the next page load. Widget colors and
+  width are optional block settings; the editor shows a live preview.
+
 ## 7.0.93
 
 - **Fix: Agent/Office wizard showed lead channel IDs instead of names.** The Lead
