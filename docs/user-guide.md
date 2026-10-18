@@ -105,7 +105,7 @@ Add Rechat content to any page with a Gutenberg block (Widgets category) or a sh
 
 1. Create a page, e.g. **Listings** at `/listings/`.
 2. Add the **Listing Block**, or a Shortcode block with `[listings]`.
-3. In the block sidebar set filters: **Listing Settings** (statuses, property type, price, beds, "Only our own listings", Open Houses Only), **Display** (hide filters/sort/map, color mode), **Map Settings** (style, center, zoom; needs a Google key).
+3. In the block sidebar set filters: **Listing Settings** (statuses — tick only **Coming Soon** to show just Coming Soon listings, property type, price, beds, "Only our own listings", Open Houses Only), **Display** (hide filters/sort/map, color mode), **Map Settings** (style, center, zoom; needs a Google key).
 4. Publish. Each listing opens at `/listing-detail/{city}/{street}/{id}/` automatically.
 
 ### Add a search bar to the home page
