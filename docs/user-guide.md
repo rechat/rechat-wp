@@ -136,7 +136,7 @@ Each content type has its own archive and single page: `/agents/`, `/offices/`, 
 
 ### Customize page designs
 
-Copy a template from the plugin's `templates/` folder into your theme at `wp-content/themes/<theme>/rechat/` and edit it there, e.g. `agents-single-custom.php`, `listing-single-custom.php`, `rch-agents-block-template.php`.
+Copy a template from the plugin's `templates/` folder into your theme at `wp-content/themes/<theme>/rechat/` and edit it there, e.g. `agents-single-custom.php`, `listing-single-custom.php`, `listing-not-found.php` (page shown when a listing is missing or Rechat is unreachable), `rch-agents-block-template.php`.
 
 ### Other automatic features
 
