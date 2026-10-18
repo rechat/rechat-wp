@@ -3,6 +3,78 @@ if (! defined('ABSPATH')) {
     exit();
 }
 
+if (! function_exists('rch_render_listing_unavailable')) {
+    /**
+     * Render the "listing unavailable" page inside the active theme and stop.
+     *
+     * Sends a real HTTP status (404 for missing/removed/invalid listings, 503 for
+     * temporary API errors so search engines retry instead of dropping the URL).
+     * Theme override: rechat/listing-not-found.php
+     *
+     * @param string $reason not_found | removed | invalid | missing | error
+     */
+    function rch_render_listing_unavailable($reason)
+    {
+        $notices = [
+            'not_found' => [
+                __('This listing is no longer available', 'rechat-plugin'),
+                __('The property you are looking for may have been sold, taken off the market, or the link may be out of date.', 'rechat-plugin'),
+            ],
+            'removed'   => [
+                __('This listing has been removed', 'rechat-plugin'),
+                __('The property you are looking for is no longer on the market.', 'rechat-plugin'),
+            ],
+            'invalid'   => [
+                __('Listing not found', 'rechat-plugin'),
+                __('This listing link is not valid. Please check the address and try again.', 'rechat-plugin'),
+            ],
+            'missing'   => [
+                __('Listing not found', 'rechat-plugin'),
+                __('No listing was specified in this link.', 'rechat-plugin'),
+            ],
+            'error'     => [
+                __('We could not load this listing', 'rechat-plugin'),
+                __('Something went wrong while loading the property details. Please try again in a moment.', 'rechat-plugin'),
+            ],
+        ];
+        $reason = isset($notices[$reason]) ? $reason : 'not_found';
+
+        $rch_notice_reason  = $reason;
+        $rch_notice_title   = (string) apply_filters('rch_listing_unavailable_title', $notices[$reason][0], $reason);
+        $rch_notice_message = (string) apply_filters('rch_listing_unavailable_message', $notices[$reason][1], $reason);
+
+        // First existing page among common listings/search slugs; filterable per site.
+        $rch_notice_search = '';
+        foreach (['listings', 'search', 'properties', 'search-listings'] as $slug) {
+            $page = get_page_by_path($slug);
+            if ($page instanceof WP_Post && $page->post_status === 'publish') {
+                $rch_notice_search = get_permalink($page);
+                break;
+            }
+        }
+        $rch_notice_search = (string) apply_filters('rch_listing_unavailable_search_url', $rch_notice_search, $reason);
+
+        if ($reason === 'error') {
+            status_header(503);
+            header('Retry-After: 300');
+            nocache_headers();
+        } else {
+            global $wp_query;
+            $wp_query->set_404();
+            status_header(404);
+        }
+
+        add_filter('document_title_parts', static function ($title) use ($rch_notice_title) {
+            $title['title'] = $rch_notice_title;
+            return $title;
+        }, 99);
+
+        $template = locate_template('rechat/listing-not-found.php');
+        include $template ? $template : RCH_PLUGIN_DIR . 'templates/single/listing-not-found.php';
+        exit;
+    }
+}
+
 // Prefer rewrite-captured listing id; fall back to URL parsing (legacy safety)
 $house_id = get_query_var('listing_id');
 if (empty($house_id)) {
@@ -34,16 +106,16 @@ if ($house_id) {
     if (isset($response['data']['http']) && $response['data']['http'] === 400) {
         // Check for validation errors
         if (isset($response['data']['code']) && $response['data']['code'] === 'Validation') {
-            echo '<p>Invalid listing ID provided. Please check the ID and try again.</p>';
+            rch_render_listing_unavailable('invalid');
         } else {
-            echo '<p>No listing details found for this ID.</p>';
+            rch_render_listing_unavailable('not_found');
         }
     } elseif (!$response['success']) {
         // Return error if API request fails for other reasons
-        echo '<p>An error occurred while fetching the listing details. Please try again later.</p>';
+        rch_render_listing_unavailable('error');
     } else {
         // Proceed to display listing details if the response was successful
-        $data = $response['data']['data'];
+        $data = $response['data']['data'] ?? null;
         if ($data) {
             $listing_detail = $data;
 
@@ -85,11 +157,7 @@ if ($house_id) {
 
             // Check if the listing is deleted
             if (!empty($listing_detail['deleted_at'])) {
-                global $wp_query;
-                $wp_query->set_404();
-                status_header(404);
-                get_template_part(404);
-                exit;
+                rch_render_listing_unavailable('removed');
             }
 
             // Expose listing payload for wp_head JSON-LD (RealEstateListing) before get_header().
@@ -112,9 +180,9 @@ if ($house_id) {
 
             unset($GLOBALS['rch_listing_detail_for_jsonld'], $GLOBALS['rch_listing_canonical_url']);
         } else {
-            echo '<p>No listing details found for this ID.</p>';
+            rch_render_listing_unavailable('not_found');
         }
     }
 } else {
-    echo '<p>listing ID is missing.</p>';
+    rch_render_listing_unavailable('missing');
 }

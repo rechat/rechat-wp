@@ -1,5 +1,22 @@
 # Changelog
 
+## 7.0.98
+
+- **Fix: Broken listing pages showed a bare line of text.** When a listing page
+  (`/listing-detail/…`) could not be shown, visitors saw only "No listing details found
+  for this ID." on a blank white page with no site header or footer. It now opens inside
+  the site's own theme (header, menu, footer) with a clear notice card and buttons back
+  to the home page (and to the listings page when the site has one at `/listings/`,
+  `/search/` or `/properties/`). Covers: listing not found, removed, invalid link, and
+  Rechat being temporarily unreachable (with a **Try again** button).
+- **SEO:** missing or removed listings now return a real **404** status, so search
+  engines drop dead listing URLs. Temporary Rechat errors return **503** so search
+  engines retry later instead of dropping the page.
+- **For theme developers:** override the page with `rechat/listing-not-found.php` in
+  the theme. Text and the listings link can be changed with the filters
+  `rch_listing_unavailable_title`, `rch_listing_unavailable_message` and
+  `rch_listing_unavailable_search_url`.
+
 ## 7.0.97
 
 - **New: "Coming Soon" status in the Listing block.** Listing block → Listing
