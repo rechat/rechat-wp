@@ -1,5 +1,13 @@
 # Changelog
 
+## 7.0.97
+
+- **New: "Coming Soon" status in the Listing block.** Listing block → Listing
+  Settings → Select Statuses now has a **Coming Soon** checkbox. Tick it alone to show
+  only Coming Soon listings. "Active" still includes Coming Soon (plus Active, Active
+  Under Contract, Incoming), so existing blocks are unchanged. Shortcode equivalent:
+  `[listings listing_statuses="Coming Soon"]`.
+
 ## 7.0.95
 
 - **New: RealScout settings page** (hidden, administrators only) at

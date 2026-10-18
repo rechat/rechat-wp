@@ -160,6 +160,7 @@ registerBlockType('rch-rechat-plugin/listing-block', {
 
         const statusOptions = [
             { label: 'Active', value: 'Active' },
+            { label: 'Coming Soon', value: 'Coming Soon' },
             { label: 'Pending', value: 'Pending' },
             { label: 'Closed', value: 'Closed' },
             { label: 'Archived', value: 'Archived' },
@@ -337,14 +338,15 @@ registerBlockType('rch-rechat-plugin/listing-block', {
             const updatedStatuses = selectedStatuses.includes(status)
                 ? selectedStatuses.filter(s => s !== status)
                 : [...selectedStatuses, status];
-            const listingStatuses = updatedStatuses.flatMap((statusKey) =>
+            const listingStatuses = [...new Set(updatedStatuses.flatMap((statusKey) =>
                 ({
                     Active: ['Active', 'Incoming', 'Coming Soon'],
+                    'Coming Soon': ['Coming Soon'],
                     Pending: ['Pending'],
                     Closed: ['Sold', 'Leased'],
                     Archived: ['Withdrawn', 'Expired'],
                 }[statusKey] || [])
-            );
+            ))];
             setAttributes({ selectedStatuses: updatedStatuses, listing_statuses: listingStatuses });
         };
 
