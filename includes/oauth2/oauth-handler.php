@@ -452,6 +452,15 @@ function rch_oauth_send_refresh_failure_alert($entry)
         return;
     }
 
+    // Never connected, or deliberately disconnected: no brand and no refresh token to
+    // recover with, so "sync is down" would be a false alarm (e.g. opening the settings
+    // page on a fresh install, or right after Disconnect).
+    if ((string) get_option('rch_rechat_brand_id', '') === ''
+        && (string) get_option('rch_rechat_refresh_token', '') === ''
+    ) {
+        return;
+    }
+
     $recipients = rch_oauth_get_alert_emails();
     if (empty($recipients)) {
         return;
@@ -464,7 +473,6 @@ function rch_oauth_send_refresh_failure_alert($entry)
     if ($last > 0 && ($now - $last) < $interval) {
         return;
     }
-    update_option('rch_oauth_last_alert_ts', $now, false);
 
     $site_name = wp_specialchars_decode(get_bloginfo('name'), ENT_QUOTES);
     $site_url  = home_url('/');
@@ -512,7 +520,11 @@ function rch_oauth_send_refresh_failure_alert($entry)
     $subject = apply_filters('rch_oauth_alert_subject', $subject, $entry);
     $body    = apply_filters('rch_oauth_alert_body', $body, $entry);
 
-    wp_mail($recipients, $subject, $body);
+    // Start the throttle window only once the mail was handed off, so a failed send
+    // is retried on the next failure instead of being silenced for the whole interval.
+    if (wp_mail($recipients, $subject, $body)) {
+        update_option('rch_oauth_last_alert_ts', $now, false);
+    }
 }
 
 /**
@@ -641,6 +653,72 @@ function rch_multisite_should_run_local_oauth_refresh(): bool
     return rch_multisite_subsite_has_local_oauth();
 }
 
+/**
+ * Access token expiry as a UNIX timestamp (from the stored `rch_rechat_expires_in`).
+ *
+ * @return int|null Null when no expiry is stored or it cannot be parsed.
+ */
+function rch_oauth_get_token_expiry_timestamp()
+{
+    $expiry_date = get_option('rch_rechat_expires_in');
+    if (empty($expiry_date)) {
+        return null;
+    }
+
+    $expiry_timestamp = strtotime($expiry_date . ' UTC');
+    if ($expiry_timestamp === false) {
+        $expiry_timestamp = strtotime($expiry_date);
+    }
+
+    if ($expiry_timestamp === false) {
+        error_log('Rechat Plugin: Invalid expiry date format - ' . $expiry_date);
+        return null;
+    }
+
+    return (int) $expiry_timestamp;
+}
+
+/**
+ * Refresh the access token when it is missing, expired, or about to expire.
+ *
+ * Used by the background data sync so a token that silently expires (no admin opened
+ * the settings page, no listing page hit a 401) is still refreshed — and, when the
+ * refresh token no longer works, the failure is logged and reaches the alert emails.
+ *
+ * @param string $source Refresh source label for the log (wp_cron, auto, manual…).
+ * @param int    $margin Seconds before expiry at which to refresh early.
+ * @return true|WP_Error True when nothing needed doing or the refresh succeeded.
+ */
+function rch_oauth_refresh_if_expiring($source = 'auto', $margin = DAY_IN_SECONDS)
+{
+    if (! rch_multisite_should_run_local_oauth_refresh()) {
+        return true;
+    }
+
+    $access  = (string) get_option('rch_rechat_access_token', '');
+    $refresh = (string) get_option('rch_rechat_refresh_token', '');
+
+    // Never connected / disconnected: nothing to refresh with.
+    if ($access === '' && $refresh === '') {
+        return true;
+    }
+
+    if ($access === '') {
+        return rch_refresh_access_token($source);
+    }
+
+    $expiry_timestamp = rch_oauth_get_token_expiry_timestamp();
+    if ($expiry_timestamp === null) {
+        return true;
+    }
+
+    if (($expiry_timestamp - time()) <= (int) $margin) {
+        return rch_refresh_access_token($source);
+    }
+
+    return true;
+}
+
 /*******************************
  * Check if access token has expired
  ******************************/
@@ -661,19 +739,8 @@ function rch_check_token_expiry()
         rch_ensure_valid_access_token();
     }
 
-    $expiry_date = get_option('rch_rechat_expires_in');
-
-    if (empty($expiry_date)) {
-        return;
-    }
-
-    $expiry_timestamp = strtotime($expiry_date . ' UTC');
-    if ($expiry_timestamp === false) {
-        $expiry_timestamp = strtotime($expiry_date);
-    }
-
-    if ($expiry_timestamp === false) {
-        error_log('Rechat Plugin: Invalid expiry date format - ' . $expiry_date);
+    $expiry_timestamp = rch_oauth_get_token_expiry_timestamp();
+    if ($expiry_timestamp === null) {
         return;
     }
 

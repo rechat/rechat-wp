@@ -77,13 +77,35 @@ function rch_execute_data_sync_cron_job()
         return;
     }
 
+    // Refresh the access token first when it is missing, expired, or expires within a day
+    // (sync runs every 12h, so this catches expiry before the API starts returning 401).
+    // A failed refresh is logged and emailed by the OAuth handler.
+    $source = wp_doing_cron() ? 'wp_cron' : 'auto';
+    if (function_exists('rch_oauth_refresh_if_expiring')) {
+        rch_oauth_refresh_if_expiring($source);
+    }
+
     // Log cron execution
     error_log('Rechat Plugin: Starting scheduled data sync (Agents, Offices, Regions, Branding)');
 
     // Execute the data sync
     try {
         $result = rch_update_agents_offices_regions_data();
-        
+
+        // API rejected the token although it looked valid (revoked / rotated server-side):
+        // refresh once and retry so the failure is not silent and reaches the alert emails.
+        // Message comes from rch_fetch_and_process_brands() in helper.php.
+        if (is_array($result) && empty($result['success'])
+            && isset($result['message']) && stripos((string) $result['message'], 'Expired Token') !== false
+            && function_exists('rch_refresh_access_token')
+        ) {
+            error_log('Rechat Plugin: Data sync hit an expired/invalid token - refreshing and retrying once');
+            $refreshed = rch_refresh_access_token($source);
+            if (! is_wp_error($refreshed)) {
+                $result = rch_update_agents_offices_regions_data();
+            }
+        }
+
         // Log the result
         if (is_array($result) && isset($result['success'])) {
             if ($result['success']) {
