@@ -359,6 +359,7 @@ Accepted parameters (from `shortcode_atts` defaults):
 | Attribute | Type | Default | Notes |
 | --- | ---: | ---: | --- |
 | `target_page` | string | `/listings/` | page path or URL path |
+| `scope` | string | (empty) | `brand`: on agent/office sub-sites search the whole brand. Redirect adds `?rch_listing_scope=brand` so the target page lifts its sub-site scope for that request only (`rch_multisite_listing_scope_is_bypassed()`) |
 | `brand_id` | string | (empty) | falls back to option `rch_rechat_brand_id` |
 | `map_zoom` | string | (empty) | |
 | `map_api_key` | string | option | default from option `rch_rechat_google_map_api_key` |

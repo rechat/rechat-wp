@@ -305,8 +305,8 @@ function rch_ajax_submit_lead_rechat_api()
 
     // Agent subsites must assign the lead to their linked hub agent. On the main
     // site (or non-agent subsites) leads are unassigned, so no assignee is required.
-    $is_agent_subsite = function_exists('rch_multisite_is_agent_listing_scope_active')
-        && rch_multisite_is_agent_listing_scope_active();
+    $is_agent_subsite = function_exists('rch_is_rechat_agent_only_subsite')
+        && rch_is_rechat_agent_only_subsite();
     if ($is_agent_subsite && $assignee_email === '') {
         wp_send_json_error(array('message' => 'A valid agent assignee email is required.'), 400);
     }

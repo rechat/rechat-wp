@@ -9,6 +9,10 @@
  * - Office-only subsites (linked to a hub `offices` post via `_rch_office_site_id`) auto-scope
  *   the same listing surfaces with `filter_brand_id` from the hub office's `office_id` post meta
  *   (Rechat Office brand UUID from API sync; empty for locally added offices).
+ * - `[rch_search_listing_form scope="brand"]` opts out of that scope: its own `<rechat-listings>`
+ *   carries `data-rch-listing-scope="brand"` (skipped by the output buffer) and its redirect adds
+ *   `?rch_listing_scope=brand`, which turns the agent/office scope off for that request only
+ *   (see rch_multisite_listing_scope_is_bypassed()).
  * - On agent/office subsites, when local OAuth options are empty, `rch_rechat_access_token`,
  *   `rch_rechat_refresh_token`, `rch_rechat_brand_id`, and `rch_rechat_expires_in` fall back to the hub.
  *   Non-empty local values always win so a subsite can connect its own Rechat account via OAuth.
@@ -38,11 +42,42 @@ if (! function_exists('is_multisite') || ! is_multisite()) {
 }
 
 /**
+ * Whether this request opts out of the subsite listing scope (agent `filter_agents` / office
+ * `filter_brand_id`) and shows every listing the brand can access.
+ *
+ * True when the visitor arrived from `[rch_search_listing_form scope="brand"]`: its redirect adds
+ * `?rch_listing_scope=brand`. A plain visit to the same page keeps the subsite scope, so an agent's
+ * "Active Listings" page stays agent-only while hero searches cover the whole brand. Kinsta/page
+ * caches store bare URLs only, so the query string always reaches PHP.
+ */
+function rch_multisite_listing_scope_is_bypassed(): bool
+{
+    static $from_request = null;
+
+    if ($from_request === null) {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display flag.
+        $raw          = isset($_GET['rch_listing_scope']) ? sanitize_key(wp_unslash($_GET['rch_listing_scope'])) : '';
+        $from_request = ($raw === 'brand');
+    }
+
+    /**
+     * Filter whether the subsite listing scope is skipped on this request.
+     *
+     * @param bool $bypassed True when `?rch_listing_scope=brand` is present.
+     */
+    return (bool) apply_filters('rch_multisite_listing_scope_bypassed', $from_request);
+}
+
+/**
  * Whether this request should apply agent-only listing scoping (not main hub, not office-only).
  */
 function rch_multisite_is_agent_listing_scope_active(): bool
 {
     if (! is_multisite() || get_current_blog_id() === (int) get_main_site_id()) {
+        return false;
+    }
+
+    if (rch_multisite_listing_scope_is_bypassed()) {
         return false;
     }
 
@@ -55,6 +90,10 @@ function rch_multisite_is_agent_listing_scope_active(): bool
 function rch_multisite_is_office_listing_scope_active(): bool
 {
     if (! is_multisite() || get_current_blog_id() === (int) get_main_site_id()) {
+        return false;
+    }
+
+    if (rch_multisite_listing_scope_is_bypassed()) {
         return false;
     }
 
@@ -250,7 +289,8 @@ function rch_multisite_get_main_site_agent_ids_csv(): string
  */
 function rch_multisite_get_linked_agent_profile_email(): string
 {
-    if (! rch_multisite_is_agent_listing_scope_active()) {
+    // Linked agent, not listing scope: the lead assignee stays set when `?rch_listing_scope=brand` is used.
+    if (! function_exists('rch_is_rechat_agent_only_subsite') || ! rch_is_rechat_agent_only_subsite()) {
         return '';
     }
 
@@ -1073,6 +1113,18 @@ function rch_multisite_ob_patch_rechat_listings_map_api_key(string $html, string
 }
 
 /**
+ * Whether a `<rechat-listings>` open tag opted out of the subsite scope
+ * (`data-rch-listing-scope="brand"`, rendered by [rch_search_listing_form scope="brand"]).
+ *
+ * @param string $inner Attributes inside the tag.
+ * @return bool
+ */
+function rch_multisite_ob_tag_opts_out_of_listing_scope(string $inner): bool
+{
+    return (bool) preg_match('/\bdata-rch-listing-scope\s*=\s*(["\'])brand\1/i', $inner);
+}
+
+/**
  * Inject or replace filter_agents on parent <rechat-listings> only (not sort/pagination children).
  *
  * @param string $html Full page HTML.
@@ -1099,6 +1151,9 @@ function rch_multisite_ob_inject_filter_agents($html)
         rch_multisite_rechat_listings_parent_open_tag_pattern(),
         static function ($m) use ($attr) {
             $inner = $m[1];
+            if (rch_multisite_ob_tag_opts_out_of_listing_scope($inner)) {
+                return '<rechat-listings' . $inner . '>';
+            }
             if (preg_match('/\bfilter_agents\s*=/i', $inner)) {
                 $inner = rch_multisite_preg_replace_safe(
                     '/\sfilter_agents\s*=\s*(["\'])[^"\']*\1/i',
@@ -1145,6 +1200,9 @@ function rch_multisite_ob_inject_filter_brand_id_for_office($html)
         rch_multisite_rechat_listings_parent_open_tag_pattern(),
         static function ($m) use ($attr) {
             $inner = $m[1];
+            if (rch_multisite_ob_tag_opts_out_of_listing_scope($inner)) {
+                return '<rechat-listings' . $inner . '>';
+            }
             if (preg_match('/\bfilter_brand_id\s*=/i', $inner)) {
                 $inner = rch_multisite_preg_replace_safe(
                     '/\sfilter_brand_id\s*=\s*(["\'])[^"\']*\1/i',
@@ -1189,6 +1247,9 @@ function rch_multisite_ob_disable_rechat_listings_when_no_hub_agents(string $htm
         rch_multisite_rechat_listings_parent_open_tag_pattern(),
         static function ($m) {
             $inner = $m[1];
+            if (rch_multisite_ob_tag_opts_out_of_listing_scope($inner)) {
+                return '<rechat-listings' . $inner . '>';
+            }
             if (preg_match('/\bdisabled\s*=/i', $inner)) {
                 return '<rechat-listings' . $inner . '>';
             }

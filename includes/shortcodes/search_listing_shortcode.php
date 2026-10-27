@@ -102,6 +102,9 @@ function rch_search_listing_form_wrapper_style_attr($primary_color, $show_backgr
 /**
  * Reusable search form for listings (Rechat) — submits via GET to `target_page`.
  *
+ * `scope="brand"`: on agent/office sub-sites search every listing the brand can access instead of
+ * the sub-site's own listings (see $brand_scope below). Elsewhere the attribute has no effect.
+ *
  * @param array $atts Shortcode attributes
  * @return string HTML
  */
@@ -109,6 +112,7 @@ function rch_search_listing_form_shortcode($atts)
 {
     $atts = shortcode_atts([
         'target_page'               => '/listings/',
+        'scope'                     => '', // '' = sub-site default (agent/office scope), 'brand' = whole brand.
         'brand_id'                  => '',
         'map_zoom'                  => '',
         'map_api_key'               => get_option('rch_rechat_google_map_api_key'),
@@ -136,6 +140,10 @@ function rch_search_listing_form_shortcode($atts)
     rch_search_listing_form_mark_rendered();
 
     $target_page = sanitize_text_field($atts['target_page']);
+    // scope="brand": the multisite output buffer skips this widget's <rechat-listings>
+    // (data-rch-listing-scope) and the redirect adds ?rch_listing_scope=brand so the target page
+    // lifts its agent/office scope for that request only (rch_multisite_listing_scope_is_bypassed()).
+    $brand_scope = sanitize_key((string) $atts['scope']) === 'brand';
     $brand_id = sanitize_text_field($atts['brand_id']);
     if ($brand_id === '') {
         $brand_id = get_option('rch_rechat_brand_id');
@@ -214,11 +222,12 @@ function rch_search_listing_form_shortcode($atts)
         class="<?php echo esc_attr(implode(' ', $wrapper_classes)); ?>"
         data-search-redirect-base="<?php echo esc_attr($redirect_base); ?>"
         <?php
+        echo $brand_scope ? ' data-search-scope="brand"' : '';
         echo $wrapper_style;
         ?>
     >
         <rechat-root <?php echo $rechat_attrs; ?>>
-            <rechat-listings <?php echo $rechat_listings_attrs; ?>>
+            <rechat-listings <?php echo $rechat_listings_attrs; ?><?php echo $brand_scope ? ' data-rch-listing-scope="brand"' : ''; ?>>
                 <div class="container_listing_sdk rch-search-container">
                     <?php if ($show_background && $background_image !== '') : ?>
                         <div class="rch-search-background" aria-hidden="true"></div>

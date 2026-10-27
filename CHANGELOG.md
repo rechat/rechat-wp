@@ -1,5 +1,21 @@
 # Changelog
 
+## 7.0.99
+
+- **New: brand-wide search bar on agent and office sites.**
+  `[rch_search_listing_form scope="brand"]` searches every listing the brand has access
+  to instead of only that agent's (or office's) listings. The results page shows the
+  brand-wide results for that search only; opening the same page from the menu (for
+  example an agent's **Active Listings** page) still shows the site's own listings.
+  Without `scope="brand"` nothing changes.
+- **For theme developers:** the search bar's redirect adds `?rch_listing_scope=brand`,
+  which turns the agent/office listing scope off for that request (filter
+  `rch_multisite_listing_scope_bypassed`). The bar's own `<rechat-listings>` carries
+  `data-rch-listing-scope="brand"` so the sub-site scope is not injected into it. A theme
+  can switch all its search bars to brand-wide with
+  `add_filter('shortcode_atts_rch_search_listing_form', …)` setting `scope` to `brand`.
+  Leads forms on such pages are still assigned to the sub-site's agent.
+
 ## 7.0.98
 
 - **Fix: Broken listing pages showed a bare line of text.** When a listing page

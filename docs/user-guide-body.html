@@ -236,6 +236,7 @@
 </ol>
 <h3 id="rch-guide-add-a-search-bar-to-the-home-page">Add a search bar to the home page</h3>
 <p>Use <code>[rch_search_listing_form target_page=&quot;/listings/&quot;]</code>. Visitors type an area or ZIP and land on your listings page with the search applied. The target page must contain the Listing Block or <code>[listings]</code>.</p>
+<p>On an agent or office sub-site, add <code>scope=&quot;brand&quot;</code> to search every listing the brand has access to instead of only that site's own listings. The target page then shows the brand-wide results for that search only; opening the same page from the menu still shows the site's own listings.</p>
 <h3 id="rch-guide-common-shortcode-examples">Common shortcode examples</h3>
 <pre><code class="language-text">[listings listing_statuses=&quot;Active&quot; property_types=&quot;Residential&quot; own_listing=&quot;true&quot; sort_by=&quot;-price&quot;]
 [rch_latest_listings display_type=&quot;swiper&quot; listing_statuses=&quot;Active&quot; limit=&quot;8&quot; navigation=&quot;true&quot;]
@@ -993,7 +994,7 @@
 </tr>
 </tbody>
 </table></div>
-<p>On an agent or office sub-site, <code>filter_agents</code> and <code>filter_brand_id</code> are set for you so each site shows only its own listings.</p>
+<p>On an agent or office sub-site, <code>filter_agents</code> and <code>filter_brand_id</code> are set for you so each site shows only its own listings. A search bar with <code>scope=&quot;brand&quot;</code> (below) lifts this for its own results.</p>
 <h3 id="rch-guide-rchsearchlistingform-attributes">[rch_search_listing_form] attributes</h3>
 <p>Search bar that sends visitors to your listings page with their search applied.</p>
 <div class="rch-guide__table"><table>
@@ -1011,6 +1012,12 @@
 <td>Page path, e.g. <code>/properties/</code></td>
 <td><code>/listings/</code></td>
 <td>Page visitors land on. It must contain the Listing Block or <code>[listings]</code></td>
+</tr>
+<tr>
+<td><code>scope</code></td>
+<td><code>brand</code></td>
+<td>empty</td>
+<td>Agent/office sub-sites only: search every listing the brand has access to, not just this site's own. The target page shows those brand-wide results for this search only; opened directly it still shows the site's own listings</td>
 </tr>
 <tr>
 <td><code>show_background</code></td>

@@ -112,6 +112,8 @@ Add Rechat content to any page with a Gutenberg block (Widgets category) or a sh
 
 Use `[rch_search_listing_form target_page="/listings/"]`. Visitors type an area or ZIP and land on your listings page with the search applied. The target page must contain the Listing Block or `[listings]`.
 
+On an agent or office sub-site, add `scope="brand"` to search every listing the brand has access to instead of only that site's own listings. The target page then shows the brand-wide results for that search only; opening the same page from the menu still shows the site's own listings.
+
 ### Common shortcode examples
 
 ```text
@@ -325,7 +327,7 @@ Short list of listings for home pages and sections. It has no map and no filter 
 | `auto_center_few_slides` | yes / no | `true` | Center the cards instead of sliding when there are only a few |
 | `auto_center_few_slides_threshold` | Number | `4` | "A few" means fewer than this many cards |
 
-On an agent or office sub-site, `filter_agents` and `filter_brand_id` are set for you so each site shows only its own listings.
+On an agent or office sub-site, `filter_agents` and `filter_brand_id` are set for you so each site shows only its own listings. A search bar with `scope="brand"` (below) lifts this for its own results.
 
 ### [rch_search_listing_form] attributes
 
@@ -334,6 +336,7 @@ Search bar that sends visitors to your listings page with their search applied.
 | Attribute | Values | Default | What it does |
 | --- | --- | --- | --- |
 | `target_page` | Page path, e.g. `/properties/` | `/listings/` | Page visitors land on. It must contain the Listing Block or `[listings]` |
+| `scope` | `brand` | empty | Agent/office sub-sites only: search every listing the brand has access to, not just this site's own. The target page shows those brand-wide results for this search only; opened directly it still shows the site's own listings |
 | `show_background` | yes / no | `false` | Show a background image behind the bar |
 | `background_image` | Image link | empty | The background image. Needs `show_background="true"` |
 | `color_mode` | `light`, `dark` | General tab setting | Light or dark bar for this shortcode only |

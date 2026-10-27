@@ -211,6 +211,12 @@
       }
     });
 
+    // [rch_search_listing_form scope="brand"]: ask the target page for brand-wide listings instead
+    // of the agent/office sub-site scope (read by rch_multisite_listing_scope_is_bypassed()).
+    if (wrapper.getAttribute('data-search-scope') === 'brand') {
+      params.set('rch_listing_scope', 'brand');
+    }
+
     var sep = base.indexOf('?') === -1 ? '?' : '&';
     window.location.href = base + sep + params.toString();
   });
