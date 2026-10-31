@@ -1,5 +1,34 @@
 # Changelog
 
+## 7.0.101
+
+- **Listing photo gallery redone (listing detail + Off Market single).** "View all
+  photos" now opens a full-screen dark lightbox instead of a small white card: the photo
+  fills the screen, a "3 / 40" counter and the address sit in the top bar, thumbnails run
+  along the bottom, and larger round arrows sit on the photo. Esc closes, ← / → move,
+  swipe and pinch / double-tap zoom work on phones, the page stops scrolling behind it,
+  and focus returns to what opened it. Neighbouring photos preload so the next swipe
+  never shows an empty frame. The gallery button shows the photo count ("View all 40
+  photos") and the last grid tile shows how many more there are ("+35"). Every tile is
+  keyboard-reachable. Themes that copied the old `.rch-imgs-modal` rules are overridden.
+
+- **New: `[rch_realscout_home_value]` shortcode.** The RealScout home value widget
+  as a shortcode, for themes and page builders that cannot use the block. Same ID
+  rules as the block: an agent sub-site uses that agent's RealScout number, everything
+  else uses the Main Website ID, and nothing is rendered when no ID is set.
+  `title` / `subtitle` replace the widget's own heading and text with yours
+  (`hide_title` / `hide_subtitle` just hide them), `shadow_dom="false"` lets theme
+  CSS style the widget's inputs, and the block's color / width settings are available
+  as `background_color`, `title_color`, `subtitle_color`, `input_text_color`,
+  `primary_button_color`, `primary_button_text_color`, `secondary_button_color`,
+  `secondary_button_text_color` and `widget_width`. Documented in the user guide.
+
+## 7.0.100
+
+- **Fix: Rechat connection dropping.** The data sync cron job now refreshes the
+  access token, and the "connection lost" alert is skipped on sites that were never
+  connected.
+
 ## 7.0.99
 
 - **New: brand-wide search bar on agent and office sites.**

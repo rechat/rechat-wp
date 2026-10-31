@@ -5,8 +5,7 @@
  * This template includes:
  * - Rechat SDK initialization and lead tracking
  * - Lead capture form submission handler with AJAX
- * - Swiper slider initialization (main and thumbnail sliders with responsive breakpoints)
- * - Modal open/close handlers for image gallery
+ * - Photo lightbox (#myModal): Swiper main + thumbs, open/close, keyboard, scroll lock
  * - Show more/less description toggle functionality
  * 
  * @package Rechat_Plugin
@@ -152,78 +151,140 @@ $rch_listing_ajax_url = admin_url('admin-ajax.php');
                 });
         });
     })();
-    var swiper = new Swiper(".rch-houses-mySwiper", {
-        spaceBetween: 10,
-        slidesPerView: 8, // Default for desktop
-        freeMode: true,
-        watchSlidesProgress: true,
+    // Photo lightbox (#myModal): full-screen Swiper gallery with thumbnails.
+    // Opened by every [data-slider] element in the top gallery (cover, grid tiles,
+    // "View all photos"). Esc closes, arrow keys navigate, page scroll is locked
+    // while open, focus returns to the element that opened it.
+    (function () {
+        var modal = document.getElementById('myModal');
+        if (!modal || typeof Swiper === 'undefined') { return; }
 
-        // Add responsive breakpoints
-        breakpoints: {
-            // When the window width is >= 320px (small mobile)
-            320: {
-                slidesPerView: 3, // 1 slide per view on small screens
+        var mainEl   = modal.querySelector('.rch-lightbox__main');
+        var thumbsEl = modal.querySelector('.rch-lightbox__thumbs');
+        var closeBtn = modal.querySelector('.rch-lightbox__close');
+        var currentEl = modal.querySelector('.rch-lightbox__current');
+        var slides = mainEl ? mainEl.querySelectorAll('.swiper-slide') : [];
+        if (!mainEl || !thumbsEl || !closeBtn || !slides.length) { return; }
+
+        var opener = null;
+
+        var thumbs = new Swiper(thumbsEl, {
+            spaceBetween: 8,
+            slidesPerView: 'auto',
+            freeMode: true,
+            watchSlidesProgress: true,
+            slideToClickedSlide: true
+        });
+
+        var main = new Swiper(mainEl, {
+            spaceBetween: 16,
+            speed: 320,
+            zoom: { maxRatio: 3 },
+            navigation: {
+                nextEl: modal.querySelector('.rch-lightbox__nav--next'),
+                prevEl: modal.querySelector('.rch-lightbox__nav--prev')
             },
-            // When the window width is >= 480px (mobile)
-            480: {
-                slidesPerView: 4, // 2 slides per view on mobile screens
-            },
-            // When the window width is >= 768px (tablets)
-            768: {
-                slidesPerView: 5, // 4 slides per view on tablet screens
-            },
-            // When the window width is >= 1024px (desktops)
-            1024: {
-                slidesPerView: 6, // 6 slides per view on large tablets or small desktops
-            },
-            // When the window width is >= 1280px (desktops)
-            1280: {
-                slidesPerView: 8, // Full slides per view on desktop
+            thumbs: { swiper: thumbs }
+        });
+
+        // Lazy images only load when near the viewport; force the neighbours of the
+        // current slide so the next swipe never shows an empty frame.
+        function preloadAround(index) {
+            for (var i = index - 2; i <= index + 2; i++) {
+                var slide = slides[i];
+                if (!slide) { continue; }
+                var img = slide.querySelector('img');
+                if (img && img.getAttribute('loading') === 'lazy') { img.setAttribute('loading', 'eager'); }
             }
         }
-    });
 
-    var swiper2 = new Swiper(".rch-houses-mySwiper2", {
-        spaceBetween: 10,
-        navigation: {
-            nextEl: ".swiper-button-next",
-            prevEl: ".swiper-button-prev",
-        },
-        thumbs: {
-            swiper: swiper,
-        },
-    });
-    // Get the modal
-    var modal = document.getElementById("myModal");
-
-    // Get the button that opens the modal
-    var btns = document.querySelectorAll("[id='myBtn']");
-
-    // Get the <span> element that closes the modal
-    var span = document.getElementsByClassName("rch-img-modal-close")[0];
-
-    // When the user clicks the button, open the modal
-    for (const btn of btns) {
-        btn.addEventListener('click', function(event) {
-            const data = this.getAttribute('data-slider');
-            modal.style.display = "flex";
-            swiper2.update();
-            swiper2.slideTo(data);
-            swiper2.update();
-        })
-    }
-
-    // When the user clicks on <span> (x), close the modal
-    span.onclick = function() {
-        modal.style.display = "none";
-    }
-
-    // When the user clicks anywhere outside of the modal, close it
-    window.onclick = function(event) {
-        if (event.target == modal) {
-            modal.style.display = "none";
+        function sync() {
+            var index = main.activeIndex || 0;
+            if (currentEl) { currentEl.textContent = index + 1; }
+            preloadAround(index);
         }
-    }
+        main.on('slideChange', sync);
+
+        function isOpen() { return modal.classList.contains('is-open'); }
+
+        function open(index, source) {
+            opener = source || document.activeElement;
+            modal.classList.add('is-open');
+            document.documentElement.classList.add('rch-lightbox-open');
+            // Swiper measured 0 while display:none — re-measure now that it is visible.
+            thumbs.update();
+            main.update();
+            main.slideTo(index, 0);
+            sync();
+            closeBtn.focus();
+        }
+
+        function close() {
+            if (!isOpen()) { return; }
+            if (main.zoom && typeof main.zoom.out === 'function') { try { main.zoom.out(); } catch (e) {} }
+            modal.classList.remove('is-open');
+            document.documentElement.classList.remove('rch-lightbox-open');
+            if (opener && typeof opener.focus === 'function') { opener.focus(); }
+            opener = null;
+        }
+
+        var openers = document.querySelectorAll('.rch-top-img-slider [data-slider]');
+        Array.prototype.forEach.call(openers, function (el) {
+            var index = parseInt(el.getAttribute('data-slider'), 10) || 0;
+            el.addEventListener('click', function (event) {
+                event.preventDefault();
+                open(index, el);
+            });
+            el.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    open(index, el);
+                }
+            });
+        });
+
+        closeBtn.addEventListener('click', close);
+
+        // Click on the dark backdrop (anywhere that is not the photo or a control) closes.
+        modal.addEventListener('click', function (event) {
+            var t = event.target;
+            if (!(t instanceof Element)) { return; }
+            if (t === modal
+                || t.classList.contains('rch-lightbox__stage')
+                || t.classList.contains('rch-lightbox__bar')
+                || (t.classList.contains('swiper-slide') && t.closest('.rch-lightbox__main'))
+                || t.classList.contains('swiper-zoom-container')) {
+                close();
+            }
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (!isOpen()) { return; }
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                close();
+            } else if (event.key === 'ArrowRight') {
+                event.preventDefault();
+                main.slideNext();
+            } else if (event.key === 'ArrowLeft') {
+                event.preventDefault();
+                main.slidePrev();
+            } else if (event.key === 'Tab') {
+                // Keep focus inside the dialog.
+                var focusables = modal.querySelectorAll('button:not([disabled])');
+                if (!focusables.length) { return; }
+                var first = focusables[0];
+                var last = focusables[focusables.length - 1];
+                if (event.shiftKey && document.activeElement === first) {
+                    event.preventDefault();
+                    last.focus();
+                } else if (!event.shiftKey && document.activeElement === last) {
+                    event.preventDefault();
+                    first.focus();
+                }
+            }
+        });
+    })();
 
     // Show More / Show Less functionality
     document.addEventListener('DOMContentLoaded', function() {
