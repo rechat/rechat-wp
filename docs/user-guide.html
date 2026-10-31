@@ -205,7 +205,7 @@ body { margin: 0; background: #f6f7f7; }
 <body>
 <main class="rch-guide">
 <h1 class="rch-guide__title">Rechat Plugin User Guide</h1>
-<p class="rch-guide__meta">Rechat plugin version 7.0.99</p>
+<p class="rch-guide__meta">Rechat plugin version 7.0.101</p>
 <nav class="rch-guide__toc" aria-label="Contents"><h2>Contents</h2><ol><li><a href="#rch-guide-overview">Overview</a></li><li><a href="#rch-guide-getting-started">Getting started</a></li><li><a href="#rch-guide-syncing">Syncing</a></li><li><a href="#rch-guide-listings-blocks-and-shortcodes">Listings, blocks and shortcodes</a></li><li><a href="#rch-guide-shortcode-attributes-reference">Shortcode attributes reference</a></li><li><a href="#rch-guide-multisite-agent-websites">Multisite agent websites</a></li><li><a href="#rch-guide-multisite-buttons-reference">Multisite buttons reference</a></li><li><a href="#rch-guide-settings-reference">Settings reference</a></li><li><a href="#rch-guide-troubleshooting">Troubleshooting</a></li></ol></nav>
 <div class="rch-guide__content">
 <h2 id="rch-guide-overview">Overview</h2>
@@ -453,6 +453,7 @@ body { margin: 0; background: #f6f7f7; }
 [rch_leads_form form_title=&quot;Contact Us&quot; tags=&quot;Website,Buyer&quot; show_note=&quot;false&quot;]
 [rch_testimonials title=&quot;What our clients say&quot; limit=&quot;6&quot; load_more=&quot;false&quot;]
 [rch_off_market status=&quot;sold&quot; display_type=&quot;swiper&quot; columns=&quot;3&quot; autoplay=&quot;true&quot;]
+[rch_realscout_home_value title=&quot;What's my home worth?&quot; subtitle=&quot;Get a free instant estimate&quot;]
 </code></pre>
 <p>Every attribute each shortcode accepts, with the values you can pick from, is listed in <strong>Shortcode attributes reference</strong> below.</p>
 <h3 id="rch-guide-agents-offices-regions-neighborhoods-off-market">Agents, offices, regions, neighborhoods, off market</h3>
@@ -1526,6 +1527,110 @@ body { margin: 0; background: #f6f7f7; }
 </tbody>
 </table></div>
 <p>On <code>[rch_off_market]</code> only the exact word <code>true</code> turns <code>pagination</code> and <code>autoplay</code> on, and only <code>false</code> turns <code>loop</code> off.</p>
+<h3 id="rch-guide-rchrealscouthomevalue-attributes">[rch_realscout_home_value] attributes</h3>
+<p>RealScout's home value widget (address search → instant estimate), the same as the <strong>RealScout Home Value</strong> block. The RealScout ID is never put in the shortcode: an agent sub-site uses that agent's RealScout number, every other site uses the <strong>Main Website ID</strong>, both set by an administrator at <code>wp-admin/admin.php?page=realscout</code> on the main site. When no ID applies, the shortcode shows nothing.</p>
+<div class="rch-guide__table"><table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Values</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>title</code></td>
+<td>Text</td>
+<td>empty</td>
+<td>Your heading instead of the widget's own (&quot;What's my home worth?&quot;)</td>
+</tr>
+<tr>
+<td><code>subtitle</code></td>
+<td>Text</td>
+<td>empty</td>
+<td>Your text instead of the widget's own subtitle</td>
+</tr>
+<tr>
+<td><code>hide_title</code></td>
+<td><code>true</code></td>
+<td>shown</td>
+<td>Hides the widget's title without adding your own</td>
+</tr>
+<tr>
+<td><code>hide_subtitle</code></td>
+<td><code>true</code></td>
+<td>shown</td>
+<td>Hides the widget's subtitle without adding your own</td>
+</tr>
+<tr>
+<td><code>shadow_dom</code></td>
+<td><code>false</code></td>
+<td><code>true</code></td>
+<td><code>false</code> renders the widget in the page itself so theme CSS can style its input and button</td>
+</tr>
+<tr>
+<td><code>class</code></td>
+<td>CSS class names</td>
+<td>empty</td>
+<td>Extra classes on the wrapper</td>
+</tr>
+<tr>
+<td><code>background_color</code></td>
+<td>CSS color</td>
+<td><code>#ffffff</code></td>
+<td>Widget background</td>
+</tr>
+<tr>
+<td><code>title_color</code></td>
+<td>CSS color</td>
+<td><code>#000000</code></td>
+<td>Widget title color</td>
+</tr>
+<tr>
+<td><code>subtitle_color</code></td>
+<td>CSS color</td>
+<td>grey</td>
+<td>Widget subtitle color</td>
+</tr>
+<tr>
+<td><code>input_text_color</code></td>
+<td>CSS color</td>
+<td>inherit</td>
+<td>Address input text color</td>
+</tr>
+<tr>
+<td><code>primary_button_color</code></td>
+<td>CSS color</td>
+<td>RealScout blue</td>
+<td>Main button background</td>
+</tr>
+<tr>
+<td><code>primary_button_text_color</code></td>
+<td>CSS color</td>
+<td><code>#ffffff</code></td>
+<td>Main button text color</td>
+</tr>
+<tr>
+<td><code>secondary_button_color</code></td>
+<td>CSS color</td>
+<td><code>#ffffff</code></td>
+<td>&quot;Back&quot; button background</td>
+</tr>
+<tr>
+<td><code>secondary_button_text_color</code></td>
+<td>CSS color</td>
+<td>RealScout blue</td>
+<td>&quot;Back&quot; button text color</td>
+</tr>
+<tr>
+<td><code>widget_width</code></td>
+<td>CSS length, e.g. <code>100%</code> or <code>480px</code></td>
+<td><code>auto</code></td>
+<td>Widget width</td>
+</tr>
+</tbody>
+</table></div>
 <h2 id="rch-guide-multisite-agent-websites">Multisite agent websites</h2>
 <p>On a WordPress Multisite network the plugin builds one sub-site per agent (and per office) from the hub's Agents and Offices, gives it the theme you pick, and fills that theme's settings from each agent's profile. Agent sites show only that agent's listings; office sites show only that office's listings.</p>
 <h3 id="rch-guide-before-you-start">Before you start</h3>

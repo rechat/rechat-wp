@@ -133,16 +133,17 @@ function rch_realscout_sanitize_css_value(string $value): string
 }
 
 /**
- * Render callback → <realscout-home-value agent-encoded-id="…">.
+ * <realscout-home-value agent-encoded-id="…"> for the current site, or '' when no ID is
+ * configured (nothing rather than a broken widget). Shared by the block and the
+ * [rch_realscout_home_value] shortcode; enqueues the RealScout script.
  *
- * @param array $attributes Block attributes.
+ * @param array $style_attributes Style values keyed like rch_realscout_block_style_map() (empty → default).
+ * @param array $widget_attributes Extra element attributes, e.g. ['remove-title' => 'true'].
  * @return string
  */
-function rch_render_realscout_block($attributes)
+function rch_realscout_widget_html(array $style_attributes = array(), array $widget_attributes = array())
 {
     $encoded_id = rch_realscout_resolve_encoded_id();
-
-    // Nothing configured for this site: render nothing rather than a broken widget.
     if ($encoded_id === '') {
         return '';
     }
@@ -151,19 +152,43 @@ function rch_render_realscout_block($attributes)
 
     $declarations = array();
     foreach (rch_realscout_block_style_map() as $key => $style) {
-        $value = isset($attributes[$key]) ? rch_realscout_sanitize_css_value((string) $attributes[$key]) : '';
+        $value = isset($style_attributes[$key]) ? rch_realscout_sanitize_css_value((string) $style_attributes[$key]) : '';
         if ($value === '') {
             $value = $style['default'];
         }
         $declarations[] = $style['var'] . ': ' . $value;
     }
 
-    $wrapper = get_block_wrapper_attributes(array('class' => 'rch-realscout-home-value'));
+    $extra = '';
+    foreach ($widget_attributes as $name => $value) {
+        if (! preg_match('/^[a-z][a-z0-9-]*$/', (string) $name)) {
+            continue;
+        }
+        $extra .= ' ' . $name . '="' . esc_attr((string) $value) . '"';
+    }
 
     return sprintf(
-        '<div %1$s><realscout-home-value agent-encoded-id="%2$s" style="%3$s"></realscout-home-value></div>',
-        $wrapper,
+        '<realscout-home-value agent-encoded-id="%1$s"%2$s style="%3$s"></realscout-home-value>',
         esc_attr($encoded_id),
+        $extra,
         esc_attr(implode('; ', $declarations) . ';')
     );
+}
+
+/**
+ * Render callback → <realscout-home-value agent-encoded-id="…">.
+ *
+ * @param array $attributes Block attributes.
+ * @return string
+ */
+function rch_render_realscout_block($attributes)
+{
+    $widget = rch_realscout_widget_html(is_array($attributes) ? $attributes : array());
+    if ($widget === '') {
+        return '';
+    }
+
+    $wrapper = get_block_wrapper_attributes(array('class' => 'rch-realscout-home-value'));
+
+    return sprintf('<div %1$s>%2$s</div>', $wrapper, $widget);
 }

@@ -124,6 +124,7 @@ On an agent or office sub-site, add `scope="brand"` to search every listing the 
 [rch_leads_form form_title="Contact Us" tags="Website,Buyer" show_note="false"]
 [rch_testimonials title="What our clients say" limit="6" load_more="false"]
 [rch_off_market status="sold" display_type="swiper" columns="3" autoplay="true"]
+[rch_realscout_home_value title="What's my home worth?" subtitle="Get a free instant estimate"]
 ```
 
 Every attribute each shortcode accepts, with the values you can pick from, is listed in **Shortcode attributes reference** below.
@@ -406,6 +407,28 @@ Your hand-entered Off Market listings (WP Admin → Off Market).
 | `autoplay_delay` | Number (milliseconds) | `3500` | Slider only: time between slides |
 
 On `[rch_off_market]` only the exact word `true` turns `pagination` and `autoplay` on, and only `false` turns `loop` off.
+
+### [rch_realscout_home_value] attributes
+
+RealScout's home value widget (address search → instant estimate), the same as the **RealScout Home Value** block. The RealScout ID is never put in the shortcode: an agent sub-site uses that agent's RealScout number, every other site uses the **Main Website ID**, both set by an administrator at `wp-admin/admin.php?page=realscout` on the main site. When no ID applies, the shortcode shows nothing.
+
+| Attribute | Values | Default | What it does |
+| --- | --- | --- | --- |
+| `title` | Text | empty | Your heading instead of the widget's own ("What's my home worth?") |
+| `subtitle` | Text | empty | Your text instead of the widget's own subtitle |
+| `hide_title` | `true` | shown | Hides the widget's title without adding your own |
+| `hide_subtitle` | `true` | shown | Hides the widget's subtitle without adding your own |
+| `shadow_dom` | `false` | `true` | `false` renders the widget in the page itself so theme CSS can style its input and button |
+| `class` | CSS class names | empty | Extra classes on the wrapper |
+| `background_color` | CSS color | `#ffffff` | Widget background |
+| `title_color` | CSS color | `#000000` | Widget title color |
+| `subtitle_color` | CSS color | grey | Widget subtitle color |
+| `input_text_color` | CSS color | inherit | Address input text color |
+| `primary_button_color` | CSS color | RealScout blue | Main button background |
+| `primary_button_text_color` | CSS color | `#ffffff` | Main button text color |
+| `secondary_button_color` | CSS color | `#ffffff` | "Back" button background |
+| `secondary_button_text_color` | CSS color | RealScout blue | "Back" button text color |
+| `widget_width` | CSS length, e.g. `100%` or `480px` | `auto` | Widget width |
 
 ## Multisite agent websites
 
