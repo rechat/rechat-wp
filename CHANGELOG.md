@@ -1,5 +1,16 @@
 # Changelog
 
+## 7.0.102
+
+- **New: `property_types` on `[rch_search_listing_form]`.** Limit a search bar to
+  certain property types, e.g. `[rch_search_listing_form property_types="Commercial"]`
+  for a commercial-only search. Takes a group name (`Commercial`, `Residential`,
+  `Lease`, `Sale`, `Lots & Acreage`, `All Listings`) or exact types as a comma list
+  (`Commercial,Multi-Family`). The bar starts on those types and the results page
+  always stays inside them: a visitor's pick outside the list falls back to the allowed
+  types. Add `disable_filter_property_types="true"` to hide the type picker. Documented
+  in the user guide.
+
 ## 7.0.101
 
 - **Listing photo gallery redone (listing detail + Off Market single).** "View all

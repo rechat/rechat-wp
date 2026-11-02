@@ -348,6 +348,7 @@ Search bar that sends visitors to your listings page with their search applied.
 | `filter_minimum_bathrooms` | Number | empty | Starting minimum bathrooms |
 | `filter_maximum_year_built` | Number | empty | Newest year built |
 | `filter_listing_statuses` | Exact status names, comma list, e.g. `Active,Coming Soon` | all | Statuses searched. Groups like `Closed` do not expand here |
+| `property_types` | `Commercial`, `Residential`, `Lease`, `Sale`, `Lots & Acreage`, or exact types as a comma list, e.g. `Commercial,Multi-Family` | all | Search only these property types. The bar starts on them and results always stay inside them, even if the visitor picks another type. Add `disable_filter_property_types="true"` to hide the type picker |
 | `disable_filter_address` | yes / no | `false` | Hide the address box |
 | `disable_filter_price` | yes / no | `false` | Hide the price filter |
 | `disable_filter_beds` | yes / no | `false` | Hide the beds filter |

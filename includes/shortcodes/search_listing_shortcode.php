@@ -100,10 +100,55 @@ function rch_search_listing_form_wrapper_style_attr($primary_color, $show_backgr
 }
 
 /**
+ * Property type group names accepted by `property_types` (same groups as [rch_latest_listings]).
+ *
+ * @return array<string, string> Group name => comma list of Rechat property types.
+ */
+function rch_search_listing_form_property_type_groups()
+{
+    return [
+        'All Listings'   => 'Residential,Residential Lease,Lots & Acreage,Commercial,Multi-Family',
+        'Sale'           => 'Residential,Lots & Acreage,Commercial,Multi-Family',
+        'Lease'          => 'Residential Lease',
+        'Lots & Acreage' => 'Lots & Acreage',
+        'Commercial'     => 'Commercial',
+        'Residential'    => 'Residential',
+    ];
+}
+
+/**
+ * Turn the `property_types` attribute into a list of Rechat property types.
+ *
+ * @param string $raw Comma list or group name, e.g. "Commercial" or "Residential,Multi-Family".
+ * @return list<string>
+ */
+function rch_search_listing_form_parse_property_types($raw)
+{
+    // The editor may store "&" as "&amp;" (Lots &amp; Acreage).
+    $raw = trim(html_entity_decode(sanitize_text_field((string) $raw), ENT_QUOTES));
+    if ($raw === '') {
+        return [];
+    }
+
+    foreach (rch_search_listing_form_property_type_groups() as $group => $types) {
+        if (strcasecmp($group, $raw) === 0) {
+            $raw = $types;
+            break;
+        }
+    }
+
+    return array_values(array_unique(array_filter(array_map('trim', explode(',', $raw)), 'strlen')));
+}
+
+/**
  * Reusable search form for listings (Rechat) — submits via GET to `target_page`.
  *
  * `scope="brand"`: on agent/office sub-sites search every listing the brand can access instead of
  * the sub-site's own listings (see $brand_scope below). Elsewhere the attribute has no effect.
+ *
+ * `property_types="Commercial"`: limit the search to these property types (comma list, or a group
+ * name from rch_search_listing_form_property_type_groups()). The form starts on them and the
+ * redirect always carries one of them (see rch-search-listing-shortcode.js).
  *
  * @param array $atts Shortcode attributes
  * @return string HTML
@@ -131,6 +176,7 @@ function rch_search_listing_form_shortcode($atts)
         'filter_maximum_bedrooms'   => '',
         'filter_maximum_year_built' => '',
         'filter_listing_statuses'   => '',
+        'property_types'            => '', // e.g. 'Commercial' or 'Residential,Residential Lease'; '' = all types.
         'show_background'           => 'false',
         'background_image'          => '',
         'color_mode'                => '', // '' = inherit the General-tab color mode; 'light'/'dark' overrides this shortcode.
@@ -166,6 +212,7 @@ function rch_search_listing_form_shortcode($atts)
     $filter_maximum_bedrooms = sanitize_text_field($atts['filter_maximum_bedrooms']);
     $filter_maximum_year_built = sanitize_text_field($atts['filter_maximum_year_built']);
     $filter_listing_statuses = sanitize_text_field($atts['filter_listing_statuses']);
+    $property_types = rch_search_listing_form_parse_property_types($atts['property_types']);
     $show_background = filter_var($atts['show_background'], FILTER_VALIDATE_BOOLEAN);
     $background_image = esc_url($atts['background_image']);
     $color_mode = sanitize_text_field($atts['color_mode']);
@@ -188,6 +235,7 @@ function rch_search_listing_form_shortcode($atts)
         'disable_filter_property_types' => $disable_filter_property_types,
         'disable_filter_advanced'       => $disable_filter_advanced,
         'disable_filter_loading_indicator' => $disable_filter_loading_indicator,
+        'property_types'                => $property_types,
     ];
 
     $boundary_country = (string) get_option('rch_selected_country', '');
@@ -223,6 +271,7 @@ function rch_search_listing_form_shortcode($atts)
         data-search-redirect-base="<?php echo esc_attr($redirect_base); ?>"
         <?php
         echo $brand_scope ? ' data-search-scope="brand"' : '';
+        echo ! empty($property_types) ? ' data-property-types="' . esc_attr(implode(',', $property_types)) . '"' : '';
         echo $wrapper_style;
         ?>
     >

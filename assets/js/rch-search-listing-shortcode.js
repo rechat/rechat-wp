@@ -35,6 +35,41 @@
     return String(filters.property_types);
   }
 
+  /**
+   * Property types for the redirect when the shortcode limits them (data-property-types).
+   * Keeps the visitor's picks that are allowed; otherwise falls back to every allowed type.
+   * @param {Element|null} wrapper
+   * @param {Record<string, unknown>} filters
+   * @returns {string[]|null} null = shortcode does not limit property types
+   */
+  function allowedPropertyTypes(wrapper, filters) {
+    var raw = wrapper && wrapper.getAttribute('data-property-types');
+    if (!raw) {
+      return null;
+    }
+    var allowed = raw
+      .split(',')
+      .map(function (s) {
+        return s.trim();
+      })
+      .filter(function (s) {
+        return s !== '';
+      });
+    var picked = Array.isArray(filters.property_types)
+      ? filters.property_types
+      : filters.property_types
+        ? [filters.property_types]
+        : [];
+    var kept = picked
+      .map(function (t) {
+        return String(t);
+      })
+      .filter(function (t) {
+        return allowed.indexOf(t) !== -1;
+      });
+    return kept.length > 0 ? kept : allowed;
+  }
+
   function mapCenterString(map) {
     if (!map || !map.center || !Array.isArray(map.center)) {
       return null;
@@ -215,6 +250,13 @@
     // of the agent/office sub-site scope (read by rch_multisite_listing_scope_is_bypassed()).
     if (wrapper.getAttribute('data-search-scope') === 'brand') {
       params.set('rch_listing_scope', 'brand');
+    }
+
+    // [rch_search_listing_form property_types="…"]: results stay inside the allowed types.
+    var limitedTypes = allowedPropertyTypes(wrapper, filters);
+    if (limitedTypes) {
+      params.delete('property_type');
+      params.set('property_types', limitedTypes.join(','));
     }
 
     var sep = base.indexOf('?') === -1 ? '?' : '&';
