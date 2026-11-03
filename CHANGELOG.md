@@ -1,5 +1,16 @@
 # Changelog
 
+## 7.0.103
+
+- **Fix: Agent Site Deploy wizard menu builder could create every menu item twice.** The
+  background menu build is driven by the wizard's own polling AND by WP-cron. Both could pick
+  up the same batch of sub-sites in the same second, and on a few sites both runs attached their
+  items to one menu, so the header showed "Home, Home, Property Search, Property Search, …".
+  The chunk runner now takes a network-wide MySQL lock (`GET_LOCK`, released automatically if
+  PHP dies); a second runner that finds it taken just reports progress and the browser keeps
+  polling. Sites already built with doubled items need the duplicates removed once in
+  Appearance → Menus (or a WP-CLI clean-up).
+
 ## 7.0.102
 
 - **New: `property_types` on `[rch_search_listing_form]`.** Limit a search bar to

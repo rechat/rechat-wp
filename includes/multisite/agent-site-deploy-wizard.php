@@ -3018,8 +3018,50 @@ function rch_agent_wizard_start_menu_build_job(string $menu_name, array $items, 
     }
 }
 
+const RCH_AGENT_WIZARD_MENU_JOB_LOCK = 'rch_agent_wizard_menu_build';
+
+/**
+ * Take the network-wide menu-build lock (MySQL GET_LOCK, held by this DB connection).
+ *
+ * The chunk runner is driven by BOTH the wizard's browser polling and WP-cron. Without a lock the
+ * two can pick up the same chunk at the same moment and build the menu twice on the same sub-site
+ * (every item ended up twice in one menu). GET_LOCK is atomic across PHP processes and MySQL frees
+ * it when the connection ends, so a fatal/timeout can never leave it stuck.
+ */
+function rch_agent_wizard_menu_build_lock_acquire(): bool
+{
+    global $wpdb;
+
+    $got = $wpdb->get_var($wpdb->prepare('SELECT GET_LOCK(%s, 0)', RCH_AGENT_WIZARD_MENU_JOB_LOCK));
+
+    if ($got === null) {
+        // GET_LOCK unavailable: fall back to a short-lived site option (not atomic, but better than nothing).
+        $held = (int) get_site_option(RCH_AGENT_WIZARD_MENU_JOB_LOCK . '_lock', 0);
+        if ($held > 0 && time() - $held < 10 * MINUTE_IN_SECONDS) {
+            return false;
+        }
+        update_site_option(RCH_AGENT_WIZARD_MENU_JOB_LOCK . '_lock', (string) time());
+
+        return true;
+    }
+
+    return (int) $got === 1;
+}
+
+function rch_agent_wizard_menu_build_lock_release(): void
+{
+    global $wpdb;
+
+    $wpdb->query($wpdb->prepare('SELECT RELEASE_LOCK(%s)', RCH_AGENT_WIZARD_MENU_JOB_LOCK));
+    delete_site_option(RCH_AGENT_WIZARD_MENU_JOB_LOCK . '_lock');
+}
+
 /**
  * Process one chunk of the pending menu-build job (shared by cron + browser-driven AJAX).
+ *
+ * Only one runner works at a time (see rch_agent_wizard_menu_build_lock_acquire()). A caller that
+ * finds the lock taken gets the job's current counters back with `done => false` so the browser
+ * keeps polling while the other runner finishes its chunk.
  *
  * @return array{done:bool,remaining:int,total:int,ok:int,fail:int,errors:string[],active:bool}
  */
@@ -3043,6 +3085,53 @@ function rch_agent_wizard_process_menu_build_chunk(): array
     }
 
     $status['active'] = true;
+
+    if (! rch_agent_wizard_menu_build_lock_acquire()) {
+        return [
+            'done'      => false,
+            'remaining' => count($job['blog_ids']),
+            'total'     => (int) ($job['total'] ?? 0),
+            'ok'        => (int) ($job['ok'] ?? 0),
+            'fail'      => (int) ($job['fail'] ?? 0),
+            'errors'    => isset($job['errors']) && is_array($job['errors']) ? array_slice($job['errors'], 0, 50) : [],
+            'active'    => true,
+            'locked'    => true,
+        ];
+    }
+
+    try {
+        return rch_agent_wizard_process_menu_build_chunk_locked($job);
+    } finally {
+        rch_agent_wizard_menu_build_lock_release();
+    }
+}
+
+/**
+ * Body of rch_agent_wizard_process_menu_build_chunk(); runs with the lock held.
+ *
+ * @param array<string, mixed> $job Decoded job (blog_ids non-empty).
+ * @return array{done:bool,remaining:int,total:int,ok:int,fail:int,errors:string[],active:bool}
+ */
+function rch_agent_wizard_process_menu_build_chunk_locked(array $job): array
+{
+    // Re-read from the DB: another runner may have advanced the job while we waited for the lock.
+    wp_cache_delete(get_current_network_id() . ':' . RCH_AGENT_WIZARD_MENU_JOB_OPTION, 'site-options');
+    $raw = get_site_option(RCH_AGENT_WIZARD_MENU_JOB_OPTION, '');
+    $fresh = is_string($raw) && $raw !== '' ? json_decode($raw, true) : null;
+    if (! is_array($fresh) || empty($fresh['blog_ids']) || ! is_array($fresh['blog_ids'])) {
+        delete_site_option(RCH_AGENT_WIZARD_MENU_JOB_OPTION);
+
+        return [
+            'done'      => true,
+            'remaining' => 0,
+            'total'     => (int) ($job['total'] ?? 0),
+            'ok'        => (int) ($job['ok'] ?? 0),
+            'fail'      => (int) ($job['fail'] ?? 0),
+            'errors'    => isset($job['errors']) && is_array($job['errors']) ? array_slice($job['errors'], 0, 50) : [],
+            'active'    => true,
+        ];
+    }
+    $job = $fresh;
 
     $chunk_size = (int) apply_filters('rch_agent_wizard_menu_build_chunk_size', 25);
     if ($chunk_size < 1) {
