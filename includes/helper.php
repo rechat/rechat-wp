@@ -1465,6 +1465,11 @@ function get_custom_template($theme_path, $plugin_path)
  ******************************/
 function get_related_neighborhoods()
 {
+    // Similar section switched off for this neighborhood (Display box in the editor).
+    if (function_exists('rch_neighborhood_show_related') && ! rch_neighborhood_show_related()) {
+        return '';
+    }
+
     ob_start();
 
     // Get current post ID

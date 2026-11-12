@@ -1,5 +1,32 @@
 # Changelog
 
+## 7.0.104
+
+- **New: Neighborhood order & visibility (all themes, no theme edit needed).** A new screen,
+  **Neighborhoods → Order & Visibility**, lists every neighborhood: drag the rows (or use the
+  arrows) to set one order used on the home page and on the Neighborhoods page, and tick a box
+  to hide a neighborhood from the **Home page**, the **Neighborhoods page** or the **Similar
+  neighborhoods** sections. The same screen has **Neighborhoods per page** for the
+  Neighborhoods page (empty = the current default). "Reset order" returns to the theme's
+  default order. Hidden neighborhoods stay published: own link, sitemap, search and admin are
+  unchanged.
+- **New: "Display" box on each neighborhood** (editor sidebar): the same three hide boxes, plus
+  **Similar neighborhoods on this page** — *Automatic* (default, same as before), *Choose
+  neighborhoods* (tick the ones to show; listed in the site order) or *Hide the section*.
+  The Neighborhoods list in wp-admin shows a "Display" column.
+- How it works: themes run their own neighborhood queries, so the rules are applied to those
+  queries on the front page, the neighborhoods archive and single neighborhood pages
+  (`includes/neighborhoods/neighborhood-display.php`). Nothing changes on a site until an
+  order is saved or a box is ticked. New neighborhoods are added at the end of a custom order.
+  Themes can force or skip the rules with the query arg `rch_nh_context`
+  (`home` / `archive` / `related` / `none`) and can test `rch_neighborhood_show_related()`
+  before printing their similar section. "Hide the section" hides the standard
+  `.related-neighbour` wrapper; a theme with a different wrapper needs that check.
+  On Broadcast sub-sites, chosen similar neighborhoods fall back to Automatic (post IDs differ).
+- **Fix: testimonials grid wider than a phone.** `.testimonials__list` columns used
+  `minmax(400px, 1fr)`; now `minmax(min(100%, 400px), 1fr)`, so the cards never overflow
+  narrow screens.
+
 ## 7.0.103
 
 - **Fix: Agent Site Deploy wizard menu builder could create every menu item twice.** The

@@ -837,7 +837,7 @@ ul.rch-rechat-block img {
 }
 
 .testimonials__list {
-      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)) !important;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 400px), 1fr)) !important; /* min(): never wider than the phone */
 }
 
 .testimonial-card .testimonial-card__rating {
