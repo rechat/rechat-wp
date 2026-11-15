@@ -9,6 +9,8 @@
  * on an agent subsite, where it uses that agent's mapped child brand_id meta.
  *
  * Usage: [rch_testimonials limit="20" title="What our clients say" load_more="false"]
+ *        [rch_testimonials agent_id="123"]     only that agent's testimonials
+ *        [rch_testimonials agent_id="current"] the agent of the single agent page being viewed
  *
  * SDK docs: https://sdk.rechat.com/documents/JavaScript_SDK.Testimonials.html
  *
@@ -31,6 +33,7 @@ function rch_testimonials_get_defaults()
         'title'      => '',    // optional heading above the component
         'color_mode' => '',    // optional light|dark override for <rechat-root>
         'load_more'  => '',    // empty = SDK default; "false" = hide the load-more button
+        'agent_id'   => '',    // agent post ID, or "current" on a single agent page; empty = no agent filter
     ];
 }
 
@@ -44,6 +47,52 @@ function rch_testimonials_generate_id()
     static $instance_count = 0;
     $instance_count++;
     return 'rch-testimonials-' . $instance_count;
+}
+
+/**
+ * Turn the agent_id shortcode value into an agent post ID.
+ *
+ * @param mixed $value Agent post ID, or "current" (the single agent page being viewed).
+ * @return int 0 when no agent is meant.
+ */
+function rch_testimonials_resolve_agent_post_id($value)
+{
+    $value = strtolower(trim((string) $value));
+    if ($value === 'current') {
+        return is_singular('agents') ? (int) get_queried_object_id() : 0;
+    }
+    return max(0, (int) $value);
+}
+
+/**
+ * The Rechat brand_id mapped to an agent post ("Map agent brands" button).
+ *
+ * Agent posts live on the main site; on a subsite the main site is checked
+ * when the post has no brand here.
+ *
+ * @param int $agent_post_id
+ * @return string Empty when the agent has no mapped brand.
+ */
+function rch_testimonials_get_agent_brand_id($agent_post_id)
+{
+    $agent_post_id = (int) $agent_post_id;
+    if ($agent_post_id <= 0) {
+        return '';
+    }
+
+    $brand_id = get_post_type($agent_post_id) === 'agents'
+        ? (string) get_post_meta($agent_post_id, 'brand_id', true)
+        : '';
+
+    if ($brand_id === '' && is_multisite() && ! is_main_site()) {
+        switch_to_blog((int) get_main_site_id());
+        if (get_post_type($agent_post_id) === 'agents') {
+            $brand_id = (string) get_post_meta($agent_post_id, 'brand_id', true);
+        }
+        restore_current_blog();
+    }
+
+    return $brand_id;
 }
 
 /**
@@ -77,7 +126,15 @@ function rch_display_testimonials_shortcode($atts)
     // On an agent subsite, use THIS agent's mapped child brand_id (set via the
     // "Map agent brands" admin button) instead of the general/site brand id, so
     // testimonials resolve for the agent's own brand. Main site keeps the site brand.
-    if (
+    // An agent picked on the shortcode/block wins: use that agent's mapped brand.
+    // No mapped brand → fall through to the site/subsite brand below.
+    $picked_brand_id = rch_testimonials_get_agent_brand_id(
+        rch_testimonials_resolve_agent_post_id($atts['agent_id'])
+    );
+
+    if ($picked_brand_id !== '') {
+        $brand = $picked_brand_id;
+    } elseif (
         is_multisite()
         && ! is_main_site()
         && function_exists('rch_multisite_resolve_agent_post_id_for_current_blog')

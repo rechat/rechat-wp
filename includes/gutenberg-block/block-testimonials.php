@@ -39,6 +39,8 @@ function rch_register_block_assets_testimonials()
             'title'     => array('type' => 'string', 'default' => ''),
             'colorMode' => array('type' => 'string', 'default' => ''),
             'loadMore'  => array('type' => 'boolean', 'default' => true),
+            // -1 = never chosen, 0 = all testimonials, >0 = agent post ID.
+            'agentId'   => array('type' => 'number', 'default' => -1),
         ),
         'render_callback' => 'rch_render_testimonials_block',
     ));
@@ -58,6 +60,7 @@ function rch_render_testimonials_block($attributes)
     $color_mode = isset($attributes['colorMode']) ? strtolower((string) $attributes['colorMode']) : '';
     // Default true → send nothing (SDK default). Only false disables the button.
     $load_more  = isset($attributes['loadMore']) ? (bool) $attributes['loadMore'] : true;
+    $agent_id   = isset($attributes['agentId']) ? (int) $attributes['agentId'] : 0;
 
     $shortcode = '[rch_testimonials';
 
@@ -73,6 +76,9 @@ function rch_render_testimonials_block($attributes)
     }
     if (! $load_more) {
         $shortcode .= ' load_more="false"';
+    }
+    if ($agent_id > 0) {
+        $shortcode .= ' agent_id="' . $agent_id . '"';
     }
 
     $shortcode .= ']';
@@ -113,6 +119,14 @@ function rch_render_testimonials_preview_iframe()
     $js  = defined('RCH_RECHAT_SDK_JS_URL') ? RCH_RECHAT_SDK_JS_URL : '';
 
     $brand = get_option('rch_rechat_brand_id');
+    // Agent picked in the block → preview that agent's brand, like the front end.
+    $agent_id = isset($_GET['agent_id']) ? (int) $_GET['agent_id'] : 0;
+    if ($agent_id > 0 && function_exists('rch_testimonials_get_agent_brand_id')) {
+        $agent_brand_id = rch_testimonials_get_agent_brand_id($agent_id);
+        if ($agent_brand_id !== '') {
+            $brand = $agent_brand_id;
+        }
+    }
     if (function_exists('rch_get_rechat_root_attributes')) {
         $root_attrs = rch_get_rechat_root_attributes(
             array('brand' => $brand, 'color_mode' => $color),

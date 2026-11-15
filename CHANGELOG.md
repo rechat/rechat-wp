@@ -1,5 +1,22 @@
 # Changelog
 
+## 7.0.105
+
+- **New: show one agent's testimonials in the Testimonials block.** The block sidebar has a new
+  **Agent** field (searchable list of all agents). Pick an agent and the block shows only that
+  agent's testimonials; "All testimonials (no agent filter)" keeps the old behaviour.
+- **The agent is picked for you on agent pages.** When the block is opened inside an agent's
+  editor and nothing was chosen yet, that agent is selected automatically. You can still change
+  it to another agent or to all testimonials. Note: a Testimonials block that already sits in an
+  agent's content switches to that agent the next time the agent is opened in the editor; the
+  live page changes only after you press Update.
+- **Shortcode:** `[rch_testimonials agent_id="123"]` (agent post ID) or
+  `[rch_testimonials agent_id="current"]` for theme templates — on a single agent page it uses
+  the agent being viewed.
+- How it works: the agent's mapped Rechat brand (`brand_id`, set by "Map agent brands") is sent
+  to the SDK instead of the site brand — the same way agent sub-sites already work. An agent
+  without a mapped brand shows the site's testimonials. The editor preview follows the choice.
+
 ## 7.0.104
 
 - **New: Neighborhood order & visibility (all themes, no theme edit needed).** A new screen,
