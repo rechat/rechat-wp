@@ -61,9 +61,11 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
         useEffect(() => {
             const checkUserLogin = async () => {
                 try {
-                    const response = await apiFetch({ path: '/wp/v2/users/me' });
+                    // Plugin route, not core /wp/v2/users/me: site firewalls (Sucuri/GoDaddy) block every
+                    // /wp/v2/users* path against user enumeration, which made this check fail for admins.
+                    const response = await apiFetch({ path: '/wp/v2/check_logged_in' });
 
-                    if (response && response.id) {
+                    if (response && response.status === 'success') {
                         setIsLoggedIn(true);
                         fetchBrandId();
                         fetchAccessToken();

@@ -1,5 +1,15 @@
 # Changelog
 
+## 7.0.106
+
+- **Fix: Leads Form block showed "Please log in to view and manage the lead channels and tags"
+  to a logged-in admin.** On sites behind a firewall that blocks WordPress user lookups
+  (GoDaddy / Sucuri Website Firewall blocks every `/wp-json/wp/v2/users…` address), the block
+  could not confirm the login and showed that message instead of the form and its settings.
+  The block now confirms the login through the plugin's own address
+  (`/wp/v2/check_logged_in`), which those firewalls let through.
+- Nothing changes on sites where the block already worked.
+
 ## 7.0.105
 
 - **New: show one agent's testimonials in the Testimonials block.** The block sidebar has a new
