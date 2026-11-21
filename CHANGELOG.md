@@ -1,5 +1,24 @@
 # Changelog
 
+## 7.0.107
+
+- **Changed: the Testimonials block and shortcode now filter by the agent, not by the agent's
+  brand.** When an agent is picked, the plugin sends the agent's ID to the Rechat SDK
+  (`<rechat-testimonials agent_id="…">`) and keeps the site brand. Before, it swapped the site
+  brand for the agent's mapped brand. Blocks that already have an agent picked keep working —
+  nothing to re-save. An agent no longer needs a mapped Brand ID for this.
+- **Shortcode:** `[rch_testimonials agent_id="…"]` now also takes the Agent ID itself
+  (e.g. `agent_id="bbfa3a63-2fa0-4164-88e2-143e6ac6f9a0"`), besides the agent post ID and
+  `current` (the agent of the agent page being viewed).
+- **Renamed in the admin: "Rechat ID" is now "Agent ID"** for agents — on the agent edit screen,
+  the Agents list column, and the Import / Export tab (field list, "match by" list, quick export
+  button). The CSV column name stays `api_id`, so existing CSV files still import.
+- **Renamed on the agent edit screen: "Agent IDs (from Rechat)" is now "MLS Agent IDs"**, so it
+  is not mixed up with Agent ID. The values are the same as before.
+- User Guide: `agent_id` added to the `[rch_testimonials]` attributes.
+- Good to know: an agent added by hand has no Agent ID, so the block shows all testimonials for
+  it. On an agent sub-site with no agent picked, nothing changes.
+
 ## 7.0.106
 
 - **Fix: Leads Form block showed "Please log in to view and manage the lead channels and tags"

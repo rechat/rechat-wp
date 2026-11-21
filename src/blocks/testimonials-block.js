@@ -171,7 +171,7 @@ registerBlockType('rch-rechat-plugin/testimonials-block', {
                         />
                         <ComboboxControl
                             label="Agent"
-                            help="Show only this agent’s testimonials. The agent needs a mapped Rechat brand; without one, all testimonials are shown."
+                            help="Show only this agent’s testimonials (filtered by Agent ID). An agent added by hand has no Agent ID, so all testimonials are shown."
                             value={String(agentId > 0 ? agentId : 0)}
                             options={agentOptions}
                             onChange={(value) => setAttributes({ agentId: parseInt(value, 10) || 0 })}

@@ -123,6 +123,7 @@ On an agent or office sub-site, add `scope="brand"` to search every listing the 
 [rch_search_listing_form target_page="/properties/" show_background="true" background_image="https://example.com/hero.jpg"]
 [rch_leads_form form_title="Contact Us" tags="Website,Buyer" show_note="false"]
 [rch_testimonials title="What our clients say" limit="6" load_more="false"]
+[rch_testimonials agent_id="bbfa3a63-2fa0-4164-88e2-143e6ac6f9a0" limit="6"]
 [rch_off_market status="sold" display_type="swiper" columns="3" autoplay="true"]
 [rch_realscout_home_value title="What's my home worth?" subtitle="Get a free instant estimate"]
 ```
@@ -387,6 +388,9 @@ Client testimonials from Rechat. On an agent sub-site it shows that agent's test
 | `limit` | Number | all | Most testimonials shown |
 | `load_more` | `false` | shown | `false` hides the "Load more" button |
 | `color_mode` | `light`, `dark` | General tab setting | Light or dark cards for this shortcode only |
+| `agent_id` | Agent ID, agent post ID, or `current` | empty | Shows only that agent's testimonials. Agent ID = the ID on the agent's edit screen and in the Agents list. `current` = the agent of the agent page being viewed (for theme templates). An agent added by hand has no Agent ID, so all testimonials show |
+
+The **Testimonials Block** has the same filter: pick the agent in the **Agent** field.
 
 ### [rch_off_market] attributes
 
@@ -624,8 +628,8 @@ Built-in spam protection is always on: hidden honeypot field, minimum fill time,
 **Import agent bios and testimonials from CSV**
 
 1. Click **Sample CSV (multi-row)** or **Simple CSV (one row)** to get a template.
-2. Fill columns: `agent_match` (required: post ID, Rechat ID or exact agent name), `bio`, `title`, `testimonial_name`, `testimonial_description`, `testimonial_rank` (stars), `testimonial_link`. Leave `agent_match` blank to add more testimonials to the agent above.
-3. Choose **Default match by** (Auto-detect, Post ID, Rechat ID, Agent post title).
+2. Fill columns: `agent_match` (required: post ID, Agent ID or exact agent name), `bio`, `title`, `testimonial_name`, `testimonial_description`, `testimonial_rank` (stars), `testimonial_link`. Leave `agent_match` blank to add more testimonials to the agent above.
+3. Choose **Default match by** (Auto-detect, Post ID, Agent ID, Agent post title).
 4. Tick what to import (bio, agent title, testimonials) and **Replace** or **Merge** existing testimonials.
 5. Upload the file, click **Preview import**, check the table, then **Run import**.
 
@@ -633,7 +637,7 @@ A blank bio never erases an existing one. On Multisite, imported testimonials al
 
 **Export agents**
 
-- **Export Email / Rechat ID / Brand ID**: quick 3-column file.
+- **Export Email / Agent ID / Brand ID**: quick 3-column file.
 - Full export: tick fields, drag to order (Select all, Select none, Reset order), **Export CSV**. File name `agents-export-YYYY-MM-DD.csv`.
 - When the theme has a Testimonial post type: **Export testimonials CSV** and **Import testimonials CSV** (rows with a matching post_id update, others are created).
 

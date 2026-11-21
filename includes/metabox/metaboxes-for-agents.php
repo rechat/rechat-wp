@@ -81,7 +81,7 @@ function agents_meta_box_html($post)
     </div>
     <?php endif; ?>
 
-    <label for="api_id_field">Rechat ID (not available for locally added agents): </label>
+    <label for="api_id_field">Agent ID (not available for locally added agents): </label>
     <input type="text" id="api_id_field" name="api_id_field" value="<?php echo esc_attr($api_id); ?>" class="widefat" readonly />
     <br>
 
@@ -91,7 +91,7 @@ function agents_meta_box_html($post)
     $agents_ids_meta = get_post_meta($post->ID, 'agents', true);
     $agents_ids      = is_array($agents_ids_meta) ? array_values(array_filter($agents_ids_meta)) : array();
     ?>
-    <label for="agents_ids_field">Agent IDs <em>(<?php esc_html_e('from Rechat', 'rechat-plugin'); ?>)</em>: </label>
+    <label for="agents_ids_field">MLS Agent IDs <em>(<?php esc_html_e('from Rechat', 'rechat-plugin'); ?>)</em>: </label>
     <input type="text" id="agents_ids_field" value="<?php echo esc_attr(implode(', ', $agents_ids)); ?>" class="widefat" readonly title="<?php esc_attr_e('Synced from Rechat — not editable.', 'rechat-plugin'); ?>" style="background:#f0f0f1;color:#50575e;cursor:not-allowed;" />
     <p class="description">
         <?php
@@ -474,7 +474,7 @@ add_action('save_post', 'save_agents_meta_box');
 function add_api_id_columns($columns)
 {
     // Add a new column for API ID
-    $columns['api_id'] = 'Rechat ID (not available for locally added agents)';
+    $columns['api_id'] = 'Agent ID (not available for locally added agents)';
     // Add visibility column
     $columns['agent_visibility'] = 'Visibility';
     $columns['agent_display_order'] = 'Order';

@@ -205,7 +205,7 @@ body { margin: 0; background: #f6f7f7; }
 <body>
 <main class="rch-guide">
 <h1 class="rch-guide__title">Rechat Plugin User Guide</h1>
-<p class="rch-guide__meta">Rechat plugin version 7.0.101</p>
+<p class="rch-guide__meta">Rechat plugin version 7.0.107</p>
 <nav class="rch-guide__toc" aria-label="Contents"><h2>Contents</h2><ol><li><a href="#rch-guide-overview">Overview</a></li><li><a href="#rch-guide-getting-started">Getting started</a></li><li><a href="#rch-guide-syncing">Syncing</a></li><li><a href="#rch-guide-listings-blocks-and-shortcodes">Listings, blocks and shortcodes</a></li><li><a href="#rch-guide-shortcode-attributes-reference">Shortcode attributes reference</a></li><li><a href="#rch-guide-multisite-agent-websites">Multisite agent websites</a></li><li><a href="#rch-guide-multisite-buttons-reference">Multisite buttons reference</a></li><li><a href="#rch-guide-settings-reference">Settings reference</a></li><li><a href="#rch-guide-troubleshooting">Troubleshooting</a></li></ol></nav>
 <div class="rch-guide__content">
 <h2 id="rch-guide-overview">Overview</h2>
@@ -452,6 +452,7 @@ body { margin: 0; background: #f6f7f7; }
 [rch_search_listing_form target_page=&quot;/properties/&quot; show_background=&quot;true&quot; background_image=&quot;https://example.com/hero.jpg&quot;]
 [rch_leads_form form_title=&quot;Contact Us&quot; tags=&quot;Website,Buyer&quot; show_note=&quot;false&quot;]
 [rch_testimonials title=&quot;What our clients say&quot; limit=&quot;6&quot; load_more=&quot;false&quot;]
+[rch_testimonials agent_id=&quot;bbfa3a63-2fa0-4164-88e2-143e6ac6f9a0&quot; limit=&quot;6&quot;]
 [rch_off_market status=&quot;sold&quot; display_type=&quot;swiper&quot; columns=&quot;3&quot; autoplay=&quot;true&quot;]
 [rch_realscout_home_value title=&quot;What's my home worth?&quot; subtitle=&quot;Get a free instant estimate&quot;]
 </code></pre>
@@ -1289,6 +1290,12 @@ body { margin: 0; background: #f6f7f7; }
 <td>Statuses searched. Groups like <code>Closed</code> do not expand here</td>
 </tr>
 <tr>
+<td><code>property_types</code></td>
+<td><code>Commercial</code>, <code>Residential</code>, <code>Lease</code>, <code>Sale</code>, <code>Lots &amp; Acreage</code>, or exact types as a comma list, e.g. <code>Commercial,Multi-Family</code></td>
+<td>all</td>
+<td>Search only these property types. The bar starts on them and results always stay inside them, even if the visitor picks another type. Add <code>disable_filter_property_types=&quot;true&quot;</code> to hide the type picker</td>
+</tr>
+<tr>
 <td><code>disable_filter_address</code></td>
 <td>yes / no</td>
 <td><code>false</code></td>
@@ -1438,8 +1445,15 @@ body { margin: 0; background: #f6f7f7; }
 <td>General tab setting</td>
 <td>Light or dark cards for this shortcode only</td>
 </tr>
+<tr>
+<td><code>agent_id</code></td>
+<td>Agent ID, agent post ID, or <code>current</code></td>
+<td>empty</td>
+<td>Shows only that agent's testimonials. Agent ID = the ID on the agent's edit screen and in the Agents list. <code>current</code> = the agent of the agent page being viewed (for theme templates). An agent added by hand has no Agent ID, so all testimonials show</td>
+</tr>
 </tbody>
 </table></div>
+<p>The <strong>Testimonials Block</strong> has the same filter: pick the agent in the <strong>Agent</strong> field.</p>
 <h3 id="rch-guide-rchoffmarket-attributes">[rch_off_market] attributes</h3>
 <p>Your hand-entered Off Market listings (WP Admin → Off Market).</p>
 <div class="rch-guide__table"><table>
@@ -2062,15 +2076,15 @@ body { margin: 0; background: #f6f7f7; }
 <p><strong>Import agent bios and testimonials from CSV</strong></p>
 <ol>
 <li>Click <strong>Sample CSV (multi-row)</strong> or <strong>Simple CSV (one row)</strong> to get a template.</li>
-<li>Fill columns: <code>agent_match</code> (required: post ID, Rechat ID or exact agent name), <code>bio</code>, <code>title</code>, <code>testimonial_name</code>, <code>testimonial_description</code>, <code>testimonial_rank</code> (stars), <code>testimonial_link</code>. Leave <code>agent_match</code> blank to add more testimonials to the agent above.</li>
-<li>Choose <strong>Default match by</strong> (Auto-detect, Post ID, Rechat ID, Agent post title).</li>
+<li>Fill columns: <code>agent_match</code> (required: post ID, Agent ID or exact agent name), <code>bio</code>, <code>title</code>, <code>testimonial_name</code>, <code>testimonial_description</code>, <code>testimonial_rank</code> (stars), <code>testimonial_link</code>. Leave <code>agent_match</code> blank to add more testimonials to the agent above.</li>
+<li>Choose <strong>Default match by</strong> (Auto-detect, Post ID, Agent ID, Agent post title).</li>
 <li>Tick what to import (bio, agent title, testimonials) and <strong>Replace</strong> or <strong>Merge</strong> existing testimonials.</li>
 <li>Upload the file, click <strong>Preview import</strong>, check the table, then <strong>Run import</strong>.</li>
 </ol>
 <p>A blank bio never erases an existing one. On Multisite, imported testimonials also sync to agent sites.</p>
 <p><strong>Export agents</strong></p>
 <ul>
-<li><strong>Export Email / Rechat ID / Brand ID</strong>: quick 3-column file.</li>
+<li><strong>Export Email / Agent ID / Brand ID</strong>: quick 3-column file.</li>
 <li>Full export: tick fields, drag to order (Select all, Select none, Reset order), <strong>Export CSV</strong>. File name <code>agents-export-YYYY-MM-DD.csv</code>.</li>
 <li>When the theme has a Testimonial post type: <strong>Export testimonials CSV</strong> and <strong>Import testimonials CSV</strong> (rows with a matching post_id update, others are created).</li>
 </ul>

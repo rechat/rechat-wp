@@ -30,7 +30,7 @@ function rch_agent_export_fields(): array
         'post_id'           => ['label' => __('Post ID', 'rechat-plugin'), 'post' => 'ID'],
         'post_title'        => ['label' => __('Agent name (post title)', 'rechat-plugin'), 'post' => 'post_title'],
         'bio'               => ['label' => __('Bio (post content)', 'rechat-plugin'), 'post' => 'post_content'],
-        'api_id'            => ['label' => __('Rechat ID (api_id)', 'rechat-plugin')],
+        'api_id'            => ['label' => __('Agent ID (api_id)', 'rechat-plugin')],
         'brand_id'          => ['label' => __('Brand ID', 'rechat-plugin')],
         'first_name'        => ['label' => __('First name', 'rechat-plugin')],
         'last_name'         => ['label' => __('Last name', 'rechat-plugin')],

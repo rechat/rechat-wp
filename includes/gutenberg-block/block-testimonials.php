@@ -119,14 +119,12 @@ function rch_render_testimonials_preview_iframe()
     $js  = defined('RCH_RECHAT_SDK_JS_URL') ? RCH_RECHAT_SDK_JS_URL : '';
 
     $brand = get_option('rch_rechat_brand_id');
-    // Agent picked in the block → preview that agent's brand, like the front end.
-    $agent_id = isset($_GET['agent_id']) ? (int) $_GET['agent_id'] : 0;
-    if ($agent_id > 0 && function_exists('rch_testimonials_get_agent_brand_id')) {
-        $agent_brand_id = rch_testimonials_get_agent_brand_id($agent_id);
-        if ($agent_brand_id !== '') {
-            $brand = $agent_brand_id;
-        }
-    }
+    // Agent picked in the block → preview filters by that agent's Agent ID,
+    // like the front end (<rechat-testimonials agent_id="…">).
+    $agent_id        = isset($_GET['agent_id']) ? (int) $_GET['agent_id'] : 0;
+    $agent_rechat_id = ($agent_id > 0 && function_exists('rch_testimonials_get_agent_rechat_id'))
+        ? rch_testimonials_get_agent_rechat_id($agent_id)
+        : '';
     if (function_exists('rch_get_rechat_root_attributes')) {
         $root_attrs = rch_get_rechat_root_attributes(
             array('brand' => $brand, 'color_mode' => $color),
@@ -138,6 +136,7 @@ function rch_render_testimonials_preview_iframe()
     }
     $limit_attr     = $limit > 0 ? ' limit="' . (int) $limit . '"' : '';
     $load_more_attr = $disable_load_more ? ' load_more="false"' : '';
+    $agent_attr     = $agent_rechat_id !== '' ? ' agent_id="' . esc_attr($agent_rechat_id) . '"' : '';
 
     nocache_headers();
     header('Content-Type: text/html; charset=utf-8');
@@ -149,7 +148,7 @@ function rch_render_testimonials_preview_iframe()
     echo '<style>html,body{margin:0;padding:8px;background:transparent;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}</style>';
     echo '</head><body>';
     echo '<rechat-root ' . $root_attrs . '>';
-    echo '<rechat-testimonials' . $limit_attr . $load_more_attr . '></rechat-testimonials>';
+    echo '<rechat-testimonials' . $limit_attr . $load_more_attr . $agent_attr . '></rechat-testimonials>';
     echo '</rechat-root>';
     if ($js !== '') {
         echo '<script src="' . esc_url($js) . '"></script>';

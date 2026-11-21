@@ -58,9 +58,9 @@ if ($has_export) {
                         <h4><?php esc_html_e('Columns', 'rechat-plugin'); ?></h4>
                         <dl class="rch-agent-import__dl">
                             <dt><code>agent_match</code></dt>
-                            <dd><?php esc_html_e('Who to update: WordPress agent post ID (number), Rechat ID (api_id), or exact agent name.', 'rechat-plugin'); ?></dd>
+                            <dd><?php esc_html_e('Who to update: WordPress agent post ID (number), Agent ID (api_id), or exact agent name.', 'rechat-plugin'); ?></dd>
                             <dt><code>match_by</code></dt>
-                            <dd><?php esc_html_e('Must be the word api_id, post_id, title, or auto — not the Rechat ID itself. Leave blank to use the form default (api_id). If you pasted the UUID in both columns, the importer still fixes that automatically.', 'rechat-plugin'); ?></dd>
+                            <dd><?php esc_html_e('Must be the word api_id, post_id, title, or auto — not the Agent ID itself. Leave blank to use the form default (api_id). If you pasted the UUID in both columns, the importer still fixes that automatically.', 'rechat-plugin'); ?></dd>
                             <dt><code>bio</code></dt>
                             <dd><?php esc_html_e('Agent biography → saved in the agent post content (main editor).', 'rechat-plugin'); ?></dd>
                             <dt><code>title</code></dt>
@@ -262,9 +262,9 @@ if ($has_export) {
 
         <section class="rch-agent-export" style="margin-bottom:20px;">
             <div class="rch-card" style="padding:16px;border:1px solid #dcdcde;border-radius:6px;background:#fff;">
-                <h3 style="margin-top:0;"><?php esc_html_e('Quick export: Email, Rechat ID, Brand ID', 'rechat-plugin'); ?></h3>
+                <h3 style="margin-top:0;"><?php esc_html_e('Quick export: Email, Agent ID, Brand ID', 'rechat-plugin'); ?></h3>
                 <p class="description" style="margin-bottom:12px;">
-                    <?php esc_html_e('Exports every agent as a 3-column CSV: email, api_id (Rechat ID), brand_id.', 'rechat-plugin'); ?>
+                    <?php esc_html_e('Exports every agent as a 3-column CSV: email, api_id (Agent ID), brand_id.', 'rechat-plugin'); ?>
                 </p>
                 <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
                     <input type="hidden" name="action" value="rch_agent_export_csv" />
@@ -274,7 +274,7 @@ if ($has_export) {
                     <input type="hidden" name="fields[]" value="brand_id" />
                     <button type="submit" class="button button-primary">
                         <span class="dashicons dashicons-download" style="vertical-align:middle;"></span>
-                        <?php esc_html_e('Export Email / Rechat ID / Brand ID', 'rechat-plugin'); ?>
+                        <?php esc_html_e('Export Email / Agent ID / Brand ID', 'rechat-plugin'); ?>
                     </button>
                 </form>
             </div>

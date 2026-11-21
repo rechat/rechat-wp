@@ -9,8 +9,13 @@
  * on an agent subsite, where it uses that agent's mapped child brand_id meta.
  *
  * Usage: [rch_testimonials limit="20" title="What our clients say" load_more="false"]
- *        [rch_testimonials agent_id="123"]     only that agent's testimonials
+ *        [rch_testimonials agent_id="123"]     only that agent's testimonials (agent post ID)
+ *        [rch_testimonials agent_id="bbfa3a63-2fa0-4164-88e2-143e6ac6f9a0"] same, by Agent ID
  *        [rch_testimonials agent_id="current"] the agent of the single agent page being viewed
+ *
+ * The agent filter is the SDK's own: <rechat-testimonials agent_id="<Agent ID>">.
+ * The Agent ID is the `api_id` meta of the agent post; <rechat-root>
+ * keeps the site brand.
  *
  * SDK docs: https://sdk.rechat.com/documents/JavaScript_SDK.Testimonials.html
  *
@@ -33,7 +38,7 @@ function rch_testimonials_get_defaults()
         'title'      => '',    // optional heading above the component
         'color_mode' => '',    // optional light|dark override for <rechat-root>
         'load_more'  => '',    // empty = SDK default; "false" = hide the load-more button
-        'agent_id'   => '',    // agent post ID, or "current" on a single agent page; empty = no agent filter
+        'agent_id'   => '',    // agent post ID, Agent ID (UUID), or "current" on a single agent page; empty = no agent filter
     ];
 }
 
@@ -65,34 +70,50 @@ function rch_testimonials_resolve_agent_post_id($value)
 }
 
 /**
- * The Rechat brand_id mapped to an agent post ("Map agent brands" button).
+ * The Agent ID (`api_id` meta, a UUID) of an agent post.
  *
  * Agent posts live on the main site; on a subsite the main site is checked
- * when the post has no brand here.
+ * when the post has no Agent ID here.
  *
  * @param int $agent_post_id
- * @return string Empty when the agent has no mapped brand.
+ * @return string Empty when the agent has no (valid) Agent ID, e.g. a locally added agent.
  */
-function rch_testimonials_get_agent_brand_id($agent_post_id)
+function rch_testimonials_get_agent_rechat_id($agent_post_id)
 {
     $agent_post_id = (int) $agent_post_id;
     if ($agent_post_id <= 0) {
         return '';
     }
 
-    $brand_id = get_post_type($agent_post_id) === 'agents'
-        ? (string) get_post_meta($agent_post_id, 'brand_id', true)
+    $rechat_id = get_post_type($agent_post_id) === 'agents'
+        ? trim((string) get_post_meta($agent_post_id, 'api_id', true))
         : '';
 
-    if ($brand_id === '' && is_multisite() && ! is_main_site()) {
+    if ($rechat_id === '' && is_multisite() && ! is_main_site()) {
         switch_to_blog((int) get_main_site_id());
         if (get_post_type($agent_post_id) === 'agents') {
-            $brand_id = (string) get_post_meta($agent_post_id, 'brand_id', true);
+            $rechat_id = trim((string) get_post_meta($agent_post_id, 'api_id', true));
         }
         restore_current_blog();
     }
 
-    return $brand_id;
+    // The SDK rejects anything that is not a UUID (and then shows nothing).
+    return wp_is_uuid($rechat_id) ? strtolower($rechat_id) : '';
+}
+
+/**
+ * Turn the agent_id shortcode value into the Agent ID sent to the SDK.
+ *
+ * @param mixed $value Agent post ID, Agent ID (UUID), or "current".
+ * @return string Empty when no agent is meant or the agent has no Agent ID.
+ */
+function rch_testimonials_resolve_agent_rechat_id($value)
+{
+    $value = strtolower(trim((string) $value));
+    if ($value !== '' && wp_is_uuid($value)) {
+        return $value;
+    }
+    return rch_testimonials_get_agent_rechat_id(rch_testimonials_resolve_agent_post_id($value));
 }
 
 /**
@@ -123,19 +144,18 @@ function rch_display_testimonials_shortcode($atts)
     // brand_id from settings, like every other Rechat web-component shortcode.
     $brand = get_option('rch_rechat_brand_id');
 
-    // On an agent subsite, use THIS agent's mapped child brand_id (set via the
-    // "Map agent brands" admin button) instead of the general/site brand id, so
-    // testimonials resolve for the agent's own brand. Main site keeps the site brand.
-    // An agent picked on the shortcode/block wins: use that agent's mapped brand.
-    // No mapped brand → fall through to the site/subsite brand below.
-    $picked_brand_id = rch_testimonials_get_agent_brand_id(
-        rch_testimonials_resolve_agent_post_id($atts['agent_id'])
-    );
+    // An agent picked on the shortcode/block: the SDK filters by the agent's
+    // Agent ID (<rechat-testimonials agent_id="…">); the brand stays the site brand.
+    // No Agent ID (locally added agent) → no filter, site/subsite testimonials.
+    $agent_rechat_id = rch_testimonials_resolve_agent_rechat_id($atts['agent_id']);
 
-    if ($picked_brand_id !== '') {
-        $brand = $picked_brand_id;
-    } elseif (
-        is_multisite()
+    // On an agent subsite with no agent picked, use THIS agent's mapped child
+    // brand_id (set via the "Map agent brands" admin button) instead of the
+    // general/site brand id, so testimonials resolve for the agent's own brand.
+    // Main site keeps the site brand.
+    if (
+        $agent_rechat_id === ''
+        && is_multisite()
         && ! is_main_site()
         && function_exists('rch_multisite_resolve_agent_post_id_for_current_blog')
     ) {
@@ -170,7 +190,7 @@ function rch_display_testimonials_shortcode($atts)
         <?php endif; ?>
 
         <rechat-root <?php echo $root_attrs; ?>>
-            <rechat-testimonials<?php echo $limit > 0 ? ' limit="' . (int) $limit . '"' : ''; ?><?php echo $disable_load_more ? ' load_more="false"' : ''; ?>></rechat-testimonials>
+            <rechat-testimonials<?php echo $limit > 0 ? ' limit="' . (int) $limit . '"' : ''; ?><?php echo $disable_load_more ? ' load_more="false"' : ''; ?><?php echo $agent_rechat_id !== '' ? ' agent_id="' . esc_attr($agent_rechat_id) . '"' : ''; ?>></rechat-testimonials>
         </rechat-root>
     </div>
     <?php

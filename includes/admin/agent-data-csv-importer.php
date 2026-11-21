@@ -76,7 +76,7 @@ function rch_agent_import_allowed_match_by(): array
     return [
         'auto'    => __('Auto-detect', 'rechat-plugin'),
         'post_id' => __('Post ID', 'rechat-plugin'),
-        'api_id'  => __('Rechat ID (api_id)', 'rechat-plugin'),
+        'api_id'  => __('Agent ID (api_id)', 'rechat-plugin'),
         'title'   => __('Agent post title (exact)', 'rechat-plugin'),
     ];
 }
