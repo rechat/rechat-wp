@@ -926,3 +926,13 @@ Listing unavailable notice (/listing-detail/ not found or API error)
     padding: 32px 20px;
   }
 }
+
+/* Leads Form block: consent / opt-in text above the submit button */
+.rch-leads-form-block__consent {
+  margin: 14px 0 16px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.rch-leads-form-block__consent a {
+  text-decoration: underline;
+}

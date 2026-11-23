@@ -357,6 +357,12 @@ function rch_ajax_submit_lead_rechat_api()
         'tag'          => $tags,
     );
 
+    // Phone is optional in the Rechat lead API. Send it only when the visitor gave one
+    // (forms with an optional or hidden phone field).
+    if ($phone_number === '') {
+        unset($lead['phone_number']);
+    }
+
     // Listing / agent single forms pass property context; forward when present.
     $listing_id  = isset($_POST['listing_id']) ? sanitize_text_field(wp_unslash($_POST['listing_id'])) : '';
     $mlsid       = isset($_POST['mlsid']) ? sanitize_text_field(wp_unslash($_POST['mlsid'])) : '';
@@ -479,6 +485,18 @@ function rch_register_block_assets_leads_form()
                     'type'    => 'boolean',
                     'default' => true,
                 ),
+                'phoneRequired'       => array(
+                    'type'    => 'boolean',
+                    'default' => true,
+                ),
+                'consentText'         => array(
+                    'type'    => 'string',
+                    'default' => '',
+                ),
+                'privacyPolicyUrl'    => array(
+                    'type'    => 'string',
+                    'default' => '',
+                ),
                 'showEmail'           => array(
                     'type'    => 'boolean',
                     'default' => true,
@@ -521,6 +539,13 @@ function rch_render_leads_form_block($attributes)
     $show_first_name     = isset($attributes['showFirstName']) ? (bool) $attributes['showFirstName'] : true;
     $show_last_name      = isset($attributes['showLastName']) ? (bool) $attributes['showLastName'] : true;
     $show_phone_number   = isset($attributes['showPhoneNumber']) ? (bool) $attributes['showPhoneNumber'] : true;
+    $phone_required      = isset($attributes['phoneRequired']) ? (bool) $attributes['phoneRequired'] : true;
+    $consent_text        = isset($attributes['consentText']) ? trim((string) $attributes['consentText']) : '';
+    $privacy_policy_url  = isset($attributes['privacyPolicyUrl']) ? trim((string) $attributes['privacyPolicyUrl']) : '';
+    // Consent text without its own link falls back to the site's Privacy Policy page (Settings → Privacy).
+    if ($consent_text !== '' && $privacy_policy_url === '' && function_exists('get_privacy_policy_url')) {
+        $privacy_policy_url = (string) get_privacy_policy_url();
+    }
     $show_email          = isset($attributes['showEmail']) ? (bool) $attributes['showEmail'] : true;
     $show_note           = isset($attributes['showNote']) ? (bool) $attributes['showNote'] : true;
     $selected_tags       = isset($attributes['selectedTagsFrom']) && is_array($attributes['selectedTagsFrom'])
@@ -576,8 +601,8 @@ function rch_render_leads_form_block($attributes)
             <?php endif; ?>
             <?php if ($show_phone_number) : ?>
                 <div class="form-group">
-                    <label for="<?php echo esc_attr($form_uid); ?>-phone_number"><?php esc_html_e('Phone Number', 'rechat-plugin'); ?></label>
-                    <input type="tel" id="<?php echo esc_attr($form_uid); ?>-phone_number" name="phone_number" placeholder="<?php esc_attr_e('Enter your phone number', 'rechat-plugin'); ?>" required />
+                    <label for="<?php echo esc_attr($form_uid); ?>-phone_number"><?php echo esc_html($phone_required ? __('Phone Number', 'rechat-plugin') : __('Phone Number (optional)', 'rechat-plugin')); ?></label>
+                    <input type="tel" id="<?php echo esc_attr($form_uid); ?>-phone_number" name="phone_number" placeholder="<?php esc_attr_e('Enter your phone number', 'rechat-plugin'); ?>" <?php echo $phone_required ? 'required ' : ''; ?>/>
                 </div>
             <?php endif; ?>
             <?php if ($show_email) : ?>
@@ -591,6 +616,15 @@ function rch_render_leads_form_block($attributes)
                     <label for="<?php echo esc_attr($form_uid); ?>-note"><?php esc_html_e('Note', 'rechat-plugin'); ?></label>
                     <textarea id="<?php echo esc_attr($form_uid); ?>-note" name="note" placeholder="<?php esc_attr_e('Write your note here', 'rechat-plugin'); ?>" required></textarea>
                 </div>
+            <?php endif; ?>
+
+            <?php if ($consent_text !== '' || $privacy_policy_url !== '') : ?>
+                <p class="rch-leads-form-block__consent">
+                    <?php echo esc_html($consent_text); ?>
+                    <?php if ($privacy_policy_url !== '') : ?>
+                        <a href="<?php echo esc_url($privacy_policy_url); ?>" target="_blank" rel="noopener"><?php esc_html_e('Privacy Policy', 'rechat-plugin'); ?></a>
+                    <?php endif; ?>
+                </p>
             <?php endif; ?>
 
             <button type="submit" class="rch-leads-form-block__submit" <?php echo $is_editor ? 'disabled' : ''; ?>><?php echo esc_html($submit_button_text); ?></button>

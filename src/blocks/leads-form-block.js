@@ -1,6 +1,6 @@
 const { registerBlockType } = wp.blocks;
 const { InspectorControls } = wp.blockEditor || wp.editor;
-const { PanelBody, SelectControl, TextControl, ToggleControl } = wp.components;
+const { PanelBody, SelectControl, TextControl, TextareaControl, ToggleControl } = wp.components;
 import { useEffect, useState, useMemo } from '@wordpress/element';
 import ServerSideRender from '@wordpress/server-side-render';
 import apiFetch from '@wordpress/api-fetch';
@@ -26,6 +26,9 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
         showFirstName: { type: 'boolean', default: true },
         showLastName: { type: 'boolean', default: true },
         showPhoneNumber: { type: 'boolean', default: true },
+        phoneRequired: { type: 'boolean', default: true },
+        consentText: { type: 'string', default: '' },
+        privacyPolicyUrl: { type: 'string', default: '' },
         showEmail: { type: 'boolean', default: true },
         showNote: { type: 'boolean', default: true },
         selectedTagsFrom: { type: 'array', default: [] },
@@ -42,6 +45,9 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
             showFirstName,
             showLastName,
             showPhoneNumber,
+            phoneRequired,
+            consentText,
+            privacyPolicyUrl,
             showEmail,
             showNote,
             selectedTagsFrom,
@@ -309,6 +315,14 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
                             checked={showPhoneNumber}
                             onChange={(value) => setAttributes({ showPhoneNumber: value })}
                         />
+                        {showPhoneNumber && (
+                            <ToggleControl
+                                label="Phone Number is required"
+                                help="Turn off to make the phone field optional. SMS (A2P 10DLC) rules do not allow a form that forces a phone number without a separate opt-in."
+                                checked={phoneRequired}
+                                onChange={(value) => setAttributes({ phoneRequired: value })}
+                            />
+                        )}
                         <ToggleControl
                             label="Show Email Field"
                             checked={showEmail}
@@ -318,6 +332,19 @@ registerBlockType('rch-rechat-plugin/leads-form-block', {
                             label="Show Note Field"
                             checked={showNote}
                             onChange={(value) => setAttributes({ showNote: value })}
+                        />
+                        <TextareaControl
+                            label="Consent text (opt-in disclaimer)"
+                            help="Shown under the fields, above the submit button. Leave empty to hide."
+                            value={consentText}
+                            onChange={(value) => setAttributes({ consentText: value })}
+                        />
+                        <TextControl
+                            label="Privacy Policy URL"
+                            help="Linked right after the consent text. Empty = the site's Privacy Policy page (Settings → Privacy)."
+                            value={privacyPolicyUrl}
+                            onChange={(value) => setAttributes({ privacyPolicyUrl: value })}
+                            placeholder="https://"
                         />
                         <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
                             <fieldset>
